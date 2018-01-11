@@ -1,0 +1,162 @@
+﻿<UserControl
+    x:Class="PhenoPad.CustomControl.NotePageControl"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:PhenoPad.CustomControl"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:phenotypeservice="using:PhenoPad.PhenotypeService"
+    xmlns:customcontrol="using:PhenoPad.CustomContorl"
+     xmlns:hwrservice="using:PhenoPad.HWRService"
+    mc:Ignorable="d"
+    VerticalAlignment="Stretch" 
+    HorizontalAlignment="Stretch"
+    Loaded="Page_Loaded">
+    <UserControl.Resources>
+        <Flyout x:Key="PhenotypeSelectionFlyout" Placement="Right"  Closed="PhenotypeSelectionFlyoutClosed">
+            <StackPanel>
+                <TextBox Name="recognizedResultTextBlock" KeyDown="recognizedResultTextBlock_KeyDown" GotFocus ="recognizedResultTextBlock_GotFocus" SelectionChanged="recognizedResultTextBlock_SelectionChanged"></TextBox>
+
+                <!--
+                <ListView x:Name="recognizedResultListView" ItemsSource="{x:Bind recognizedText}" 
+                          ScrollViewer.VerticalScrollMode="Disabled" 
+                          ScrollViewer.HorizontalScrollMode="Enabled" 
+                          ScrollViewer.HorizontalScrollBarVisibility="Auto" 
+                          ScrollViewer.IsHorizontalRailEnabled="True">
+                    <ListView.ItemTemplate>
+                        <DataTemplate x:DataType="hwrservice:HWRRecognizedText">
+                            <ComboBox SelectedValue="{x:Bind selectedCandidate, Mode=TwoWay}"
+                                      SelectedValuePath="selectedCandidate"
+                                      ItemsSource="{x:Bind candidateList}" />
+                        </DataTemplate>
+                    </ListView.ItemTemplate>
+                </ListView>
+                -->
+                <!--
+                <ListView x:Name="recognizedCandidateListView" ItemsSource="{x:Bind recognizedText}" Margin="0, 10">
+                    <ListView.ItemTemplate>
+                        <DataTemplate x:DataType="hwrservice:HWRRecognizedText">
+                -->
+                <ListView x:Name="candidateListView" Visibility="Collapsed"  Margin="0, 10" ScrollViewer.VerticalScrollMode="Disabled" ScrollViewer.HorizontalScrollMode="Enabled" ScrollViewer.HorizontalScrollBarVisibility="Auto" ScrollViewer.IsHorizontalRailEnabled="True">
+                                <ListView.ItemsPanel>
+                                    <ItemsPanelTemplate>
+                                        <StackPanel Orientation="Horizontal"  Padding="0"/>
+                                    </ItemsPanelTemplate>
+                                </ListView.ItemsPanel>
+                                <ListView.ItemTemplate>
+                                    <DataTemplate>
+                                        <Button Padding="0" Click="candidateListViewButton_Click">
+                                            <TextBlock Text="{Binding}"/>
+                                        </Button>
+                                    </DataTemplate>
+                                </ListView.ItemTemplate>
+                                <ListView.ItemContainerStyle>
+                                    <Style TargetType="ListViewItem">
+                                        <Setter Property="HorizontalContentAlignment" Value="Center" />
+                                        <Setter Property="VerticalContentAlignment" Value="Center" />
+                                        <Setter Property="Margin" Value="0,0,5,0" />
+                                        <Setter Property="Padding" Value="0,0,0,0" />
+                                        <Setter Property="MinHeight" Value="20" />
+                                        <Setter Property="MinWidth" Value="20" />
+                                        <Setter Property="MaxWidth" Value="100" />
+                                    </Style>
+                                </ListView.ItemContainerStyle>
+                            </ListView>
+                <!--
+                        </DataTemplate>
+                    </ListView.ItemTemplate>
+                    <ListView.ItemContainerStyle>
+                        <Style TargetType="ListViewItem">
+                            <Setter Property="HorizontalContentAlignment" Value="Left" />
+                            <Setter Property="VerticalContentAlignment" Value="Center" />
+                            <Setter Property="Margin" Value="0,0,0,0" />
+                            <Setter Property="Padding" Value="0,0,0,0" />
+                            <Setter Property="MinHeight" Value="20" />
+                            <Setter Property="MinWidth" Value="20" />
+                        </Style>
+                    </ListView.ItemContainerStyle>
+                </ListView>
+                -->
+                <RelativePanel  Height="300">
+                    <ListView x:Name="recognizedPhenoListView" ItemsSource="{x:Bind recognizedPhenotypes}" Height="300" HorizontalAlignment="Stretch" Visibility="Collapsed">
+                        <ListView.ItemTemplate>
+                            <DataTemplate x:DataType="phenotypeservice:Phenotype">
+                                <customcontrol:PhenotypeControl phenotypeName="{x:Bind name}" phenotypeId="{x:Bind hpId}" phenotypeState="{x:Bind state}" sourceType="Notes"></customcontrol:PhenotypeControl>
+                            </DataTemplate>
+                        </ListView.ItemTemplate>
+                        <ListView.ItemContainerStyle>
+                            <Style TargetType="ListViewItem">
+                                <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                                <Setter Property="VerticalContentAlignment" Value="Center" />
+                                <Setter Property="Margin" Value="0,0,0,0" />
+                                <Setter Property="Padding" Value="0,0,0,0" />
+                                <Setter Property="MinHeight" Value="20" />
+                            </Style>
+                        </ListView.ItemContainerStyle>
+                    </ListView>
+                    <ProgressRing x:Name="phenoProgressRing" Height="100" Width="100" IsActive="True" RelativePanel.AlignHorizontalCenterWithPanel="True" RelativePanel.AlignVerticalCenterWithPanel="True"/>
+                </RelativePanel>
+            </StackPanel>
+        </Flyout>
+    </UserControl.Resources>
+    <Grid>
+        <ScrollViewer x:Name="scrollViewer" 
+                          RelativePanel.AlignRightWithPanel="True"
+                          RelativePanel.AlignLeftWithPanel="True"
+                          RelativePanel.AlignBottomWithPanel="True"
+                          RelativePanel.AlignTopWithPanel="True"
+                          ZoomMode="Enabled" 
+                          MinZoomFactor="1" 
+                          VerticalScrollMode="Enabled" 
+                          VerticalScrollBarVisibility="Auto" 
+                          HorizontalScrollMode="Enabled" 
+                          HorizontalScrollBarVisibility="Auto">
+
+            <Grid x:Name="outputGrid" Background="{ThemeResource SystemControlBackgroundChromeWhiteBrush}" Height="{Binding Path=ViewportHeight, ElementName=scrollViewer}" Width="{Binding Path=ViewportWidth, ElementName=scrollViewer}">
+                <!-- Inking area -->
+                
+                <Canvas x:Name="backgroundCanvas"/>
+                <InkCanvas x:Name="inkCanvas" />
+                <Canvas x:Name="selectionCanvas">
+                    <Rectangle x:Name="SelectionRect" Stroke="Gray" StrokeThickness="2" StrokeDashArray="2,2" StrokeDashCap="Round" Visibility="Collapsed"/>
+                    <RelativePanel x:Name="PopupCommandBar" MinWidth="60" Height="30"  Visibility="Collapsed">
+                        <Button Foreground="Red" Click="PopupDeleteButton_Click" Background="WhiteSmoke" Padding="0" RelativePanel.AlignLeftWithPanel="True">
+                            <SymbolIcon Symbol="Delete" Height="30" Width="30"></SymbolIcon>
+                        </Button>
+                        <Button Background="WhiteSmoke" Padding="0" RelativePanel.AlignRightWithPanel="True"  Click="MoreSymbolIcon_Click">
+                            <SymbolIcon Symbol="More" Height="30" Width="30"></SymbolIcon>
+                        </Button>
+                    </RelativePanel>
+                    <RelativePanel x:Name="recognizedPhenoBriefPanel" Height="200" Visibility="Collapsed"  Background="WhiteSmoke" BorderThickness="1" BorderBrush="Gray">
+                        <ListView x:Name="recognizedPhenoBriefListView" ItemsSource="{x:Bind recognizedPhenotypes}" Height="200" HorizontalAlignment="Stretch" Visibility="Collapsed">
+                            <ListView.ItemTemplate>
+                                <DataTemplate x:DataType="phenotypeservice:Phenotype">
+                                    <customcontrol:PhenotypeControl Padding="0" phenotypeName="{x:Bind name}" phenotypeId="{x:Bind hpId}" phenotypeState="{x:Bind state}" sourceType="Notes"></customcontrol:PhenotypeControl>
+                                </DataTemplate>
+                            </ListView.ItemTemplate>
+                            <ListView.ItemContainerStyle>
+                                <Style TargetType="ListViewItem">
+                                    <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                                </Style>
+                            </ListView.ItemContainerStyle>
+                        </ListView>
+                        <ProgressRing x:Name="breifPhenoProgressBar" Height="100" Width="200"  IsActive="True" RelativePanel.AlignHorizontalCenterWithPanel="True" RelativePanel.AlignVerticalCenterWithPanel="True"></ProgressRing>
+                    </RelativePanel>
+                    <Image Name="imageControl" Height="300" Width="300"></Image>
+                    <Canvas.Resources>
+                        <Style TargetType="TextBlock">
+                            <Setter Property="FontFamily" Value="Verdana"/>
+                            <Setter Property="FontSize" Value="18"/>
+                            <Setter Property="Foreground" Value="Black"/>
+                        </Style>
+                    </Canvas.Resources>
+                </Canvas>
+                <Canvas x:Name="userControlCanvas">
+                    <StackPanel Name="HoverPhenoPanel" BorderBrush="Black" PointerEntered="HoverPhenoPanel_PointerEntered" PointerExited="HoverPhenoPanel_PointerExited" Orientation="Horizontal" FlowDirection="RightToLeft" Background="SkyBlue" Padding="5 3" Opacity="0.5" HorizontalAlignment="Right" Visibility="Collapsed">
+                        <TextBlock Name="HoverPhenoPopupText" Height="{Binding LINE_HEIGHT}" Text="" FontSize="14" Foreground="OrangeRed"></TextBlock>
+                    </StackPanel>
+                </Canvas>
+            </Grid>
+        </ScrollViewer>
+    </Grid>
+</UserControl>
