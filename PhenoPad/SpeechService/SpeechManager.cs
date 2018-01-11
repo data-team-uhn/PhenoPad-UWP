@@ -65,14 +65,11 @@ namespace PhenoPad.SpeechService
             }
         }
 
-        /**
-
             private AudioGraph graph;
             private AudioDeviceOutputNode deviceOutputNode;
             private AudioFrameInputNode frameInputNode;
             public double theta = 0;
-        private SpeechClient speech;
-        private SpeechClient.StreamingRecognizeStream streamingCall;
+
         private object writeLock;
         private bool writeMore;
 
@@ -95,35 +92,25 @@ namespace PhenoPad.SpeechService
             {
                 // Buffer size is (number of samples) * (size of each sample)
                 // We choose to generate single channel (mono) audio. For multi-channel, multiply by number of channels
-                uint bufferSize = samples * sizeof(float);
+                uint bufferSize = samples * sizeof(Int16);
                 AudioFrame frame = new Windows.Media.AudioFrame(bufferSize);
 
+            /**
                 using (AudioBuffer buffer = frame.LockBuffer(AudioBufferAccessMode.Write))
                 using (IMemoryBufferReference reference = buffer.CreateReference())
                 {
                     byte* dataInBytes;
                     uint capacityInBytes;
-                    float* dataInFloat;
+                    Int16* dataInFloat;
 
                     // Get the buffer from the AudioFrame
                     ((IMemoryBufferByteAccess)reference).GetBuffer(out dataInBytes, out capacityInBytes);
 
                     byte[] bfr = new byte[capacityInBytes];
                     Marshal.Copy((IntPtr)dataInBytes, bfr, 0, (int)capacityInBytes);
-                    lock (writeLock)
-                    {
-                        if (writeMore)
-                            streamingCall.WriteAsync(
-                                new StreamingRecognizeRequest()
-                                {
-                                    AudioContent = Google.Protobuf.ByteString
-                                        .CopyFrom(bfr, 0, (int)capacityInBytes)
-                                }).Wait();
-                    }
-
-
-                // Cast to float since the data we are generating is float
-                dataInFloat = (float*)dataInBytes;
+       
+                    // Cast to float since the data we are generating is float
+                    dataInFloat = (Int16*)dataInBytes;
 
                     float freq = 1000; // choosing to generate frequency of 1kHz
                     float amplitude = 0.3f;
@@ -138,47 +125,14 @@ namespace PhenoPad.SpeechService
                         theta += sampleIncrement;
                     }
                 }
-
+    **/
                 return frame;
             }
 
             private async Task CreateAudioGraph()
             {
-                speech = SpeechClient.Create();
-                streamingCall = speech.StreamingRecognize();
                 writeLock = new object();
                 writeMore = true;
-            // Write the initial request with the config.
-            await streamingCall.WriteAsync(
-                    new StreamingRecognizeRequest()
-                    {
-                        StreamingConfig = new StreamingRecognitionConfig()
-                        {
-                            Config = new RecognitionConfig()
-                            {
-                                Encoding =
-                                RecognitionConfig.Types.AudioEncoding.Linear16,
-                                SampleRateHertz = 16000,
-                                LanguageCode = "en",
-                            },
-                            InterimResults = true,
-                        }
-                    });
-                // Print responses as they arrive.
-                Task printResponses = Task.Run(async () =>
-                {
-                    while (await streamingCall.ResponseStream.MoveNext(
-                        default(CancellationToken)))
-                    {
-                        foreach (var rst in streamingCall.ResponseStream.Current.Results)
-                        {
-                            foreach (var alternative in rst.Alternatives)
-                            {
-                                Console.WriteLine(alternative.Transcript);
-                            }
-                        }
-                    }
-                });
 
             // Create an AudioGraph with default settings
             AudioGraphSettings settings = new AudioGraphSettings(AudioRenderCategory.Media);
@@ -209,6 +163,9 @@ namespace PhenoPad.SpeechService
                 // Create the FrameInputNode at the same format as the graph, except explicitly set mono.
                 AudioEncodingProperties nodeEncodingProperties = graph.EncodingProperties;
                 nodeEncodingProperties.ChannelCount = 1;
+                nodeEncodingProperties.SampleRate = 16000;
+                //nodeEncodingProperties.BitsPerSample = 16;
+            nodeEncodingProperties.Subtype = "PCM";
                 frameInputNode = graph.CreateFrameInputNode(nodeEncodingProperties);
                 frameInputNode.AddOutgoingConnection(deviceOutputNode);
                 //frameContainer.Background = new SolidColorBrush(Colors.Green);
@@ -237,8 +194,6 @@ namespace PhenoPad.SpeechService
                     frameInputNode.AddFrame(audioData);
                 }
             }
-    ***/
-
 
 
         }
