@@ -115,6 +115,7 @@
             <CommandBar RelativePanel.AlignBottomWithPanel="True"
                         RelativePanel.AlignRightWithPanel="True"
                         Name="cmdBar">
+                <AppBarToggleButton Name="testButton" Icon="Microphone" Label="Speech recognition" Click="TestWS_Click" />
                 <AppBarToggleButton Name="micButton" Icon="Microphone" Label="Speech recognition" Click="MicButton_Click" />
                 
                 <AppBarSeparator/>

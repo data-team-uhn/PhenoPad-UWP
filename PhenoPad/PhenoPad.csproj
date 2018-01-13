@@ -140,6 +140,7 @@
     <Compile Include="SpeechService\GoogleRecognize.cs" />
     <Compile Include="SpeechService\SpeechManager.cs" />
     <Compile Include="Styles\MyColors.cs" />
+    <Compile Include="WebSocketService\SpeechStreamSocket.cs" />
   </ItemGroup>
   <ItemGroup>
     <AppxManifest Include="Package.appxmanifest">

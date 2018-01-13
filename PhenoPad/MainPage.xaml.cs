@@ -30,6 +30,7 @@ using System.Linq;
 using Windows.UI.Xaml.Media.Animation;
 using Windows.Storage.Pickers;
 using Windows.Storage.Streams;
+using PhenoPad.WebSocketService;
 
 namespace PhenoPad
 {
@@ -586,6 +587,20 @@ namespace PhenoPad
             });
         }
 
+        int testflag = 0;
+        private void TestWS_Click(object sender, RoutedEventArgs e) {
+            //SpeechStreamSocket sss = new SpeechStreamSocket();
+            //sss.connect();
+            if (testflag == 0)
+            {
+                testflag = 1;
+                SpeechManager.getSharedSpeechManager().StartAudio();
+            }
+            else {
+                testflag = 0;
+                SpeechManager.getSharedSpeechManager().EndAudio();
+            }
+        }
         private async void MicButton_Click(object sender, RoutedEventArgs e)
         {
             micButton.IsEnabled = false;
