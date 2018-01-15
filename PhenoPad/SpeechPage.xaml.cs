@@ -11,6 +11,7 @@
 
 using PhenoPad.SpeechService;
 using System;
+using System.Collections;
 using System.Collections.ObjectModel;
 using System.Threading.Tasks;
 using Windows.Foundation;
@@ -23,15 +24,116 @@ using Windows.UI.Xaml.Controls;
 using Windows.UI.Xaml.Data;
 using Windows.UI.Xaml.Input;
 
+using PhenoPad.PhenotypeService;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Collections.Specialized;
+using System.Runtime.CompilerServices;
+
 namespace PhenoPad
 {
     // Bindable class representing a single text message.
-    public class TextMessage
+    // Several fields are created to save the hassel of creating binding converters :D
+    public class TextMessage : INotifyPropertyChanged
     {
-        public string Body { get; set; }
+        //public string Body { get; set; }
+
+        private string _body;
+        public string Body
+        {
+            get
+            {
+                return _body;
+            }
+            set
+            {
+                this._body = value;
+                this.NotifyPropertyChanged("Body");
+            }
+        }
+
         public string DisplayTime { get; set; }
-        public bool IsSent { get; set; }
-        public bool IsReceived { get { return !IsSent; } }
+
+        // Bind to phenotype display in conversation
+        public ObservableCollection<Phenotype> phenotypesInText;
+
+        // Now that we support more than 2 users, we need to have speaker index
+        public uint Speaker { get; set; }
+
+        // Has finalized content of the string
+        public bool IsFinal { get; set; }
+        public bool IsNotFinal { get { return !IsFinal; } }         // This variable requires no setter
+
+        public bool OnLeft { get; set; }
+
+        public bool OnRight { get { return !OnLeft; } }
+
+        public int TextColumn
+        {
+            get
+            {
+                if (OnLeft)
+                {
+                    return 0;
+                }
+                else
+                {
+                    return 1;
+                }
+            }
+        }
+
+        public int PhenoColumn
+        {
+            get
+            {
+                if (OnLeft)
+                {
+                    return 1;
+                }
+                else
+                {
+                    return 0;
+                }
+            }
+        }
+
+        public event PropertyChangedEventHandler PropertyChanged;
+
+        // This method is called by the Set accessor of each property.
+        // The CallerMemberName attribute that is applied to the optional propertyName
+        // parameter causes the property name of the caller to be substituted as an argument.
+        private void NotifyPropertyChanged([CallerMemberName] String propertyName = "")
+        {
+            if (PropertyChanged != null)
+            {
+                PropertyChanged(this, new PropertyChangedEventArgs(propertyName));
+            }
+        }
+    }
+    class BackgroundColorConverter : IValueConverter
+    {
+        public object Convert(object value, Type targetType, object parameter, string language)
+        {
+            var m = ((TextMessage)value);
+
+            string resourceKey;
+            if (m.IsFinal)
+            {
+                resourceKey = "Background_" + m.Speaker.ToString();
+            }
+            else
+            {
+                resourceKey = "Background_99";
+            }
+            
+            return Application.Current.Resources[resourceKey];
+        }
+
+        public object ConvertBack(object value, Type targetType, object parameter, string language)
+        {
+            throw new NotImplementedException();
+        }
     }
 
     // Observable collection representing a text message conversation
@@ -64,18 +166,67 @@ namespace PhenoPad
                 this.Insert(0, new TextMessage()
                 {
                     Body = $"{messageCount}: {CreateRandomMessage()}",
-                    IsSent = 0 == messageCount++ % 2,
-                    DisplayTime = DateTime.Now.ToString()
+                    Speaker = (messageCount++) % 3,
+                    DisplayTime = DateTime.Now.ToString(),
+                    IsFinal = true
                 });
             }
         }
 
         private static Random rand = new Random();
-        private static string fillerText = "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.";
+        private static string fillerText = 
+            "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.";
 
         public static string CreateRandomMessage()
         {
             return fillerText.Substring(0, rand.Next(5, fillerText.Length));
+        }
+
+        // A method to avoid firing collection changed events when adding a bunch of items
+        // https://forums.xamarin.com/discussion/29925/observablecollection-addrange
+        public void ClearThenAddRange(List<TextMessage> range)
+        {
+            Items.Clear();
+            foreach (var item in range)
+            {
+                Items.Add(item);
+            }
+
+            this.OnPropertyChanged(new PropertyChangedEventArgs("Count"));
+            this.OnPropertyChanged(new PropertyChangedEventArgs("Item[]"));
+            this.OnCollectionChanged(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Reset));
+        }
+
+        public void UpdateLastMessage(TextMessage m, bool doRemove)
+        {
+            /*
+            if (doRemove && Items.Count > 0)
+            {
+                Items.RemoveAt(Items.Count - 1);
+            }
+            Items.Add(m);
+
+            if (doRemove)
+            {
+                this.OnPropertyChanged(new PropertyChangedEventArgs("Count"));
+            }
+            */
+
+            if (doRemove == false || Items.Count == 0)
+            {
+                Items.Add(m);
+
+                this.OnPropertyChanged(new PropertyChangedEventArgs("Count"));
+                this.OnPropertyChanged(new PropertyChangedEventArgs("Item[]"));
+                this.OnCollectionChanged(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Reset));
+            }
+            else
+            {
+                Items[Items.Count - 1].Body = m.Body;
+                Items[Items.Count - 1] = m;
+                this.OnCollectionChanged(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Reset));
+            }
+
         }
     }
 
@@ -93,6 +244,9 @@ namespace PhenoPad
         private double averageContainerHeight;
         private bool processingScrollOffsets = false;
         private bool processingScrollOffsetsDeferred = false;
+
+        // So that we only generate 10 messages, just in case
+        private int randomMessageCount = 0;
 
         public ChatListView()
         {
@@ -184,7 +338,13 @@ namespace PhenoPad
                                 itemsToLoad = Math.Max((uint)(this.DataFetchSize * avgItemsPerPage), 1);
                             }
 
-                            //await virtualizingDataSource.LoadMoreItemsAsync(itemsToLoad);
+                            
+                            // Only for debugging purpose without a server
+                            if (randomMessageCount > 0)
+                            {
+                                await virtualizingDataSource.LoadMoreItemsAsync(itemsToLoad);
+                                randomMessageCount--;
+                            }
                         }
                     }
                 }
@@ -234,17 +394,47 @@ namespace PhenoPad
             this.InitializeComponent();
 
             chatView.ItemsSource = SpeechManager.getSharedSpeechManager().conversation;
-
             chatView.ContainerContentChanging += OnChatViewContainerContentChanging;
+
+            SpeechManager.getSharedSpeechManager().EngineHasResult += SpeechPage_EngineHasResult;
         }
 
-        
+        private int doctor = 0;
+        private int maxSpeaker = 0;
+
+        private void SpeechPage_EngineHasResult(SpeechManager sender, SpeechEngineInterpreter args)
+        {
+            //this.tempSentenceTextBlock.Text = args.tempSentence;
+        }
 
         private void OnChatViewContainerContentChanging(ListViewBase sender, ContainerContentChangingEventArgs args)
         {
             if (args.InRecycleQueue) return;
             TextMessage message = (TextMessage)args.Item;
-            args.ItemContainer.HorizontalAlignment = message.IsSent ? Windows.UI.Xaml.HorizontalAlignment.Right : Windows.UI.Xaml.HorizontalAlignment.Left;
+
+            // Only display message on the right when speaker index = 0
+            //args.ItemContainer.HorizontalAlignment = (message.Speaker == 0) ? Windows.UI.Xaml.HorizontalAlignment.Right : Windows.UI.Xaml.HorizontalAlignment.Left;
+
+            if (message.IsNotFinal)
+            {
+                args.ItemContainer.HorizontalAlignment = Windows.UI.Xaml.HorizontalAlignment.Right;
+            }
+            else
+            {
+                args.ItemContainer.HorizontalAlignment = (message.Speaker == doctor) ? Windows.UI.Xaml.HorizontalAlignment.Right : Windows.UI.Xaml.HorizontalAlignment.Left;
+            }
+
+            if (message.Speaker != 99 && message.Speaker > maxSpeaker)
+            {
+                for (var i = maxSpeaker + 1; i <= message.Speaker; i++)
+                {
+                    ComboBoxItem item = new ComboBoxItem();
+                    item.Background = (Windows.UI.Xaml.Media.Brush)Application.Current.Resources["Background_" + i.ToString()];
+                    item.Content = "Speaker " + (i + 1).ToString();
+                    this.speakerBox.Items.Add(item);
+                }
+                maxSpeaker = (int)message.Speaker;
+            }
         }
 
         private void BackButton_Click(object sender, Windows.UI.Xaml.RoutedEventArgs e)
@@ -264,6 +454,31 @@ namespace PhenoPad
                     }
                 }
             }
+        }
+
+        private void speakerBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            doctor = ((ComboBox)sender).SelectedIndex;
+
+            // Do not change combobox label after selection
+            //speakerTxt.Text = "doctor: " + (doctor + 1).ToString();
+
+            for (int i = 0; i < SpeechManager.getSharedSpeechManager().conversation.Count; i++)
+            //foreach (TextMessage item in chatView.ItemsSource.Items)
+            {
+                if (SpeechManager.getSharedSpeechManager().conversation[i].IsNotFinal)
+                {
+                    SpeechManager.getSharedSpeechManager().conversation[i].OnLeft = false;
+                }
+                else
+                {
+                    SpeechManager.getSharedSpeechManager().conversation[i].OnLeft = (SpeechManager.getSharedSpeechManager().conversation[i].Speaker != doctor);
+                }
+            }
+
+            var temp = chatView.ItemsSource;
+            chatView.ItemsSource = null;
+            chatView.ItemsSource = temp;
         }
     }
 }

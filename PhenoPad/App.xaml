@@ -9,7 +9,6 @@
         <!-- Application-specific resources -->
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
-
                 <!-- 
                     Styles that define common aspects of the platform look and feel
                     Required by Visual Studio project and item templates
@@ -18,6 +17,14 @@
             </ResourceDictionary.MergedDictionaries>
             <SolidColorBrush x:Key="PHENOTYPE_BLUE">#6DBCDB</SolidColorBrush>
             <SolidColorBrush x:Key="BUTTON_GRAY">#E3E1DA</SolidColorBrush>
+
+
+            <SolidColorBrush x:Key="Background_Temp" Color="#9A0089"/>
+            <SolidColorBrush x:Key="Background_0" Color="#515C6B"/> <!--some gray-->
+            <SolidColorBrush x:Key="Background_1" Color="#498205"/> <!--some green-->
+            <SolidColorBrush x:Key="Background_2" Color="#0063B1"/> <!--some blue-->
+            <SolidColorBrush x:Key="Background_99" Color="#9A0089"/>
+            <!--some blue-->
         </ResourceDictionary>
 
         

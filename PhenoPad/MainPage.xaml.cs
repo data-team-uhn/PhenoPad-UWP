@@ -74,8 +74,6 @@ namespace PhenoPad
         
         Symbol LassoSelect = (Symbol)0xEF20;
         Symbol TouchWriting = (Symbol)0xED5F;
-
-        
         
         // The speech recognizer used throughout this sample.
         private SpeechRecognizer speechRecognizer;
@@ -100,6 +98,8 @@ namespace PhenoPad
         private NotePageControl curPage = null;
         private int curPageIndex = -1;
         public static MainPage Current;
+
+        public SpeechManager speechManager = SpeechManager.getSharedSpeechManager();
 
         public MainPage()
         {
@@ -129,9 +129,18 @@ namespace PhenoPad
                 _simpleorientation.OrientationChanged += new TypedEventHandler<SimpleOrientationSensor, SimpleOrientationSensorOrientationChangedEventArgs>(OrientationChanged);
             }
 
-            
+            // We want to react whenever speech engine has new results
+            this.speechManager.EngineHasResult += SpeechManager_EngineHasResult;
 
             //scrollViewer.RegisterPropertyChangedCallback(ScrollViewer.ZoomFactorProperty, OnPropertyChanged);
+        }
+
+
+        // Update text to display latest sentence
+        // TODO : Feels like there exists more legitimate wasy to do this
+        private void SpeechManager_EngineHasResult(SpeechManager sender, SpeechEngineInterpreter args)
+        {
+            this.cmdBarTextBlock.Text = args.latestSentence;
         }
 
         private void OnPropertyChanged(DependencyObject sender, DependencyProperty dp)
@@ -159,13 +168,13 @@ namespace PhenoPad
             bool permissionGained = await AudioCapturePermissions.RequestMicrophonePermission();
             if (permissionGained)
             {
-                micButton.IsEnabled = true;
+                //micButton.IsEnabled = true;
                 await InitializeRecognizer(SpeechRecognizer.SystemSpeechLanguage);
             }
             else
             {
                 this.cmdBarTextBlock.Text = "Permission to access capture resources was not given by the user, reset the application setting in Settings->Privacy->Microphone.";
-                micButton.IsEnabled = false;
+                //micButton.IsEnabled = false;
             }
         }
 
@@ -177,7 +186,6 @@ namespace PhenoPad
         protected async override void OnNavigatingFrom(NavigatingCancelEventArgs e)
         {
             //dispatcherTimer.Stop();
-
             if (this.speechRecognizer != null)
             {
                 if (isListening)
@@ -196,6 +204,15 @@ namespace PhenoPad
                 this.speechRecognizer.Dispose();
                 this.speechRecognizer = null;
             }
+
+            
+            if (speechEngineRunning)
+            {
+                this.speechManager.EndAudio();
+                speechEngineRunning = false;
+            }
+
+            cmdBarTextBlock.Visibility = Visibility.Collapsed;
         }
 
         
@@ -388,14 +405,10 @@ namespace PhenoPad
                 SpeechPopUpPage.Width = Window.Current.Bounds.Width;
                 SpeechPopUpPage.Height = Window.Current.Bounds.Height - cmdBar.ActualHeight;
                 SpeechPopUp.IsOpen = true;
-
-               
             }
             else
             {
-                SpeechPopUp.IsOpen = false;
-
-               
+                SpeechPopUp.IsOpen = false;  
             }
         }
 
@@ -436,7 +449,7 @@ namespace PhenoPad
             {
                 //rootPage.NotifyUser("Grammar Compilation Failed: " + result.Status.ToString(), NotifyType.ErrorMessage);
                 Console.WriteLine("Grammar Compilation Failed: " + result.Status.ToString());
-                micButton.IsEnabled = false;
+                //micButton.IsEnabled = false;
             }
 
             // Handle continuous recognition events. Completed fires when various error states occur. ResultGenerated fires when
@@ -587,23 +600,36 @@ namespace PhenoPad
             });
         }
 
-        int testflag = 0;
-        private void TestWS_Click(object sender, RoutedEventArgs e) {
+        bool speechEngineRunning = false;
+        private async void TestWS_Click(object sender, RoutedEventArgs e) {
+
             //SpeechStreamSocket sss = new SpeechStreamSocket();
             //sss.connect();
-            if (testflag == 0)
+            Task speechManagerTask;
+            if (speechEngineRunning == false)
             {
-                testflag = 1;
-                SpeechManager.getSharedSpeechManager().StartAudio();
+                speechManagerTask = SpeechManager.getSharedSpeechManager().StartAudio();
+                this.cmdBarTextBlock.Visibility = Visibility.Visible;
+                speechEngineRunning = !speechEngineRunning;
+
+                await speechManagerTask;
             }
             else {
-                testflag = 0;
-                SpeechManager.getSharedSpeechManager().EndAudio();
+                speechManagerTask = SpeechManager.getSharedSpeechManager().EndAudio();
+                this.cmdBarTextBlock.Visibility = Visibility.Collapsed;
+                speechEngineRunning = !speechEngineRunning;
+                cmdBarTextBlock.Text = "";
             }
+
+            // Note that we have a giant loop in speech manager so that after it is done
+            // there won't be any audio processing going on
+            speechEngineRunning = false;
+            testButton.IsChecked = false;
         }
+
         private async void MicButton_Click(object sender, RoutedEventArgs e)
         {
-            micButton.IsEnabled = false;
+            //micButton.IsEnabled = false;
             if (isListening == false)
             {
                 // The recognizer can only start listening in a continuous fashion if the recognizer is currently idle.
@@ -659,7 +685,7 @@ namespace PhenoPad
                     }
                 }
             }
-            micButton.IsEnabled = true;
+            //micButton.IsEnabled = true;
         }
 
         private void PageOverviewButton_Click(object sender, RoutedEventArgs e)

@@ -115,13 +115,17 @@
             <CommandBar RelativePanel.AlignBottomWithPanel="True"
                         RelativePanel.AlignRightWithPanel="True"
                         Name="cmdBar">
-                <AppBarToggleButton Name="testButton" Icon="Microphone" Label="Speech recognition" Click="TestWS_Click" />
-                <AppBarToggleButton Name="micButton" Icon="Microphone" Label="Speech recognition" Click="MicButton_Click" />
+                <AppBarToggleButton Name="testButton" Icon="Microphone" Label="Speech Recognition" Click="TestWS_Click">
+                    <ToolTipService.ToolTip>
+                        <TextBlock Text="Enable audio recording"/>
+                    </ToolTipService.ToolTip>
+                </AppBarToggleButton>
+
+                <!--
+                    This is for Microsoft speech recognition engine
+                    <AppBarToggleButton Name="micButton" Icon="Microphone" Label="Speech recognition" Click="MicButton_Click" />
+                -->
                 
-                <AppBarSeparator/>
-                <AppBarButton Icon="Page2" Label="Notes" Click="NotesButton_Click"/>
-                <AppBarToggleButton Icon="PreviewLink" Label="Add a photo" Name="OverviewButton" Click="OverviewButton_Click"/>
-                <AppBarToggleButton Icon="Message" Label="Speech" Name="SpeechButton" Click="SpeechButton_Click"/>
                 <AppBarButton  Icon="WebCam" Label="Photo/Video"  Click="TakePhoto_Click" >
                     <!--
                     <AppBarButton.Flyout>
@@ -132,7 +136,31 @@
                         </MenuFlyout>
                     </AppBarButton.Flyout>
                     -->
+                    <ToolTipService.ToolTip>
+                        <TextBlock Text="Enable video recording"/>
+                    </ToolTipService.ToolTip>
                 </AppBarButton>
+                
+                <AppBarSeparator/>
+
+                <AppBarButton Icon="Page2" Label="Notes" Click="NotesButton_Click">
+                    <ToolTipService.ToolTip>
+                        <TextBlock Text="Write notes"/>
+                    </ToolTipService.ToolTip>
+                </AppBarButton>
+
+                <AppBarToggleButton Icon="PreviewLink" Label="Collected Phenotypes" Name="OverviewButton" Click="OverviewButton_Click">
+                    <ToolTipService.ToolTip>
+                        <TextBlock Text="View collected phenotypes"/>
+                    </ToolTipService.ToolTip>
+                </AppBarToggleButton>
+
+                <AppBarToggleButton Icon="Message" Label="Conversation" Name="SpeechButton" Click="SpeechButton_Click">
+                    <ToolTipService.ToolTip>
+                        <TextBlock Text="View conversation"/>
+                    </ToolTipService.ToolTip>
+                </AppBarToggleButton>
+                
                 <AppBarSeparator/>
                 <!--
                 <AppBarButton Icon="Message" Label="Speech" Click="PageOverviewButton_Click"/>
@@ -148,7 +176,9 @@
                 </CommandBar.SecondaryCommands>
 
                 <CommandBar.Content>
-                    <TextBlock Name="cmdBarTextBlock" Text="" Margin="12,14"/>
+                    <TextBlock Name="cmdBarTextBlock" Margin="12,14"
+                               Text="{x:Bind speechManager.speechInterpreter.latestSentence}"
+                               Visibility="Visible"/>
                 </CommandBar.Content>
             </CommandBar>
             <Grid Background="White"
