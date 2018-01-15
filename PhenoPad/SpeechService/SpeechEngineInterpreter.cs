@@ -284,7 +284,7 @@ namespace PhenoPad.SpeechService
             }
 
             // Do not add new sentence if it is empty
-            if (sentence.Length > 0)
+            if (sentence.Length > 0 && prevSpeaker != -1)
             {
                 var m = new TextMessage()
                 {

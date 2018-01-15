@@ -23,6 +23,7 @@ using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
 using Windows.UI.Xaml.Data;
 using Windows.UI.Xaml.Input;
+using System.Diagnostics;
 
 using PhenoPad.PhenotypeService;
 using System.Collections.Generic;
@@ -425,8 +426,9 @@ namespace PhenoPad
                 args.ItemContainer.HorizontalAlignment = (message.Speaker == doctor) ? Windows.UI.Xaml.HorizontalAlignment.Right : Windows.UI.Xaml.HorizontalAlignment.Left;
             }
 
-            if (message.Speaker != 99 && message.Speaker > maxSpeaker)
+            if (message.Speaker != 99 && message.Speaker != -1 && message.Speaker > maxSpeaker)
             {
+                Debug.WriteLine("Detected speaker " + message.Speaker.ToString());
                 for (var i = maxSpeaker + 1; i <= message.Speaker; i++)
                 {
                     ComboBoxItem item = new ComboBoxItem();
