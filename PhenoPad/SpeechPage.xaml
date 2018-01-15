@@ -42,17 +42,22 @@
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*"/>
+            <ColumnDefinition Width="300"/>
+        </Grid.ColumnDefinitions>
         <!--<StackPanel Grid.Row="0">
             <TextBlock Text="Speech:" Style="{StaticResource SampleHeaderTextStyle}"/>
         </StackPanel>-->
-        
-        <local:ChatListView x:Name="chatView" Grid.Row="0" 
+
+        <local:ChatListView x:Name="chatView" Grid.Row="0" Grid.Column="0"
                             IncrementalLoadingThreshold="2" Margin="10" 
                             BorderBrush="White" BorderThickness="2"
                             ScrollViewer.VerticalScrollBarVisibility="Hidden">
             <ListView.ItemsPanel>
                 <ItemsPanelTemplate>
-                    <ItemsStackPanel ItemsUpdatingScrollMode="KeepLastItemInView" VerticalAlignment="Bottom"/>
+                    <!--" ItemsStackPanel ItemsUpdatingScrollMode="KeepLastItemInView" VerticalAlignment="Bottom"/-->
+                    <ItemsStackPanel ItemsUpdatingScrollMode="KeepLastItemInView"  VerticalAlignment="Bottom"/>
                 </ItemsPanelTemplate>
             </ListView.ItemsPanel>
 
@@ -177,9 +182,138 @@
                 </DataTemplate>
             </ListView.ItemTemplate>
         </local:ChatListView>
-        
+
+        <local:ChatListView x:Name="realtimeChatView" Grid.Row="0" Grid.Column="1" 
+                            IncrementalLoadingThreshold="2" Margin="10" 
+                            BorderBrush="White" BorderThickness="2"
+                            ScrollViewer.VerticalScrollBarVisibility="Hidden">
+            <ListView.ItemsPanel>
+                <ItemsPanelTemplate>
+                    <ItemsStackPanel ItemsUpdatingScrollMode="KeepLastItemInView" VerticalAlignment="Bottom"  HorizontalAlignment="Right"/>
+                </ItemsPanelTemplate>
+            </ListView.ItemsPanel>
+
+            <ListView.ItemContainerStyle>
+                <Style TargetType="ListViewItem">
+                    <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                </Style>
+            </ListView.ItemContainerStyle>
+            
+            <ListView.ItemContainerTransitions>
+                <TransitionCollection/>
+            </ListView.ItemContainerTransitions>
+
+            <ListView.ItemTemplate>
+                <DataTemplate x:DataType="local:TextMessage">
+                    <Grid Margin="10">
+                        <Grid.RowDefinitions>
+                            <RowDefinition />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition />
+                        </Grid.RowDefinitions>
+
+
+                        <!--Left/Top polygon-->
+                        <Polygon
+                            Grid.Row="0"
+                            Fill="{Binding Converter={StaticResource bcConverter}}"
+                            HorizontalAlignment="Left"
+                            Points="0,0 0,18 18,18"
+                            Visibility="Collapsed"
+                            Margin="0,0,10,0">
+                        </Polygon>
+
+                        <!--Right/Bottom polygon-->
+                        <Polygon
+                            Grid.Row="2"
+                            Fill="LightSlateGray"
+                            HorizontalAlignment="Right"
+                            Points="0,0 18,0 18,18"
+                            Visibility="Visible"
+                            Margin="0,0,10,0"/>
+
+                        <!--Finalized message color-->
+                        <Grid
+                            Grid.Row="1"
+                            Background="LightSlateGray"
+                            Visibility="{x:Bind Path=IsFinal}"/>
+
+                        <!--Not finalized message color-->
+                        <Grid
+                            Grid.Row="1"
+                            Background="LightSlateGray"
+                            Visibility="{x:Bind Path=IsNotFinal}"/>
+
+                        <Grid
+                            Grid.Row="1">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
+
+                            <TextBlock 
+                                Text="{x:Bind Body}"
+                                Grid.Row="0"
+                                Grid.Column="0"
+                                TextWrapping="Wrap"
+                                MinWidth="90"
+                                MaxWidth="500"
+                                FontSize="16"
+                                Padding="10,10,5,0"
+                                VerticalAlignment="Center"
+                                Foreground="WhiteSmoke"/>
+
+                            <TextBlock
+                                Grid.Row="1"
+                                FontSize="10"
+                                Text="{x:Bind DisplayTime}"
+                                TextWrapping="Wrap"
+                                Opacity="0.7"
+                                Padding="10" />
+                        </Grid>
+
+                        <!--<StackPanel
+                            Orientation="Horizontal"
+                            Grid.Column="{Binding PhenoColumn}"
+                            Grid.Row="0"
+                            Grid.RowSpan="3"
+                            Padding="10">
+
+                            <Button
+                                Content="Phenotype here"
+                                FontSize="20"
+                                Padding="10"
+                                Foreground="Black"/>
+                        </StackPanel>-->
+
+                        <ListView x:Name="phenoFromConversationListView" 
+                                    Grid.Column="{Binding PhenoColumn}"
+                                    Grid.Row="0"
+                                    Grid.RowSpan="3"
+                                    Padding="10"
+                                    ItemsSource="{x:Bind phenotypesInText, Mode=OneWay}">
+                            <ListView.ItemTemplate>
+                                <DataTemplate x:DataType="phenotypeservice:Phenotype">
+                                    <customcontorl:PhenotypeControl phenotypeName="{x:Bind name}" 
+                                                                    phenotypeId="{x:Bind hpId}" 
+                                                                    phenotypeState="{x:Bind state}"
+                                                                    sourceType="Notes"/>
+                                </DataTemplate>
+                            </ListView.ItemTemplate>
+                            <ListView.ItemContainerStyle>
+                                <Style TargetType="ListViewItem">
+                                    <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                                </Style>
+                            </ListView.ItemContainerStyle>
+                        </ListView>
+
+                    </Grid>
+                </DataTemplate>
+            </ListView.ItemTemplate>
+        </local:ChatListView>
+
         <!-- To allow doctor to identify "himself"-->
-        <Grid  Grid.Row="1">
+        <Grid  Grid.Row="1" Grid.ColumnSpan="2">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="Auto"/>
                 <ColumnDefinition Width="*"/>

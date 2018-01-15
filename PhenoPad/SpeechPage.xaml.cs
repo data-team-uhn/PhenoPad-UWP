@@ -395,6 +395,7 @@ namespace PhenoPad
 
             chatView.ItemsSource = SpeechManager.getSharedSpeechManager().conversation;
             chatView.ContainerContentChanging += OnChatViewContainerContentChanging;
+            realtimeChatView.ItemsSource = SpeechManager.getSharedSpeechManager().realtimeConversation;
 
             SpeechManager.getSharedSpeechManager().EngineHasResult += SpeechPage_EngineHasResult;
         }

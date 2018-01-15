@@ -87,6 +87,10 @@ namespace PhenoPad.WebSocketService
 
         public async Task<bool> SendBytesAsync(byte[] message)
         {
+            if(streamSocket == null)
+            {
+                return false;
+            }
             try
             {
                 //using (var dataWriter = new DataWriter(this.streamSocket.OutputStream))
@@ -142,9 +146,38 @@ namespace PhenoPad.WebSocketService
             return returnMessage;
         }
 
+        public async void CloseConnnction()
+        {
+            if (streamSocket == null)
+                return;
+            try
+            {
+                //using (var dataWriter = new DataWriter(this.streamSocket.OutputStream))
+                //{
+                Encoding ascii = Encoding.ASCII;
+                dataWriter.WriteBytes(ascii.GetBytes("EOS"));
+                await dataWriter.StoreAsync();
+                //dataWriter.DetachStream();
+                //}
+                //Debug.WriteLine("Sending data using StreamWebSocket: " + message.Length.ToString() + " bytes");
+                streamSocket.Dispose();
+                MainPage.Current.NotifyUser("Disconnect from the server", NotifyType.StatusMessage, 2);
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine("Closing socket error.");
+                MainPage.Current.NotifyUser("Fail to close websocket", NotifyType.ErrorMessage, 2);
 
+                //Debug.WriteLine(ex.GetBaseException().HResult);
+                //Windows.Web.WebErrorStatus webErrorStatus = Windows.Networking.Sockets.WebSocketError.GetStatus(ex.GetBaseException().HResult);
+                // Add code here to handle exceptions.
+                //await ConnectToServer();
+
+            }
+        }
         private async void WebSocket_ClosedAsync(Windows.Networking.Sockets.IWebSocket sender, Windows.Networking.Sockets.WebSocketClosedEventArgs args)
         {
+            
             rootPage.NotifyUser("Websocket connection is off, trying to reconnect...", NotifyType.ErrorMessage, 1);
             Debug.WriteLine("WebSocket_Closed; Code: " + args.Code + ", Reason: \"" + args.Reason + "\"");
             // Add additional code here to handle the WebSocket being closed.
