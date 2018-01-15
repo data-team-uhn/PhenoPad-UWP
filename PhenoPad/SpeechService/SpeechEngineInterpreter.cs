@@ -59,16 +59,19 @@ namespace PhenoPad.SpeechService
     {
         private List<WordSpoken> words = new List<WordSpoken>();      // all words detected
         public string tempSentence;         // non-final result from engine
+        public List<string> realtimeSentences = new List<string>();
+        public string realtimeLastSentence;
         public string latestSentence;       // display the last sentence to not clog up view
         private int diarizationWordIndex = 0;
         private List<Pair<TimeInterval, int>> diarization = new List<Pair<TimeInterval, int>>();  // a list of intervals that have speaker identified
 
         public Conversation conversation;       // to be connected to speech manager
-
+        public Conversation realtimeConversation;
         // Empty constructor :D
-        public SpeechEngineInterpreter(Conversation _conv)
+        public SpeechEngineInterpreter(Conversation _conv, Conversation _realtimeconv)
         {
             this.conversation = _conv;
+            this.realtimeConversation = _realtimeconv;
         }
 
         // Looks at speech engine result to identify what can be done
@@ -94,19 +97,36 @@ namespace PhenoPad.SpeechService
 
                 // because transcrip is final and has already been accounted for
                 this.tempSentence = this.constructTempSentence();
-
                 Debug.WriteLine(json.result.hypotheses[0].transcript.Trim());
+
+                this.realtimeSentences = new List<String>(this.tempSentence.Split('.'));
+                Windows.ApplicationModel.Core.CoreApplication.MainView.CoreWindow.Dispatcher.RunAsync(CoreDispatcherPriority.Normal,
+                () =>
+                {
+                    this.formRealtimeConversation();
+                }
+                );
+
             }
             else
             {
                 // tempSentence can be set regardless
                 this.tempSentence = this.constructTempSentence() + json.result.hypotheses[0].transcript.Trim();
+                this.realtimeSentences = new List<String>(this.constructTempSentence().Split('.'));
+                this.realtimeLastSentence = json.result.hypotheses[0].transcript.Trim();
+
+                Windows.ApplicationModel.Core.CoreApplication.MainView.CoreWindow.Dispatcher.RunAsync(CoreDispatcherPriority.Normal,
+                () =>
+                {
+                    this.realtimeConversation.UpdateLastMessage(this.constructRealtimeTempBubble(), true);
+                }
+                );
             }
 
             Windows.ApplicationModel.Core.CoreApplication.MainView.CoreWindow.Dispatcher.RunAsync(CoreDispatcherPriority.Normal,
             () =>
             {
-                this.conversation.UpdateLastMessage(this.constructTempBubble(), true);
+                //this.conversation.UpdateLastMessage(this.constructTempBubble(), true);
             }
             );
             
@@ -133,7 +153,7 @@ namespace PhenoPad.SpeechService
                 //Debug.WriteLine("Total word count" + words.Count.ToString());
                 //Debug.WriteLine(json.original);
                 this.formConversation();
-
+                
                 // so that we don't have an overflow of words
                 this.constructTempSentence();
                 this.printDiarizationResult();
@@ -160,6 +180,18 @@ namespace PhenoPad.SpeechService
             var message = new TextMessage()
             {
                 Body = this.tempSentence,
+                Speaker = 99,
+                //DisplayTime = DateTime.Now.ToString(),
+                IsFinal = false
+            };
+
+            return message;
+        }
+        private TextMessage constructRealtimeTempBubble()
+        {
+            var message = new TextMessage()
+            {
+                Body = this.realtimeLastSentence,
                 Speaker = 99,
                 //DisplayTime = DateTime.Now.ToString(),
                 IsFinal = false
@@ -270,10 +302,42 @@ namespace PhenoPad.SpeechService
             {
                 //this.conversation.Clear();
                 this.conversation.ClearThenAddRange(messages);
-                this.conversation.UpdateLastMessage(this.constructTempBubble(), false);
+                //this.conversation.UpdateLastMessage(this.constructTempBubble(), false);
             }
             );
             
+        }
+
+        private void formRealtimeConversation()
+        {
+            List<TextMessage> messages = new List<TextMessage>();
+
+            foreach(string sentence in this.realtimeSentences)
+            {
+                if (sentence.Length > 0)
+                {
+                    var m = new TextMessage()
+                    {
+                        Body = sentence,
+                        Speaker = (uint) 99,
+                        //DisplayTime = DateTime.Now.ToString(),
+                        IsFinal = true
+                    };
+                    messages.Add(m);
+
+                }
+            }
+           
+
+            Windows.ApplicationModel.Core.CoreApplication.MainView.CoreWindow.Dispatcher.RunAsync(CoreDispatcherPriority.Normal,
+            () =>
+            {
+                //this.conversation.Clear();
+                this.realtimeConversation.ClearThenAddRange(messages);
+                this.realtimeConversation.UpdateLastMessage(this.constructRealtimeTempBubble(), false);
+            }
+            );
+
         }
 
         // Scan through the all diarization we have completed to find if things need to be updated

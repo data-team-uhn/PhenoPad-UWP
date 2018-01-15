@@ -51,6 +51,7 @@ namespace PhenoPad.SpeechService
         public static SpeechManager sharedSpeechManager;
         
         public Conversation conversation = new Conversation();
+        public Conversation realtimeConversation = new Conversation();
         public SpeechEngineInterpreter speechInterpreter;
         private MainPage rootPage = MainPage.Current;
         private AudioGraph graph;
@@ -68,7 +69,7 @@ namespace PhenoPad.SpeechService
 
         public SpeechManager()
         {
-            this.speechInterpreter = new SpeechEngineInterpreter(this.conversation);
+            this.speechInterpreter = new SpeechEngineInterpreter(this.conversation, this.realtimeConversation);
         }
 
         public static SpeechManager getSharedSpeechManager()
@@ -231,32 +232,43 @@ namespace PhenoPad.SpeechService
             return;
         }
 
+        private SemaphoreSlim endSemaphoreSlim = new SemaphoreSlim(1);
         public async Task EndAudio()
         {
-            MainPage.Current.NotifyUser("Disconnecting from speech engine", NotifyType.StatusMessage, 2);
-            //deviceInputNode.Stop();
-            cancellationSource.Cancel();
-            fileInputNode.Stop();
-            graph.Stop();
-            /**
+            await endSemaphoreSlim.WaitAsync();
+            try {
+                if (graph != null && fileInputNode != null)
+                {
+                    MainPage.Current.NotifyUser("Disconnecting from speech engine", NotifyType.StatusMessage, 2);
+                    //deviceInputNode.Stop();
+                    cancellationSource.Cancel();
+                    fileInputNode.Stop();
+                    graph.Stop();
+                    speechStreamSocket.CloseConnnction();
+                    /**
 
-            TranscodeFailureReason finalizeResult = await fileOutputNode.FinalizeAsync();
-            if (finalizeResult != TranscodeFailureReason.None)
-            {
-                // Finalization of file failed. Check result code to see why
-                rootPage.NotifyUser(String.Format("Finalization of file failed because {0}", finalizeResult.ToString()), NotifyType.ErrorMessage, 2);
-                //fileButton.Background = new SolidColorBrush(Colors.Red);
-                return;
-            }
+                    TranscodeFailureReason finalizeResult = await fileOutputNode.FinalizeAsync();
+                    if (finalizeResult != TranscodeFailureReason.None)
+                    {
+                        // Finalization of file failed. Check result code to see why
+                        rootPage.NotifyUser(String.Format("Finalization of file failed because {0}", finalizeResult.ToString()), NotifyType.ErrorMessage, 2);
+                        //fileButton.Background = new SolidColorBrush(Colors.Red);
+                        return;
+                    }
 
-            //recordStopButton.Content = "Record";
-            rootPage.NotifyUser("Recording to file completed successfully!", NotifyType.StatusMessage, 1);
-    **/
-            if (graph != null)
-            {
-                graph.Dispose();
+                    //recordStopButton.Content = "Record";
+                    rootPage.NotifyUser("Recording to file completed successfully!", NotifyType.StatusMessage, 1);
+            **/
+                    if (graph != null)
+                    {
+                        graph.Dispose();
+                    }
+                }
             }
-            
+            finally
+            {
+                endSemaphoreSlim.Release();
+            }
         }
         
 
@@ -427,9 +439,10 @@ namespace PhenoPad.SpeechService
                 IntPtr source = (IntPtr)dataInBytes;
                 byte[] floatmsg = new byte[capacityInBytes];
                 Marshal.Copy(source, floatmsg, 0, (int)capacityInBytes);
-                //Debug.WriteLine("    " + capacityInBytes);
-                // without a buffer
-                speechStreamSocket.SendBytesAsync(floatmsg);
+                    //Debug.WriteLine("    " + capacityInBytes);
+                    // without a buffer
+                sendBytes(floatmsg);
+                //speechStreamSocket.SendBytesAsync(floatmsg);
 
                 // using a buffer
                 /**
@@ -443,6 +456,13 @@ namespace PhenoPad.SpeechService
                     bytelist = new List<byte>();
                 }**/
             }
+        }
+
+        private async void sendBytes(byte[] bs)
+        {
+            bool result = await speechStreamSocket.SendBytesAsync(bs);
+            if (!result)
+                await this.EndAudio();
         }
 
         // Continuously read incoming data. For reading data we'll show how to use activeSocket.InputStream.AsStream()
