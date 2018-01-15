@@ -210,6 +210,7 @@ namespace PhenoPad
             await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () =>
             {
                 SimpleOrientation orientation = e.Orientation;
+                Debug.WriteLine("oritentation changed: " + e.Orientation);
                 curPage.DrawBackgroundLines();
             });
         }
@@ -414,7 +415,8 @@ namespace PhenoPad
             if (!OverviewPopUp.IsOpen)
             {
                 OverivePopUpPage.Width = Window.Current.Bounds.Width;
-                OverivePopUpPage.Height = Window.Current.Bounds.Height - cmdBar.ActualHeight;
+                OverivePopUpPage.Height = Window.Current.Bounds.Height - topCmdBar.ActualHeight;
+                OverviewPopUp.Margin = new Thickness(0, topCmdBar.ActualHeight, 0, 0);
                 OverviewPopUp.IsOpen = true;
 
                 if (ApiInformation.IsTypePresent("Windows.UI.ViewManagement.ApplicationView"))
@@ -460,7 +462,8 @@ namespace PhenoPad
             if (!SpeechPopUp.IsOpen)
             {
                 SpeechPopUpPage.Width = Window.Current.Bounds.Width;
-                SpeechPopUpPage.Height = Window.Current.Bounds.Height - cmdBar.ActualHeight;
+                SpeechPopUpPage.Height = Window.Current.Bounds.Height - topCmdBar.ActualHeight;
+                SpeechPopUpPage.Margin = new Thickness(0, topCmdBar.ActualHeight, 0, 0);
                 SpeechPopUp.IsOpen = true;
             }
             else

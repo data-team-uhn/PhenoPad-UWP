@@ -300,7 +300,7 @@ namespace PhenoPad.SpeechService
                 //this.conversation.Clear();
                 this.conversation.ClearThenAddRange(messages);
                 //this.conversation.UpdateLastMessage(this.constructTempBubble(), false);
-            }
+            } 
             );
             
         }
