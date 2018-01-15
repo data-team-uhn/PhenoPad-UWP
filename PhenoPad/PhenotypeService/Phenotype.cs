@@ -13,6 +13,7 @@ namespace PhenoPad.PhenotypeService
         public string name { get; set; }
         public List<string> alternatives { get; set; }
         public int state { get; set; } // NA: -1, Y: 1, N: 0
+        public SourceType sourceType { get; set; }
         /**
         private int _state;
         public int state
@@ -37,6 +38,7 @@ namespace PhenoPad.PhenotypeService
             this.name = name;
             this.alternatives = alter;
             this.state = state;
+            sourceType = SourceType.None;
         }
         public Phenotype(string hpid, string name, int state)
         {
@@ -44,6 +46,7 @@ namespace PhenoPad.PhenotypeService
             this.name = name;
             this.alternatives = new List<string>();
             this.state = state;
+            sourceType = SourceType.None;
         }
 
         public event PropertyChangedEventHandler PropertyChanged;

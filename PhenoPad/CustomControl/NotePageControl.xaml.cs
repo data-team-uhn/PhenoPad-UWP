@@ -33,6 +33,7 @@ using PhenoPad.PhotoVideoService;
 using Windows.UI.Notifications;
 using Windows.ApplicationModel.Core;
 using System.Threading;
+using System.Collections;
 
 // The User Control item template is documented at https://go.microsoft.com/fwlink/?LinkId=234236
 
@@ -40,7 +41,20 @@ namespace PhenoPad.CustomControl
 {
     public sealed partial class NotePageControl : UserControl
     {
+        /***** configurable settings *****/
+        // Distance between two neighboring note lines
         private static float LINE_HEIGHT = 45;
+        // Max hight for writing, those with hight exceeding this values will be deleted.
+        private static float MAX_WRITING = (float)1.5 * LINE_HEIGHT;
+        // Style of "unprocessed stroke" or right dragging stroke.
+        private SolidColorBrush UNPROCESSED_COLOR = new SolidColorBrush(MyColors.PHENOTYPE_BLUE_COLOR);
+        private float UNPROCESSED_OPACITY = 0.2f;
+        private int UNPROCESSED_THICKNESS = 20;
+        private int UNPROCESSED_RESOLUTION = 5;
+        private Color DEFAULT_STROKE_COLOR = MyColors.DEFUALT_STROKE;
+        private Color SELECTED_STROKE_COLOR = MyColors.PHENOTYPE_BLUE_COLOR;
+
+        private DoubleCollection UNPROCESSED_DASH = new DoubleCollection() { 5, 2 };
         private Rect boundingRect;
         private Polyline lasso;
         Symbol LassoSelect = (Symbol)0xEF20;
@@ -54,6 +68,7 @@ namespace PhenoPad.CustomControl
 
         DispatcherTimer dispatcherTimer;
         DispatcherTimer operationDispathcerTimer; //try to recognize last stroke as operation
+        DispatcherTimer unprocessedDispatcherTimer;
 
         DispatcherTimer lineAnalysisDispatcherTimer;
         Queue<int> linesToUpdate;
@@ -68,6 +83,9 @@ namespace PhenoPad.CustomControl
         private MainPage rootPage;
 
         CoreInkIndependentInputSource core;
+
+        Queue<int> linesToAnnotate = new Queue<int>();
+        int lastStrokeLine = -1;
 
         public InkCanvas inkCan
         {
@@ -84,6 +102,7 @@ namespace PhenoPad.CustomControl
             this.InitializeComponent();
             this.DrawBackgroundLines();
 
+            UNPROCESSED_COLOR.Opacity = UNPROCESSED_OPACITY;
             // Initialize the InkCanvas
             inkCanvas.InkPresenter.InputDeviceTypes = CoreInputDeviceTypes.Mouse | CoreInputDeviceTypes.Pen;
 
@@ -116,10 +135,14 @@ namespace PhenoPad.CustomControl
             dispatcherTimer.Tick += DispatcherTimer_Tick;
             operationDispathcerTimer.Tick += OperationDispatcherTimer_Tick;
 
+            unprocessedDispatcherTimer = new DispatcherTimer();
+            unprocessedDispatcherTimer.Tick += UnprocessedDispathcerTimer_Tick;
+
             // We perform analysis when there has been a change to the
             // ink presenter and the user has been idle for 1 second.
             dispatcherTimer.Interval = TimeSpan.FromSeconds(0.3);
             operationDispathcerTimer.Interval = TimeSpan.FromMilliseconds(500);
+            unprocessedDispatcherTimer.Interval = TimeSpan.FromMilliseconds(100);
 
             linesToUpdate = new Queue<int>();
             lineAnalysisDispatcherTimer = new DispatcherTimer();
@@ -127,10 +150,11 @@ namespace PhenoPad.CustomControl
             lineAnalysisDispatcherTimer.Interval = TimeSpan.FromMilliseconds(100);
             //lineAnalysisDispatcherTimer.Start();
 
-            core = CoreInkIndependentInputSource.Create(inkCanvas.InkPresenter);
-            core.PointerHovering += Core_PointerHovering;
-            core.PointerExiting += Core_PointerExiting;
-            core.PointerEntering += Core_PointerHovering;
+            // hovering event
+            //core = CoreInkIndependentInputSource.Create(inkCanvas.InkPresenter);
+            //core.PointerHovering += Core_PointerHovering;
+            //core.PointerExiting += Core_PointerExiting;
+            //core.PointerEntering += Core_PointerHovering;
             //Windows.UI.Core.CoreWindow.GetForCurrentThread().PointerEntered += App_PointerMoved;
 
             stringsOfLines = new Dictionary<int, string>();
@@ -259,18 +283,18 @@ namespace PhenoPad.CustomControl
                 inkAnalyzer.RemoveDataForStroke(stroke.Id);
             }
             //operationDispathcerTimer.Start();
-            dispatcherTimer.Start();
+            //dispatcherTimer.Start();
         }
 
         private async void InkPresenter_StrokesCollectedAsync(InkPresenter sender, InkStrokesCollectedEventArgs args)
         {
-            // dispatcherTimer.Stop();
+            dispatcherTimer.Stop();
             operationDispathcerTimer.Stop();
 
             InkStroke lastStroke = null;
             foreach(var s in args.Strokes)
             {
-                if (s.BoundingRect.Height > 2 * LINE_HEIGHT)
+                if (s.BoundingRect.Height > MAX_WRITING)
                 {
                     inkOperationAnalyzer.AddDataForStroke(s);
                     await RecognizeInkOperation();
@@ -281,14 +305,25 @@ namespace PhenoPad.CustomControl
                     lastStroke = s;
                 }
             }
-            //inkCanvas.InkPresenter.StrokeContainer.DeleteSelected();
+            // recognize by line
             if (lastStroke != null)
-                recognizeLine((int) (lastStroke.BoundingRect.Y + lastStroke.BoundingRect.Height/2) / (int) LINE_HEIGHT);
+            {
+                int lineIndex = getLineNumByRect(lastStroke.BoundingRect);
+                if (lineIndex != lastStrokeLine || linesToAnnotate.Count == 0) {
+                    linesToAnnotate.Enqueue(lineIndex);
+                    lastStrokeLine = lineIndex;
+                }
+            }
+                
+
+
+            // start to analyze ink anaylsis on collected strokes.
+            dispatcherTimer.Start();
             
             //inkAnalyzer.AddDataForStrokes(args.Strokes);
-           
 
-            dispatcherTimer.Start();
+
+
             //operationDispathcerTimer.Start();
             /****
             core.PointerHovering += Core_PointerHovering;
@@ -298,34 +333,45 @@ namespace PhenoPad.CustomControl
 
         }
 
+        private int getLineNumByRect(Rect rect)
+        {
+            return (int)((rect.Y + rect.Height / 2) / (LINE_HEIGHT));
+        }
+
         // selection 
         private void UnprocessedInput_PointerPressed(InkUnprocessedInput sender, PointerEventArgs args)
         {
             ClearSelection();
             lasso = new Polyline()
             {
-                Stroke = new SolidColorBrush(Windows.UI.Colors.Blue),
-                StrokeThickness = 1,
-                StrokeDashArray = new DoubleCollection() { 5, 2 },
+                Stroke = UNPROCESSED_COLOR,
+                StrokeThickness = UNPROCESSED_THICKNESS,
+                //StrokeDashArray = UNPROCESSED_DASH,
             };
 
             lasso.Points.Add(args.CurrentPoint.RawPosition);
             selectionCanvas.Children.Add(lasso);
             isBoundRect = true;
+            unprocessedDispatcherTimer.Start();
         }
-
+        
         private void UnprocessedInput_PointerMoved(InkUnprocessedInput sender, PointerEventArgs args)
         {
             if (isBoundRect)
             {
                 lasso.Points.Add(args.CurrentPoint.RawPosition);
+
             }
         }
 
         private void UnprocessedInput_PointerReleased(InkUnprocessedInput sender, PointerEventArgs args)
         {
+            unprocessedDispatcherTimer.Stop();
             lasso.Points.Add(args.CurrentPoint.RawPosition);
             //lasso.Points.Add(lasso.Points.ElementAt(0));
+            isBoundRect = false;
+            DrawBoundingRect();
+            /**
             if (lasso.Points.Count() < 20)
             {
                 TapAPosition(lasso.Points.ElementAt(0));
@@ -353,6 +399,7 @@ namespace PhenoPad.CustomControl
                 isBoundRect = false;
                 DrawBoundingRect();
             }
+            **/
         }
 
         private async void DrawBoundingRect()
@@ -412,7 +459,6 @@ namespace PhenoPad.CustomControl
 
         private void ClearSelection()
         {
-            Debug.WriteLine("Clear selection");
             var strokes = inkCanvas.InkPresenter.StrokeContainer.GetStrokes();
             foreach (var stroke in strokes)
             {
@@ -501,18 +547,119 @@ namespace PhenoPad.CustomControl
                         //Debug.WriteLine("Circle!");
                     }
                 }
+                // delete all strokes that are too large, like drawings
                 foreach (var sid in inkOperationAnalyzer.AnalysisRoot.GetStrokeIds())
                 {
                     //ShowToastNotification("Write smallers", "Write smaller please");
-                    rootPage.NotifyUser("Write smaller", NotifyType.ErrorMessage, 2);
-                    inkCanvas.InkPresenter.StrokeContainer.GetStrokeById(sid).Selected = true;
+                    //rootPage.NotifyUser("Write smaller", NotifyType.ErrorMessage, 2);
+                    //inkCanvas.InkPresenter.StrokeContainer.GetStrokeById(sid).Selected = true;
                     inkOperationAnalyzer.RemoveDataForStroke(sid);
                 }
-                inkCanvas.InkPresenter.StrokeContainer.DeleteSelected();
+                //inkCanvas.InkPresenter.StrokeContainer.DeleteSelected();
             }
             return -1;
         }
+        private void SelectWithLineWithThickness(Point p1, Point p2, double thickness)
+        {
+            double x1 = p1.X;
+            double y1 = p1.Y;
+            double x2 = p2.X;
+            double y2 = p2.Y;
 
+            double temp = Math.Sqrt((y2-y1)*(y2-y1) + (x2-x1)*(x2-x1));
+            double x11 = x1 + (y1 - y2) * thickness / temp;
+            double y11 = y1 + (x2 - x1) * thickness / temp;
+            double x12 = x1 - (y1 - y2) * thickness / temp;
+            double y12 = y1 - (x2 - x1) * thickness / temp;
+
+            double x22 = x2 + (y2 - y1) * thickness / temp;
+            double y22 = y2 + (x1 - x2) * thickness / temp;
+            double x21 = x2 - (y2 - y1) * thickness / temp;
+            double y21 = y2 - (x1 - x2) * thickness / temp;
+
+            double minX = Math.Min(Math.Min(Math.Min(x11, x12), x21), x22);
+            double minY = Math.Min(Math.Min(Math.Min(y11, y12), y21), y22);
+            double maxX = Math.Max(Math.Max(Math.Max(x11, x12), x21), x22);
+            double maxY = Math.Max(Math.Max(Math.Max(y11, y12), y21), y22);
+
+            /** for visualizaiton
+            var rectangle = new Polyline()
+            {
+                Stroke = new SolidColorBrush(Windows.UI.Colors.Blue),
+                StrokeThickness = 1,
+                StrokeDashArray = new DoubleCollection() { 5, 2 }
+                //Width = maxX - minX,
+                //Height = maxY - minY
+            };
+            rectangle.Points.Add(new Point(x11, y11));
+            rectangle.Points.Add(p1);
+            rectangle.Points.Add(new Point(x12, y12));
+            rectangle.Points.Add(new Point(x22, y22));
+            rectangle.Points.Add(p2);
+            rectangle.Points.Add(new Point(x21, y21));
+            rectangle.Points.Add(new Point(x11, y11));
+
+            selectionCanvas.Children.Add(rectangle);
+            **/
+
+            Rect outboundOfLineRect = new Rect(minX, minY, maxX - minX, maxY - minY);
+            foreach (var s in inkCanvas.InkPresenter.StrokeContainer.GetStrokes())
+            {
+                if (!RectHelper.Intersect(s.BoundingRect, outboundOfLineRect).Equals(Rect.Empty)) {
+                    foreach (var p in s.GetInkPoints())
+                    {
+                        // check if inside the rotated rectangle
+                        if ((isLeftOfLine(p.Position, x11, y11, x21, y21) != isLeftOfLine(p.Position, x12, y12, x22, y22))
+                            && (isLeftOfLine(p.Position, x11, y11, x12, y12) != isLeftOfLine(p.Position, x21, y21, x22, y22)))
+                        { 
+                            s.Selected = true;
+                            boundingRect.Union(s.BoundingRect);
+                        }
+                    }
+                }    
+            }
+        }
+        private bool isLeftOfLine(Point p, double x1, double y1, double x2, double y2)
+        {
+            return ((x2 - x1) * (p.Y - y1) - (y2 - y1) * (p.X - x1)) > 0;
+        }
+        private void UnprocessedDispathcerTimer_Tick(object sender, object e)
+        {
+            unprocessedDispatcherTimer.Stop();
+            if (lasso.Points.Count() > 20)
+            {
+                //Rect bRect = inkCanvas.InkPresenter.StrokeContainer.SelectWithPolyLine(lasso.Points);
+                
+                //if (bRect.Equals(new Rect(0, 0, 0, 0)))
+                {
+                    for (int i = UNPROCESSED_RESOLUTION; i < lasso.Points.Count; i+= UNPROCESSED_RESOLUTION)
+                    {
+                        //Rect bRect = inkCanvas.InkPresenter.StrokeContainer.SelectWithLine(
+                        SelectWithLineWithThickness(
+                            lasso.Points[i- UNPROCESSED_RESOLUTION],
+                            lasso.Points[i],
+                            UNPROCESSED_THICKNESS / 2
+                            );
+                    }
+                    //selectionCanvas.Children.Clear();
+                    /**SelectByUnderLine(new Rect(
+                        new Point(lasso.Points.Min(p => p.X), lasso.Points.Min(p => p.Y)),
+                        new Point(lasso.Points.Max(p => p.X), lasso.Points.Max(p => p.Y))
+                        ));**/
+                }
+                
+                //else
+                {
+                    foreach (var s in inkCanvas.InkPresenter.StrokeContainer.GetStrokes())
+                    {
+                        if (s.Selected == true)
+                            SetSelectedStrokeStyle(s);
+                    }
+                }
+                
+            }
+            unprocessedDispatcherTimer.Start();
+        }
         private async void OperationDispatcherTimer_Tick(object sender, object e)
         {
             operationDispathcerTimer.Stop();
@@ -597,7 +744,8 @@ namespace PhenoPad.CustomControl
             }
         }
 
-        // ink analysis
+        // Call after strokes are collected to recoginze words and shapes
+        private Dictionary<string, List<Phenotype>> oldAnnotations = new Dictionary<string, List<Phenotype>>();
         private async void DispatcherTimer_Tick(object sender, object e)
         {
             await deleteSemaphoreSlim.WaitAsync();
@@ -607,14 +755,82 @@ namespace PhenoPad.CustomControl
                 if (!inkAnalyzer.IsAnalyzing)
                 {
                     var result = await inkAnalyzer.AnalyzeAsync();
+                    if (linesToAnnotate.Count == 0)
+                        return;
+                    int line = linesToAnnotate.Dequeue();
+                    IReadOnlyList<IInkAnalysisNode> paragraphs = inkAnalyzer.AnalysisRoot.FindNodes(InkAnalysisNodeKind.Line);
+                    foreach (var para in paragraphs)
+                    {
+                        int paraLine = getLineNumByRect(para.BoundingRect);
+                        if (paraLine != line)
+                            continue;
+                        string str = "";
+                        foreach (IInkAnalysisNode child in para.Children)
+                        {
+                            if(child.Kind == InkAnalysisNodeKind.InkWord)
+                                str += ((InkAnalysisInkWord)child).RecognizedText + " ";
+                        }
+                        if (str != "")
+                        {
+                            if (oldAnnotations.Keys.Contains(str))
+                            {
+                                List<Phenotype> ps = oldAnnotations[str];
+                                foreach (Phenotype p in ps)
+                                {
+                                    p.sourceType = SourceType.Notes;
+                                    PhenoMana.addPhenotypeCandidate(p, SourceType.Notes);
+                                }
+                                continue;
+                            }
 
+                            string temp = oldAnnotations.Keys.Where(x => str.IndexOf(x)==0 ).FirstOrDefault();
+
+                            if(temp != null)
+                            {
+                                oldAnnotations.Remove(temp);
+                            }
+                            
+                            
+                            List<Phenotype> phenos = await PhenoMana.annotateByNCRAsync(str);
+                            if (phenos == null || phenos.Count == 0)
+                                return;
+                            phenos.Reverse();
+                            foreach (Phenotype p in phenos)
+                            {
+                                p.sourceType = SourceType.Notes;
+                                PhenoMana.addPhenotypeCandidate(p, SourceType.Notes);
+                            }
+                                
+                            oldAnnotations.Add(str, phenos);
+                            
+                        }
+                        
+                            
+
+                        /**
+                        var rectangle = new Rectangle()
+                        {
+                            Stroke = new SolidColorBrush(Windows.UI.Colors.Blue),
+                            StrokeThickness = 1,
+                            StrokeDashArray = new DoubleCollection() { 5, 2 },
+                            Width = para.BoundingRect.Width,
+                            Height = para.BoundingRect.Height
+                        };
+
+                        Canvas.SetLeft(rectangle, para.BoundingRect.X);
+                        Canvas.SetTop(rectangle, para.BoundingRect.Y);
+
+                        selectionCanvas.Children.Add(rectangle);
+                        **/
+                    }
+                    /*****
                     var inkdrawingNodes = inkAnalyzer.AnalysisRoot.FindNodes(InkAnalysisNodeKind.InkDrawing);
                     List<Rect> rectOfAnnoStrokes = new List<Rect>();
-                    Debug.Write("Clear&&&&   ");
                     ClearSelection();
 
                     foreach (InkAnalysisInkDrawing drawNode in inkdrawingNodes)
                     {
+                        // drawing in strokes collected
                         if (drawNode.DrawingKind == InkAnalysisDrawingKind.Drawing)
                         {
                             //inkAnalyzer.AnalysisRoot.
@@ -624,7 +840,7 @@ namespace PhenoPad.CustomControl
                                 var paragraphs = inkAnalyzer.AnalysisRoot.FindNodes(InkAnalysisNodeKind.Paragraph);
                                 //bool isWritingStroke = false;
                                 //bool isDeleteingStroke = false;
-                                Debug.WriteLine(stroke.BoundingRect.Width);
+                                //Debug.WriteLine(stroke.BoundingRect.Width);
                                 if (stroke.BoundingRect.Width / stroke.BoundingRect.Height > 2 && stroke.BoundingRect.Width > 60)
                                 {
 
@@ -635,7 +851,9 @@ namespace PhenoPad.CustomControl
                                     await inkAnalyzer.AnalyzeAsync();
                                     continue;
                                 }
+                                // distance to note line
                                 double dis = (stroke.BoundingRect.Y + stroke.BoundingRect.Height / 2.0) % LINE_HEIGHT;
+                                // if very close to note line, it should be an underline.
                                 if (dis < LINE_HEIGHT * 0.25 || dis > LINE_HEIGHT * 0.75)
                                 {
                                     stroke.Selected = true;
@@ -646,6 +864,7 @@ namespace PhenoPad.CustomControl
                                 }
 
                                 // inside a paragraph, length less than 10, should not be a drawing stroke
+                                // other than those, they should be deleting strokes.
                                 foreach (var para in paragraphs)
                                     if (!RectHelper.Intersect(para.BoundingRect, stroke.BoundingRect).Equals(Rect.Empty))
                                     {
@@ -657,18 +876,6 @@ namespace PhenoPad.CustomControl
                                         }
                                         else
                                         {
-                                            /**
-                                            Polyline pl = getPolylineByRect(stroke.BoundingRect);
-                                            Rect selectRect = inkCanvas.InkPresenter.StrokeContainer.SelectWithPolyLine(pl.Points);
-                                            if (!selectRect.Equals(Rect.Empty))
-                                            {
-                                                isDeleteingStroke = true;
-                                                foreach (var ss in inkCanvas.InkPresenter.StrokeContainer.GetStrokes())
-                                                    if (ss.Selected)
-                                                        inkAnalyzer.RemoveDataForStroke(ss.Id);
-                                            }
-                                            **/
-
                                             stroke.Selected = true;
                                             inkAnalyzer.RemoveDataForStroke(stroke.Id);
                                             var words = inkAnalyzer.AnalysisRoot.FindNodes(InkAnalysisNodeKind.InkWord);
@@ -703,27 +910,10 @@ namespace PhenoPad.CustomControl
                     }
                         
                     DrawBoundingRect();
-                    
+                    ****/
 
-                    /****
-                    var words = inkAnalyzer.AnalysisRoot.FindNodes(InkAnalysisNodeKind.Paragraph);
-                    foreach (var word in words)
-                    {
-                        var rectangle = new Rectangle()
-                        {
-                            Stroke = new SolidColorBrush(Windows.UI.Colors.Blue),
-                            StrokeThickness = 1,
-                            StrokeDashArray = new DoubleCollection() { 5, 2 },
-                            Width = word.BoundingRect.Width,
-                            Height = word.BoundingRect.Height
-                        };
 
-                        Canvas.SetLeft(rectangle, word.BoundingRect.X);
-                        Canvas.SetTop(rectangle, word.BoundingRect.Y);
 
-                        selectionCanvas.Children.Add(rectangle);
-                    }
-                    ***/
 
                 }
                 else
@@ -911,19 +1101,19 @@ namespace PhenoPad.CustomControl
                 }
             }
             ****/
-            Polyline lasso = new Polyline();
+            Polyline slasso = new Polyline();
             double dis = (strokeRect.Y + strokeRect.Height / 2.0) % LINE_HEIGHT;
             int lineNum = (int)((strokeRect.Y + strokeRect.Height / 2.0) / LINE_HEIGHT);
             if (dis > LINE_HEIGHT * 0.75)
                 lineNum++;
             var yFrom = (lineNum - 1) * LINE_HEIGHT - 0.2 * LINE_HEIGHT;
             var yTo = lineNum * LINE_HEIGHT + 1.0 * LINE_HEIGHT;
-            lasso.Points.Add(new Point(xFrom, yFrom));
-            lasso.Points.Add(new Point(xFrom, yTo));
-            lasso.Points.Add(new Point(xTo, yTo));
-            lasso.Points.Add(new Point(xTo, yFrom));
-            lasso.Points.Add(new Point(xFrom, yFrom));
-            Rect selectRect = inkCanvas.InkPresenter.StrokeContainer.SelectWithPolyLine(lasso.Points);
+            slasso.Points.Add(new Point(xFrom, yFrom));
+            slasso.Points.Add(new Point(xFrom, yTo));
+            slasso.Points.Add(new Point(xTo, yTo));
+            slasso.Points.Add(new Point(xTo, yFrom));
+            slasso.Points.Add(new Point(xFrom, yFrom));
+            Rect selectRect = inkCanvas.InkPresenter.StrokeContainer.SelectWithPolyLine(slasso.Points);
             if (!selectRect.Equals(Rect.Empty))
             {
                 foreach (var ss in inkCanvas.InkPresenter.StrokeContainer.GetStrokes())
@@ -975,13 +1165,13 @@ namespace PhenoPad.CustomControl
         private void SetSelectedStrokeStyle(InkStroke stroke)
         {
             var drawingAttributes = stroke.DrawingAttributes;
-            drawingAttributes.Color = MyColors.PHENOTYPE_BLUE_COLOR;
+            drawingAttributes.Color = SELECTED_STROKE_COLOR;
             stroke.DrawingAttributes = drawingAttributes;
         }
         private void SetDefaultStrokeStyle(InkStroke stroke)
         {
             var drawingAttributes = stroke.DrawingAttributes;
-            drawingAttributes.Color = MyColors.DEFUALT_STROKE;
+            drawingAttributes.Color = DEFAULT_STROKE_COLOR;
             stroke.DrawingAttributes = drawingAttributes;
         }
 

@@ -11,7 +11,7 @@ using Windows.Web.Http;
 
 namespace PhenoPad.PhenotypeService
 {
-    public enum SourceType { Notes, Speech, Suggested, Search, Saved};
+    public enum SourceType { Notes, Speech, Suggested, Search, Saved, None};
 
     public class PhenotypeManager
     {
@@ -23,6 +23,8 @@ namespace PhenoPad.PhenotypeService
         public ObservableCollection<Phenotype> phenotypesInNote;
         public ObservableCollection<Phenotype> phenotypesInSpeech;
 
+        public ObservableCollection<Phenotype> phenotypesCandidates;
+
         public PhenotypeManager()
         {
             savedPhenotypes = new ObservableCollection<Phenotype>();
@@ -30,6 +32,7 @@ namespace PhenoPad.PhenotypeService
             predictedDiseases = new ObservableCollection<Disease>();
             phenotypesInNote = new ObservableCollection<Phenotype>();
             phenotypesInSpeech = new ObservableCollection<Phenotype>();
+            phenotypesCandidates = new ObservableCollection<Phenotype>();
         }
         public static PhenotypeManager getSharedPhenotypeManager()
         {
@@ -86,6 +89,24 @@ namespace PhenoPad.PhenotypeService
                     phenotypesInSpeech.Add(p);
                 }
             }
+        }
+        public void addPhenotypeCandidate(Phenotype pheno, SourceType from)
+        {
+            Phenotype p = savedPhenotypes.Where(x => x == pheno).FirstOrDefault();
+            if (p != null)
+            {
+                Phenotype temp = phenotypesCandidates.Where(x => x == p).FirstOrDefault();
+                phenotypesCandidates.Remove(temp);
+                phenotypesCandidates.Insert(0, p);
+            }
+            else
+            {
+                Phenotype temp = phenotypesCandidates.Where(x => x == pheno).FirstOrDefault();
+                phenotypesCandidates.Remove(temp);
+                phenotypesCandidates.Insert(0, pheno);
+
+            }
+            return;
         }
         public async void addPhenotype(Phenotype pheno, SourceType from)
         {

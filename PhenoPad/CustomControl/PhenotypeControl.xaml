@@ -14,7 +14,7 @@
             <customcontrol:PhenotypeDetail x:Name="phenotypeDetailControl"/>
         </Flyout>
     </UserControl.Resources>
-    
+
     <Grid Padding="0 1 0 1">
         <Grid.Resources>
             <Storyboard x:Name="DeletePhenotypeSB">
@@ -35,7 +35,7 @@
         </Button>
 
 
-        <Grid x:Name="YNSwitch" Padding="0" Grid.Column="0" Visibility="Collapsed" Background="{ThemeResource BUTTON_GRAY}" Width="50" MinWidth="50" MinHeight="25" Height="25">
+        <Grid x:Name="YNSwitch"  Padding="0" Grid.Column="0" Visibility="Collapsed" Background="{ThemeResource BUTTON_GRAY}" Width="50" MinWidth="50" MinHeight="25" Height="25">
             <!--
             <Grid.Transitions>
                 <TransitionCollection>
@@ -51,7 +51,7 @@
             <Button Padding="0" Content="N" Name="NSwitchBtn"  Click="NSwitchBtn_Click" Opacity="1.0" Grid.Column="1" Width="25" Height="25"></Button>
         </Grid>
 
-        <TextBlock Tapped="nameTextBlockTapped" FontSize="15" Grid.Column="1" x:Name="phenotypeNameTextBlock" Text="" VerticalAlignment="Center" HorizontalAlignment="Stretch"/>
+        <TextBlock Tapped="nameTextBlockTapped" Margin="5 0 0 0" FontSize="13" Grid.Column="1" x:Name="phenotypeNameTextBlock" Text="" VerticalAlignment="Center" HorizontalAlignment="Stretch"/>
         <Button x:Name="DeleteBtn"  Grid.Column="2" Visibility="Collapsed" Click="DeleteBtn_Click" Width="25" MinWidth="25" MinHeight="25" Height="25" Padding="0"  Background="{x:Null}">
             <SymbolIcon Symbol="Delete"/>
         </Button>

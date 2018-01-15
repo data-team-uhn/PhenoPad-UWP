@@ -31,6 +31,8 @@ using Windows.UI.Xaml.Media.Animation;
 using Windows.Storage.Pickers;
 using Windows.Storage.Streams;
 using PhenoPad.WebSocketService;
+using Windows.ApplicationModel.Core;
+using PhenoPad.Styles;
 
 namespace PhenoPad
 {
@@ -80,6 +82,8 @@ namespace PhenoPad
         // The speech recognizer used throughout this sample.
         private SpeechRecognizer speechRecognizer;
 
+        public PhenotypeManager PhenoMana => PhenotypeManager.getSharedPhenotypeManager();
+
         // Keep track of whether the continuous recognizer is currently running, so it can be cleaned up appropriately.
         private bool isListening;
 
@@ -95,6 +99,7 @@ namespace PhenoPad
         private static uint HResultPrivacyStatementDeclined = 0x80045509;
 
         private List<NotePageControl> notePages;
+        private List<Button> pageIndexButtons;
         private SimpleOrientationSensor _simpleorientation;
         public InkCanvas inkCanvas = null;
         private NotePageControl curPage = null;
@@ -106,18 +111,21 @@ namespace PhenoPad
             Current = this;
             this.InitializeComponent();
             notePages = new List<NotePageControl>();
+            pageIndexButtons = new List<Button>();
             NotePageControl aPage = new NotePageControl();
             notePages.Add(aPage);
             inkCanvas = aPage.inkCan;
             MainPageInkBar.TargetInkCanvas = inkCanvas;
             curPage = aPage;
             var screenSize = HelperFunctions.GetCurrentDisplaySize();
-            aPage.Height = screenSize.Height;
-            aPage.Width = screenSize.Width;
+            //aPage.Height = screenSize.Height;
+            //aPage.Width = screenSize.Width;
             curPageIndex = 0;
             PageHost.Content = curPage;
             setPageIndexText();
-            
+            addNoteIndex(curPageIndex);
+            setNotePageIndex(curPageIndex);
+
             isListening = false;
             dictatedTextBuilder = new StringBuilder();
 
@@ -129,11 +137,58 @@ namespace PhenoPad
                 _simpleorientation.OrientationChanged += new TypedEventHandler<SimpleOrientationSensor, SimpleOrientationSensorOrientationChangedEventArgs>(OrientationChanged);
             }
 
+            //PC customization
+            var titleBar = ApplicationView.GetForCurrentView().TitleBar;
+            if (titleBar != null)
+            {
+                titleBar.ButtonBackgroundColor = MyColors.TITLE_BAR_COLOR;
+                //titleBar.ForegroundColor = MyColors.TITLE_BAR_WHITE_COLOR;
+                titleBar.ButtonInactiveBackgroundColor = MyColors.TITLE_BAR_COLOR;
+              
+            }
+            // Hide default title bar.
+            var coreTitleBar = CoreApplication.GetCurrentView().TitleBar;
+            coreTitleBar.ExtendViewIntoTitleBar = true;
             
+            UpdateTitleBarLayout(coreTitleBar);
+
+            // Set XAML element as a draggable region.
+            Window.Current.SetTitleBar(fakeTileBar);
+
+            // Register a handler for when the size of the overlaid caption control changes.
+            // For example, when the app moves to a screen with a different DPI.
+            coreTitleBar.LayoutMetricsChanged += CoreTitleBar_LayoutMetricsChanged;
+
+            // Register a handler for when the title bar visibility changes.
+            // For example, when the title bar is invoked in full screen mode.
+            coreTitleBar.IsVisibleChanged += CoreTitleBar_IsVisibleChanged;
+
+
+
 
             //scrollViewer.RegisterPropertyChangedCallback(ScrollViewer.ZoomFactorProperty, OnPropertyChanged);
         }
+        private void CoreTitleBar_LayoutMetricsChanged(CoreApplicationViewTitleBar sender, object args)
+        {
+            UpdateTitleBarLayout(sender);
+        }
 
+        private void UpdateTitleBarLayout(CoreApplicationViewTitleBar coreTitleBar)
+        {
+            
+        }
+
+        private void CoreTitleBar_IsVisibleChanged(CoreApplicationViewTitleBar sender, object args)
+        {
+            if (sender.IsVisible)
+            {
+                fakeTileBar.Visibility = Visibility.Visible;
+            }
+            else
+            {
+                fakeTileBar.Visibility = Visibility.Collapsed;
+            }
+        }
         private void OnPropertyChanged(DependencyObject sender, DependencyProperty dp)
         {
             Debug.WriteLine(sender.GetValue(dp));
@@ -673,15 +728,17 @@ namespace PhenoPad
             notePages.Add(aPage);
             inkCanvas = aPage.inkCan;
             curPage = aPage;
-            var screenSize = HelperFunctions.GetCurrentDisplaySize();
-            aPage.Height = screenSize.Height;
-            aPage.Width = screenSize.Width;
+            //var screenSize = HelperFunctions.GetCurrentDisplaySize();
+            //aPage.Height = screenSize.Height;
+            //aPage.Width = screenSize.Width;
             curPageIndex = notePages.Count - 1;
 
-            (PageHost.ContentTransitions.ElementAt(0) as ContentThemeTransition).HorizontalOffset = 500;
+          
             PageHost.Content = curPage;
 
             setPageIndexText();
+            addNoteIndex(curPageIndex);
+
         }
 
         private void NextPageButton_Click(object sender, RoutedEventArgs e)
@@ -721,6 +778,7 @@ namespace PhenoPad
             pageIndexTextBlock.Text = "Page: " + (curPageIndex+1) + "/" + notePages.Count;
             MainPageInkBar.TargetInkCanvas = inkCanvas;
         }
+        
 
         private void TakePhoto_Click(object sender, RoutedEventArgs e)
         {
@@ -738,6 +796,57 @@ namespace PhenoPad
         {
             CameraCanvas.Visibility = Visibility.Collapsed;
             captureControl.unSetUp();
+        }
+
+        private void setNotePageIndex(int index)
+        {
+            foreach (var btn in pageIndexButtons)
+            {
+                btn.Background = new SolidColorBrush(Colors.WhiteSmoke);
+                btn.Foreground = MyColors.TITLE_BAR_COLOR_BRUSH;
+            }
+            pageIndexButtons.ElementAt(index).Background = MyColors.TITLE_BAR_COLOR_BRUSH;
+            pageIndexButtons.ElementAt(index).Foreground = new SolidColorBrush(Colors.WhiteSmoke);
+        }
+
+        private void addNoteIndex(int index)
+        {
+            Button btn = new Button();
+            btn.Click += IndexBtn_Click;
+            btn.Background = new SolidColorBrush(Colors.WhiteSmoke);
+            btn.Foreground = MyColors.TITLE_BAR_COLOR_BRUSH;
+            btn.Padding = new Thickness(0, 0, 0, 0);
+            btn.Content = "" + (index+1);
+            btn.Width = 30;
+            btn.Height = 30;
+            pageIndexButtons.Add(btn);
+            if (pageIndexPanel.Children.Count >= 1)
+                pageIndexPanel.Children.Insert(pageIndexPanel.Children.Count-1, btn);
+            setNotePageIndex(index);
+
+        }
+
+        private void IndexBtn_Click(object sender, RoutedEventArgs e)
+        {
+            var button = (Button)sender;
+            foreach (var btn in pageIndexButtons)
+            {
+                btn.Background = new SolidColorBrush(Colors.WhiteSmoke);
+                btn.Foreground = MyColors.TITLE_BAR_COLOR_BRUSH;
+            }
+            button.Background = MyColors.TITLE_BAR_COLOR_BRUSH;
+            button.Foreground = new SolidColorBrush(Colors.WhiteSmoke);
+            
+            curPageIndex = Int32.Parse(button.Content.ToString()) - 1;
+            var aPage = notePages.ElementAt(curPageIndex);
+            inkCanvas = aPage.inkCan;
+            curPage = aPage;
+            //PageHostContentTrans.HorizontalOffset = 100;
+            //(PageHost.ContentTransitions.ElementAt(0) as ContentThemeTransition).HorizontalOffset = 500;
+            PageHost.Content = curPage;
+
+            setPageIndexText();
+            setNotePageIndex(curPageIndex);
         }
 
         /// <summary>

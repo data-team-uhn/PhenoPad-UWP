@@ -17,39 +17,46 @@
     xmlns:local="using:PhenoPad"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-    xmlns:customcontrol="using:PhenoPad.CustomContorl"
     xmlns:phenotypeservice="using:PhenoPad.PhenotypeService"
+    xmlns:customcontorl="using:PhenoPad.CustomContorl"
     xmlns:photovideoservice="using:PhenoPad.PhotoVideoService"
+     xmlns:styles="using:PhenoPad.Styles"
     mc:Ignorable="d"
     Loaded="Page_Loaded">
-    
 
-    <Grid x:Name="RootGrid" Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
+   
+    <Grid x:Name="RootGrid" Margin="0 0 0 0" Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
         <Grid.RowDefinitions>
+            <RowDefinition Height="0"/>
+            <RowDefinition Height="45"/>
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
-        <ContentControl x:Name="PageHost" Grid.Row="0">
-            <ContentControl.ContentTransitions>
-                <TransitionCollection>
-                    <ContentThemeTransition x:Name="PageHostContentTrans"/>
-                </TransitionCollection>
-            </ContentControl.ContentTransitions>
-        </ContentControl>
-        <RelativePanel Name="CmdRelativePanel" Grid.Row="0">
-            <RelativePanel.Resources>
-                <Storyboard x:Name="AddedPhenoGridEnterSB">
-                    <FadeInThemeAnimation Storyboard.TargetName="addedPhenoGrid" />
-                </Storyboard>
-            </RelativePanel.Resources>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="1200" />
+            <ColumnDefinition Width="*" />
+        </Grid.ColumnDefinitions>
+        <Grid Grid.Row="0" Grid.ColumnSpan="2" Name="fakeTileBar"></Grid>
+        <RelativePanel Grid.Row="1" Grid.Column="1" Background="{x:Bind styles:MyColors.TITLE_BAR_COLOR_BRUSH}"/>
+        <RelativePanel Name="TopMenuRelativePanel" Grid.Row="1" Grid.Column="0" Background="{x:Bind styles:MyColors.TITLE_BAR_COLOR_BRUSH}">
+            <TextBlock Text="PhenoPad" Style="{StaticResource BaseTextBlockStyle}" Foreground="#E8ECED" FontSize="21" RelativePanel.AlignRightWithPanel="True" RelativePanel.AlignVerticalCenterWithPanel="True"></TextBlock>
+            <CommandBar RelativePanel.AlignTopWithPanel="True"
+                        RelativePanel.AlignLeftWithPanel="True"
+                        Name="topCmdBar" Background="{x:Bind styles:MyColors.TITLE_BAR_COLOR_BRUSH}">
 
-            <Border x:Name="StatusBorder" Margin="0,0,0,0" RelativePanel.AlignTopWithPanel="True" RelativePanel.AlignHorizontalCenterWithPanel="True" MinWidth="500" Height="40">
-
-                <TextBlock x:Name="StatusBlock" FontWeight="Bold" Foreground="White" TextAlignment="Center"
-                                   MaxWidth="{Binding ElementName=Splitter, Path=ActualWidth}" Margin="10,10,10,10" TextWrapping="Wrap"  />
-            </Border>
-            
-            <InkToolbar Name="MainPageInkBar" ActiveToolChanged="CurrentToolChanged" Orientation="Vertical" ButtonFlyoutPlacement="Left" RelativePanel.AlignTopWithPanel="True"
-                        RelativePanel.AlignRightWithPanel="True">
+                <AppBarButton Icon="Page2" Label="Notes">
+                    <AppBarButton.Flyout>
+                        <MenuFlyout>
+                            <MenuFlyoutItem Text="Create new note" Tag="rating"/>
+                            <MenuFlyoutItem Text="Save note" Tag="rating"/>
+                            <MenuFlyoutItem Text="Open saved note" Tag="rating"/>
+                        </MenuFlyout>
+                    </AppBarButton.Flyout>
+                </AppBarButton>
+                <AppBarToggleButton Icon="PreviewLink" Label="Overview" Name="sdf" Click="OverviewButton_Click"/>
+                <AppBarToggleButton Icon="Message" Label="Speech" Name="ddd" Click="SpeechButton_Click"/>
+            </CommandBar>
+            <InkToolbar Margin="40 0 0 0" Name="MainPageInkBar" ActiveToolChanged="CurrentToolChanged" Orientation="Horizontal" ButtonFlyoutPlacement="Bottom" RelativePanel.AlignTopWithPanel="True"
+                        RelativePanel.RightOf="topCmdBar" Background="LightBlue" InitialControls="None">
                 <InkToolbar.Resources>
                     <BrushCollection x:Key="CalligraphicPenPalette">
                         <SolidColorBrush>Black</SolidColorBrush>
@@ -62,10 +69,15 @@
                     <local:CalligraphicPen x:Key="CalligraphicPen"/>
                     <Style TargetType="InkToolbarCustomPenButton">
                         <Setter Property="SelectedStrokeWidth" Value="1"/>
+                        <Setter Property="Background" Value="LightBlue"/>
                     </Style>
                 </InkToolbar.Resources>
-                <InkToolbarBallpointPenButton SelectedStrokeWidth="2"></InkToolbarBallpointPenButton>
-                <InkToolbarCustomPenButton x:Name="calligraphyPen"
+                <InkToolbarBallpointPenButton SelectedStrokeWidth="2"  Background="{x:Bind styles:MyColors.TITLE_BAR_COLOR_BRUSH}"></InkToolbarBallpointPenButton>
+                <InkToolbarEraserButton Background="{x:Bind styles:MyColors.TITLE_BAR_COLOR_BRUSH}"></InkToolbarEraserButton>
+
+
+                <!--
+                <InkToolbarCustomPenButton x:Name="calligraphyPen"  Background="LightBlue"
                                                    CustomPen="{StaticResource CalligraphicPen}"
                                                    Palette="{StaticResource CalligraphicPenPalette}"
                                                    SelectedBrushIndex="2"
@@ -80,15 +92,119 @@
                     <InkToolbarCustomPenButton.ConfigurationContent>
                         <InkToolbarPenConfigurationControl/>
                     </InkToolbarCustomPenButton.ConfigurationContent>
-                </InkToolbarCustomPenButton>
-                <InkToolbarCustomToolButton x:Name="toolButtonLasso" Click="ToolButton_Lasso" ToolTipService.ToolTip="Selection tool">
+                </InkToolbarCustomPenButton>-->
+                <InkToolbarCustomToolButton x:Name="toolButtonLasso" Background="{x:Bind styles:MyColors.TITLE_BAR_COLOR_BRUSH}" Click="ToolButton_Lasso" ToolTipService.ToolTip="Selection tool">
                     <SymbolIcon Symbol="{x:Bind LassoSelect}"/>
                 </InkToolbarCustomToolButton>
-                <InkToolbarCustomToggleButton x:Name="toggleButton" Click="Toggle_Custom" ToolTipService.ToolTip="Touch Writing">
+                <InkToolbarCustomToggleButton x:Name="toggleButton" Click="Toggle_Custom" Background="{x:Bind styles:MyColors.TITLE_BAR_COLOR_BRUSH}" ToolTipService.ToolTip="Touch Writing">
                     <SymbolIcon Symbol="{x:Bind TouchWriting}"/>
                 </InkToolbarCustomToggleButton>
             </InkToolbar>
-            <TextBlock Name="pageIndexTextBlock" RelativePanel.Above="cmdBar" RelativePanel.AlignRightWithPanel="True" Text=""/>
+
+        </RelativePanel>
+        <ContentControl x:Name="PageHost" Grid.Row="2" Grid.Column="0" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch">
+            <ContentControl.ContentTransitions>
+                <TransitionCollection>
+                    <ContentThemeTransition x:Name="PageHostContentTrans"/>
+                </TransitionCollection>
+            </ContentControl.ContentTransitions>
+        </ContentControl>
+        <!-- Added Phenotypes-->
+        <Grid Grid.Row="2" Grid.Column="1" BorderThickness="5 0 0 0" BorderBrush="{ThemeResource AppBarBackground}">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
+            <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="25"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+                <TextBlock Grid.Row="0" Margin="10 0 0 0" Foreground="{x:Bind styles:MyColors.PHENOTYPE_BLUE}">Are you looking for:</TextBlock>
+                    <ListView x:Name="candidatePhenoListView" Grid.Row="1" ItemsSource="{x:Bind PhenoMana.phenotypesCandidates, Mode=OneWay}">
+
+                        <ListView.ItemTemplate>
+                            <DataTemplate x:DataType="phenotypeservice:Phenotype">
+                                <customcontorl:PhenotypeControl phenotypeName="{x:Bind name}" phenotypeId="{x:Bind hpId}" phenotypeState="{x:Bind state}" sourceType="Notes"></customcontorl:PhenotypeControl>
+                            </DataTemplate>
+                        </ListView.ItemTemplate>
+                        <ListView.ItemContainerStyle>
+                            <Style TargetType="ListViewItem">
+                                <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                                <Setter Property="VerticalContentAlignment" Value="Center" />
+                                <Setter Property="Margin" Value="0,0,0,0" />
+                                <Setter Property="Padding" Value="5,0,0,0" />
+                                <Setter Property="MinHeight" Value="20" />
+                            </Style>
+                        </ListView.ItemContainerStyle>
+
+                    </ListView>
+                </Grid>
+
+            <Grid Grid.Row="1"  BorderThickness="0 5 0 5"  BorderBrush="{ThemeResource AppBarBackground}">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="20"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+                <TextBlock Grid.Row="0"  Margin="10 0 0 0" Foreground="{x:Bind styles:MyColors.PHENOTYPE_BLUE}">Other phenotypes to look at:</TextBlock>
+                <ListView x:Name="suggestedPhenoListView" Grid.Row="1" ItemsSource="{x:Bind PhenoMana.suggestedPhenotypes, Mode=OneWay}">
+                    <ListView.ItemTemplate>
+                        <DataTemplate x:DataType="phenotypeservice:Phenotype">
+                            <customcontorl:PhenotypeControl phenotypeName="{x:Bind name}" phenotypeId="{x:Bind hpId}" phenotypeState="{x:Bind state}" sourceType="Suggested"></customcontorl:PhenotypeControl>
+                        </DataTemplate>
+                    </ListView.ItemTemplate>
+                    <ListView.ItemContainerStyle>
+                        <Style TargetType="ListViewItem">
+                            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                            <Setter Property="VerticalContentAlignment" Value="Center" />
+                            <Setter Property="Margin" Value="0,0,0,0" />
+                            <Setter Property="Padding" Value="5,0,0,0" />
+                            <Setter Property="MinHeight" Value="20" />
+                        </Style>
+                    </ListView.ItemContainerStyle>
+                </ListView>
+            </Grid>
+
+            <Grid Grid.Row="2">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="20"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+                <TextBlock Grid.Row="0"  Margin="10 0 0 0" Foreground="{x:Bind styles:MyColors.PHENOTYPE_BLUE}">This patient might have:</TextBlock>
+                <ListView x:Name="diseaseListView" Grid.Row="1" ItemsSource="{x:Bind PhenoMana.predictedDiseases}">
+                    <ListView.ItemTemplate>
+                        <DataTemplate x:DataType="phenotypeservice:Disease">
+                            <TextBlock Text="{x:Bind name}" FontSize="10"></TextBlock>
+                        </DataTemplate>
+                    </ListView.ItemTemplate>
+                    <ListView.ItemContainerStyle>
+                        <Style TargetType="ListViewItem">
+                            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                            <Setter Property="VerticalContentAlignment" Value="Center" />
+                            <Setter Property="Margin" Value="0,0,0,0" />
+                            <Setter Property="Padding" Value="5,0,0,0" />
+                            <Setter Property="MinHeight" Value="20" />
+                        </Style>
+                    </ListView.ItemContainerStyle>
+                </ListView>
+            </Grid>
+        </Grid>
+        
+        <RelativePanel Name="CmdRelativePanel" Grid.Row="2" Grid.ColumnSpan="2">
+            <RelativePanel.Resources>
+                <Storyboard x:Name="AddedPhenoGridEnterSB">
+                    <FadeInThemeAnimation Storyboard.TargetName="addedPhenoGrid" />
+                </Storyboard>
+            </RelativePanel.Resources>
+
+            <Border x:Name="StatusBorder" Margin="0,0,0,0" RelativePanel.AlignTopWithPanel="True" RelativePanel.AlignHorizontalCenterWithPanel="True" MinWidth="500" Height="40">
+
+                <TextBlock x:Name="StatusBlock" FontWeight="Bold" Foreground="White" TextAlignment="Center"
+                                   MaxWidth="{Binding ElementName=Splitter, Path=ActualWidth}" Margin="10,10,10,10" TextWrapping="Wrap"  />
+            </Border>
+            
+             <TextBlock Name="pageIndexTextBlock" RelativePanel.Above="cmdBar" RelativePanel.AlignRightWithPanel="True" Text=""/>
             <StackPanel Name="AnnoPhenoStackPanel" RelativePanel.Above="cmdBar" RelativePanel.AlignLeftWithPanel="True" Orientation="Horizontal"/>
             <Grid Background="WhiteSmoke" Name="CameraCanvas" Height="300" Width="530" RelativePanel.Above="pageIndexTextBlock" RelativePanel.AlignRightWithPanel="True" Visibility="Collapsed">
                 <photovideoservice:PhotoVideoCaptureControl x:Name="captureControl"></photovideoservice:PhotoVideoCaptureControl>
@@ -107,14 +223,19 @@
                         </Grid>
                     </Button>
                     <Button Height="30" Width="40" Name="PhotoButton" Click="PhotoButton_Click" Foreground="White">
-                        <SymbolIcon Symbol="Camera"/>
+                        <SymbolIcon Symbol="Camera" />
                     </Button>
                 </StackPanel>
             </Grid>
-            
+
+            <StackPanel Name="pageIndexPanel" Orientation="Horizontal" RelativePanel.AlignBottomWithPanel="True" RelativePanel.AlignHorizontalCenterWithPanel="True">
+                <Button Height="30" Width="30" Padding="0 0 0 0" Background="WhiteSmoke"  Click="AddPageButton_Click">
+                    <SymbolIcon Symbol="Add" Foreground="{x:Bind styles:MyColors.TITLE_BAR_COLOR_BRUSH}" />
+                </Button>
+            </StackPanel>
             <CommandBar RelativePanel.AlignBottomWithPanel="True"
                         RelativePanel.AlignRightWithPanel="True"
-                        Name="cmdBar">
+                        Name="cmdBar" Visibility="Collapsed">
                 <AppBarToggleButton Name="testButton" Icon="Microphone" Label="Speech recognition" Click="TestWS_Click" />
                 <AppBarToggleButton Name="micButton" Icon="Microphone" Label="Speech recognition" Click="MicButton_Click" />
                 
@@ -151,6 +272,9 @@
                     <TextBlock Name="cmdBarTextBlock" Text="" Margin="12,14"/>
                 </CommandBar.Content>
             </CommandBar>
+
+            
+            
             <Grid Background="White"
                   RelativePanel.Above="cmdBar"
                   RelativePanel.AlignLeftWithPanel="True"
