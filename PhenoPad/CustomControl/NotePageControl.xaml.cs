@@ -160,6 +160,13 @@ namespace PhenoPad.CustomControl
             stringsOfLines = new Dictionary<int, string>();
             phenotypesOfLines = new Dictionary<int, List<Phenotype>>();
             deleteSemaphoreSlim = new SemaphoreSlim(1);
+
+            this.SizeChanged += NotePageControl_SizeChanged;
+        }
+
+        private void NotePageControl_SizeChanged(object sender, SizeChangedEventArgs e)
+        {
+            DrawBackgroundLines();
         }
 
         private void App_PointerMoved(CoreWindow sender, PointerEventArgs args)
