@@ -27,6 +27,12 @@ using Windows.Storage.Pickers;
 using Windows.Storage;
 using Windows.Media.Transcoding;
 
+// To parse JSON we received from speech engine server
+using Newtonsoft.Json;
+using Windows.UI.Core;
+using Windows.UI.Popups;
+//using Newtonsoft.Json.Linq;   // Seems like we only need JSON parsing
+
 namespace PhenoPad.SpeechService
 {
 
@@ -40,17 +46,30 @@ namespace PhenoPad.SpeechService
         void GetBuffer(out byte* buffer, out uint capacity);
     }
 
-    class SpeechManager
+    public class SpeechManager
     {
         public static SpeechManager sharedSpeechManager;
+        
         public Conversation conversation = new Conversation();
+        public SpeechEngineInterpreter speechInterpreter;
         private MainPage rootPage = MainPage.Current;
         private AudioGraph graph;
         private AudioFrameOutputNode frameOutputNode;
         private AudioDeviceInputNode deviceInputNode;
+        private AudioFileInputNode fileInputNode;
         public double theta = 0;
         private SpeechStreamSocket speechStreamSocket;
         private AudioFileOutputNode fileOutputNode;
+
+        public event TypedEventHandler<SpeechManager, SpeechEngineInterpreter> EngineHasResult;
+
+        private bool useFile = true;
+        private CancellationTokenSource cancellationSource;
+
+        public SpeechManager()
+        {
+            this.speechInterpreter = new SpeechEngineInterpreter(this.conversation);
+        }
 
         public static SpeechManager getSharedSpeechManager()
         {
@@ -73,41 +92,151 @@ namespace PhenoPad.SpeechService
                 {
                     Body = text,
                     DisplayTime = DateTime.Now.ToString(),
-                    IsSent = text.Length % 2 == 0? true:false
+                    IsFinal = text.Length % 2 == 0? true:false,
+                    Speaker = (uint)(text.Length % 3)
                 });
             }
         }
-        public async void StartAudio()
+        public async Task StartAudio()
         {
-            speechStreamSocket = new SpeechStreamSocket();
-            bool succeed = await speechStreamSocket.ConnectToServer();
-            if (!succeed) {
-                rootPage.NotifyUser("Connection failed.", NotifyType.StatusMessage, 2);
-                return;
+            bool attemptConnection = true;
+            int count = 1;
+
+            while (attemptConnection)
+            {
+                speechStreamSocket = new SpeechStreamSocket();
+                bool succeed = await speechStreamSocket.ConnectToServer();
+
+                if (!succeed)
+                {
+                    MainPage.Current.NotifyUser("Connection to speech engine failed.", NotifyType.ErrorMessage, 5);
+
+                    // Display a dialog box to allow for retry
+                    // https://code.msdn.microsoft.com/windowsapps/How-to-show-message-dialog-35468701
+                    var messageDialog = new MessageDialog("We failed to connect to speech analysis engine just now.");
+
+                    messageDialog.Commands.Add(new UICommand("Try Again") { Id = 0 });
+                    messageDialog.Commands.Add(new UICommand("Cancel") { Id = 1 });
+                    // Set the command that will be invoked by default
+                    messageDialog.DefaultCommandIndex = 0;
+                    // Set the command to be invoked when escape is pressed
+                    messageDialog.CancelCommandIndex = 1;
+
+                    // Show the message dialog
+                    var result = await messageDialog.ShowAsync();
+
+                    if ((int)result.Id == 0)
+                    {
+                        // Technically we don't have to do anything here
+                        count++;
+                        MainPage.Current.NotifyUser("Connect to speech engine attempt " + count.ToString(), NotifyType.StatusMessage, 2);
+                        attemptConnection = true;
+                    }
+                    else
+                    {
+                        attemptConnection = false;
+                        return;
+                    }
+                }
+                else
+                {
+                    attemptConnection = false;
+                }
             }
+            
              
             await CreateAudioGraph();
 
-            deviceInputNode.Start();
+            if (useFile)
+            {
+                fileInputNode.Start();
+            }
+            else
+            {
+                deviceInputNode.Start();
+            }
+
             // Start a task to continuously read for incoming data
             //Task receiving = ReceiveDataAsync(speechStreamSocket.streamSocket);
+
+            cancellationSource = new CancellationTokenSource();
+            CancellationToken cancellationToken = cancellationSource.Token;                 // need this to actually cancel reading from websocketS
+
             await Task.Run(async () =>
              {
-                 while (true)
+                 // Weird issue but seems to be some buffer issue
+                 string accumulator = String.Empty;
+
+                 // Stop running if cancellation requested
+                 while (true && !cancellationToken.IsCancellationRequested)
                  {
                      // don't run again for 
                      await Task.Delay(500);
                      // do the work in the loop
-                     speechStreamSocket.ReceiveMessageUsingStreamWebSocket();
+                     string serverResult = speechStreamSocket.ReceiveMessageUsingStreamWebSocket().Result;
+
+                     //Debug.WriteLine("Got server message");
+
+                     serverResult = serverResult.Replace('-', '_');     // So that we can parse objects
+
+                     accumulator += serverResult;
+
+
+                     // Seems like if we don't do this we won't get all the packages
+                     bool doParsing = true;
+                     while (doParsing && !cancellationToken.IsCancellationRequested)
+                     {
+                         string outAccumulator = String.Empty;
+                         string json = SpeechEngineInterpreter.getFirstJSON(accumulator, out outAccumulator);
+                         accumulator = outAccumulator;
+
+                         // Only process if we have valid JSON
+                         if (json.Length != 0)
+                         {
+                             try
+                             {
+                                 var parsedSpeech = JsonConvert.DeserializeObject<SpeechEngineJSON>(json);
+                                 parsedSpeech.original = json;
+                                 Debug.WriteLine(parsedSpeech.ToString());
+
+                                 speechInterpreter.processJSON(parsedSpeech);
+
+                                 // TODO Find a more legitimate way to fire an UI change?
+                                 Windows.ApplicationModel.Core.CoreApplication.MainView.CoreWindow.Dispatcher.RunAsync(CoreDispatcherPriority.Normal,
+                                    () =>
+                                    {
+                                        EngineHasResult.Invoke(this, speechInterpreter);
+                                    }
+                                    );
+                                 
+                             }
+                             catch (Exception e)
+                             {
+                                 Debug.WriteLine(e.ToString());
+                                 Debug.WriteLine(accumulator);
+                                 Debug.WriteLine("===SERIOUS PROBLEM!====");
+                             }
+                         }
+                         else
+                         {
+                             // didn't get a valid JSON, wait for more packages
+                             doParsing = false;
+                         }
+                     }
                      
                  }
-             });
+             }, cancellationToken);
             //Task.Run(() => speechStreamSocket.ReceiveMessageUsingStreamWebSocket(), TaskCreationOptions.LongRunning);
+
+            return;
         }
 
-        public async void EndAudio()
+        public async Task EndAudio()
         {
-            deviceInputNode.Stop();
+            MainPage.Current.NotifyUser("Disconnecting from speech engine", NotifyType.StatusMessage, 2);
+            //deviceInputNode.Stop();
+            cancellationSource.Cancel();
+            fileInputNode.Stop();
             graph.Stop();
             /**
 
@@ -149,6 +278,19 @@ namespace PhenoPad.SpeechService
             }
 
             graph = result.Graph;
+
+            AudioEncodingProperties nodeEncodingProperties = graph.EncodingProperties;
+            nodeEncodingProperties.ChannelCount = 1;
+            nodeEncodingProperties.SampleRate = 16000;
+            nodeEncodingProperties.BitsPerSample = 16;
+            nodeEncodingProperties.Bitrate = 16000 * 16;
+            nodeEncodingProperties.Subtype = "PCM";
+            // Create a frame output node
+            frameOutputNode = graph.CreateFrameOutputNode(nodeEncodingProperties);
+            graph.QuantumStarted += AudioGraph_QuantumStarted;
+
+            //graph.QuantumProcessed += AudioGraph_QuantumProcessed;
+
             //AudioEncodingProperties nodeEncodingProperties = graph.EncodingProperties;
             /**
             graph.EncodingProperties.ChannelCount = 1;
@@ -160,31 +302,45 @@ namespace PhenoPad.SpeechService
             Debug.WriteLine(graph.EncodingProperties.ChannelCount + " " + graph.EncodingProperties.SampleRate + " " + graph.EncodingProperties.BitsPerSample + " #########");
             **/
 
-            CreateAudioDeviceInputNodeResult deviceInputNodeResult = await graph.CreateDeviceInputNodeAsync(MediaCategory.Other);
-
-            if (deviceInputNodeResult.Status != AudioDeviceNodeCreationStatus.Success)
+            if (useFile)    // For debugging only
             {
-                // Cannot create device input node
-                rootPage.NotifyUser(String.Format("Audio Device Input unavailable because {0}", deviceInputNodeResult.Status.ToString()), NotifyType.ErrorMessage, 2);
-                return;
+                // UWP APPS do not have direct access to file system via path T_T
+                // Must use filepicker
+                //StorageFile audioFile = await StorageFile.GetFileFromPathAsync("C:\\Users\\jingb\\Dropbox\\CurrentCode\\Year4\\thesis\\meeting_2min.wav");
+
+                
+                FileOpenPicker filePicker = new FileOpenPicker();
+                filePicker.SuggestedStartLocation = PickerLocationId.MusicLibrary;
+                filePicker.FileTypeFilter.Add(".mp3");
+                filePicker.FileTypeFilter.Add(".wav");
+                filePicker.FileTypeFilter.Add(".wma");
+                filePicker.FileTypeFilter.Add(".m4a");
+                filePicker.ViewMode = PickerViewMode.Thumbnail;
+
+                StorageFile audioFile = null;
+                while (audioFile == null)
+                {
+                    audioFile = await filePicker.PickSingleFileAsync();
+                }
+                
+                CreateAudioFileInputNodeResult fileInputNodeResult = await graph.CreateFileInputNodeAsync(audioFile);
+
+                fileInputNode = fileInputNodeResult.FileInputNode;
+                fileInputNode.AddOutgoingConnection(frameOutputNode);
             }
+            else
+            {
+                CreateAudioDeviceInputNodeResult deviceInputNodeResult = await graph.CreateDeviceInputNodeAsync(MediaCategory.Other);
+                if (deviceInputNodeResult.Status != AudioDeviceNodeCreationStatus.Success)
+                {
+                    // Cannot create device input node
+                    rootPage.NotifyUser(String.Format("Audio Device Input unavailable because {0}", deviceInputNodeResult.Status.ToString()), NotifyType.ErrorMessage, 2);
+                    return;
+                }
 
-            deviceInputNode = deviceInputNodeResult.DeviceInputNode;
-
-            AudioEncodingProperties nodeEncodingProperties = graph.EncodingProperties;
-            nodeEncodingProperties.ChannelCount = 1;
-            nodeEncodingProperties.SampleRate = 16000;
-            nodeEncodingProperties.BitsPerSample = 16;
-            nodeEncodingProperties.Bitrate = 16000 * 16;
-            nodeEncodingProperties.Subtype = "PCM";
-            // Create a frame output node
-            frameOutputNode = graph.CreateFrameOutputNode(nodeEncodingProperties);
-            graph.QuantumStarted += AudioGraph_QuantumStarted;
-            //graph.QuantumProcessed += AudioGraph_QuantumProcessed;
-
-
-            deviceInputNode.AddOutgoingConnection(frameOutputNode);
-      
+                deviceInputNode = deviceInputNodeResult.DeviceInputNode;
+                deviceInputNode.AddOutgoingConnection(frameOutputNode);
+            }
 
             // Start the graph since we will only start/stop the frame input node
             graph.Start();
@@ -305,12 +461,14 @@ namespace PhenoPad.SpeechService
                 while (true)
                 {
                     int read = await readStream.ReadAsync(readBuffer, 0, readBuffer.Length);
-
-                    // Do something with the data.
-                    // This sample merely reports that the data was received.
-
+                    
                     bytesReceived += read;
-                    Debug.WriteLine(bytesReceived.ToString());
+                    string receivedJSON = bytesReceived.ToString();
+                    receivedJSON.Replace('-', '_');     // So that we can parse objects
+                    //Debug.WriteLine(receivedJSON);
+
+                    var parsedSpeech = JsonConvert.DeserializeObject<SpeechEngineJSON>(receivedJSON);
+                    Debug.WriteLine(parsedSpeech.ToString());
                 }
             }
             catch (Exception ex)
@@ -330,6 +488,7 @@ namespace PhenoPad.SpeechService
                 }
             }
         }
+
 
     }
     

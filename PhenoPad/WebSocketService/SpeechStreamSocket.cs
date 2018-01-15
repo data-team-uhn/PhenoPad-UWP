@@ -16,17 +16,20 @@ namespace PhenoPad.WebSocketService
     class SpeechStreamSocket
     {
         MainPage rootPage = MainPage.Current;
-        string serverAddress;
+
+        // !!WARNING !! server address changes every time
+        private string serverAddress = "35.170.33.14";
+        private string serverPort = "8888";
+
         NetworkAdapter networkAdapter;
         public StreamWebSocket streamSocket;
         private DataWriter dataWriter;
         private DataReader dataReader;
-
+    
         public SpeechStreamSocket()
         {
-
+            // Socket constructor does nothing :D
         }
-
 
 
         public async Task<bool> ConnectToServer()
@@ -50,7 +53,12 @@ namespace PhenoPad.WebSocketService
             //socket.SetRequestHeader("content-type", "audio/x-raw");
             try
             {
-                Task connectTask = this.streamSocket.ConnectAsync(new Uri("ws://35.170.60.186:8888/client/ws/speech?content-type=audio/x-raw,+layout=(string)interleaved,+rate=(int)16000,+format=(string)F32LE,+channels=(int)1")).AsTask();
+                Task connectTask = this.streamSocket.ConnectAsync(new Uri("ws://" + serverAddress + ":" + serverPort + 
+                                            "/client/ws/speech?content-type=audio/x-raw," +
+                                            "+layout=(string)interleaved," +
+                                            "+rate=(int)16000," +
+                                            "+format=(string)F32LE," +
+                                            "+channels=(int)1")).AsTask();
 
                 /**
                 await connectTask.ContinueWith(_ =>
@@ -58,9 +66,13 @@ namespace PhenoPad.WebSocketService
                      Task.Run(() => this.ReceiveMessageUsingStreamWebSocket());
                      //Task.Run(() => this.SendBytes(new byte[] { 0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09 }));
                  });
-    **/
+                **/
+
+                MainPage.Current.NotifyUser("Connecting to speech engine ...", NotifyType.StatusMessage, 5);
+
+                await connectTask;
                 dataWriter = new DataWriter(this.streamSocket.OutputStream);
-                
+
                 return true;
             }
             catch (Exception e)
@@ -72,7 +84,8 @@ namespace PhenoPad.WebSocketService
             
         }
 
-        public async Task SendBytesAsync(byte[] message)
+
+        public async Task<bool> SendBytesAsync(byte[] message)
         {
             try
             {
@@ -80,13 +93,20 @@ namespace PhenoPad.WebSocketService
                 //{
                     dataWriter.WriteBytes(message);
                     await dataWriter.StoreAsync();
-                    //dataWriter.DetachStream();
+                //dataWriter.DetachStream();
                 //}
                 //Debug.WriteLine("Sending data using StreamWebSocket: " + message.Length.ToString() + " bytes");
+
+                return true;
             }
             catch (Exception ex)
             {
                 Debug.WriteLine("Send data error.");
+                MainPage.Current.NotifyUser("Error sending data to speech engine", NotifyType.ErrorMessage, 2);
+
+                await Task.Delay(2);
+
+                return false;
                 //Debug.WriteLine(ex.GetBaseException().HResult);
                 //Windows.Web.WebErrorStatus webErrorStatus = Windows.Networking.Sockets.WebSocketError.GetStatus(ex.GetBaseException().HResult);
                 // Add code here to handle exceptions.
@@ -94,68 +114,32 @@ namespace PhenoPad.WebSocketService
 
             }
         }
-        public async void ReceiveMessageUsingStreamWebSocket()
+
+
+        public async Task<String> ReceiveMessageUsingStreamWebSocket()
         {
+            string returnMessage = String.Empty;
             try
-            {
-                uint length = 256;
+            {   
+                uint length = 32768;     // Leave a large buffer
+
                 var readBuf = new Windows.Storage.Streams.Buffer((uint)length);
                 var readOp = streamSocket.InputStream.ReadAsync(readBuf, (uint)length, InputStreamOptions.Partial);
-                readOp.Completed = (IAsyncOperationWithProgress<IBuffer, uint>
-                    asyncAction, AsyncStatus asyncStatus) =>
-                {
-                    switch (asyncStatus)
-                    {
-                        case AsyncStatus.Completed:
-                            try
-                            {
-                                // GetResults in AsyncStatus::Error is called as it throws a user friendly error string.
-                                IBuffer localBuf = asyncAction.GetResults();
-                                uint bytesRead = localBuf.Length;
-                                DataReader readPacket = DataReader.FromBuffer(localBuf);
-                                uint buffLen = readPacket.UnconsumedBufferLength;
-                                if (buffLen == 0)
-                                    return;
-                                string message = readPacket.ReadString(buffLen);
-                                Debug.WriteLine(message);
-                            }
-                            catch (Exception exp)
-                            {
-                                Debug.WriteLine("Read operation failed:  " + exp.Message);
-                            }
-                            break;
-                        case AsyncStatus.Error:
-                            
-                            break;
-                        case AsyncStatus.Canceled:
 
-                            // Read is not cancelled in this sample.
-                            break;
-                    }
-                };
+                await readOp;   // Don't move on until we have finished reading from server
+
+                DataReader readPacket = DataReader.FromBuffer(readBuf);
+                uint buffLen = readPacket.UnconsumedBufferLength;
+                returnMessage = readPacket.ReadString(buffLen);
             }
             catch (Exception exp)
             {
                 Debug.WriteLine("failed to post a read failed with error:  " + exp.Message);
             }
-            /**
-            try
-            {
-                using (var dataReader = new DataReader(this.streamSocket.InputStream))
-                {
-                    dataReader.InputStreamOptions = InputStreamOptions.Partial;
-                    await dataReader.LoadAsync(256);
-                    byte[] message = new byte[dataReader.UnconsumedBufferLength];
-                    dataReader.ReadBytes(message);
-                    Debug.WriteLine("Data received from StreamWebSocket: " + message.ToString());
-                }
-                //this.streamSocket.Dispose();
-            }
-            catch (Exception ex)
-            {
-                Windows.Web.WebErrorStatus webErrorStatus = Windows.Networking.Sockets.WebSocketError.GetStatus(ex.GetBaseException().HResult);
-                // Add code here to handle exceptions.
-            }**/
+
+            Debug.WriteLine("Data length of " + returnMessage.Length.ToString() + " received from server");
+
+            return returnMessage;
         }
 
 

@@ -15,6 +15,8 @@
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:local="using:PhenoPad"
+    xmlns:customcontorl="using:PhenoPad.CustomContorl"
+    xmlns:phenotypeservice="using:PhenoPad.PhenotypeService"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     mc:Ignorable="d">
@@ -27,27 +29,36 @@
     </Page.Transitions>
     
     <Page.Resources>
-        <SolidColorBrush x:Key="SentMessageBackground" Color="SeaGreen"/>
-        <SolidColorBrush x:Key="ReceivedMessageBackground" Color="LimeGreen"/>
+        <local:BackgroundColorConverter x:Key="bcConverter" />
+        
+        
     </Page.Resources>
 
+    
+
     <Grid Background="{ThemeResource ApplicationPageBackgroundThemeBrush}" Padding="12,10,12,12">
-        <!--
+        
         <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
-        <StackPanel Grid.Row="0">
+        <!--<StackPanel Grid.Row="0">
             <TextBlock Text="Speech:" Style="{StaticResource SampleHeaderTextStyle}"/>
-        </StackPanel>
-        -->
-        <local:ChatListView x:Name="chatView" Grid.Row="1" IncrementalLoadingThreshold="2" Margin="10" BorderBrush="White" BorderThickness="2">
+        </StackPanel>-->
+        
+        <local:ChatListView x:Name="chatView" Grid.Row="0" 
+                            IncrementalLoadingThreshold="2" Margin="10" 
+                            BorderBrush="White" BorderThickness="2"
+                            ScrollViewer.VerticalScrollBarVisibility="Hidden">
             <ListView.ItemsPanel>
                 <ItemsPanelTemplate>
                     <ItemsStackPanel ItemsUpdatingScrollMode="KeepLastItemInView" VerticalAlignment="Bottom"/>
                 </ItemsPanelTemplate>
             </ListView.ItemsPanel>
+
+            <ListView.ItemContainerTransitions>
+                <TransitionCollection/>
+            </ListView.ItemContainerTransitions>
 
             <ListView.ItemTemplate>
                 <DataTemplate x:DataType="local:TextMessage">
@@ -58,25 +69,49 @@
                             <RowDefinition />
                         </Grid.RowDefinitions>
 
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+
+                        <!--Left/Top polygon-->
                         <Polygon
                             Grid.Row="0"
+                            Grid.Column="{Binding TextColumn}"
+                            Fill="{Binding Converter={StaticResource bcConverter}}"
+                            HorizontalAlignment="Left"
                             Points="0,0 0,18 18,18"
-                            Fill="{StaticResource ReceivedMessageBackground}"
-                            Visibility="{x:Bind IsReceived}"
-                            Margin="10,0,10,0"/>
+                            Visibility="{x:Bind OnLeft}"
+                            Margin="0,0,10,0">
+                        </Polygon>
+
+                        <!--Right/Bottom polygon-->
+                        <Polygon
+                            Grid.Row="2"
+                            Grid.Column="{Binding TextColumn}"
+                            Fill="{Binding Converter={StaticResource bcConverter}}"
+                            HorizontalAlignment="Right"
+                            Points="0,0 18,0 18,18"
+                            Visibility="{x:Bind OnRight}"
+                            Margin="0,0,10,0"/>
+
+                        <!--Finalized message color-->
+                        <Grid
+                            Grid.Row="1"
+                            Grid.Column="{Binding TextColumn}"
+                            Background="{Binding Converter={StaticResource bcConverter}}"
+                            Visibility="{x:Bind Path=IsFinal}"/>
+
+                        <!--Not finalized message color-->
+                        <Grid
+                            Grid.Row="1"
+                            Grid.Column="{Binding TextColumn}"
+                            Background="{StaticResource Background_Temp}"
+                            Visibility="{x:Bind Path=IsNotFinal}"/>
 
                         <Grid
                             Grid.Row="1"
-                            Background="{StaticResource ReceivedMessageBackground}"
-                            Visibility="{x:Bind IsReceived}"/>
-
-                        <Grid
-                            Grid.Row="1"
-                            Background="{StaticResource SentMessageBackground}"
-                            Visibility="{x:Bind IsSent}"/>
-
-                        <Grid
-                            Grid.Row="1">
+                            Grid.Column="{Binding TextColumn}">
                             <Grid.RowDefinitions>
                                 <RowDefinition Height="Auto"/>
                                 <RowDefinition Height="Auto"/>
@@ -84,32 +119,103 @@
 
                             <TextBlock
                                 Text="{x:Bind Body}"
+                                Grid.Row="0"
+                                Grid.Column="0"
                                 TextWrapping="Wrap"
                                 MinWidth="300"
-                                MaxWidth="400"
-                                FontSize="20"
+                                MaxWidth="500"
+                                FontSize="16"
                                 Padding="10,10,5,0"
+                                VerticalAlignment="Center"
                                 Foreground="WhiteSmoke"/>
 
                             <TextBlock
                                 Grid.Row="1"
-                                FontSize="12"
+                                FontSize="10"
                                 Text="{x:Bind DisplayTime}"
                                 TextWrapping="Wrap"
                                 Opacity="0.7"
                                 Padding="10" />
                         </Grid>
 
-                        <Polygon
-                            Grid.Row="2"
-                            HorizontalAlignment="Right"
-                            Points="0,0 18,0 18,18"
-                            Fill="{StaticResource SentMessageBackground}"
-                            Visibility="{x:Bind IsSent}"
-                            Margin="0,0,10,0"/>
+                        <!--<StackPanel
+                            Orientation="Horizontal"
+                            Grid.Column="{Binding PhenoColumn}"
+                            Grid.Row="0"
+                            Grid.RowSpan="3"
+                            Padding="10">
+
+                            <Button
+                                Content="Phenotype here"
+                                FontSize="20"
+                                Padding="10"
+                                Foreground="Black"/>
+                        </StackPanel>-->
+
+                        <ListView x:Name="phenoFromConversationListView" 
+                                    Grid.Column="{Binding PhenoColumn}"
+                                    Grid.Row="0"
+                                    Grid.RowSpan="3"
+                                    Padding="10"
+                                    ItemsSource="{x:Bind phenotypesInText, Mode=OneWay}">
+                            <ListView.ItemTemplate>
+                                <DataTemplate x:DataType="phenotypeservice:Phenotype">
+                                    <customcontorl:PhenotypeControl phenotypeName="{x:Bind name}" 
+                                                                    phenotypeId="{x:Bind hpId}" 
+                                                                    phenotypeState="{x:Bind state}"
+                                                                    sourceType="Notes"/>
+                                </DataTemplate>
+                            </ListView.ItemTemplate>
+                            <ListView.ItemContainerStyle>
+                                <Style TargetType="ListViewItem">
+                                    <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                                </Style>
+                            </ListView.ItemContainerStyle>
+                        </ListView>
+
                     </Grid>
                 </DataTemplate>
             </ListView.ItemTemplate>
         </local:ChatListView>
+        
+        <!-- To allow doctor to identify "himself"-->
+        <Grid  Grid.Row="1">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+
+            <StackPanel Orientation="Horizontal" Grid.Column="0" Padding="5,3,3,3">
+                <TextBlock x:Name="speakerTxt"  Text="Select Doctor: " 
+                    Margin="0" 
+                    Padding="5,5,5,1"/>
+                <ComboBox x:Name="speakerBox" 
+                          SelectionChanged="speakerBox_SelectionChanged"
+                          SelectedIndex="0">
+                    <ComboBoxItem
+                        Content="Speaker 1"
+                        Background="{StaticResource Background_0}"/>
+                </ComboBox>
+            </StackPanel>
+
+            <!--<Grid
+                Grid.Column="1">
+                <Border Padding="25,3,15,3"
+                        Background="{StaticResource Background_Temp}"
+                        HorizontalAlignment="Right">
+                    <TextBlock x:Name="tempSentenceTextBlock"
+                            Text="Temp text"
+                            Grid.Row="0"
+                            Grid.Column="0"
+                            TextWrapping="Wrap"
+                            FontSize="14"
+                            VerticalAlignment="Center"
+                            Foreground="WhiteSmoke"
+                            Visibility="Collapsed"
+                            />
+                </Border>
+            </Grid>-->
+
+        </Grid>
     </Grid>
 </Page>
