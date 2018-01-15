@@ -64,7 +64,7 @@ namespace PhenoPad.SpeechService
 
         public event TypedEventHandler<SpeechManager, SpeechEngineInterpreter> EngineHasResult;
 
-        private bool useFile = true;
+        private bool useFile = false;
         private CancellationTokenSource cancellationSource;
 
         public SpeechManager()
