@@ -94,6 +94,8 @@ namespace PhenoPad.SpeechService
 
                 // because transcrip is final and has already been accounted for
                 this.tempSentence = this.constructTempSentence();
+
+                Debug.WriteLine(json.result.hypotheses[0].transcript.Trim());
             }
             else
             {
@@ -123,18 +125,18 @@ namespace PhenoPad.SpeechService
 
                     var interval = new TimeInterval(start, end);
                     this.insertToDiarization(interval, speaker);
-                    this.verifyDiarizationInterval();
+                    //this.verifyDiarizationInterval();
                 }
                 
                 this.diarizationWordIndex = this.assignSpeakerToWord();
-                Debug.WriteLine("Diarized to word count" + diarizationWordIndex.ToString());
-                Debug.WriteLine("Total word count" + words.Count.ToString());
-                Debug.WriteLine(json.original);
+                //Debug.WriteLine("Diarized to word count" + diarizationWordIndex.ToString());
+                //Debug.WriteLine("Total word count" + words.Count.ToString());
+                //Debug.WriteLine(json.original);
                 this.formConversation();
 
                 // so that we don't have an overflow of words
                 this.constructTempSentence();
-                //this.printDiarizationResult();
+                this.printDiarizationResult();
             }
             
             // latest sentence has a length cap
@@ -188,7 +190,7 @@ namespace PhenoPad.SpeechService
             int wi = 0;
             while (di < diarization.Count)
             {
-                //Debug.WriteLine("Start: " + diarization[di].first.start.ToString() + " End: " + diarization[di].first.end.ToString() + " => Speaker " + diarization[di].second.ToString());
+                // Debug.WriteLine("Start: " + diarization[di].first.start.ToString() + " End: " + diarization[di].first.end.ToString() + " => Speaker " + diarization[di].second.ToString());
                 for (int i = wi; i < words.Count; i++)
                 {
                     if (words[i].interval.start < diarization[di].first.end)

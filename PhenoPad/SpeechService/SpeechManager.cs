@@ -197,7 +197,7 @@ namespace PhenoPad.SpeechService
                              {
                                  var parsedSpeech = JsonConvert.DeserializeObject<SpeechEngineJSON>(json);
                                  parsedSpeech.original = json;
-                                 Debug.WriteLine(parsedSpeech.ToString());
+                                 //Debug.WriteLine(parsedSpeech.ToString());
 
                                  speechInterpreter.processJSON(parsedSpeech);
 
