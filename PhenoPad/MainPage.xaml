@@ -32,8 +32,8 @@
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="1200" />
             <ColumnDefinition Width="*" />
+            <ColumnDefinition MinWidth="250" MaxWidth="300" />
         </Grid.ColumnDefinitions>
         <Grid Grid.Row="0" Grid.ColumnSpan="2" Name="fakeTileBar"></Grid>
         <RelativePanel Grid.Row="1" Grid.Column="1" Background="{x:Bind styles:MyColors.TITLE_BAR_COLOR_BRUSH}"/>
