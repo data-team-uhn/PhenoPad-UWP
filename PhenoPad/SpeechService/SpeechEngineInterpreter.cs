@@ -69,6 +69,8 @@ namespace PhenoPad.SpeechService
         public Conversation conversation;       // to be connected to speech manager
         public Conversation realtimeConversation;
 
+        private List<TextMessage> oldConversations = new List<TextMessage>();
+
         public int conversationIndex = 0;
 
         // Empty constructor :D
@@ -80,6 +82,16 @@ namespace PhenoPad.SpeechService
 
         public void newConversation()
         {
+            var convo = this.formConversation();
+
+            oldConversations.AddRange(convo);
+            words.Clear();
+            realtimeSentences.Clear();
+            realtimeLastSentence = String.Empty;
+            tempSentence = String.Empty;
+            diarization.Clear();
+            diarizationWordIndex = 0;
+
             conversationIndex++;
         }
 
@@ -132,6 +144,12 @@ namespace PhenoPad.SpeechService
                         latest = wa.start + wa.length + json.segment_start;
                     }
                 }
+
+                if (latest == 0)
+                {
+                    latest = words[words.Count - 1].interval.end;
+                }
+
                 if (json.result.hypotheses[0].word_alignment.Count > 0)
                 {
                     words.Add(new WordSpoken(".", -1, new TimeInterval(latest, latest)));
@@ -321,8 +339,13 @@ namespace PhenoPad.SpeechService
 
         // Concatenate words together to form sentences
         // awkward thing is we don't know how to get sentences
-        private void formConversation()
+        private List<TextMessage> formConversation()
         {
+            if (words.Count == 0)
+            {
+                return new List<TextMessage>();
+            }
+
             List<TextMessage> messages = new List<TextMessage>();
 
             int prevSpeaker = words[0].speaker;
@@ -382,15 +405,22 @@ namespace PhenoPad.SpeechService
 
             }
 
+            //TextMessage[] oldMessages = new TextMessage[oldConversations.Count];
+            //oldConversations.CopyTo(oldMessages);
+            List<TextMessage> temp = new List<TextMessage>(oldConversations);
+            temp.AddRange(messages);
+
             Windows.ApplicationModel.Core.CoreApplication.MainView.CoreWindow.Dispatcher.RunAsync(CoreDispatcherPriority.Normal,
             () =>
             {
                 //this.conversation.Clear();
-                this.conversation.ClearThenAddRange(messages);
+                this.conversation.ClearThenAddRange(temp);
                 //this.conversation.UpdateLastMessage(this.constructTempBubble(), false);
             } 
             );
-            
+
+
+            return messages;
         }
 
         private void formRealtimeConversation()

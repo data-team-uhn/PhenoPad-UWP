@@ -203,7 +203,7 @@ namespace PhenoPad
                 string result = start_minute.ToString("D2") + ":" + start_second.ToString("D2") + "." + start_mili.ToString("D2") + " - " +
                     end_minute.ToString("D2") + ":" + end_second.ToString("D2") + "." + end_mili.ToString("D2");
 
-                return now + "\tConversation(" + m.ConversationIndex + ")" + result;
+                return now + "\tConversation(" + m.ConversationIndex + ")\t" + result;
             }
             else
             {
@@ -507,10 +507,13 @@ namespace PhenoPad
             SpeechManager.getSharedSpeechManager().RecordingCreated += SpeechPage_RecordingCreated;
         }
 
+        private string loadedMedia = String.Empty;
         private void SpeechPage_RecordingCreated(SpeechManager sender, Windows.Storage.StorageFile args)
         {
             this._mediaPlayerElement.Source = MediaSource.CreateFromStorageFile(args);
             this._mediaPlayerElement.Visibility = Visibility.Visible;
+            this.loadedMedia = args.Name;
+            this._mediaPlayerElement.Name = args.Name;
         }
 
         private int doctor = 0;
@@ -610,7 +613,12 @@ namespace PhenoPad
                 var savedFile =
                     await storageFolder.GetFileAsync("sample_" + m.ConversationIndex + ".wav");
 
-                this._mediaPlayerElement.Source = MediaSource.CreateFromStorageFile(savedFile);
+                if (savedFile.Name != this.loadedMedia)
+                {
+                    this._mediaPlayerElement.Source = MediaSource.CreateFromStorageFile(savedFile);
+                    this.loadedMedia = savedFile.Name;
+                    this._mediaPlayerElement.Name = savedFile.Name;
+                }
 
                 // Overloaded constructor takes the arguments days, hours, minutes, seconds, miniseconds.
                 // Create a TimeSpan with miliseconds equal to the slider value.
