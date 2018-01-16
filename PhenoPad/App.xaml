@@ -20,7 +20,7 @@
 
 
             <SolidColorBrush x:Key="Background_Temp" Color="#9A0089"/>
-            <SolidColorBrush x:Key="Background_0" Color="#515C6B"/> <!--some gray-->
+            <SolidColorBrush x:Key="Background_0" Color="#038387"/> <!--some gray-->
             <SolidColorBrush x:Key="Background_1" Color="#498205"/> <!--some green-->
             <SolidColorBrush x:Key="Background_2" Color="#0063B1"/> <!--some blue-->
             <SolidColorBrush x:Key="Background_99" Color="#9A0089"/>
