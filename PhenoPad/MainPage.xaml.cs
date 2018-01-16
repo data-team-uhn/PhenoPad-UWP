@@ -33,6 +33,8 @@ using Windows.Storage.Streams;
 using PhenoPad.WebSocketService;
 using Windows.ApplicationModel.Core;
 using PhenoPad.Styles;
+using Windows.Graphics.Imaging;
+using Windows.UI.Xaml.Media.Imaging;
 
 namespace PhenoPad
 {
@@ -117,7 +119,7 @@ namespace PhenoPad
             inkCanvas = aPage.inkCan;
             MainPageInkBar.TargetInkCanvas = inkCanvas;
             curPage = aPage;
-            var screenSize = HelperFunctions.GetCurrentDisplaySize();
+            // var screenSize = HelperFunctions.GetCurrentDisplaySize();
             //aPage.Height = screenSize.Height;
             //aPage.Width = screenSize.Width;
             curPageIndex = 0;
@@ -215,11 +217,11 @@ namespace PhenoPad
                 {
                     case DisplayOrientations.Landscape:
                     case DisplayOrientations.LandscapeFlipped:
-                        
+                        VisualStateManager.GoToState(this, "LandscapeState", false);
                         break;
                     case DisplayOrientations.Portrait:
                     case DisplayOrientations.PortraitFlipped:
-                        
+                        VisualStateManager.GoToState(this, "PortraitState", false);
                         break;
                 }
                 Debug.WriteLine("oritentation changed: " + e.Orientation);
@@ -988,10 +990,12 @@ namespace PhenoPad
                     if (status == Windows.Storage.Provider.FileUpdateStatus.Complete)
                     {
                         // File saved.
+                        NotifyUser("Your note has been saved.", NotifyType.StatusMessage, 2);
                     }
                     else
                     {
                         // File couldn't be saved.
+                        NotifyUser("Your note couldn't be saved.", NotifyType.ErrorMessage, 2);
                     }
                 }
                 // User selects Cancel and picker returns null.
@@ -1022,7 +1026,9 @@ namespace PhenoPad
                 using (var inputStream = stream.GetInputStreamAt(0))
                 {
                     await inkCanvas.InkPresenter.StrokeContainer.LoadAsync(inputStream);
+                    NotifyUser("The note has been loaded.", NotifyType.StatusMessage, 2);
                     await curPage.StartAnalysisAfterLoad();
+
                 }
                 stream.Dispose();
             }
@@ -1032,7 +1038,47 @@ namespace PhenoPad
                 // Operation cancelled.
             }
         }
-        
+
+        private async void LoadImage_Click(object sender, RoutedEventArgs e)
+        {
+            // Let users choose their ink file using a file picker.
+            // Initialize the picker.
+            Windows.Storage.Pickers.FileOpenPicker openPicker =
+                new Windows.Storage.Pickers.FileOpenPicker();
+            openPicker.SuggestedStartLocation =
+                Windows.Storage.Pickers.PickerLocationId.DocumentsLibrary;
+            openPicker.FileTypeFilter.Add(".gif");
+            openPicker.FileTypeFilter.Add(".png");
+            openPicker.FileTypeFilter.Add(".jpg");
+            openPicker.FileTypeFilter.Add(".tif");
+            // Show the file picker.
+            Windows.Storage.StorageFile file = await openPicker.PickSingleFileAsync();
+            // User selects a file and picker returns a reference to the selected file.
+            if (file != null)
+            {
+                // Open a file stream for reading.
+                IRandomAccessStream stream = await file.OpenAsync(Windows.Storage.FileAccessMode.Read);
+                // Read from file.
+                using (var inputStream = stream.GetInputStreamAt(0))
+                {
+                    BitmapDecoder decoder = await BitmapDecoder.CreateAsync(stream);
+                    SoftwareBitmap softwareBitmap = await decoder.GetSoftwareBitmapAsync();
+                    SoftwareBitmap softwareBitmapBGR8 = SoftwareBitmap.Convert(softwareBitmap,
+                    BitmapPixelFormat.Bgra8,
+                    BitmapAlphaMode.Premultiplied);
+                    SoftwareBitmapSource bitmapSource = new SoftwareBitmapSource();
+                    await bitmapSource.SetBitmapAsync(softwareBitmapBGR8);
+                    curPage.AddImageControl(bitmapSource);
+                }
+                stream.Dispose();
+            }
+            // User selects Cancel and picker returns null.
+            else
+            {
+                // Operation cancelled.
+            }
+        }
+
     }
 
     public enum NotifyType

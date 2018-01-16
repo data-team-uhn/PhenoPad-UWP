@@ -111,8 +111,10 @@
                           VerticalScrollBarVisibility="Auto" 
                           HorizontalScrollMode="Enabled" 
                           HorizontalScrollBarVisibility="Auto">
-
+            <!--
             <Grid x:Name="outputGrid" Background="{ThemeResource SystemControlBackgroundChromeWhiteBrush}" Height="{Binding Path=ViewportHeight, ElementName=scrollViewer}" Width="{Binding Path=ViewportWidth, ElementName=scrollViewer}">
+            -->
+            <Grid x:Name="outputGrid" Background="{ThemeResource SystemControlBackgroundChromeWhiteBrush}" Height="{x:Bind PAGE_HEIGHT}" Width="{x:Bind PAGE_WIDTH}">
                 <!-- Inking area -->
                 
                 <Canvas x:Name="backgroundCanvas"/>

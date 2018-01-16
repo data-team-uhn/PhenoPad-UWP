@@ -53,6 +53,8 @@ namespace PhenoPad.CustomControl
         private int UNPROCESSED_RESOLUTION = 5;
         private Color DEFAULT_STROKE_COLOR = MyColors.DEFUALT_STROKE;
         private Color SELECTED_STROKE_COLOR = MyColors.PHENOTYPE_BLUE_COLOR;
+        private float PAGE_HEIGHT = 2000;
+        private float PAGE_WIDTH = 1500;
 
         private DoubleCollection UNPROCESSED_DASH = new DoubleCollection() { 5, 2 };
         private Rect boundingRect;
@@ -140,7 +142,7 @@ namespace PhenoPad.CustomControl
 
             // We perform analysis when there has been a change to the
             // ink presenter and the user has been idle for 1 second.
-            dispatcherTimer.Interval = TimeSpan.FromSeconds(0.3);
+            dispatcherTimer.Interval = TimeSpan.FromSeconds(0.1);
             operationDispathcerTimer.Interval = TimeSpan.FromMilliseconds(500);
             unprocessedDispatcherTimer.Interval = TimeSpan.FromMilliseconds(100);
 
@@ -811,7 +813,8 @@ namespace PhenoPad.CustomControl
                             oldAnnotations.Add(str, phenos);
                             
                         }
-                        
+                        if (linesToAnnotate.Count > 0)
+                            dispatcherTimer.Start();
                             
 
                         /**
@@ -1623,10 +1626,15 @@ namespace PhenoPad.CustomControl
         {
             inkAnalyzer.AddDataForStrokes(inkCanvas.InkPresenter.StrokeContainer.GetStrokes());
             await inkAnalyzer.AnalyzeAsync();
-            //dispatcherTimer.Start();
-            core.PointerHovering += Core_PointerHovering;
-            core.PointerExiting += Core_PointerExiting;
-            core.PointerEntering += Core_PointerHovering;
+            /**
+            for (int i = 0; i < (PAGE_HEIGHT / LINE_HEIGHT); ++i) {
+                linesToAnnotate.Enqueue(i);
+            }
+            dispatcherTimer.Start();
+            **/
+            //core.PointerHovering += Core_PointerHovering;
+            //core.PointerExiting += Core_PointerExiting;
+            //core.PointerEntering += Core_PointerHovering;
         }
 
         private void recognizedResultTextBlock_KeyDown(object sender, KeyRoutedEventArgs e)
