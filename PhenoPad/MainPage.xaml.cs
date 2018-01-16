@@ -200,7 +200,7 @@ namespace PhenoPad
         // TODO : Feels like there exists more legitimate wasy to do this
         private void SpeechManager_EngineHasResult(SpeechManager sender, SpeechEngineInterpreter args)
         {
-            this.cmdBarTextBlock.Text = args.latestSentence;
+            //this.cmdBarTextBlock.Text = args.latestSentence;
         }
         
         private void OnPropertyChanged(DependencyObject sender, DependencyProperty dp)
@@ -285,7 +285,7 @@ namespace PhenoPad
                 speechEngineRunning = false;
             }
 
-            cmdBarTextBlock.Visibility = Visibility.Collapsed;
+            //cmdBarTextBlock.Visibility = Visibility.Collapsed;
         }
 
         
@@ -687,16 +687,16 @@ namespace PhenoPad
             if (speechEngineRunning == false)
             {
                 speechManagerTask = SpeechManager.getSharedSpeechManager().StartAudio();
-                this.cmdBarTextBlock.Visibility = Visibility.Visible;
+                //this.cmdBarTextBlock.Visibility = Visibility.Visible;
                 speechEngineRunning = !speechEngineRunning;
 
                 await speechManagerTask;
             }
             else {
                 speechManagerTask = SpeechManager.getSharedSpeechManager().EndAudio();
-                this.cmdBarTextBlock.Visibility = Visibility.Collapsed;
+                //this.cmdBarTextBlock.Visibility = Visibility.Collapsed;
                 speechEngineRunning = !speechEngineRunning;
-                cmdBarTextBlock.Text = "";
+                //cmdBarTextBlock.Text = "";
             }
 
             // Note that we have a giant loop in speech manager so that after it is done
