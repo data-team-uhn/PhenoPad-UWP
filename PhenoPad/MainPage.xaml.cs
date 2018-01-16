@@ -210,6 +210,18 @@ namespace PhenoPad
             await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () =>
             {
                 SimpleOrientation orientation = e.Orientation;
+                var displayInformation = DisplayInformation.GetForCurrentView();
+                switch (displayInformation.CurrentOrientation)
+                {
+                    case DisplayOrientations.Landscape:
+                    case DisplayOrientations.LandscapeFlipped:
+                        
+                        break;
+                    case DisplayOrientations.Portrait:
+                    case DisplayOrientations.PortraitFlipped:
+                        
+                        break;
+                }
                 curPage.DrawBackgroundLines();
             });
         }
