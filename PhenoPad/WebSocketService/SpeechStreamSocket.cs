@@ -13,12 +13,12 @@ using Windows.Storage.Streams;
 
 namespace PhenoPad.WebSocketService
 {
-    class SpeechStreamSocket
+    public class SpeechStreamSocket
     {
         MainPage rootPage = MainPage.Current;
 
         // !!WARNING !! server address changes every time
-        private string serverAddress = "34.237.1.83";
+        public string serverAddress = "34.237.1.83";
         private string serverPort = "8888";
 
         NetworkAdapter networkAdapter;

@@ -60,7 +60,7 @@ namespace PhenoPad.SpeechService
         private AudioDeviceInputNode deviceInputNode;
         private AudioFileInputNode fileInputNode;
         public double theta = 0;
-        private SpeechStreamSocket speechStreamSocket;
+        public SpeechStreamSocket speechStreamSocket;
         private AudioFileOutputNode fileOutputNode;
 
         public event TypedEventHandler<SpeechManager, SpeechEngineInterpreter> EngineHasResult;
@@ -72,6 +72,7 @@ namespace PhenoPad.SpeechService
         public SpeechManager()
         {
             this.speechInterpreter = new SpeechEngineInterpreter(this.conversation, this.realtimeConversation);
+            this.speechStreamSocket = new SpeechStreamSocket();
         }
 
         public static SpeechManager getSharedSpeechManager()

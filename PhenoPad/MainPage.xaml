@@ -108,6 +108,7 @@
                             <MenuFlyoutItem Text="Save note" Tag="Save note to disk." Click="SaveNote_Click"/>
                             <MenuFlyoutItem Text="Save image" Tag="Save note to image." Click="SaveNoteToImage_Click"/>
                             <MenuFlyoutItem Text="Open saved note" Tag="Open a saved note." Click="LoadNote_Click"/>
+                            <MenuFlyoutItem Text="Change a server" Tag="Open a saved note." Click="ChangeServer_Click"/>
                             
                         </MenuFlyout>
                     </AppBarButton.Flyout>

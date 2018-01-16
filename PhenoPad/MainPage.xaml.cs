@@ -1147,6 +1147,36 @@ namespace PhenoPad
                 }
             }
         }
+
+        private void MenuFlyoutItem_Click_1(object sender, RoutedEventArgs e)
+        {
+
+        }
+
+        private async Task<string> InputTextDialogAsync(string title, string content)
+        {
+            TextBox inputTextBox = new TextBox();
+            inputTextBox.AcceptsReturn = false;
+            inputTextBox.Height = 32;
+            ContentDialog dialog = new ContentDialog();
+            dialog.Content = inputTextBox;
+            dialog.Title = title;
+            dialog.IsSecondaryButtonEnabled = true;
+            dialog.PrimaryButtonText = "Ok";
+            dialog.SecondaryButtonText = "Cancel";
+            inputTextBox.Text = content;
+            if (await dialog.ShowAsync() == ContentDialogResult.Primary)
+                return inputTextBox.Text;
+            else
+                return "";
+        }
+        private async void ChangeServer_Click(object sender, RoutedEventArgs e)
+        {
+            string text = await InputTextDialogAsync("Change a server: ", SpeechManager.getSharedSpeechManager().speechStreamSocket.serverAddress);
+            if(text != "" && text != string.Empty)
+                SpeechManager.getSharedSpeechManager().speechStreamSocket.serverAddress = text;
+            
+        }
     }
 
     public enum NotifyType
