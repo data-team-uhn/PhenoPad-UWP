@@ -50,6 +50,7 @@
             <TextBlock Text="Speech:" Style="{StaticResource SampleHeaderTextStyle}"/>
         </StackPanel>-->
 
+
         <local:ChatListView x:Name="chatView" Grid.Row="0" Grid.Column="0"
                             IncrementalLoadingThreshold="2" Margin="10" 
                             BorderBrush="White" BorderThickness="2"
@@ -130,7 +131,7 @@
                                 MinWidth="300"
                                 MaxWidth="500"
                                 FontSize="16"
-                                Padding="10,10,5,0"
+                                Padding="3"
                                 VerticalAlignment="Center"
                                 Foreground="WhiteSmoke"/>
 
@@ -140,7 +141,7 @@
                                 Text="{x:Bind DisplayTime}"
                                 TextWrapping="Wrap"
                                 Opacity="0.7"
-                                Padding="10" />
+                                Padding="3" />
                         </Grid>
 
                         <!--<StackPanel
@@ -185,7 +186,7 @@
 
         <local:ChatListView x:Name="realtimeChatView" Grid.Row="0" Grid.Column="1" 
                             IncrementalLoadingThreshold="2" Margin="10" 
-                            BorderBrush="White" BorderThickness="2"
+                            BorderBrush="LightGray" BorderThickness="2"
                             ScrollViewer.VerticalScrollBarVisibility="Hidden">
             <ListView.ItemsPanel>
                 <ItemsPanelTemplate>
@@ -207,25 +208,13 @@
                 <DataTemplate x:DataType="local:TextMessage">
                     <Grid Margin="10">
                         <Grid.RowDefinitions>
-                            <RowDefinition />
                             <RowDefinition Height="Auto" />
                             <RowDefinition />
                         </Grid.RowDefinitions>
 
-
-                        <!--Left/Top polygon-->
-                        <Polygon
-                            Grid.Row="0"
-                            Fill="{Binding Converter={StaticResource bcConverter}}"
-                            HorizontalAlignment="Left"
-                            Points="0,0 0,18 18,18"
-                            Visibility="Collapsed"
-                            Margin="0,0,10,0">
-                        </Polygon>
-
                         <!--Right/Bottom polygon-->
                         <Polygon
-                            Grid.Row="2"
+                            Grid.Row="1"
                             Fill="LightSlateGray"
                             HorizontalAlignment="Right"
                             Points="0,0 18,0 18,18"
@@ -234,18 +223,18 @@
 
                         <!--Finalized message color-->
                         <Grid
-                            Grid.Row="1"
+                            Grid.Row="0"
                             Background="LightSlateGray"
                             Visibility="{x:Bind Path=IsFinal}"/>
 
                         <!--Not finalized message color-->
                         <Grid
-                            Grid.Row="1"
+                            Grid.Row="0"
                             Background="LightSlateGray"
                             Visibility="{x:Bind Path=IsNotFinal}"/>
 
                         <Grid
-                            Grid.Row="1">
+                            Grid.Row="0">
                             <Grid.RowDefinitions>
                                 <RowDefinition Height="Auto"/>
                                 <RowDefinition Height="Auto"/>
@@ -259,7 +248,7 @@
                                 MinWidth="90"
                                 MaxWidth="500"
                                 FontSize="16"
-                                Padding="10,10,5,0"
+                                Padding="3"
                                 VerticalAlignment="Center"
                                 Foreground="WhiteSmoke"/>
 
@@ -269,7 +258,7 @@
                                 Text="{x:Bind DisplayTime}"
                                 TextWrapping="Wrap"
                                 Opacity="0.7"
-                                Padding="10" />
+                                Padding="3" />
                         </Grid>
 
                         <!--<StackPanel

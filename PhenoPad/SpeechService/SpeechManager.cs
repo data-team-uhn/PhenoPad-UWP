@@ -64,7 +64,7 @@ namespace PhenoPad.SpeechService
 
         public event TypedEventHandler<SpeechManager, SpeechEngineInterpreter> EngineHasResult;
 
-        private bool useFile = true;
+        private bool useFile = false;
         private CancellationTokenSource cancellationSource;
 
         public SpeechManager()
@@ -198,7 +198,7 @@ namespace PhenoPad.SpeechService
                              {
                                  var parsedSpeech = JsonConvert.DeserializeObject<SpeechEngineJSON>(json);
                                  parsedSpeech.original = json;
-                                 Debug.WriteLine(parsedSpeech.ToString());
+                                 //Debug.WriteLine(parsedSpeech.ToString());
 
                                  speechInterpreter.processJSON(parsedSpeech);
 

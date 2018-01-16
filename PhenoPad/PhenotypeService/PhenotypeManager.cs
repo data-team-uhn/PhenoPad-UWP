@@ -22,7 +22,7 @@ namespace PhenoPad.PhenotypeService
         public ObservableCollection<Disease> predictedDiseases;
         public ObservableCollection<Phenotype> phenotypesInNote;
         public ObservableCollection<Phenotype> phenotypesInSpeech;
-
+        private MainPage rootPage = MainPage.Current;
         public ObservableCollection<Phenotype> phenotypesCandidates;
 
         public PhenotypeManager()
@@ -115,7 +115,10 @@ namespace PhenoPad.PhenotypeService
 
             Phenotype temp = savedPhenotypes.Where(x => x == pheno).FirstOrDefault();
             if (temp == null)
+            {
                 savedPhenotypes.Add(pheno);
+                rootPage.NotifyUser(pheno.name + " is added.", NotifyType.StatusMessage, 2);
+            }
 
             if(from == SourceType.Notes)
             {
@@ -153,6 +156,7 @@ namespace PhenoPad.PhenotypeService
         {
             if (savedPhenotypes == null || idx < 0 || idx >= savedPhenotypes.Count)
                 return false;
+            
             savedPhenotypes.RemoveAt(idx);
             return true;
         }
@@ -168,8 +172,10 @@ namespace PhenoPad.PhenotypeService
             if (temp != null)
                 temp.state = -1;
             temp = savedPhenotypes.Where(x => x == pheno).FirstOrDefault();
-            if (temp != null)
+            if (temp != null) {
+                rootPage.NotifyUser(temp.name + " is deleted.", NotifyType.StatusMessage, 2);
                 return savedPhenotypes.Remove(temp);
+            }
             return false;
         }
         public void updatePhenotype(Phenotype pheno)

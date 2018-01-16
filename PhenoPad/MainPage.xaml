@@ -43,7 +43,7 @@
                         RelativePanel.AlignLeftWithPanel="True"
                         Name="topCmdBar" Background="{x:Bind styles:MyColors.TITLE_BAR_COLOR_BRUSH}">
 
-                <AppBarButton Icon="Page2" Label="Notes">
+                <AppBarButton Icon="Page2" Label="Notes"  Click="NotesButton_Click">
                     <AppBarButton.Flyout>
                         <MenuFlyout>
                             <MenuFlyoutItem Text="Create new note" Tag="rating"/>
@@ -54,10 +54,32 @@
                 </AppBarButton>
                 <AppBarToggleButton Icon="PreviewLink" Label="Overview" Name="sdf" Click="OverviewButton_Click"/>
                 <AppBarToggleButton Icon="Message" Label="Speech" Name="ddd" Click="SpeechButton_Click"/>
+                <AppBarSeparator/>
+                <AppBarToggleButton Name="testButton" Icon="Microphone" Label="Speech Recognition" Click="TestWS_Click">
+                    <ToolTipService.ToolTip>
+                        <TextBlock Text="Enable audio recording"/>
+                    </ToolTipService.ToolTip>
+                </AppBarToggleButton>
+
+                <AppBarButton  Icon="WebCam" Label="Photo/Video"  Click="TakePhoto_Click" >
+                    <!--
+                    <AppBarButton.Flyout>
+                        <MenuFlyout>
+                            <MenuFlyoutItem Text="Select a photo" Click="MenuFlyoutItem_Click" Tag="rating" Icon="BrowsePhotos"/>
+                            <MenuFlyoutItem Text="Take a photo" Click="TakePhoto_Click" Tag="Take a photo" Icon="Camera"/>
+                            <MenuFlyoutItem Text="Record a video" Click="MenuFlyoutItem_Click" Tag="distance" Icon="Video"/>
+                        </MenuFlyout>
+                    </AppBarButton.Flyout>
+                    -->
+                    <ToolTipService.ToolTip>
+                        <TextBlock Text="Enable video recording"/>
+                    </ToolTipService.ToolTip>
+                </AppBarButton>
             </CommandBar>
             <InkToolbar Margin="40 0 0 0" Name="MainPageInkBar" ActiveToolChanged="CurrentToolChanged" Orientation="Horizontal" ButtonFlyoutPlacement="Bottom" RelativePanel.AlignTopWithPanel="True"
                         RelativePanel.RightOf="topCmdBar" Background="LightBlue" InitialControls="None">
                 <InkToolbar.Resources>
+                    <!--
                     <BrushCollection x:Key="CalligraphicPenPalette">
                         <SolidColorBrush>Black</SolidColorBrush>
                         <SolidColorBrush>Brown</SolidColorBrush>
@@ -71,6 +93,7 @@
                         <Setter Property="SelectedStrokeWidth" Value="1"/>
                         <Setter Property="Background" Value="LightBlue"/>
                     </Style>
+                    -->
                 </InkToolbar.Resources>
                 <InkToolbarBallpointPenButton SelectedStrokeWidth="2"  Background="{x:Bind styles:MyColors.TITLE_BAR_COLOR_BRUSH}"></InkToolbarBallpointPenButton>
                 <InkToolbarEraserButton Background="{x:Bind styles:MyColors.TITLE_BAR_COLOR_BRUSH}"></InkToolbarEraserButton>
@@ -204,7 +227,7 @@
                                    MaxWidth="{Binding ElementName=Splitter, Path=ActualWidth}" Margin="10,10,10,10" TextWrapping="Wrap"  />
             </Border>
             
-             <TextBlock Name="pageIndexTextBlock" RelativePanel.Above="cmdBar" RelativePanel.AlignRightWithPanel="True" Text=""/>
+             <TextBlock Visibility="Collapsed" Name="pageIndexTextBlock" RelativePanel.Above="cmdBar" RelativePanel.AlignRightWithPanel="True" Text=""/>
             <StackPanel Name="AnnoPhenoStackPanel" RelativePanel.Above="cmdBar" RelativePanel.AlignLeftWithPanel="True" Orientation="Horizontal"/>
             <Grid Background="WhiteSmoke" Name="CameraCanvas" Height="300" Width="530" RelativePanel.Above="pageIndexTextBlock" RelativePanel.AlignRightWithPanel="True" Visibility="Collapsed">
                 <photovideoservice:PhotoVideoCaptureControl x:Name="captureControl"></photovideoservice:PhotoVideoCaptureControl>
@@ -235,15 +258,16 @@
             </StackPanel>
             <CommandBar RelativePanel.AlignBottomWithPanel="True"
                         RelativePanel.AlignRightWithPanel="True"
-
+                        Visibility="Collapsed"
                         Name="cmdBar">
+                <!--
                 <AppBarToggleButton Name="testButton" Icon="Microphone" Label="Speech Recognition" Click="TestWS_Click">
                     <ToolTipService.ToolTip>
                         <TextBlock Text="Enable audio recording"/>
                     </ToolTipService.ToolTip>
                 </AppBarToggleButton>
 
-                <!--
+                
                     This is for Microsoft speech recognition engine
                     <AppBarToggleButton Name="micButton" Icon="Microphone" Label="Speech recognition" Click="MicButton_Click" />
                 -->
