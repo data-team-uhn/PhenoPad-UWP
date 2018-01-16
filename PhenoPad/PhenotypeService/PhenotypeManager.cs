@@ -21,9 +21,13 @@ namespace PhenoPad.PhenotypeService
         public ObservableCollection<Phenotype> suggestedPhenotypes { get; }
         public ObservableCollection<Disease> predictedDiseases;
         public ObservableCollection<Phenotype> phenotypesInNote;
+        
         public ObservableCollection<Phenotype> phenotypesInSpeech;
+        public ObservableCollection<Phenotype> phenotypesSpeechCandidates;
+
         private MainPage rootPage = MainPage.Current;
         public ObservableCollection<Phenotype> phenotypesCandidates;
+
 
         public PhenotypeManager()
         {

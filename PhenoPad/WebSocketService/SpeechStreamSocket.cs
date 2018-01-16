@@ -141,7 +141,7 @@ namespace PhenoPad.WebSocketService
                 Debug.WriteLine("failed to post a read failed with error:  " + exp.Message);
             }
 
-            Debug.WriteLine("Data length of " + returnMessage.Length.ToString() + " received from server");
+            //Debug.WriteLine("Data length of " + returnMessage.Length.ToString() + " received from server");
 
             return returnMessage;
         }

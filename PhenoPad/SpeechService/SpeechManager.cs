@@ -31,6 +31,7 @@ using Windows.Media.Transcoding;
 using Newtonsoft.Json;
 using Windows.UI.Core;
 using Windows.UI.Popups;
+using Windows.Storage.Streams;
 //using Newtonsoft.Json.Linq;   // Seems like we only need JSON parsing
 
 namespace PhenoPad.SpeechService
@@ -63,6 +64,7 @@ namespace PhenoPad.SpeechService
         private AudioFileOutputNode fileOutputNode;
 
         public event TypedEventHandler<SpeechManager, SpeechEngineInterpreter> EngineHasResult;
+        public event TypedEventHandler<SpeechManager, StorageFile> RecordingCreated;
 
         private bool useFile = false;
         private CancellationTokenSource cancellationSource;
@@ -92,7 +94,7 @@ namespace PhenoPad.SpeechService
                 this.conversation.Add(new TextMessage
                 {
                     Body = text,
-                    DisplayTime = DateTime.Now.ToString(),
+                    //DisplayTime = DateTime.Now.ToString(),
                     IsFinal = text.Length % 2 == 0? true:false,
                     Speaker = (uint)(text.Length % 3)
                 });
@@ -157,11 +159,16 @@ namespace PhenoPad.SpeechService
                 deviceInputNode.Start();
             }
 
+
+            this.byte_accumulator = new List<byte>();
+
             // Start a task to continuously read for incoming data
             //Task receiving = ReceiveDataAsync(speechStreamSocket.streamSocket);
 
             cancellationSource = new CancellationTokenSource();
             CancellationToken cancellationToken = cancellationSource.Token;                 // need this to actually cancel reading from websocketS
+
+            this.speechInterpreter.newConversation();
 
             await Task.Run(async () =>
              {
@@ -235,14 +242,19 @@ namespace PhenoPad.SpeechService
         private SemaphoreSlim endSemaphoreSlim = new SemaphoreSlim(1);
         public async Task EndAudio()
         {
-            await endSemaphoreSlim.WaitAsync();
+            //await endSemaphoreSlim.WaitAsync();
             try {
-                if (graph != null && fileInputNode != null)
+                if (graph != null && (fileInputNode != null || useFile == false))
                 {
                     MainPage.Current.NotifyUser("Disconnecting from speech engine", NotifyType.StatusMessage, 2);
                     //deviceInputNode.Stop();
                     cancellationSource.Cancel();
-                    fileInputNode.Stop();
+
+                    if (useFile)
+                    {
+                        fileInputNode.Stop();
+                    }
+                    
                     graph.Stop();
                     speechStreamSocket.CloseConnnction();
                     /**
@@ -263,14 +275,91 @@ namespace PhenoPad.SpeechService
                     {
                         graph.Dispose();
                     }
+
+                    this.writeToFile();
                 }
             }
             finally
             {
-                endSemaphoreSlim.Release();
+                //endSemaphoreSlim.Release();
             }
         }
-        
+
+        public Windows.Storage.StorageFile savedFile;
+
+        private async void writeToFile()
+        {
+            MainPage.Current.NotifyUser("Saving conversation audio", NotifyType.StatusMessage, 2);
+            Windows.Storage.StorageFolder storageFolder =
+                Windows.Storage.ApplicationData.Current.LocalFolder;
+            savedFile =
+                await storageFolder.CreateFileAsync("sample_" + this.speechInterpreter.conversationIndex + ".wav", Windows.Storage.CreationCollisionOption.ReplaceExisting);
+
+            Debug.WriteLine("Output file to " + savedFile.Path.ToString());
+
+            var stream = await savedFile.OpenAsync(Windows.Storage.FileAccessMode.ReadWrite);
+
+            using (IOutputStream outputStream = stream.GetOutputStreamAt(0))
+            {
+                using (DataWriter dataWriter = new DataWriter(outputStream))
+                {
+                    // RIFF header.
+                    // Chunk ID.
+                    dataWriter.WriteBytes(Encoding.ASCII.GetBytes("RIFF"));
+
+                    // Chunk size.
+                    //dataWriter.WriteBytes(BitConverter.GetBytes((UInt32)(((32 / 8) * this.byte_accumulator.Count) + 36)));
+                    dataWriter.WriteBytes(BitConverter.GetBytes((UInt32)((this.byte_accumulator.Count) + 36)));
+
+                    // Format.
+                    dataWriter.WriteBytes(Encoding.ASCII.GetBytes("WAVE"));
+
+
+                    // Sub-chunk 1.
+                    // Sub-chunk 1 ID.
+                    dataWriter.WriteBytes(Encoding.ASCII.GetBytes("fmt "));
+
+                    // Sub-chunk 1 size.
+                    dataWriter.WriteBytes(BitConverter.GetBytes((UInt32)16));
+
+                    // Audio format (floating point (3) or PCM (1)). Any other format indicates compression.
+                    dataWriter.WriteBytes(BitConverter.GetBytes((UInt16)3));
+
+                    // Channels.
+                    dataWriter.WriteBytes(BitConverter.GetBytes((UInt16)1));
+
+                    // Sample rate.
+                    dataWriter.WriteBytes(BitConverter.GetBytes((UInt32)16000));
+
+                    // Bytes rate.
+                    dataWriter.WriteBytes(BitConverter.GetBytes((UInt32)(16000 * 1 * (32 / 8))));
+
+                    // Block align.
+                    dataWriter.WriteBytes(BitConverter.GetBytes((UInt16)(1 * (32 / 8))));
+
+                    // Bits per sample.
+                    dataWriter.WriteBytes(BitConverter.GetBytes((UInt16)32));
+
+                    // Sub-chunk 2.
+                    // Sub-chunk 2 ID.
+                    dataWriter.WriteBytes(Encoding.ASCII.GetBytes("data"));
+
+                    // Sub-chunk 2 size.
+                    //dataWriter.WriteBytes(BitConverter.GetBytes((UInt32)((32 / 8) * this.byte_accumulator.Count)));
+                    dataWriter.WriteBytes(BitConverter.GetBytes((UInt32)(this.byte_accumulator.Count)));
+
+
+                    //TODO: Replace "Bytes" with the type you want to write.
+                    dataWriter.WriteBytes(this.byte_accumulator.ToArray());
+                    await dataWriter.StoreAsync();
+                    dataWriter.DetachStream();
+                }
+                await outputStream.FlushAsync();
+
+                RecordingCreated.Invoke(this, savedFile);
+            }
+
+        }
 
         private async Task CreateAudioGraph()
         {
@@ -441,6 +530,7 @@ namespace PhenoPad.SpeechService
                 Marshal.Copy(source, floatmsg, 0, (int)capacityInBytes);
                     //Debug.WriteLine("    " + capacityInBytes);
                     // without a buffer
+
                 sendBytes(floatmsg);
                 //speechStreamSocket.SendBytesAsync(floatmsg);
 
@@ -458,11 +548,25 @@ namespace PhenoPad.SpeechService
             }
         }
 
+        private List<byte> byte_accumulator;
+
         private async void sendBytes(byte[] bs)
         {
+            // To slow down streaming to server when loading test file
+            if (useFile)
+            {
+                await Task.Delay(100);
+            }
+
             bool result = await speechStreamSocket.SendBytesAsync(bs);
             if (!result)
+            {
                 await this.EndAudio();
+            }
+            else
+            {
+                byte_accumulator.AddRange(bs);
+            }
         }
 
         // Continuously read incoming data. For reading data we'll show how to use activeSocket.InputStream.AsStream()

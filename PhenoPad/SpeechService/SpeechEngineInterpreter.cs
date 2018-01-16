@@ -5,6 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Diagnostics;
 using Windows.UI.Core;
+using PhenoPad.PhenotypeService;
 
 namespace PhenoPad.SpeechService
 {
@@ -28,7 +29,7 @@ namespace PhenoPad.SpeechService
         public Y second { get { return _y; } }
     }
 
-    class TimeInterval
+    public class TimeInterval
     {
         public double start { get; set; }
         public double end { get; set; }
@@ -67,11 +68,45 @@ namespace PhenoPad.SpeechService
 
         public Conversation conversation;       // to be connected to speech manager
         public Conversation realtimeConversation;
+
+        public int conversationIndex = 0;
+
         // Empty constructor :D
         public SpeechEngineInterpreter(Conversation _conv, Conversation _realtimeconv)
         {
             this.conversation = _conv;
             this.realtimeConversation = _realtimeconv;
+        }
+
+        public void newConversation()
+        {
+            conversationIndex++;
+        }
+
+        private void queryPhenoService(string text)
+        {
+            Task<List<Phenotype>> phenosTask = PhenotypeManager.getSharedPhenotypeManager().annotateByNCRAsync(text);
+                
+            phenosTask.ContinueWith(_ =>
+            {
+                List<Phenotype> list = phenosTask.Result;
+                    
+                if (list != null && list.Count > 0)
+                {
+                    Debug.WriteLine("We detected at least " + list[0].name);
+
+                    list.Reverse();
+                    Windows.ApplicationModel.Core.CoreApplication.MainView.CoreWindow.Dispatcher.RunAsync(CoreDispatcherPriority.Normal,
+                    () =>
+                    {
+                        foreach (var p in list)
+                        {
+                            PhenotypeManager.getSharedPhenotypeManager().addPhenotypeCandidate(p, SourceType.Speech);
+                        }
+                    }
+                    );
+                }
+            });
         }
 
         // Looks at speech engine result to identify what can be done
@@ -83,7 +118,10 @@ namespace PhenoPad.SpeechService
             // First check if speech is final (remember that diarization is always slower)
             if (json.result.final)
             {
+                this.queryPhenoService(json.result.hypotheses[0].transcript);
+
                 // Then we should have a bunch of words to look at
+                double latest = 0;
                 foreach (WordAlignment wa in json.result.hypotheses[0].word_alignment)
                 {
                     // Remove <laughter> <unk> etc.
@@ -91,21 +129,25 @@ namespace PhenoPad.SpeechService
                     {
                         var w = new WordSpoken(wa.word, -1, new TimeInterval(wa.start + json.segment_start, wa.start + wa.length + json.segment_start));
                         words.Add(w);
+                        latest = wa.start + wa.length + json.segment_start;
                     }
                 }
-                words.Add(new WordSpoken(".", -1, new TimeInterval(0, 0)));
+                if (json.result.hypotheses[0].word_alignment.Count > 0)
+                {
+                    words.Add(new WordSpoken(".", -1, new TimeInterval(latest, latest)));
+                }
 
                 // because transcrip is final and has already been accounted for
                 this.tempSentence = this.constructTempSentence();
-                Debug.WriteLine(json.result.hypotheses[0].transcript.Trim());
+                //Debug.WriteLine(json.result.hypotheses[0].transcript.Trim());
 
                 this.realtimeSentences = new List<String>(this.tempSentence.Split('.'));
-                Windows.ApplicationModel.Core.CoreApplication.MainView.CoreWindow.Dispatcher.RunAsync(CoreDispatcherPriority.Normal,
-                () =>
-                {
+                //Windows.ApplicationModel.Core.CoreApplication.MainView.CoreWindow.Dispatcher.RunAsync(CoreDispatcherPriority.Normal,
+                //() =>
+                //{
                     this.formRealtimeConversation();
-                }
-                );
+                //}
+                //);
 
             }
             else
@@ -123,12 +165,13 @@ namespace PhenoPad.SpeechService
                 );
             }
 
+            /*
             Windows.ApplicationModel.Core.CoreApplication.MainView.CoreWindow.Dispatcher.RunAsync(CoreDispatcherPriority.Normal,
             () =>
             {
                 //this.conversation.UpdateLastMessage(this.constructTempBubble(), true);
             }
-            );
+            );*/
             
 
             //this.tempSentence = json.result.hypotheses[0].transcript.Trim();
@@ -182,20 +225,23 @@ namespace PhenoPad.SpeechService
                 Body = this.tempSentence,
                 Speaker = 99,
                 //DisplayTime = DateTime.Now.ToString(),
-                IsFinal = false
+                IsFinal = false,
+                ConversationIndex = this.conversationIndex
             };
 
             return message;
         }
+
         private TextMessage constructRealtimeTempBubble()
         {
             var message = new TextMessage()
             {
                 Body = this.realtimeLastSentence,
                 Speaker = 99,
-                //DisplayTime = DateTime.Now.ToString(),
-                IsFinal = false
-            };
+                //Interval = new TimeInterval(start, start + length),
+                IsFinal = false,
+                ConversationIndex = this.conversationIndex
+        };
 
             return message;
         }
@@ -218,8 +264,11 @@ namespace PhenoPad.SpeechService
         // returns index to word that has been diarized
         private int assignSpeakerToWord()
         {
+            
             int di = 0;
             int wi = 0;
+            int prevAssigned = 0;
+            /*
             while (di < diarization.Count)
             {
                 // Debug.WriteLine("Start: " + diarization[di].first.start.ToString() + " End: " + diarization[di].first.end.ToString() + " => Speaker " + diarization[di].second.ToString());
@@ -238,22 +287,52 @@ namespace PhenoPad.SpeechService
                     }
                 }
                 di++;
+            }*/
+
+            for (wi = 0; wi < words.Count; wi++)
+            {
+                bool assigned = false;
+                int bounded = -1;
+                for (di = 0; di < diarization.Count; di++)
+                {
+                    double word_middle = (words[wi].interval.start + words[wi].interval.end) / 2;
+                    if (word_middle < diarization[di].first.end)
+                    {
+                        words[wi].speaker = diarization[di].second;
+                        assigned = true;
+                        break;
+                    }
+                    if (words[wi].interval.end < diarization[di].first.end)
+                    {
+                        bounded = diarization[di].second;
+                        break;
+                    }
+                }
+                if (!assigned && bounded == -1)
+                {
+                    break;
+                }
             }
 
             return wi;
         }
 
+        
+
         // Concatenate words together to form sentences
         // awkward thing is we don't know how to get sentences
-        
         private void formConversation()
         {
             List<TextMessage> messages = new List<TextMessage>();
 
             int prevSpeaker = words[0].speaker;
+            double prevStart = 0;
+            double speechEnd = 0;
             string sentence = String.Empty;
 
-            for (int i = 0; i < words.Count; i++)
+            int i = 0;
+
+            for (i = 0; i < words.Count; i++)
             {
                 // We display a new sentence when we detect a new speaker or that the speech engine thinks an sentence has ended
                  // and that the sentence is longer than 50 characters.
@@ -263,17 +342,22 @@ namespace PhenoPad.SpeechService
                     {
                         Body = sentence + ".",
                         Speaker = (uint)prevSpeaker,
-                        //DisplayTime = DateTime.Now.ToString(),
-                        IsFinal = true
+                        //DisplayTime = format_seconds(prevStart, words[i-1].interval.end),
+                        Interval = new TimeInterval(prevStart, words[i - 1].interval.end),
+                        IsFinal = true,
+                        ConversationIndex = this.conversationIndex
                     };
                     messages.Add(message);
                     prevSpeaker = words[i].speaker;
                     sentence = String.Empty;
+
+                    prevStart = words[i].interval.start;
                 }
 
                 if (words[i].word != ".")
                 {
                     sentence += " " + words[i].word;
+                    speechEnd = words[i].interval.end;
                 }
 
                 // Words beyong this point have not been diarized yet
@@ -290,8 +374,9 @@ namespace PhenoPad.SpeechService
                 {
                     Body = sentence,
                     Speaker = (uint)prevSpeaker,
-                    //DisplayTime = DateTime.Now.ToString(),
-                    IsFinal = true
+                    Interval = new TimeInterval(prevStart, speechEnd),
+                    IsFinal = true,
+                    ConversationIndex = this.conversationIndex
                 };
                 messages.Add(m);
 
@@ -321,10 +406,10 @@ namespace PhenoPad.SpeechService
                         Body = sentence,
                         Speaker = (uint) 99,
                         //DisplayTime = DateTime.Now.ToString(),
-                        IsFinal = true
+                        IsFinal = true,
+                        ConversationIndex = this.conversationIndex
                     };
                     messages.Add(m);
-
                 }
             }
            
@@ -420,6 +505,13 @@ namespace PhenoPad.SpeechService
             {
                 Debug.WriteLine("Start: " + diarization[i].first.start.ToString() + " End: " + diarization[i].first.end.ToString() + " => Speaker " + diarization[i].second.ToString());
             }
+
+            for (int i = 0; i < words.Count; i++)
+            {
+                Debug.WriteLine("[" + i.ToString() + "] " + words[i].word + " Start: " + words[i].interval.start + " => Speaker " + words[i].speaker.ToString());
+            }
+
+            Debug.WriteLine("---------------------");
         }
 
 
@@ -449,7 +541,7 @@ namespace PhenoPad.SpeechService
 
             if (good)
             {
-                Debug.WriteLine((content.Length).ToString() + ", " + (index).ToString());
+                //Debug.WriteLine((content.Length).ToString() + ", " + (index).ToString());
                 string toReturn = content.Substring(0, index + 1);
                 if (content.Length >= index + 1)
                 {

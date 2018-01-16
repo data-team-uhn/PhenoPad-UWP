@@ -30,6 +30,8 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Collections.Specialized;
 using System.Runtime.CompilerServices;
+using Windows.Media.Core;
+using Windows.UI.Core;
 
 namespace PhenoPad
 {
@@ -50,13 +52,44 @@ namespace PhenoPad
             {
                 this._body = value;
                 this.NotifyPropertyChanged("Body");
+                
+                /*
+                Task<List<Phenotype>> phenosTask = PhenotypeManager.getSharedPhenotypeManager().annotateByNCRAsync(this._body);
+                
+                phenosTask.ContinueWith(_ =>
+                {
+                    List<Phenotype> list = phenosTask.Result;
+                    this.phenotypesInText = new ObservableCollection<Phenotype>(list);
+                    
+                    if (list != null && list.Count > 0)
+                    {
+                        Debug.WriteLine("We detected at least " + list[0].name);
+                        this.NotifyPropertyChanged("phenotypesInText");
+
+                        list.Reverse();
+
+                        Windows.ApplicationModel.Core.CoreApplication.MainView.CoreWindow.Dispatcher.RunAsync(CoreDispatcherPriority.Normal,
+                        () =>
+                        {
+                            foreach (var p in list)
+                            {
+                                PhenotypeManager.getSharedPhenotypeManager().addPhenotypeCandidate(p, SourceType.Speech);
+                            }
+                        }
+                        );
+                    }
+                });
+                //phenosTask.Start();*/
             }
         }
+        
+        public TimeInterval Interval { get; set; }
+        public int ConversationIndex { get; set; }
 
-        public string DisplayTime { get; set; }
+        //public string DisplayTime { get; set; }
 
         // Bind to phenotype display in conversation
-        public ObservableCollection<Phenotype> phenotypesInText;
+        public ObservableCollection<Phenotype> phenotypesInText { get; set; }
 
         // Now that we support more than 2 users, we need to have speaker index
         public uint Speaker { get; set; }
@@ -99,7 +132,7 @@ namespace PhenoPad
             }
         }
 
-        public event PropertyChangedEventHandler PropertyChanged;
+        public event PropertyChangedEventHandler PropertyChanged = delegate { };
 
         // This method is called by the Set accessor of each property.
         // The CallerMemberName attribute that is applied to the optional propertyName
@@ -108,10 +141,16 @@ namespace PhenoPad
         {
             if (PropertyChanged != null)
             {
-                PropertyChanged(this, new PropertyChangedEventArgs(propertyName));
+                Windows.ApplicationModel.Core.CoreApplication.MainView.CoreWindow.Dispatcher.RunAsync(CoreDispatcherPriority.Normal,
+                () =>
+                {
+                    PropertyChanged(this, new PropertyChangedEventArgs(propertyName));
+                }
+                );
             }
         }
     }
+
     class BackgroundColorConverter : IValueConverter
     {
         public object Convert(object value, Type targetType, object parameter, string language)
@@ -129,6 +168,49 @@ namespace PhenoPad
             }
             
             return Application.Current.Resources[resourceKey];
+        }
+
+        public object ConvertBack(object value, Type targetType, object parameter, string language)
+        {
+            throw new NotImplementedException();
+        }
+    }
+
+    
+    class IntervalDisplayConverter : IValueConverter
+    {
+        public object Convert(object value, Type targetType, object parameter, string language)
+        {
+            var m = ((TextMessage)value);
+
+            string now = DateTime.Today.ToString("D");
+
+            if (m.Interval != null && m.Interval.start != -1)
+            {
+                double start_time = m.Interval.start;
+                double end_time = m.Interval.end;
+
+                int start_second = (int)(start_time);
+                int start_minute = start_second / 60;
+                start_second = start_second - 60 * start_minute;
+                int start_mili = (int)(100 * (start_time - 60 * start_minute - start_second));
+
+                int end_second = (int)(end_time);
+                int end_minute = end_second / 60;
+                end_second = end_second - 60 * end_minute;
+                int end_mili = (int)(100 * (end_time - 60 * end_minute - end_second));
+
+                string result = start_minute.ToString("D2") + ":" + start_second.ToString("D2") + "." + start_mili.ToString("D2") + " - " +
+                    end_minute.ToString("D2") + ":" + end_second.ToString("D2") + "." + end_mili.ToString("D2");
+
+                return now + "\tConversation(" + m.ConversationIndex + ")" + result;
+            }
+            else
+            {
+                return now + " Processing ...";
+            }
+
+            
         }
 
         public object ConvertBack(object value, Type targetType, object parameter, string language)
@@ -168,7 +250,7 @@ namespace PhenoPad
                 {
                     Body = $"{messageCount}: {CreateRandomMessage()}",
                     Speaker = (messageCount++) % 3,
-                    DisplayTime = DateTime.Now.ToString(),
+                    //DisplayTime = DateTime.Now.ToString(),
                     IsFinal = true
                 });
             }
@@ -191,11 +273,34 @@ namespace PhenoPad
             foreach (var item in range)
             {
                 Items.Add(item);
+                item.PropertyChanged += Item_PropertyChanged;
             }
 
             this.OnPropertyChanged(new PropertyChangedEventArgs("Count"));
             this.OnPropertyChanged(new PropertyChangedEventArgs("Item[]"));
             this.OnCollectionChanged(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Reset));
+        }
+
+        private void Item_PropertyChanged(object sender, PropertyChangedEventArgs e)
+        {
+            var m = (TextMessage)sender;
+
+            int i = -1;
+            for (i = 0; i < this.Count; i++)
+            {
+                if (this[i].Body == m.Body)
+                {
+                    break;
+                }
+            }
+
+            if (i != -1 && i < this.Count)
+            {
+                this.RemoveAt(i);
+                this.Insert(i, m);
+            }
+            
+            
         }
 
         public void UpdateLastMessage(TextMessage m, bool doRemove)
@@ -399,6 +504,13 @@ namespace PhenoPad
             realtimeChatView.ItemsSource = SpeechManager.getSharedSpeechManager().realtimeConversation;
 
             SpeechManager.getSharedSpeechManager().EngineHasResult += SpeechPage_EngineHasResult;
+            SpeechManager.getSharedSpeechManager().RecordingCreated += SpeechPage_RecordingCreated;
+        }
+
+        private void SpeechPage_RecordingCreated(SpeechManager sender, Windows.Storage.StorageFile args)
+        {
+            this._mediaPlayerElement.Source = MediaSource.CreateFromStorageFile(args);
+            this._mediaPlayerElement.Visibility = Visibility.Visible;
         }
 
         private int doctor = 0;
@@ -482,6 +594,36 @@ namespace PhenoPad
             var temp = chatView.ItemsSource;
             chatView.ItemsSource = null;
             chatView.ItemsSource = temp;
+        }
+
+        private async void MessageButtonClick(object sender, RoutedEventArgs e)
+        {
+            if (this._mediaPlayerElement != null)
+            {
+                Button srcButton = (Button)sender;
+                var m = (TextMessage)srcButton.DataContext;
+                Debug.WriteLine(m.Body);
+
+                // check for current source
+                Windows.Storage.StorageFolder storageFolder =
+                    Windows.Storage.ApplicationData.Current.LocalFolder;
+                var savedFile =
+                    await storageFolder.GetFileAsync("sample_" + m.ConversationIndex + ".wav");
+
+                this._mediaPlayerElement.Source = MediaSource.CreateFromStorageFile(savedFile);
+
+                // Overloaded constructor takes the arguments days, hours, minutes, seconds, miniseconds.
+                // Create a TimeSpan with miliseconds equal to the slider value.
+
+                double actual_start = Math.Max(0, m.Interval.start - 5);
+                int start_second = (int)(actual_start);
+                int start_minute = start_second / 60;
+                start_second = start_second - 60 * start_minute;
+                int start_mili = (int)(100 * (actual_start - 60 * start_minute - start_second));
+
+                TimeSpan ts = new TimeSpan(0, 0, start_minute, start_second, start_mili);
+                this._mediaPlayerElement.MediaPlayer.Position = ts;
+            }
         }
     }
 }

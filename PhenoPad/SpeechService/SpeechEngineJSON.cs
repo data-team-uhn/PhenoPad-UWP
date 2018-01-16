@@ -64,7 +64,14 @@ namespace PhenoPad.SpeechService
         public override string ToString()
         {
             string output = "";
-            output += "Final: " + result.final.ToString() + "\t ";
+            if (result.final)
+            {
+                output += "Final\t";
+            }
+            else
+            {
+                output += "Temp\t";
+            }
             output += "(" + segment_start.ToString() + " -> " + (segment_start + segment_length).ToString() + ") \n";
             if (result.diarization != null && result.diarization.Count > 0)
             {
