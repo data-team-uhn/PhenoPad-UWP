@@ -24,19 +24,76 @@
     mc:Ignorable="d"
     Loaded="Page_Loaded">
 
-   
-    <Grid x:Name="RootGrid" Margin="0 0 0 0" Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
+
+    <Grid x:Name="RootGrid" Margin="0 0 0 0">
         <Grid.RowDefinitions>
             <RowDefinition Height="0"/>
             <RowDefinition Height="45"/>
             <RowDefinition Height="*"/>
+            <RowDefinition/>
+            <RowDefinition/>
         </Grid.RowDefinitions>
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="*" />
-            <ColumnDefinition MinWidth="250" MaxWidth="300" />
+            <ColumnDefinition />
+            <ColumnDefinition />
+            <ColumnDefinition />
         </Grid.ColumnDefinitions>
+        <VisualStateManager.VisualStateGroups>
+            <VisualStateGroup>
+                <VisualState x:Name="LandscapeState">
+                    <VisualState.Setters>
+                        <Setter Target="RootGrid.ColumnDefinitions[2].MaxWidth" Value="300"/>
+                        <Setter Target="RootGrid.ColumnDefinitions[1].Width" Value="5"/>
+                        <Setter Target="RootGrid.RowDefinitions[3].Height" Value="0"/>
+                        <Setter Target="RootGrid.RowDefinitions[4].MaxHeight" Value="0"/>
+                        <Setter Target="QuickViewGrid.(Grid.Row)" Value="2"/>
+                        <Setter Target="QuickViewGrid.(Grid.Column)" Value="2"/>
+
+                        <Setter Target="QuickViewGrid.ColumnDefinitions[0].Width" Value="*"/>
+                        <Setter Target="QuickViewGrid.ColumnDefinitions[1].Width" Value="0"/>
+                        <Setter Target="QuickViewGrid.ColumnDefinitions[2].Width" Value="0"/>
+                        <Setter Target="QuickViewGrid.RowDefinitions[0].Height" Value="*"/>
+                        <Setter Target="QuickViewGrid.RowDefinitions[1].Height" Value="*"/>
+                        <Setter Target="QuickViewGrid.RowDefinitions[2].Height" Value="*"/>
+                        <Setter Target="QuickView1.(Grid.Row)" Value="0"/>
+                        <Setter Target="QuickView2.(Grid.Row)" Value="1"/>
+                        <Setter Target="QuickView3.(Grid.Row)" Value="2"/>
+                        <Setter Target="QuickView1.(Grid.Column)" Value="0"/>
+                        <Setter Target="QuickView2.(Grid.Column)" Value="0"/>
+                        <Setter Target="QuickView3.(Grid.Column)" Value="0"/>
+                    </VisualState.Setters>
+                </VisualState>
+                <VisualState x:Name="PortraitState">
+                    <VisualState.Setters>
+                        <Setter Target="RootGrid.ColumnDefinitions[2].MaxWidth" Value="0"/>
+                        <Setter Target="RootGrid.ColumnDefinitions[1].Width" Value="0"/>
+                        <Setter Target="RootGrid.RowDefinitions[3].Height" Value="5"/>
+                        <Setter Target="RootGrid.RowDefinitions[4].MaxHeight" Value="300"/>
+                        <Setter Target="QuickViewGrid.(Grid.Row)" Value="4"/>
+                        <Setter Target="QuickViewGrid.(Grid.Column)" Value="0"/>
+                        <Setter Target="QuickViewGrid.RowDefinitions[0].Height" Value="*"/>
+                        <Setter Target="QuickViewGrid.RowDefinitions[1].Height" Value="0"/>
+                        <Setter Target="QuickViewGrid.RowDefinitions[2].Height" Value="0"/>
+                        <Setter Target="QuickViewGrid.ColumnDefinitions[0].Width" Value="*"/>
+                        <Setter Target="QuickViewGrid.ColumnDefinitions[1].Width" Value="*"/>
+                        <Setter Target="QuickViewGrid.ColumnDefinitions[2].Width" Value="*"/>
+                        <Setter Target="QuickView1.(Grid.Row)" Value="0"/>
+                        <Setter Target="QuickView2.(Grid.Row)" Value="0"/>
+                        <Setter Target="QuickView3.(Grid.Row)" Value="0"/>
+                        <Setter Target="QuickView1.(Grid.Column)" Value="0"/>
+                        <Setter Target="QuickView2.(Grid.Column)" Value="1"/>
+                        <Setter Target="QuickView3.(Grid.Column)" Value="2"/>
+                    </VisualState.Setters>
+                </VisualState>
+            </VisualStateGroup>
+        </VisualStateManager.VisualStateGroups>
         <Grid Grid.Row="0" Grid.ColumnSpan="2" Name="fakeTileBar"></Grid>
-        <RelativePanel Grid.Row="1" Grid.Column="1" Background="{x:Bind styles:MyColors.TITLE_BAR_COLOR_BRUSH}"/>
+
+        <Grid Grid.Row="1" Grid.Column="1" Background="{x:Bind styles:MyColors.TITLE_BAR_COLOR_BRUSH}"></Grid>
+        <Grid Grid.Row="1" Grid.Column="2" Background="{x:Bind styles:MyColors.TITLE_BAR_COLOR_BRUSH}"></Grid>
+        <Grid Grid.Row="2" Grid.Column="1" Background="#EEEEEE"></Grid>
+        <Grid Grid.Row="3" Grid.Column="0" Background="#EEEEEE"></Grid>
+        
         <RelativePanel Name="TopMenuRelativePanel" Grid.Row="1" Grid.Column="0" Background="{x:Bind styles:MyColors.TITLE_BAR_COLOR_BRUSH}">
             <TextBlock Text="PhenoPad" Style="{StaticResource BaseTextBlockStyle}" Foreground="#E8ECED" FontSize="21" RelativePanel.AlignRightWithPanel="True" RelativePanel.AlignVerticalCenterWithPanel="True"></TextBlock>
             <CommandBar RelativePanel.AlignTopWithPanel="True"
@@ -46,9 +103,10 @@
                 <AppBarButton Icon="Page2" Label="Notes"  Click="NotesButton_Click">
                     <AppBarButton.Flyout>
                         <MenuFlyout>
+                            
                             <MenuFlyoutItem Text="Create new note" Tag="rating"/>
-                            <MenuFlyoutItem Text="Save note" Tag="rating"/>
-                            <MenuFlyoutItem Text="Open saved note" Tag="rating"/>
+                            <MenuFlyoutItem Text="Save note" Tag="Save note to disk." Click="SaveNote_Click"/>
+                            <MenuFlyoutItem Text="Open saved note" Tag="Open a saved note." Click="LoadNote_Click"/>
                         </MenuFlyout>
                     </AppBarButton.Flyout>
                 </AppBarButton>
@@ -73,6 +131,11 @@
                     -->
                     <ToolTipService.ToolTip>
                         <TextBlock Text="Enable video recording"/>
+                    </ToolTipService.ToolTip>
+                </AppBarButton>
+                <AppBarButton Name="imageButton" Icon="BrowsePhotos" Label="Speech Recognition" Click="LoadImage_Click">
+                    <ToolTipService.ToolTip>
+                        <TextBlock Text="Load a image."/>
                     </ToolTipService.ToolTip>
                 </AppBarButton>
             </CommandBar>
@@ -133,13 +196,18 @@
             </ContentControl.ContentTransitions>
         </ContentControl>
         <!-- Added Phenotypes-->
-        <Grid Grid.Row="2" Grid.Column="1" BorderThickness="5 0 0 0" BorderBrush="{ThemeResource AppBarBackground}">
+        <Grid Name="QuickViewGrid" Grid.Row="2" Grid.Column="1" BorderThickness="0 0 0 0" BorderBrush="{ThemeResource AppBarBackground}">
             <Grid.RowDefinitions>
-                <RowDefinition Height="*"/>
-                <RowDefinition Height="*"/>
-                <RowDefinition Height="*"/>
+                <RowDefinition/>
+                <RowDefinition/>
+                <RowDefinition/>
             </Grid.RowDefinitions>
-            <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition/>
+                <ColumnDefinition/>
+                <ColumnDefinition/>
+            </Grid.ColumnDefinitions>
+            <Grid Name="QuickView1" BorderBrush="#EEEEEE" BorderThickness="2,2,2,2">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="25"/>
                         <RowDefinition Height="*"/>
@@ -165,7 +233,7 @@
                     </ListView>
                 </Grid>
 
-            <Grid Grid.Row="1"  BorderThickness="0 5 0 5"  BorderBrush="{ThemeResource AppBarBackground}">
+            <Grid Name="QuickView2" BorderBrush="#EEEEEE" BorderThickness="2,2,2,2">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="20"/>
                     <RowDefinition Height="*"/>
@@ -189,7 +257,7 @@
                 </ListView>
             </Grid>
 
-            <Grid Grid.Row="2">
+            <Grid Name="QuickView3" BorderBrush="#EEEEEE" BorderThickness="2,2,2,2">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="20"/>
                     <RowDefinition Height="*"/>
