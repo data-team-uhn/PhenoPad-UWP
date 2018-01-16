@@ -613,11 +613,13 @@ namespace PhenoPad
 
                     //cmdBarTextBlock.Text = dictatedTextBuilder.ToString();
                     cmdBarTextBlock.Text = args.Result.Text;
-                    SpeechManager.getSharedSpeechManager().AddNewMessage(args.Result.Text);
+                    //SpeechManager.getSharedSpeechManager().AddNewMessage(args.Result.Text);
                     List<Phenotype> annoResults = await PhenotypeManager.getSharedPhenotypeManager().annotateByNCRAsync(cmdBarTextBlock.Text);
                     if (annoResults != null)
                     {
                         PhenotypeManager.getSharedPhenotypeManager().addPhenotypeInSpeech(annoResults);
+
+                        /**
                         AnnoPhenoStackPanel.Children.Clear();
                         foreach (Phenotype ap in annoResults)
                         {
@@ -635,6 +637,7 @@ namespace PhenoPad
                             };
                             AnnoPhenoStackPanel.Children.Add(tb);
                         }
+                         **/
                     }
                 });
             }
@@ -722,7 +725,7 @@ namespace PhenoPad
                     {
                         if ((uint)ex.HResult == HResultPrivacyStatementDeclined)
                         {
-                            // Show a UI link to the privacy settings.
+                            //Show a UI link to the privacy settings.
                             //hlOpenPrivacySettings.Visibility = Visibility.Visible;
                         }
                         else

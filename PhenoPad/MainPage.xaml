@@ -141,6 +141,11 @@
                         <TextBlock Text="Enable audio recording"/>
                     </ToolTipService.ToolTip>
                 </AppBarToggleButton>
+                <AppBarToggleButton Name="" Foreground="LightBlue" Icon="Microphone" Label="Speech Recognition" Click="MicButton_Click">
+                    <ToolTipService.ToolTip>
+                        <TextBlock Text="Use Microsoft speech recognition."/>
+                    </ToolTipService.ToolTip>
+                </AppBarToggleButton>
                 
                
             </CommandBar>
@@ -184,9 +189,9 @@
                         <InkToolbarPenConfigurationControl/>
                     </InkToolbarCustomPenButton.ConfigurationContent>
                 </InkToolbarCustomPenButton>-->
-                <InkToolbarCustomToolButton x:Name="toolButtonLasso" Background="{x:Bind styles:MyColors.TITLE_BAR_COLOR_BRUSH}" Click="ToolButton_Lasso" ToolTipService.ToolTip="Selection tool">
+                <InkToolbarCustomToggleButton x:Name="toolButtonLasso" Background="{x:Bind styles:MyColors.TITLE_BAR_COLOR_BRUSH}" Click="ToolButton_Lasso" ToolTipService.ToolTip="Selection tool">
                     <SymbolIcon Symbol="{x:Bind LassoSelect}"/>
-                </InkToolbarCustomToolButton>
+                </InkToolbarCustomToggleButton>
                 <InkToolbarCustomToggleButton x:Name="toggleButton" Click="Toggle_Custom" Background="{x:Bind styles:MyColors.TITLE_BAR_COLOR_BRUSH}" ToolTipService.ToolTip="Touch Writing">
                     <SymbolIcon Symbol="{x:Bind TouchWriting}"/>
                 </InkToolbarCustomToggleButton>
@@ -324,11 +329,14 @@
                 </StackPanel>
             </Grid>
 
-            <StackPanel Name="pageIndexPanel" Orientation="Horizontal" RelativePanel.AlignBottomWithPanel="True" RelativePanel.AlignHorizontalCenterWithPanel="True">
+            <StackPanel Name="pageIndexPanel" Orientation="Horizontal" RelativePanel.AlignBottomWithPanel="True" RelativePanel.AlignRightWithPanel="True">
                 <Button Height="30" Width="30" Padding="0 0 0 0" Background="WhiteSmoke"  Click="AddPageButton_Click">
                     <SymbolIcon Symbol="Add" Foreground="{x:Bind styles:MyColors.TITLE_BAR_COLOR_BRUSH}" />
                 </Button>
             </StackPanel>
+            <TextBlock Name="cmdBarTextBlock" Margin="12,14" RelativePanel.AlignLeftWithPanel="True" RelativePanel.LeftOf="pageIndexPanel" RelativePanel.AlignBottomWithPanel="True"
+                               Text=""
+                               Visibility="Visible"/>
             <CommandBar RelativePanel.AlignBottomWithPanel="True"
                         RelativePanel.AlignRightWithPanel="True"
                         Visibility="Collapsed"
@@ -395,11 +403,6 @@
                     <AppBarButton Icon="OpenFile" Label="Open notes" Click="LoadNote_Click"/>
                 </CommandBar.SecondaryCommands>
 
-                <CommandBar.Content>
-                    <TextBlock Name="cmdBarTextBlock" Margin="12,14"
-                               Text="{x:Bind speechManager.speechInterpreter.latestSentence}"
-                               Visibility="Visible"/>
-                </CommandBar.Content>
             </CommandBar>
 
             

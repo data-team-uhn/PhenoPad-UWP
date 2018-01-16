@@ -92,6 +92,7 @@ namespace PhenoPad.PhenotypeService
                 {
                     phenotypesInSpeech.Add(p);
                 }
+                addPhenotypeCandidate(p, SourceType.Speech);
             }
         }
         public void addPhenotypeCandidate(Phenotype pheno, SourceType from)
