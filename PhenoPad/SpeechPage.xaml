@@ -17,6 +17,7 @@
     xmlns:local="using:PhenoPad"
     xmlns:customcontorl="using:PhenoPad.CustomContorl"
     xmlns:phenotypeservice="using:PhenoPad.PhenotypeService"
+    xmlns:styles="using:PhenoPad.Styles"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     mc:Ignorable="d">
@@ -181,34 +182,66 @@
             </ListView.ItemTemplate>
         </local:ChatListView>
 
-        <local:ChatListView x:Name="realtimeChatView" Grid.Row="0" Grid.Column="1" 
-                            IncrementalLoadingThreshold="2" Margin="10" 
+        <Grid Grid.Column="1">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="4*"/>
+                <RowDefinition Height="6*"/>
+            </Grid.RowDefinitions>
+
+            <Grid Name="QuickView1" BorderBrush="#EEEEEE" BorderThickness="2,2,2,2">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="25"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+                <TextBlock Grid.Row="0" Margin="10 0 0 0" Foreground="{x:Bind styles:MyColors.PHENOTYPE_BLUE}">Are you looking for:</TextBlock>
+                <ListView x:Name="candidatePhenoListView" Grid.Row="1" ItemsSource="{x:Bind PhenoMana.phenotypesCandidates, Mode=OneWay}">
+
+                    <ListView.ItemTemplate>
+                        <DataTemplate x:DataType="phenotypeservice:Phenotype">
+                            <customcontorl:PhenotypeControl phenotypeName="{x:Bind name}" phenotypeId="{x:Bind hpId}" phenotypeState="{x:Bind state}" sourceType="Speech"></customcontorl:PhenotypeControl>
+                        </DataTemplate>
+                    </ListView.ItemTemplate>
+                    <ListView.ItemContainerStyle>
+                        <Style TargetType="ListViewItem">
+                            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                            <Setter Property="VerticalContentAlignment" Value="Center" />
+                            <Setter Property="Margin" Value="0,0,0,0" />
+                            <Setter Property="Padding" Value="5,0,0,0" />
+                            <Setter Property="MinHeight" Value="20" />
+                        </Style>
+                    </ListView.ItemContainerStyle>
+
+                </ListView>
+            </Grid>
+
+            <local:ChatListView x:Name="realtimeChatView" Grid.Row="1" Grid.Column="0" 
+                            IncrementalLoadingThreshold="2" Margin="2" 
                             BorderBrush="LightGray" BorderThickness="2"
                             ScrollViewer.VerticalScrollBarVisibility="Hidden">
-            <ListView.ItemsPanel>
-                <ItemsPanelTemplate>
-                    <ItemsStackPanel ItemsUpdatingScrollMode="KeepLastItemInView" VerticalAlignment="Bottom"  HorizontalAlignment="Right"/>
-                </ItemsPanelTemplate>
-            </ListView.ItemsPanel>
+                <ListView.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <ItemsStackPanel ItemsUpdatingScrollMode="KeepLastItemInView" VerticalAlignment="Bottom"  HorizontalAlignment="Right"/>
+                    </ItemsPanelTemplate>
+                </ListView.ItemsPanel>
 
-            <ListView.ItemContainerStyle>
-                <Style TargetType="ListViewItem">
-                    <Setter Property="HorizontalContentAlignment" Value="Stretch" />
-                    <Setter Property="Padding" Value="0"/>
-                    <Setter Property="Margin" Value="0"/>
-                </Style>
-            </ListView.ItemContainerStyle>
-            
-            <ListView.ItemContainerTransitions>
-                <TransitionCollection/>
-            </ListView.ItemContainerTransitions>
+                <ListView.ItemContainerStyle>
+                    <Style TargetType="ListViewItem">
+                        <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                        <Setter Property="Padding" Value="0"/>
+                        <Setter Property="Margin" Value="0"/>
+                    </Style>
+                </ListView.ItemContainerStyle>
 
-            <ListView.ItemTemplate>
-                <DataTemplate x:DataType="local:TextMessage">
-                    <Grid Margin="6">
+                <ListView.ItemContainerTransitions>
+                    <TransitionCollection/>
+                </ListView.ItemContainerTransitions>
 
-                        <!--Right/Bottom polygon-->
-                        <!--<Polygon
+                <ListView.ItemTemplate>
+                    <DataTemplate x:DataType="local:TextMessage">
+                        <Grid Margin="6">
+
+                            <!--Right/Bottom polygon-->
+                            <!--<Polygon
                             Grid.Row="1"
                             Fill="LightSlateGray"
                             HorizontalAlignment="Right"
@@ -216,19 +249,19 @@
                             Visibility="Visible"
                             Margin="0,0,10,0"/>-->
 
-                        <!--Message color-->
-                        <Grid
+                            <!--Message color-->
+                            <Grid
                             Grid.Row="0"
                             Background="LightSlateGray"/>
 
-                        <Grid
+                            <Grid
                             Grid.Row="0">
-                            <Grid.RowDefinitions>
-                                <RowDefinition Height="Auto"/>
-                                <RowDefinition Height="Auto"/>
-                            </Grid.RowDefinitions>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                </Grid.RowDefinitions>
 
-                            <TextBlock 
+                                <TextBlock 
                                 Text="{x:Bind Body}"
                                 Grid.Row="0"
                                 Grid.Column="0"
@@ -240,7 +273,7 @@
                                 VerticalAlignment="Center"
                                 Foreground="WhiteSmoke"/>
 
-                            <TextBlock
+                                <TextBlock
                                 Grid.Row="1"
                                 FontSize="14"
                                 Text="{Binding Converter={StaticResource intervalConverter}}"
@@ -248,12 +281,15 @@
                                 Opacity="0.7"
                                 Padding="3" 
                                 Foreground="WhiteSmoke"/>
+                            </Grid>
+
                         </Grid>
-                        
-                    </Grid>
-                </DataTemplate>
-            </ListView.ItemTemplate>
-        </local:ChatListView>
+                    </DataTemplate>
+                </ListView.ItemTemplate>
+            </local:ChatListView>
+            
+        </Grid>
+        
 
         <!-- To allow doctor to identify "himself"-->
         <Grid  Grid.Row="1" Grid.ColumnSpan="2">
@@ -276,11 +312,15 @@
                 
             </StackPanel>
 
-            <MediaPlayerElement x:Name="_mediaPlayerElement" 
+            <StackPanel Orientation="Horizontal" Grid.Column="1" Padding="5,3,3,3">
+                <TextBlock x:Name="mediaText"  Text="Recorded Audio" 
+                    Margin="0" 
+                    Padding="5,5,5,1"/>
+                <MediaPlayerElement x:Name="_mediaPlayerElement" 
                                     AreTransportControlsEnabled="True" 
                                     HorizontalAlignment="Stretch"  Grid.Column="1"
                                 Visibility="Collapsed"/>
-
+            </StackPanel>
             <!--<Grid
                 Grid.Column="1">
                 <Border Padding="25,3,15,3"

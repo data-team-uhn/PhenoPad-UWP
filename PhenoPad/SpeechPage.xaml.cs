@@ -494,7 +494,9 @@ namespace PhenoPad
 
     public sealed partial class SpeechPage : Page
     {
-      
+
+        public PhenotypeManager PhenoMana => PhenotypeManager.getSharedPhenotypeManager();
+
         public SpeechPage()
         {
             this.InitializeComponent();
@@ -513,7 +515,7 @@ namespace PhenoPad
             this._mediaPlayerElement.Source = MediaSource.CreateFromStorageFile(args);
             this._mediaPlayerElement.Visibility = Visibility.Visible;
             this.loadedMedia = args.Name;
-            this._mediaPlayerElement.Name = args.Name;
+            this.mediaText.Text = args.Name;
         }
 
         private int doctor = 0;
@@ -617,7 +619,7 @@ namespace PhenoPad
                 {
                     this._mediaPlayerElement.Source = MediaSource.CreateFromStorageFile(savedFile);
                     this.loadedMedia = savedFile.Name;
-                    this._mediaPlayerElement.Name = savedFile.Name;
+                    this.mediaText.Text = savedFile.Name;
                 }
 
                 // Overloaded constructor takes the arguments days, hours, minutes, seconds, miniseconds.
