@@ -53,8 +53,8 @@ namespace PhenoPad.CustomControl
         private int UNPROCESSED_RESOLUTION = 5;
         private Color DEFAULT_STROKE_COLOR = MyColors.DEFUALT_STROKE;
         private Color SELECTED_STROKE_COLOR = MyColors.PHENOTYPE_BLUE_COLOR;
-        private float PAGE_HEIGHT = 2000;
-        private float PAGE_WIDTH = 1500;
+        public float PAGE_HEIGHT = 2000;
+        public float PAGE_WIDTH = 1500;
 
         private DoubleCollection UNPROCESSED_DASH = new DoubleCollection() { 5, 2 };
         private Rect boundingRect;

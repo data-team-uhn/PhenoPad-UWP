@@ -35,6 +35,7 @@ using Windows.ApplicationModel.Core;
 using PhenoPad.Styles;
 using Windows.Graphics.Imaging;
 using Windows.UI.Xaml.Media.Imaging;
+using Microsoft.Graphics.Canvas;
 
 namespace PhenoPad
 {
@@ -1079,6 +1080,73 @@ namespace PhenoPad
             }
         }
 
+        private async void SaveNoteToImage_Click(object sender, RoutedEventArgs e)
+        {
+            // Get all strokes on the InkCanvas.
+            IReadOnlyList<InkStroke> currentStrokes = inkCanvas.InkPresenter.StrokeContainer.GetStrokes();
+
+            // Strokes present on ink canvas.
+            if (currentStrokes.Count > 0)
+            {
+                CanvasDevice device = CanvasDevice.GetSharedDevice();
+                CanvasRenderTarget renderTarget = new CanvasRenderTarget(device, (int)curPage.PAGE_WIDTH, (int)curPage.PAGE_HEIGHT, 96);
+                using (var ds = renderTarget.CreateDrawingSession())
+                {
+                    ds.Clear(Colors.White);
+                    ds.DrawInk(currentStrokes);
+                }
+                // Let users choose their ink file using a file picker.
+                // Initialize the picker.
+                Windows.Storage.Pickers.FileSavePicker savePicker =
+                    new Windows.Storage.Pickers.FileSavePicker();
+                savePicker.SuggestedStartLocation =
+                    Windows.Storage.Pickers.PickerLocationId.DocumentsLibrary;
+                savePicker.FileTypeChoices.Add(
+                    "Images",
+                    new List<string>() { ".gif", ".jpg", ".tif", ".png" });
+                savePicker.DefaultFileExtension = ".jpg";
+                savePicker.SuggestedFileName = "InkImage";
+
+                // Show the file picker.
+                Windows.Storage.StorageFile file =
+                    await savePicker.PickSaveFileAsync();
+                // When chosen, picker returns a reference to the selected file.
+                if (file != null)
+                {
+                    // Prevent updates to the file until updates are 
+                    // finalized with call to CompleteUpdatesAsync.
+                    Windows.Storage.CachedFileManager.DeferUpdates(file);
+                    // Open a file stream for writing.
+                    IRandomAccessStream stream = await file.OpenAsync(Windows.Storage.FileAccessMode.ReadWrite);
+                    // Write the ink strokes to the output stream.
+                    using (IOutputStream outputStream = stream.GetOutputStreamAt(0))
+                    {
+                        await renderTarget.SaveAsync(stream, CanvasBitmapFileFormat.Jpeg, 1f);
+                    }
+                    stream.Dispose();
+
+                    // Finalize write so other apps can update file.
+                    Windows.Storage.Provider.FileUpdateStatus status =
+                        await Windows.Storage.CachedFileManager.CompleteUpdatesAsync(file);
+
+                    if (status == Windows.Storage.Provider.FileUpdateStatus.Complete)
+                    {
+                        // File saved.
+                        NotifyUser("Your note has been saved.", NotifyType.StatusMessage, 2);
+                    }
+                    else
+                    {
+                        // File couldn't be saved.
+                        NotifyUser("Your note couldn't be saved.", NotifyType.ErrorMessage, 2);
+                    }
+                }
+                // User selects Cancel and picker returns null.
+                else
+                {
+                    // Operation cancelled.
+                }
+            }
+        }
     }
 
     public enum NotifyType

@@ -106,18 +106,20 @@
                             
                             <MenuFlyoutItem Text="Create new note" Tag="rating"/>
                             <MenuFlyoutItem Text="Save note" Tag="Save note to disk." Click="SaveNote_Click"/>
+                            <MenuFlyoutItem Text="Save image" Tag="Save note to image." Click="SaveNoteToImage_Click"/>
                             <MenuFlyoutItem Text="Open saved note" Tag="Open a saved note." Click="LoadNote_Click"/>
+                            
                         </MenuFlyout>
                     </AppBarButton.Flyout>
                 </AppBarButton>
                 <AppBarToggleButton Icon="PreviewLink" Label="Overview" Name="sdf" Click="OverviewButton_Click"/>
                 <AppBarToggleButton Icon="Message" Label="Speech" Name="ddd" Click="SpeechButton_Click"/>
                 <AppBarSeparator/>
-                <AppBarToggleButton Name="testButton" Icon="Microphone" Label="Speech Recognition" Click="TestWS_Click">
+                <AppBarButton Name="imageButton" Icon="BrowsePhotos" Label="Speech Recognition" Click="LoadImage_Click">
                     <ToolTipService.ToolTip>
-                        <TextBlock Text="Enable audio recording"/>
+                        <TextBlock Text="Load a image."/>
                     </ToolTipService.ToolTip>
-                </AppBarToggleButton>
+                </AppBarButton>
 
                 <AppBarButton  Icon="WebCam" Label="Photo/Video"  Click="TakePhoto_Click" >
                     <!--
@@ -133,11 +135,13 @@
                         <TextBlock Text="Enable video recording"/>
                     </ToolTipService.ToolTip>
                 </AppBarButton>
-                <AppBarButton Name="imageButton" Icon="BrowsePhotos" Label="Speech Recognition" Click="LoadImage_Click">
+                <AppBarToggleButton Name="testButton" Icon="Microphone" Label="Speech Recognition" Click="TestWS_Click">
                     <ToolTipService.ToolTip>
-                        <TextBlock Text="Load a image."/>
+                        <TextBlock Text="Enable audio recording"/>
                     </ToolTipService.ToolTip>
-                </AppBarButton>
+                </AppBarToggleButton>
+                
+               
             </CommandBar>
             <InkToolbar Margin="40 0 0 0" Name="MainPageInkBar" ActiveToolChanged="CurrentToolChanged" Orientation="Horizontal" ButtonFlyoutPlacement="Bottom" RelativePanel.AlignTopWithPanel="True"
                         RelativePanel.RightOf="topCmdBar" Background="LightBlue" InitialControls="None">
