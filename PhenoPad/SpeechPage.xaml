@@ -312,14 +312,17 @@
                 
             </StackPanel>
 
-            <StackPanel Orientation="Horizontal" Grid.Column="1" Padding="5,3,3,3">
+            <StackPanel Orientation="Horizontal" Grid.Column="1" Padding="5,3,3,3"
+                        HorizontalAlignment="Center">
                 <TextBlock x:Name="mediaText"  Text="Recorded Audio" 
                     Margin="0" 
-                    Padding="5,5,5,1"/>
+                    Padding="5,5,5,1"
+                           Visibility="Collapsed"/>
                 <MediaPlayerElement x:Name="_mediaPlayerElement" 
                                     AreTransportControlsEnabled="True" 
                                     HorizontalAlignment="Stretch"  Grid.Column="1"
-                                Visibility="Collapsed"/>
+                                Visibility="Collapsed" Height="96" Width="863"
+                                    />
             </StackPanel>
             <!--<Grid
                 Grid.Column="1">

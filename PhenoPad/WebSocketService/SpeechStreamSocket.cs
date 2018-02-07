@@ -18,7 +18,7 @@ namespace PhenoPad.WebSocketService
         MainPage rootPage = MainPage.Current;
 
         // !!WARNING !! server address changes every time
-        public string serverAddress = "34.228.78.122";
+        public string serverAddress = "52.87.166.198";
         private string serverPort = "8888";
 
         NetworkAdapter networkAdapter;

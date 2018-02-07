@@ -197,6 +197,11 @@ namespace PhenoPad.SpeechService
             // Then check if we have results from diarization
             if (json.result.diarization != null && json.result.diarization.Count > 0)
             {
+                if (!json.result.diarization_incremental)
+                {
+                    Debug.WriteLine("Received new diarization. Removing previous results.");
+                    this.diarization.Clear();
+                }
                 foreach (var d in json.result.diarization)
                 {
                     int speaker = d.speaker;
@@ -286,27 +291,7 @@ namespace PhenoPad.SpeechService
             int di = 0;
             int wi = 0;
             int prevAssigned = 0;
-            /*
-            while (di < diarization.Count)
-            {
-                // Debug.WriteLine("Start: " + diarization[di].first.start.ToString() + " End: " + diarization[di].first.end.ToString() + " => Speaker " + diarization[di].second.ToString());
-                for (int i = wi; i < words.Count; i++)
-                {
-                    if (words[i].interval.start < diarization[di].first.end)
-                    {
-                        words[i].speaker = diarization[di].second;
-                        //Debug.WriteLine("Word[" + i.ToString() + "] Start: " + words[i].interval.start + " => Speaker " + diarization[di].second.ToString());
-                    }
-                    else
-                    {
-                        //Debug.WriteLine("interval[" + di.ToString() + "] => Speaker " + diarization[di].second.ToString() + " Word Index: " + wi.ToString());
-                        wi = i;
-                        break;
-                    }
-                }
-                di++;
-            }*/
-
+           
             for (wi = 0; wi < words.Count; wi++)
             {
                 bool assigned = false;

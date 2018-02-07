@@ -514,6 +514,7 @@ namespace PhenoPad
         {
             this._mediaPlayerElement.Source = MediaSource.CreateFromStorageFile(args);
             this._mediaPlayerElement.Visibility = Visibility.Visible;
+            this.mediaText.Visibility = Visibility.Visible;
             this.loadedMedia = args.Name;
             this.mediaText.Text = args.Name;
         }
