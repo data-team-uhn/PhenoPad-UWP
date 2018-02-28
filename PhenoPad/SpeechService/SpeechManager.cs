@@ -66,6 +66,7 @@ namespace PhenoPad.SpeechService
         public event TypedEventHandler<SpeechManager, SpeechEngineInterpreter> EngineHasResult;
         public event TypedEventHandler<SpeechManager, StorageFile> RecordingCreated;
 
+        // file debug seems to be broken?
         private bool useFile = false;
         private CancellationTokenSource cancellationSource;
 
@@ -147,9 +148,13 @@ namespace PhenoPad.SpeechService
                     attemptConnection = false;
                 }
             }
-            
-             
+
             await CreateAudioGraph();
+
+            // Wait 10 seconds so that the server has time to create a worker
+            // else you'll see lots of audio delays
+            await Task.Delay(3000);
+            MainPage.Current.NotifyUser("Connection established", NotifyType.StatusMessage, 2);
 
             if (useFile)
             {
@@ -221,8 +226,13 @@ namespace PhenoPad.SpeechService
                              }
                              catch (Exception e)
                              {
+                                 StackTrace st = new StackTrace(e, true);
+                                 StackFrame frame = st.GetFrames()[0];
                                  Debug.WriteLine(e.ToString());
-                                 Debug.WriteLine(accumulator);
+                                 Debug.WriteLine(frame.ToString());
+                                 Debug.WriteLine(frame.GetFileName().ToString());
+                                 Debug.WriteLine(frame.GetFileLineNumber().ToString());
+                                 //Debug.WriteLine(accumulator);
                                  Debug.WriteLine("===SERIOUS PROBLEM!====");
                              }
                          }
@@ -365,10 +375,9 @@ namespace PhenoPad.SpeechService
         private async Task CreateAudioGraph()
         {
             // Create an AudioGraph with default settings
-            AudioGraphSettings settings = new AudioGraphSettings(AudioRenderCategory.Other);
-            settings.QuantumSizeSelectionMode = QuantumSizeSelectionMode.LowestLatency;
-            //settings.DesiredSamplesPerQuantum = 16000 / 4;
-            //settings.EncodingProperties.ChannelCount = 1;
+            AudioGraphSettings settings = new AudioGraphSettings(AudioRenderCategory.Communications);
+            // do not send too few bytes, has negative impat on recognition accuracy
+            settings.QuantumSizeSelectionMode = QuantumSizeSelectionMode.SystemDefault;
             
             CreateAudioGraphResult result = await AudioGraph.CreateAsync(settings);
             
@@ -382,11 +391,14 @@ namespace PhenoPad.SpeechService
             graph = result.Graph;
 
             AudioEncodingProperties nodeEncodingProperties = graph.EncodingProperties;
+
+            // Makes sure this expresses 16K Hz, F32LE format, with Byte rate of 16k x 4 bytes per second
+            // Jixuan says the audio graph does not change audio format
             nodeEncodingProperties.ChannelCount = 1;
             nodeEncodingProperties.SampleRate = 16000;
-            nodeEncodingProperties.BitsPerSample = 16;
-            nodeEncodingProperties.Bitrate = 16000 * 16;
-            nodeEncodingProperties.Subtype = "PCM";
+            nodeEncodingProperties.BitsPerSample = 32;
+            nodeEncodingProperties.Bitrate = 16000 * 32;
+            nodeEncodingProperties.Subtype = "Float";
             // Create a frame output node
             frameOutputNode = graph.CreateFrameOutputNode(nodeEncodingProperties);
             graph.QuantumStarted += AudioGraph_QuantumStarted;
@@ -432,7 +444,7 @@ namespace PhenoPad.SpeechService
             }
             else
             {
-                CreateAudioDeviceInputNodeResult deviceInputNodeResult = await graph.CreateDeviceInputNodeAsync(MediaCategory.Other);
+                CreateAudioDeviceInputNodeResult deviceInputNodeResult = await graph.CreateDeviceInputNodeAsync(MediaCategory.Communications);
                 if (deviceInputNodeResult.Status != AudioDeviceNodeCreationStatus.Success)
                 {
                     // Cannot create device input node
@@ -562,11 +574,25 @@ namespace PhenoPad.SpeechService
             bool result = await speechStreamSocket.SendBytesAsync(bs);
             if (!result)
             {
-                await this.EndAudio();
+                try
+                {
+                    await this.EndAudio();
+                } catch (Exception e)
+                {
+                    Debug.WriteLine("Diarization engine stopped unexpectedly");
+                }
+                
             }
             else
             {
-                byte_accumulator.AddRange(bs);
+                try
+                {
+                    byte_accumulator.AddRange(bs);
+                } catch (Exception ex)
+                {
+                    Debug.WriteLine(ex.Message);
+                }
+                
             }
         }
 

@@ -18,7 +18,8 @@ namespace PhenoPad.WebSocketService
         MainPage rootPage = MainPage.Current;
 
         // !!WARNING !! server address changes every time
-        public string serverAddress = "52.87.166.198";
+        // public string serverAddress = "172.20.8.14";  //(sickkids)
+        public string serverAddress = "34.228.160.204";
         private string serverPort = "8888";
 
         NetworkAdapter networkAdapter;
@@ -68,7 +69,7 @@ namespace PhenoPad.WebSocketService
                  });
                 **/
 
-                MainPage.Current.NotifyUser("Connecting to speech engine ...", NotifyType.StatusMessage, 5);
+                MainPage.Current.NotifyUser("Connecting to speech engine, please wait ...", NotifyType.StatusMessage, 2);
 
                 await connectTask;
                 dataWriter = new DataWriter(this.streamSocket.OutputStream);

@@ -281,6 +281,19 @@ namespace PhenoPad
             this.OnCollectionChanged(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Reset));
         }
 
+        public void AddRange(List<TextMessage> range)
+        {
+            foreach (var item in range)
+            {
+                Items.Add(item);
+                item.PropertyChanged += Item_PropertyChanged;
+            }
+
+            this.OnPropertyChanged(new PropertyChangedEventArgs("Count"));
+            this.OnPropertyChanged(new PropertyChangedEventArgs("Item[]"));
+            this.OnCollectionChanged(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Reset));
+        }
+
         private void Item_PropertyChanged(object sender, PropertyChangedEventArgs e)
         {
             var m = (TextMessage)sender;
@@ -303,36 +316,23 @@ namespace PhenoPad
             
         }
 
-        public void UpdateLastMessage(TextMessage m, bool doRemove)
+        public void UpdateLastMessage(TextMessage m, bool addNew)
         {
-            /*
-            if (doRemove && Items.Count > 0)
-            {
-                Items.RemoveAt(Items.Count - 1);
-            }
-            Items.Add(m);
-
-            if (doRemove)
-            {
-                this.OnPropertyChanged(new PropertyChangedEventArgs("Count"));
-            }
-            */
-
-            if (doRemove == false || Items.Count == 0)
+            if (addNew || Items.Count == 0)
             {
                 Items.Add(m);
-
-                this.OnPropertyChanged(new PropertyChangedEventArgs("Count"));
-                this.OnPropertyChanged(new PropertyChangedEventArgs("Item[]"));
-                this.OnCollectionChanged(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Reset));
-            }
-            else
+                m.PropertyChanged += Item_PropertyChanged;
+            } else
             {
-                Items[Items.Count - 1].Body = m.Body;
-                Items[Items.Count - 1] = m;
-                this.OnCollectionChanged(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Reset));
+                Items.RemoveAt(Items.Count - 1);
+                Items.Add(m);
+                m.PropertyChanged += Item_PropertyChanged;
             }
-
+            //var changedItems = new List<TextMessage>(m);
+            this.OnPropertyChanged(new PropertyChangedEventArgs("Count"));
+            this.OnPropertyChanged(new PropertyChangedEventArgs("Item[]"));
+            this.OnCollectionChanged(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Reset));
+            //this.OnCollectionChanged(changedItems, Items.Count - 1);
         }
     }
 
