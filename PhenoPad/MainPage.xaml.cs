@@ -1175,9 +1175,9 @@ namespace PhenoPad
         }
         private async void ChangeServer_Click(object sender, RoutedEventArgs e)
         {
-            string text = await InputTextDialogAsync("Change a server: ", SpeechManager.getSharedSpeechManager().speechStreamSocket.serverAddress);
+            string text = await InputTextDialogAsync("Change a server: ", "");
             if(text != "" && text != string.Empty)
-                SpeechManager.getSharedSpeechManager().speechStreamSocket.serverAddress = text;
+                SpeechManager.getSharedSpeechManager().setServerAddress(text);
             
         }
     }

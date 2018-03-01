@@ -49,6 +49,7 @@ namespace PhenoPad.SpeechService
 
     public class SpeechManager
     {
+        private string serverAddress = "34.236.36.193";
         public static SpeechManager sharedSpeechManager;
         
         public Conversation conversation = new Conversation();
@@ -72,7 +73,7 @@ namespace PhenoPad.SpeechService
         public SpeechManager()
         {
             this.speechInterpreter = new SpeechEngineInterpreter(this.conversation, this.realtimeConversation);
-            this.speechStreamSocket = new SpeechStreamSocket();
+            this.speechStreamSocket = new SpeechStreamSocket(this.serverAddress);
         }
 
         public static SpeechManager getSharedSpeechManager()
@@ -87,7 +88,10 @@ namespace PhenoPad.SpeechService
                 return sharedSpeechManager;
             }
         }
-
+        public void setServerAddress(string ads)
+        {
+            this.serverAddress = ads;
+        }
         public void AddNewMessage(string text)
         {
             if (text.Length > 0)
@@ -108,7 +112,7 @@ namespace PhenoPad.SpeechService
 
             while (attemptConnection)
             {
-                speechStreamSocket = new SpeechStreamSocket();
+                speechStreamSocket = new SpeechStreamSocket(this.serverAddress);
                 bool succeed = await speechStreamSocket.ConnectToServer();
 
                 if (!succeed)
