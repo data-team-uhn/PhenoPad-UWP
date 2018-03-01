@@ -30,13 +30,15 @@ namespace PhenoPad.WebSocketService
         {
             // Socket constructor does nothing :D
         }
-        public SpeechStreamSocket(string sAddress)
+        public SpeechStreamSocket(string sAddress, string port)
         {
             this.serverAddress = sAddress;
+            this.serverPort = port;
         }
 
-        public void setServerAddress(string ads) {
+        public void setServerAddress(string ads, string pt) {
             this.serverAddress = ads;
+            this.serverPort= pt;
         }
 
 
@@ -61,7 +63,7 @@ namespace PhenoPad.WebSocketService
             //socket.SetRequestHeader("content-type", "audio/x-raw");
             try
             {
-                Task connectTask = this.streamSocket.ConnectAsync(new Uri("ws://" + SpeechStreamSocket.serverAddress + ":" + SpeechStreamSocket.serverPort + 
+                Task connectTask = this.streamSocket.ConnectAsync(new Uri("ws://" + this.serverAddress + ":" + this.serverPort + 
                                             "/client/ws/speech?content-type=audio/x-raw," +
                                             "+layout=(string)interleaved," +
                                             "+rate=(int)16000," +

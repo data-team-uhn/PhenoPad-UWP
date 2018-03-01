@@ -1175,12 +1175,13 @@ namespace PhenoPad
         }
         private async void ChangeServer_Click(object sender, RoutedEventArgs e)
         {
-            string text = await InputTextDialogAsync("Change a server: ", "");
+            //string text = await InputTextDialogAsync("Change a server: ", "");
+            /*
             if(text != "" && text != string.Empty)
                 SpeechManager.getSharedSpeechManager().setServerAddress(text);
-            
-/**
-            string serverPath = SpeechStreamSocket.serverAddress + ":" + SpeechStreamSocket.serverPort;
+            */
+
+            string serverPath = SpeechManager.getSharedSpeechManager().getServerAddress() + ":" + SpeechManager.getSharedSpeechManager().getServerPort();
 
             string text = await InputTextDialogAsync("Change a server. Server IP: ", serverPath);
             if(text != "" && text != string.Empty)
@@ -1191,16 +1192,16 @@ namespace PhenoPad
                 // Only entered server address
                 if (colonIndex == -1)
                 {
-                    SpeechStreamSocket.serverAddress = text.Trim();
+                    SpeechManager.getSharedSpeechManager().setServerAddress(text.Trim());
                 }
                 // address and port both here
                 else
                 {
-                    SpeechStreamSocket.serverAddress = text.Substring(0, colonIndex).Trim();
-                    SpeechStreamSocket.serverPort = text.Substring(colonIndex + 1).Trim();
+                    SpeechManager.getSharedSpeechManager().setServerAddress(text.Substring(0, colonIndex).Trim());
+                    SpeechManager.getSharedSpeechManager().setServerPort(text.Substring(colonIndex + 1).Trim());
                 }
             }
-**/
+
         }
     }
 

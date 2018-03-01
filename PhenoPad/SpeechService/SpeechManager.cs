@@ -50,6 +50,8 @@ namespace PhenoPad.SpeechService
     public class SpeechManager
     {
         private string serverAddress = "34.236.36.193";
+        private string serverPort = "8888";
+
         public static SpeechManager sharedSpeechManager;
         
         public Conversation conversation = new Conversation();
@@ -74,7 +76,7 @@ namespace PhenoPad.SpeechService
         public SpeechManager()
         {
             this.speechInterpreter = new SpeechEngineInterpreter(this.conversation, this.realtimeConversation);
-            this.speechStreamSocket = new SpeechStreamSocket(this.serverAddress);
+            this.speechStreamSocket = new SpeechStreamSocket(this.serverAddress, this.serverPort);
         }
 
         public static SpeechManager getSharedSpeechManager()
@@ -92,6 +94,18 @@ namespace PhenoPad.SpeechService
         public void setServerAddress(string ads)
         {
             this.serverAddress = ads;
+        }
+        public void setServerPort(string pt)
+        {
+            this.serverPort = pt;
+        }
+        public string getServerAddress()
+        {
+            return this.serverAddress;
+        }
+        public string getServerPort()
+        {
+            return this.serverPort;
         }
         public void AddNewMessage(string text)
         {
@@ -113,7 +127,7 @@ namespace PhenoPad.SpeechService
 
             while (attemptConnection)
             {
-                speechStreamSocket = new SpeechStreamSocket(this.serverAddress);
+                speechStreamSocket = new SpeechStreamSocket(this.serverAddress, this.serverPort);
                 bool succeed = await speechStreamSocket.ConnectToServer();
 
                 if (!succeed)
@@ -123,7 +137,7 @@ namespace PhenoPad.SpeechService
                     // Display a dialog box to allow for retry
                     // https://code.msdn.microsoft.com/windowsapps/How-to-show-message-dialog-35468701
                     var messageDialog = new MessageDialog("We failed to connect to speech analysis engine (" 
-                        + SpeechStreamSocket.serverAddress + ":" + SpeechStreamSocket.serverPort  + ") just now.");
+                        + this.serverAddress + ":" + this.serverPort  + ") just now.");
 
                     messageDialog.Commands.Add(new UICommand("Try Again") { Id = 0 });
                     messageDialog.Commands.Add(new UICommand("Cancel") { Id = 1 });
