@@ -26,7 +26,7 @@ namespace PhenoPad.CustomControl
             this.InitializeComponent();
         }
 
-        public void setByPhenotypeInfo(PhenotypeInfo pheno)
+        public void setByPhenotypeInfo(Row pheno)
         {
             nameTextBlock.Text = pheno.name;
             idTextBlock.Text = pheno.id;

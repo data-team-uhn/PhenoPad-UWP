@@ -68,7 +68,7 @@ namespace PhenoPad.PhenotypeService
 
 
         // Initiate from json of Phenotips
-        public Phenotype(PhenotypeInfo row)
+        public Phenotype(Row row)
         {
             this.hpId = row.id;
             this.name = row.name;
