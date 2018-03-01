@@ -70,9 +70,7 @@ namespace PhenoPad.WebSocketService
                  });
                 **/
 
-                MainPage.Current.NotifyUser("Connecting to speech engine at " + 
-                    SpeechStreamSocket.serverAddress + ":" + SpeechStreamSocket.serverPort + 
-                    ", please wait ...", NotifyType.StatusMessage, 3);
+                MainPage.Current.NotifyUser("Connecting to speech engine, please wait ...", NotifyType.StatusMessage, 3);
 
                 await connectTask;
                 dataWriter = new DataWriter(this.streamSocket.OutputStream);

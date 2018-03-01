@@ -118,7 +118,8 @@ namespace PhenoPad.SpeechService
 
                     // Display a dialog box to allow for retry
                     // https://code.msdn.microsoft.com/windowsapps/How-to-show-message-dialog-35468701
-                    var messageDialog = new MessageDialog("We failed to connect to speech analysis engine just now.");
+                    var messageDialog = new MessageDialog("We failed to connect to speech analysis engine (" 
+                        + SpeechStreamSocket.serverAddress + ":" + SpeechStreamSocket.serverPort  + ") just now.");
 
                     messageDialog.Commands.Add(new UICommand("Try Again") { Id = 0 });
                     messageDialog.Commands.Add(new UICommand("Cancel") { Id = 1 });
