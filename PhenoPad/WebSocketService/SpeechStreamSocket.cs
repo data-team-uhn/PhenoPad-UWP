@@ -61,7 +61,7 @@ namespace PhenoPad.WebSocketService
             //socket.SetRequestHeader("content-type", "audio/x-raw");
             try
             {
-                Task connectTask = this.streamSocket.ConnectAsync(new Uri("ws://" + serverAddress + ":" + serverPort + 
+                Task connectTask = this.streamSocket.ConnectAsync(new Uri("ws://" + SpeechStreamSocket.serverAddress + ":" + SpeechStreamSocket.serverPort + 
                                             "/client/ws/speech?content-type=audio/x-raw," +
                                             "+layout=(string)interleaved," +
                                             "+rate=(int)16000," +
@@ -76,7 +76,9 @@ namespace PhenoPad.WebSocketService
                  });
                 **/
 
-                MainPage.Current.NotifyUser("Connecting to speech engine ...", NotifyType.StatusMessage, 5);
+                MainPage.Current.NotifyUser("Connecting to speech engine at " + 
+                    SpeechStreamSocket.serverAddress + ":" + SpeechStreamSocket.serverPort + 
+                    ", please wait ...", NotifyType.StatusMessage, 3);
 
                 await connectTask;
                 dataWriter = new DataWriter(this.streamSocket.OutputStream);
@@ -169,11 +171,11 @@ namespace PhenoPad.WebSocketService
                 //}
                 //Debug.WriteLine("Sending data using StreamWebSocket: " + message.Length.ToString() + " bytes");
                 streamSocket.Dispose();
-                MainPage.Current.NotifyUser("Disconnect from the server", NotifyType.StatusMessage, 2);
+                MainPage.Current.NotifyUser("Disconnecting from the speech engine", NotifyType.StatusMessage, 2);
             }
             catch (Exception ex)
             {
-                Debug.WriteLine("Closing socket error.");
+                Debug.WriteLine("Experienced error closing socket to speech engine");
                 MainPage.Current.NotifyUser("Fail to close websocket", NotifyType.ErrorMessage, 2);
 
                 //Debug.WriteLine(ex.GetBaseException().HResult);
@@ -186,7 +188,7 @@ namespace PhenoPad.WebSocketService
         private async void WebSocket_ClosedAsync(Windows.Networking.Sockets.IWebSocket sender, Windows.Networking.Sockets.WebSocketClosedEventArgs args)
         {
             
-            rootPage.NotifyUser("Websocket connection is off, trying to reconnect...", NotifyType.ErrorMessage, 1);
+            rootPage.NotifyUser("Websocket connection is closed. Please try to reconnect.", NotifyType.ErrorMessage, 1);
             Debug.WriteLine("WebSocket_Closed; Code: " + args.Code + ", Reason: \"" + args.Reason + "\"");
             // Add additional code here to handle the WebSocket being closed.
         }

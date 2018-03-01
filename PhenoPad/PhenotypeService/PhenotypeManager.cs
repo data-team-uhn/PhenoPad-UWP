@@ -460,7 +460,7 @@ namespace PhenoPad.PhenotypeService
                 throw new Exception("Invalid header value: " + header);
             }
 
-            var urlstr = "http://playground.phenotips.org/get/PhenoTips/DiseasePredictService2?format=json&limit=15";
+            var urlstr = "https://playground.phenotips.org/get/PhenoTips/DiseasePredictService2?format=json&limit=15";
             /**
             foreach (var p in savedPhenotypes)
             {
@@ -497,7 +497,7 @@ namespace PhenoPad.PhenotypeService
             return null;
         }
 
-        public async Task<PhenotypeInfo> getDetailById(string id)
+        public async Task<Row> getDetailById(string id)
         {
             //Create an HTTP client object
             Windows.Web.Http.HttpClient httpClient = new Windows.Web.Http.HttpClient();
@@ -531,7 +531,7 @@ namespace PhenoPad.PhenotypeService
                 httpResponse = await httpClient.GetAsync(requestUri);
                 httpResponse.EnsureSuccessStatusCode();
                 httpResponseBody = await httpResponse.Content.ReadAsStringAsync();
-                var result = JsonConvert.DeserializeObject<PhenotypeInfo>(httpResponseBody);
+                var result = JsonConvert.DeserializeObject<Row>(httpResponseBody);
                 return result;
             }
             catch (Exception ex)

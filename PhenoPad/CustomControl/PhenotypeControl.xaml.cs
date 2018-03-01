@@ -164,7 +164,7 @@ namespace PhenoPad.CustomContorl
 
         private async void nameTextBlockTapped(object sender, TappedRoutedEventArgs e)
         {
-            PhenotypeInfo pinfo = await PhenotypeManager.getSharedPhenotypeManager().getDetailById(phenotypeId);
+            Row pinfo = await PhenotypeManager.getSharedPhenotypeManager().getDetailById(phenotypeId);
             
             var recogPhenoFlyout = (Flyout)this.Resources["PhenotypeDetailFlyout"];
             phenotypeDetailControl.setByPhenotypeInfo(pinfo);

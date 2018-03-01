@@ -43,6 +43,7 @@ namespace PhenoPad.SpeechService
                     },
                 ], 
                 "final": true
+                "diarization_incremental": true
             }, 
             "segment": 2, 
             "id": "855626f9-d877-4a01-8677-50992ff0bd45"
@@ -111,6 +112,7 @@ namespace PhenoPad.SpeechService
     {
         public List<Hypothesis> hypotheses { get; set; }
         public bool final { get; set; }
+        public bool diarization_incremental { get; set; }
         public List<Diarization> diarization { get; set; }
     }
 
