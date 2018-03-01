@@ -1175,7 +1175,11 @@ namespace PhenoPad
         }
         private async void ChangeServer_Click(object sender, RoutedEventArgs e)
         {
-
+            string text = await InputTextDialogAsync("Change a server: ", "");
+            if(text != "" && text != string.Empty)
+                SpeechManager.getSharedSpeechManager().setServerAddress(text);
+            
+/**
             string serverPath = SpeechStreamSocket.serverAddress + ":" + SpeechStreamSocket.serverPort;
 
             string text = await InputTextDialogAsync("Change a server. Server IP: ", serverPath);
@@ -1196,6 +1200,7 @@ namespace PhenoPad
                     SpeechStreamSocket.serverPort = text.Substring(colonIndex + 1).Trim();
                 }
             }
+**/
         }
     }
 
