@@ -1285,25 +1285,32 @@ namespace PhenoPad
 
             string serverPath = SpeechManager.getSharedSpeechManager().getServerAddress() + ":" + SpeechManager.getSharedSpeechManager().getServerPort();
 
-            string text = await InputTextDialogAsync("Change a server. Server IP: ", serverPath);
-            if(text != "" && text != string.Empty)
+            string text = await InputTextDialogAsync("Change a server. Server Address (or sickkids): ", serverPath);
+
+            if (text.ToLower().IndexOf("sickkid") != -1)
             {
-
-                int colonIndex = text.IndexOf(':');
-
-                // Only entered server address
-                if (colonIndex == -1)
+                SpeechManager.getSharedSpeechManager().setServerAddress("speechengine.ccm.sickkids.ca");
+                SpeechManager.getSharedSpeechManager().setServerPort("8888");
+            } else
+            {
+                if (text != "" && text != string.Empty)
                 {
-                    SpeechManager.getSharedSpeechManager().setServerAddress(text.Trim());
-                }
-                // address and port both here
-                else
-                {
-                    SpeechManager.getSharedSpeechManager().setServerAddress(text.Substring(0, colonIndex).Trim());
-                    SpeechManager.getSharedSpeechManager().setServerPort(text.Substring(colonIndex + 1).Trim());
+
+                    int colonIndex = text.IndexOf(':');
+
+                    // Only entered server address
+                    if (colonIndex == -1)
+                    {
+                        SpeechManager.getSharedSpeechManager().setServerAddress(text.Trim());
+                    }
+                    // address and port both here
+                    else
+                    {
+                        SpeechManager.getSharedSpeechManager().setServerAddress(text.Substring(0, colonIndex).Trim());
+                        SpeechManager.getSharedSpeechManager().setServerPort(text.Substring(colonIndex + 1).Trim());
+                    }
                 }
             }
-
         }
     }
 

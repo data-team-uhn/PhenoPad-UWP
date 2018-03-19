@@ -61,10 +61,12 @@ namespace PhenoPad.SpeechService
         
         public string original { get; set; }
 
+        public int worker_pid { get; set; }
+
         // A simplified version for debugging
         public override string ToString()
         {
-            string output = "";
+            string output = "Worker PID: " + this.worker_pid + " ";
             if (result.final)
             {
                 output += "Final\t";
