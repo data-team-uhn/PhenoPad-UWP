@@ -23,7 +23,9 @@
      xmlns:styles="using:PhenoPad.Styles"
     mc:Ignorable="d"
     Loaded="Page_Loaded">
-
+    <Page.Resources>
+        
+    </Page.Resources>
 
     <Grid x:Name="RootGrid" Margin="0 0 0 0">
         <Grid.RowDefinitions>
@@ -95,7 +97,7 @@
         <Grid Grid.Row="3" Grid.Column="0" Background="#EEEEEE"></Grid>
         
         <RelativePanel Name="TopMenuRelativePanel" Grid.Row="1" Grid.Column="0" Background="{x:Bind styles:MyColors.TITLE_BAR_COLOR_BRUSH}">
-            <TextBlock Text="PhenoPad" Style="{StaticResource BaseTextBlockStyle}" Foreground="#E8ECED" FontSize="21" RelativePanel.AlignRightWithPanel="True" RelativePanel.AlignVerticalCenterWithPanel="True"></TextBlock>
+            <Image Source="Assets/Wide310x150Logo.scale-200.png" RelativePanel.AlignRightWithPanel="True" RelativePanel.AlignVerticalCenterWithPanel="True"></Image>
             <CommandBar RelativePanel.AlignTopWithPanel="True"
                         RelativePanel.AlignLeftWithPanel="True"
                         Name="topCmdBar" Background="{x:Bind styles:MyColors.TITLE_BAR_COLOR_BRUSH}">
@@ -329,12 +331,54 @@
                 </StackPanel>
             </Grid>
 
-            <StackPanel Name="pageIndexPanel" Orientation="Horizontal" RelativePanel.AlignBottomWithPanel="True" RelativePanel.AlignRightWithPanel="True">
+
+            
+            <Grid Height="40" Width="90" Padding="0 0 0 0" Background="WhiteSmoke" Name="showTextGrid" RelativePanel.AlignBottomWithPanel="True" RelativePanel.AlignRightWithPanel="True">
+                <Image  Visibility="Collapsed" Name="printImage" Width="70" Source="Assets/abc_print.png" VerticalAlignment="Center" HorizontalAlignment="Center" Opacity="0.3"/>
+                <Image  Name="writeImage" Width="70" Source="Assets/abc_write.png" VerticalAlignment="Center" HorizontalAlignment="Center" Opacity="0.3"/>
+            </Grid>
+            <Grid Height="40" Padding="0 0 0 0" RelativePanel.AlignBottomWithPanel="True" 
+                  Background="WhiteSmoke"
+                  RelativePanel.LeftOf="showTextGrid" 
+                  RelativePanel.AlignLeftWithPanel="True">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                <TextBlock Foreground="Gray" Padding="10 10 10 10"  Text="Collected Phenotypes:" Name="collectedPhenotypesTB" ></TextBlock>
+                <ListView Grid.Column="1"  Height="40" Padding="0 10 0 10" x:Name="savedPhenoListView" ItemsSource="{x:Bind PhenoMana.savedPhenotypes, Mode=OneWay}" 
+                           ScrollViewer.VerticalScrollMode="Disabled" ScrollViewer.VerticalScrollBarVisibility="Hidden" ScrollViewer.HorizontalScrollMode="Enabled" ScrollViewer.HorizontalScrollBarVisibility="Hidden" ScrollViewer.IsHorizontalRailEnabled="True">
+                    <ListView.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <StackPanel Orientation="Horizontal"  Padding="0"/>
+                        </ItemsPanelTemplate>
+                    </ListView.ItemsPanel>
+                    <ListView.ItemTemplate>
+                        <DataTemplate x:DataType="phenotypeservice:Phenotype">
+                            <customcontorl:PhenotypeControl phenotypeName="{x:Bind name}" phenotypeId="{x:Bind hpId}" phenotypeState="{x:Bind state}" sourceType="Saved"></customcontorl:PhenotypeControl>
+                        </DataTemplate>
+                    </ListView.ItemTemplate>
+                    <ListView.ItemContainerStyle>
+                        <Style TargetType="ListViewItem">
+                            <Setter Property="HorizontalContentAlignment" Value="Center" />
+                            <Setter Property="VerticalContentAlignment" Value="Center" />
+                            <Setter Property="Margin" Value="10,0,10,0" />
+                            <Setter Property="Padding" Value="0,0,0,0" />
+                            <Setter Property="MinHeight" Value="10" />
+                            <Setter Property="MinWidth" Value="20" />
+                        </Style>
+                    </ListView.ItemContainerStyle>
+                </ListView>
+            </Grid>
+
+            
+
+            <StackPanel Name="pageIndexPanel" Orientation="Horizontal" RelativePanel.AlignTopWithPanel="True" RelativePanel.AlignRightWithPanel="True" Padding="0 5 22 0">
                 <Button Height="30" Width="30" Padding="0 0 0 0" Background="WhiteSmoke"  Click="AddPageButton_Click">
                     <SymbolIcon Symbol="Add" Foreground="{x:Bind styles:MyColors.TITLE_BAR_COLOR_BRUSH}" />
                 </Button>
             </StackPanel>
-            <TextBlock Name="cmdBarTextBlock" Margin="12,14" RelativePanel.AlignLeftWithPanel="True" RelativePanel.LeftOf="pageIndexPanel" RelativePanel.AlignBottomWithPanel="True"
+            <TextBlock Name="cmdBarTextBlock" Margin="12,14" RelativePanel.AlignLeftWithPanel="True" RelativePanel.Above="showTextGrid"
                                Text=""
                                Visibility="Visible"/>
             <CommandBar RelativePanel.AlignBottomWithPanel="True"

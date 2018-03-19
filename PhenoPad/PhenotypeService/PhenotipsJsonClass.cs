@@ -9,8 +9,8 @@ namespace PhenoPad.PhenotypeService
     public class Link
     {
         public string rel { get; set; }
-        public string href { get; set; }
         public List<string> allowedMethods { get; set; }
+        public string href { get; set; }
     }
 
     public class Parent

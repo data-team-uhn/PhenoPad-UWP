@@ -135,10 +135,12 @@ namespace PhenoPad
             _simpleorientation = SimpleOrientationSensor.GetDefault();
 
             // Assign an event handler for the sensor orientation-changed event 
+            
             if (_simpleorientation != null)
             {
                 _simpleorientation.OrientationChanged += new TypedEventHandler<SimpleOrientationSensor, SimpleOrientationSensorOrientationChangedEventArgs>(OrientationChanged);
             }
+            
 
 
             //PC customization
@@ -173,7 +175,62 @@ namespace PhenoPad
             this.speechManager.EngineHasResult += SpeechManager_EngineHasResult;
 
             //scrollViewer.RegisterPropertyChangedCallback(ScrollViewer.ZoomFactorProperty, OnPropertyChanged);
+
+            //showTextGrid.PointerPressed += new PointerEventHandler(showTextGrid_PointerPressed);
+            showTextGrid.PointerReleased += new PointerEventHandler(showTextGrid_PointerReleased);
+            showTextGrid.PointerCanceled += new PointerEventHandler(showTextGrid_PointerExited);
+            showTextGrid.PointerCaptureLost += new PointerEventHandler(showTextGrid_PointerExited);
+            showTextGrid.PointerEntered += new PointerEventHandler(showTextGrid_PointerEntered);
+            showTextGrid.PointerExited += new PointerEventHandler(showTextGrid_PointerExited);
         }
+
+       
+
+        private void showTextGrid_PointerExited(object sender, PointerRoutedEventArgs e)
+        {
+            if (!ifShowTextGrid)
+            {
+                curPage.hideRecognizedTextCanvas();
+                printImage.Visibility = Visibility.Collapsed;
+                writeImage.Visibility = Visibility.Visible;
+
+            }
+        }
+
+        private void showTextGrid_PointerEntered(object sender, PointerRoutedEventArgs e)
+        {
+            if (!ifShowTextGrid)
+            {
+                curPage.showRecognizedTextCanvas();
+                printImage.Visibility = Visibility.Visible;
+                writeImage.Visibility = Visibility.Collapsed;
+            }
+        }
+
+        private bool ifShowTextGrid = false; 
+        private void showTextGrid_PointerReleased(object sender, PointerRoutedEventArgs e)
+        {
+            if (!ifShowTextGrid)
+            {
+                curPage.showRecognizedTextCanvas();
+                ifShowTextGrid = true;
+                printImage.Visibility = Visibility.Visible;
+                writeImage.Visibility = Visibility.Collapsed;
+            }
+            else
+            {
+                curPage.hideRecognizedTextCanvas();
+                ifShowTextGrid = false;
+                printImage.Visibility = Visibility.Collapsed;
+                writeImage.Visibility = Visibility.Visible;
+            }
+        }
+
+        private void showTextGrid_PointerPressed(object sender, PointerRoutedEventArgs e)
+        {
+            
+        }
+
         private void CoreTitleBar_LayoutMetricsChanged(CoreApplicationViewTitleBar sender, object args)
         {
             UpdateTitleBarLayout(sender);
@@ -210,9 +267,22 @@ namespace PhenoPad
 
         private async void OrientationChanged(object sender, SimpleOrientationSensorOrientationChangedEventArgs e)
         {
-            await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () =>
-            {
+              await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () =>
+             {
                 SimpleOrientation orientation = e.Orientation;
+            
+                switch (orientation)
+                {
+                    case SimpleOrientation.NotRotated:
+                    case SimpleOrientation.Rotated180DegreesCounterclockwise:
+                        VisualStateManager.GoToState(this, "LandscapeState", false);
+                        break;
+                    case SimpleOrientation.Rotated90DegreesCounterclockwise:
+                    case SimpleOrientation.Rotated270DegreesCounterclockwise:
+                        VisualStateManager.GoToState(this, "PortraitState", false);
+                        break;
+                }
+            /**
                 var displayInformation = DisplayInformation.GetForCurrentView();
                 switch (displayInformation.CurrentOrientation)
                 {
@@ -225,14 +295,34 @@ namespace PhenoPad
                         VisualStateManager.GoToState(this, "PortraitState", false);
                         break;
                 }
-                Debug.WriteLine("oritentation changed: " + e.Orientation);
-                curPage.DrawBackgroundLines();
-            });
+            **/
+            curPage.DrawBackgroundLines();
+           });
         }
 
 
         private async void Page_Loaded(object sender, RoutedEventArgs e)
         {
+            var displayInformation = DisplayInformation.GetForCurrentView();
+            switch (displayInformation.CurrentOrientation)
+            {
+                case DisplayOrientations.Landscape:
+                    VisualStateManager.GoToState(this, "LandscapeState", false);
+                    break;
+                case DisplayOrientations.LandscapeFlipped:
+                    VisualStateManager.GoToState(this, "LandscapeState", false);
+                    break;
+                case DisplayOrientations.Portrait:
+                    VisualStateManager.GoToState(this, "PortraitState", false);
+                    break;
+                case DisplayOrientations.PortraitFlipped:
+                    VisualStateManager.GoToState(this, "PortraitState", false);
+                    break;
+                default:
+                    VisualStateManager.GoToState(this, "LandscapeState", false);
+                    break;
+            }
+
             // Draw background lines
             curPage.DrawBackgroundLines();
 
@@ -292,6 +382,18 @@ namespace PhenoPad
         private void OnSizeChanged(object sender, SizeChangedEventArgs e)
         {
             //HelperFunctions.UpdateCanvasSize(RootGrid, outputGrid, inkCanvas);
+            var displayInformation = DisplayInformation.GetForCurrentView();
+            switch (displayInformation.CurrentOrientation)
+            {
+                case DisplayOrientations.Landscape:
+                case DisplayOrientations.LandscapeFlipped:
+                    VisualStateManager.GoToState(this, "LandscapeState", false);
+                    break;
+                case DisplayOrientations.Portrait:
+                case DisplayOrientations.PortraitFlipped:
+                    VisualStateManager.GoToState(this, "PortraitState", false);
+                    break;
+            }
             curPage.DrawBackgroundLines();
         }
 
@@ -477,8 +579,8 @@ namespace PhenoPad
             if (!SpeechPopUp.IsOpen)
             {
                 SpeechPopUpPage.Width = Window.Current.Bounds.Width;
-                SpeechPopUpPage.Height = Window.Current.Bounds.Height - topCmdBar.ActualHeight;
-                SpeechPopUpPage.Margin = new Thickness(0, topCmdBar.ActualHeight, 0, 0);
+                SpeechPopUpPage.Height = Window.Current.Bounds.Height - topCmdBar.ActualHeight- savedPhenoListView.ActualHeight;
+                SpeechPopUpPage.Margin = new Thickness(0, topCmdBar.ActualHeight, 0, savedPhenoListView.ActualHeight);
                 SpeechPopUp.IsOpen = true;
             }
             else

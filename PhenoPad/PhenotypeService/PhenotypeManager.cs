@@ -121,7 +121,8 @@ namespace PhenoPad.PhenotypeService
             Phenotype temp = savedPhenotypes.Where(x => x == pheno).FirstOrDefault();
             if (temp == null)
             {
-                savedPhenotypes.Add(pheno);
+                //savedPhenotypes.Add(pheno);
+                savedPhenotypes.Insert(0, pheno);
                 rootPage.NotifyUser(pheno.name + " is added.", NotifyType.StatusMessage, 2);
             }
 
@@ -142,21 +143,42 @@ namespace PhenoPad.PhenotypeService
                     temp.state = pheno.state;
             }
 
+            temp = phenotypesCandidates.Where(x => x == pheno).FirstOrDefault();
+            if (temp != null)
+            {
+                temp.state = 1;
+                Phenotype pp = temp.Clone();
+                phenotypesCandidates.Remove(temp);
+                phenotypesCandidates.Insert(0, pp);
+            }
+            
+
+            updateSuggestionAndDifferential();
+        }
+
+        public async void updateSuggestionAndDifferential()
+        {
             List<Phenotype> sp = await giveSuggestions();
             suggestedPhenotypes.Clear();
-            foreach (var p in sp)
+            if (sp != null)
             {
-                suggestedPhenotypes.Add(p);
+                foreach (var p in sp)
+                {
+                    suggestedPhenotypes.Add(p);
+                }
             }
+            
 
             List<Disease> dis = await predictDisease();
             predictedDiseases.Clear();
-            foreach (var d in dis)
-            {
-                predictedDiseases.Add(d);
+            if (dis != null)
+            { 
+                foreach (var d in dis)
+                {
+                    predictedDiseases.Add(d);
+                }
             }
         }
-
         public bool deletePhenotypeByIndex(int idx)
         {
             if (savedPhenotypes == null || idx < 0 || idx >= savedPhenotypes.Count)
@@ -181,6 +203,14 @@ namespace PhenoPad.PhenotypeService
                 rootPage.NotifyUser(temp.name + " is deleted.", NotifyType.StatusMessage, 2);
                 return savedPhenotypes.Remove(temp);
             }
+            temp = phenotypesCandidates.Where(x => x == pheno).FirstOrDefault();
+            if (temp != null)
+            {
+                temp.state = -1;
+                Phenotype pp = temp.Clone();
+                phenotypesCandidates.Remove(temp);
+                phenotypesCandidates.Insert(0, pp);
+            }
             return false;
         }
         public void updatePhenotype(Phenotype pheno)
@@ -195,6 +225,9 @@ namespace PhenoPad.PhenotypeService
             if (temp != null)
                 temp.state = pheno.state;
             temp = phenotypesInSpeech.Where(x => x == pheno).FirstOrDefault();
+            if (temp != null)
+                temp.state = pheno.state;
+            temp = phenotypesCandidates.Where(x => x == pheno).FirstOrDefault();
             if (temp != null)
                 temp.state = pheno.state;
         }
@@ -219,6 +252,9 @@ namespace PhenoPad.PhenotypeService
                 if (temp != null)
                     phenotypesInNote.Remove(temp);
             }
+            Phenotype ppp = phenotypesCandidates.Where(x => x.hpId == pid).FirstOrDefault();
+            if (ppp != null)
+                ppp.state = -1;
         }
 
         public void updatePhenoStateById(string pid, int state, SourceType type)
@@ -268,6 +304,17 @@ namespace PhenoPad.PhenotypeService
                     phenotypesInSpeech.Insert(0, pp);
                 }
             }
+
+            temp = phenotypesCandidates.Where(x => x.hpId == pid).FirstOrDefault();
+            if (temp != null)
+            {
+                temp.state = state;
+                Phenotype pp = temp.Clone();
+                phenotypesCandidates.Remove(temp);
+                phenotypesCandidates.Insert(0, pp);
+            }
+
+            updateSuggestionAndDifferential();
         }
 
         //https://playground.phenotips.org/rest/vocabularies/hpo/suggest?input=qwe
@@ -317,6 +364,7 @@ namespace PhenoPad.PhenotypeService
             catch (Exception ex)
             {
                 httpResponseBody = "Error: " + ex.HResult.ToString("X") + " Message: " + ex.Message;
+                rootPage.NotifyUser("Error: failed to parse results from PhenoTips", NotifyType.ErrorMessage, 2);
             }
             return null;
         }
@@ -413,7 +461,8 @@ namespace PhenoPad.PhenotypeService
                 var postData = new List<KeyValuePair<string, string>>();
                 foreach (var p in savedPhenotypes)
                 {
-                    postData.Add(new KeyValuePair<string, string>("symptom", p.hpId));
+                    if(p.state == 1)
+                        postData.Add(new KeyValuePair<string, string>("symptom", p.hpId));
                 }
 
                 var formContent = new HttpFormUrlEncodedContent(postData);
@@ -478,7 +527,8 @@ namespace PhenoPad.PhenotypeService
                 var postData = new List<KeyValuePair<string, string>>();
                 foreach (var p in savedPhenotypes)
                 {
-                    postData.Add(new KeyValuePair<string, string>("symptom", p.hpId));
+                    if(p.state == 1)
+                        postData.Add(new KeyValuePair<string, string>("symptom", p.hpId));
                 }
 
                 var formContent = new HttpFormUrlEncodedContent(postData);

@@ -15,9 +15,9 @@ Global
 		Release|x86 = Release|x86
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{28DF54D3-7737-4333-91C1-41A40FA428F1}.Debug|ARM.ActiveCfg = Debug|ARM
-		{28DF54D3-7737-4333-91C1-41A40FA428F1}.Debug|ARM.Build.0 = Debug|ARM
-		{28DF54D3-7737-4333-91C1-41A40FA428F1}.Debug|ARM.Deploy.0 = Debug|ARM
+		{28DF54D3-7737-4333-91C1-41A40FA428F1}.Debug|ARM.ActiveCfg = Debug|x64
+		{28DF54D3-7737-4333-91C1-41A40FA428F1}.Debug|ARM.Build.0 = Debug|x64
+		{28DF54D3-7737-4333-91C1-41A40FA428F1}.Debug|ARM.Deploy.0 = Debug|x64
 		{28DF54D3-7737-4333-91C1-41A40FA428F1}.Debug|x64.ActiveCfg = Debug|x64
 		{28DF54D3-7737-4333-91C1-41A40FA428F1}.Debug|x64.Build.0 = Debug|x64
 		{28DF54D3-7737-4333-91C1-41A40FA428F1}.Debug|x64.Deploy.0 = Debug|x64
