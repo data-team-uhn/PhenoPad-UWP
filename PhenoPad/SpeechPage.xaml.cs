@@ -703,13 +703,7 @@ namespace PhenoPad
             //}
             //this.maxSpeaker = (int)message.Speaker;
         }
-
-        public void setSpeakerButtonEnabled(bool enabled)
-        {
-            this.addSpeakerBtn.IsEnabled = enabled;
-            this.removeSpeakerBtn.IsEnabled = enabled;
-        }
-
+        
         private void removeSpeakerBtn_Click(object sender, RoutedEventArgs e)
         {
             String proposedText = this.numSpeakerBox.Text;
@@ -736,6 +730,12 @@ namespace PhenoPad
                 }
                 this.speakerBox.Items.RemoveAt(this.speakerBox.Items.Count - 1);
             }
+        }
+
+        public void setSpeakerButtonEnabled(bool enabled)
+        {
+            this.addSpeakerBtn.IsEnabled = enabled;
+            this.removeSpeakerBtn.IsEnabled = enabled;
         }
     }
 }
