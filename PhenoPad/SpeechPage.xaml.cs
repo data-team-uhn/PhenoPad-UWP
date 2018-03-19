@@ -494,12 +494,13 @@ namespace PhenoPad
 
     public sealed partial class SpeechPage : Page
     {
-
+        public static SpeechPage Current;
         public PhenotypeManager PhenoMana => PhenotypeManager.getSharedPhenotypeManager();
 
         public SpeechPage()
         {
             this.InitializeComponent();
+            SpeechPage.Current = this;
 
             chatView.ItemsSource = SpeechManager.getSharedSpeechManager().conversation;
             chatView.ContainerContentChanging += OnChatViewContainerContentChanging;
@@ -520,7 +521,7 @@ namespace PhenoPad
         }
 
         private int doctor = 0;
-        private int maxSpeaker = 0;
+        private int curSpeakerCount = 2;
 
         private void SpeechPage_EngineHasResult(SpeechManager sender, SpeechEngineInterpreter args)
         {
@@ -544,7 +545,7 @@ namespace PhenoPad
                 args.ItemContainer.HorizontalAlignment = (message.Speaker == doctor) ? Windows.UI.Xaml.HorizontalAlignment.Right : Windows.UI.Xaml.HorizontalAlignment.Left;
             }
 
-            if (message.Speaker != 99 && message.Speaker != -1 && message.Speaker > maxSpeaker)
+            /*if (message.Speaker != 99 && message.Speaker != -1 && message.Speaker > maxSpeaker)
             {
                 Debug.WriteLine("Detected speaker " + message.Speaker.ToString());
                 for (var i = maxSpeaker + 1; i <= message.Speaker; i++)
@@ -555,7 +556,7 @@ namespace PhenoPad
                     this.speakerBox.Items.Add(item);
                 }
                 maxSpeaker = (int)message.Speaker;
-            }
+            }*/
         }
 
         private void BackButton_Click(object sender, Windows.UI.Xaml.RoutedEventArgs e)
@@ -579,8 +580,13 @@ namespace PhenoPad
 
         private void speakerBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            doctor = ((ComboBox)sender).SelectedIndex;
-
+            ComboBox senderBox = (ComboBox)sender;
+            doctor = senderBox.SelectedIndex;
+            if (senderBox.SelectedItem != null)
+            {
+                senderBox.Background = ((ComboBoxItem)(senderBox.SelectedItem)).Background;
+            }
+            
             // Do not change combobox label after selection
             //speakerTxt.Text = "doctor: " + (doctor + 1).ToString();
 
@@ -634,6 +640,101 @@ namespace PhenoPad
 
                 TimeSpan ts = new TimeSpan(0, 0, start_minute, start_second, start_mili);
                 this._mediaPlayerElement.MediaPlayer.Position = ts;
+            }
+        }
+
+        /**
+         * true = up
+         * false = down
+         */
+        private String changeNumSpeakers(String text, bool direction)
+        {
+            int proposed = Int32.Parse(text);
+            if (direction)
+            {
+                proposed++;
+                if (proposed > 5)
+                {
+                    proposed = 5;
+                }
+            }
+            else
+            {
+                proposed--;
+                if (proposed < 1)
+                {
+                    proposed = 1;
+                }
+            }
+
+            return proposed.ToString();
+        }
+
+        private void addSpeakerBtn_Click(object sender, RoutedEventArgs e)
+        {
+            String proposedText = this.numSpeakerBox.Text;
+            this.numSpeakerBox.Text = changeNumSpeakers(proposedText, true);
+
+            try
+            {
+                SpeechManager.getSharedSpeechManager().speechAPI.changeNumSpeakers(
+                SpeechManager.getSharedSpeechManager().speechInterpreter.worker_pid, Int32.Parse(proposedText));
+            } catch (Exception ex)
+            {
+                Debug.WriteLine("Unable to update");
+            }
+            
+            //0, Int32.Parse(proposedText));
+
+            //Debug.WriteLine("Detected speaker " + message.Speaker.ToString());
+            //for (var i = maxSpeaker + 1; i <= message.Speaker; i++)
+            //{
+
+            if (proposedText != this.numSpeakerBox.Text)
+            {
+                this.curSpeakerCount += 1;
+                ComboBoxItem item = new ComboBoxItem();
+                item.Background = (Windows.UI.Xaml.Media.Brush)Application.Current.Resources["Background_" + (this.curSpeakerCount - 1).ToString()];
+                item.Background.Opacity = 0.75;
+                item.Content = "Speaker " + curSpeakerCount.ToString();
+
+                this.speakerBox.Items.Add(item);
+            }
+            //}
+            //this.maxSpeaker = (int)message.Speaker;
+        }
+
+        public void setSpeakerButtonEnabled(bool enabled)
+        {
+            this.addSpeakerBtn.IsEnabled = enabled;
+            this.removeSpeakerBtn.IsEnabled = enabled;
+        }
+
+        private void removeSpeakerBtn_Click(object sender, RoutedEventArgs e)
+        {
+            String proposedText = this.numSpeakerBox.Text;
+            this.numSpeakerBox.Text = changeNumSpeakers(proposedText, false);
+
+            try
+            {
+                SpeechManager.getSharedSpeechManager().speechAPI.changeNumSpeakers(
+                SpeechManager.getSharedSpeechManager().speechInterpreter.worker_pid, Int32.Parse(proposedText));
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine("Unable to update");
+            }
+            //0, Int32.Parse(proposedText));
+
+            if (proposedText != this.numSpeakerBox.Text)
+            {
+                this.curSpeakerCount -= 1;
+                Debug.WriteLine(this.curSpeakerCount);
+                if (this.speakerBox.SelectedIndex + 1 > this.curSpeakerCount)
+                {
+                    this.speakerBox.SelectedIndex--;
+                }
+                this.speakerBox.Items.RemoveAt(this.speakerBox.Items.Count - 1);
             }
         }
     }

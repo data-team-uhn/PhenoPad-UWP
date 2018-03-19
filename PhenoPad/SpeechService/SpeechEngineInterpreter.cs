@@ -126,6 +126,8 @@ namespace PhenoPad.SpeechService
         private List<TextMessage> oldConversations = new List<TextMessage>();
         public int conversationIndex = 0;
 
+        public int worker_pid = 0;
+
         // Empty constructor :D
         public SpeechEngineInterpreter(Conversation _conv, Conversation _realtimeconv)
         {
@@ -182,6 +184,12 @@ namespace PhenoPad.SpeechService
         {
             // We take for granted that diarizatio will always be a lot slower than 
             // speech recognition
+
+            if (json.worker_pid != 0)
+            {
+                this.worker_pid = json.worker_pid;
+                //Debug.WriteLine("Worker PID upon processing " + this.worker_pid.ToString());
+            }
 
             // First check if speech is final (remember that diarization is always slower)
             if (json.result.final)

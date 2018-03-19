@@ -143,6 +143,7 @@
     <Compile Include="SpeechService\SpeechEngineInterpreter.cs" />
     <Compile Include="SpeechService\SpeechManager.cs" />
     <Compile Include="SpeechService\SpeechEngineJSON.cs" />
+    <Compile Include="SpeechService\SpeechRESTAPI.cs" />
     <Compile Include="Styles\MyColors.cs" />
     <Compile Include="WebSocketService\SpeechStreamSocket.cs" />
   </ItemGroup>
@@ -211,6 +212,9 @@
   <ItemGroup>
     <PackageReference Include="log4net">
       <Version>2.0.8</Version>
+    </PackageReference>
+    <PackageReference Include="Microsoft.AspNet.WebApi.Client">
+      <Version>5.2.4</Version>
     </PackageReference>
     <PackageReference Include="Microsoft.NETCore.UniversalWindowsPlatform">
       <Version>5.4.0</Version>

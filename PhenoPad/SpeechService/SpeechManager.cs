@@ -49,7 +49,7 @@ namespace PhenoPad.SpeechService
 
     public class SpeechManager
     {
-        private string serverAddress = "34.236.36.193";
+        private string serverAddress = "54.226.217.30";
         private string serverPort = "8888";
 
         public static SpeechManager sharedSpeechManager;
@@ -64,6 +64,7 @@ namespace PhenoPad.SpeechService
         private AudioFileInputNode fileInputNode;
         public double theta = 0;
         public SpeechStreamSocket speechStreamSocket;
+        public SpeechRESTAPI speechAPI;
         private AudioFileOutputNode fileOutputNode;
 
         public event TypedEventHandler<SpeechManager, SpeechEngineInterpreter> EngineHasResult;
@@ -77,6 +78,8 @@ namespace PhenoPad.SpeechService
         {
             this.speechInterpreter = new SpeechEngineInterpreter(this.conversation, this.realtimeConversation);
             this.speechStreamSocket = new SpeechStreamSocket(this.serverAddress, this.serverPort);
+            this.speechAPI = new SpeechRESTAPI();
+            //this.speechAPI.setupClient("54.226.217.30");
         }
 
         public static SpeechManager getSharedSpeechManager()
@@ -128,6 +131,8 @@ namespace PhenoPad.SpeechService
             while (attemptConnection)
             {
                 speechStreamSocket = new SpeechStreamSocket(this.serverAddress, this.serverPort);
+                //speechAPI.setupClient(this.serverAddress);
+                speechAPI.setupClient(this.serverAddress);
                 bool succeed = await speechStreamSocket.ConnectToServer();
 
                 if (!succeed)
@@ -174,6 +179,7 @@ namespace PhenoPad.SpeechService
             // else you'll see lots of audio delays
             await Task.Delay(3000);
             MainPage.Current.NotifyUser("Connection established", NotifyType.StatusMessage, 2);
+            SpeechPage.Current.setSpeakerButtonEnabled(true);
 
             if (useFile)
             {
@@ -230,6 +236,7 @@ namespace PhenoPad.SpeechService
                              {
                                  var parsedSpeech = JsonConvert.DeserializeObject<SpeechEngineJSON>(json);
                                  parsedSpeech.original = json;
+                                 //Debug.WriteLine(json);
                                  //Debug.WriteLine(parsedSpeech.ToString());
 
                                  speechInterpreter.processJSON(parsedSpeech);
@@ -307,6 +314,7 @@ namespace PhenoPad.SpeechService
                     }
 
                     this.writeToFile();
+                    SpeechPage.Current.setSpeakerButtonEnabled(false);
                 }
             }
             finally

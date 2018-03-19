@@ -305,11 +305,33 @@
                 <ComboBox x:Name="speakerBox" 
                           SelectionChanged="speakerBox_SelectionChanged"
                           SelectedIndex="0">
+
+                    <ComboBox.Resources>
+                        <SolidColorBrush x:Key="SystemColors.HighlightBrushKey">Transparent</SolidColorBrush>
+                        <SolidColorBrush x:Key="SystemColors.ControlBrushKey">Transparent</SolidColorBrush>
+                        <!--<SolidColorBrush x:Key="{local SystemColors.HighlightBrushKey}" Color="Transparent" />
+                        <SolidColorBrush x:Key="{x:Static SystemColors.HighlightTextBrushKey}" Color="Black" />
+                        <SolidColorBrush x:Key="{x:Static SystemColors.ControlBrushKey}" Color="Transparent" />-->
+                    </ComboBox.Resources>
+                    
                     <ComboBoxItem
                         Content="Speaker 1"
                         Background="{StaticResource Background_0}"/>
                 </ComboBox>
-                
+                <TextBlock x:Name="speakerNumTxt" Text="Number of Speakers: "
+                           Margin="0"
+                           Padding="5,5,5,1"/>
+                <TextBox x:Name="numSpeakerBox" IsReadOnly="True" Text="2" MaxHeight="1" VerticalAlignment="Top"/>
+                <StackPanel Orientation="Vertical">
+                    <Button x:Name="addSpeakerBtn" Content="+" 
+                            Click="addSpeakerBtn_Click"
+                            Margin="0" Height="15" Width="20" Padding="-2"
+                            IsEnabled="False"/>
+                    <Button x:Name="removeSpeakerBtn" Content="-" 
+                            Click="removeSpeakerBtn_Click"
+                            Margin="0" Height="18" Width="20" Padding="0, -6, 0 -2"
+                            IsEnabled="False"/>
+                </StackPanel>
             </StackPanel>
 
             <StackPanel Orientation="Horizontal" Grid.Column="1" Padding="5,3,3,3"
