@@ -107,19 +107,34 @@
       <DependentUpon>App.xaml</DependentUpon>
     </Compile>
     <Compile Include="AudioCapturePermissions.cs" />
+    <Compile Include="BluetoothService\BluetoothService.cs" />
+    <Compile Include="BrowsePage.xaml.cs">
+      <DependentUpon>BrowsePage.xaml</DependentUpon>
+    </Compile>
     <Compile Include="CustomControl\AddInImageControl.xaml.cs">
       <DependentUpon>AddInImageControl.xaml</DependentUpon>
     </Compile>
     <Compile Include="CustomControl\AddInControl.xaml.cs">
       <DependentUpon>AddInControl.xaml</DependentUpon>
     </Compile>
+    <Compile Include="CustomControl\MyScriptTextEditor.xaml.cs">
+      <DependentUpon>MyScriptTextEditor.xaml</DependentUpon>
+    </Compile>
     <Compile Include="CustomControl\NotePageControl.xaml.cs">
       <DependentUpon>NotePageControl.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="CustomControl\PhenotypeBriefControl.xaml.cs">
+      <DependentUpon>PhenotypeBriefControl.xaml</DependentUpon>
     </Compile>
     <Compile Include="CustomControl\PhenotypeDetail.xaml.cs">
       <DependentUpon>PhenotypeDetail.xaml</DependentUpon>
     </Compile>
+    <Compile Include="FileService\FileManager.cs" />
     <Compile Include="HWRService\HWRManager.cs" />
+    <Compile Include="PageOverview.xaml.cs">
+      <DependentUpon>PageOverview.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="PhenoPad-UWP-Certificate.cs" />
     <Compile Include="PhotoVideoService\CameraRotationHelper.cs" />
     <Compile Include="PhotoVideoService\PhotoVideoCaptureControl.xaml.cs">
       <DependentUpon>PhotoVideoCaptureControl.xaml</DependentUpon>
@@ -153,6 +168,9 @@
     <AppxManifest Include="Package.appxmanifest">
       <SubType>Designer</SubType>
     </AppxManifest>
+    <Content Include="conf\diagram.conf" />
+    <Content Include="conf\en_US.conf" />
+    <Content Include="conf\math.conf" />
     <None Include="PhenoPad_TemporaryKey.pfx" />
   </ItemGroup>
   <ItemGroup>
@@ -166,12 +184,22 @@
     <Content Include="Assets\Square44x44Logo.targetsize-24_altform-unplated.png" />
     <Content Include="Assets\StoreLogo.png" />
     <Content Include="Assets\Wide310x150Logo.scale-200.png" />
+    <Content Include="resources\analyzer\ank-diagram.res" />
+    <Content Include="resources\en_US\en_US-ak-cur.res" />
+    <Content Include="resources\en_US\en_US-lk-text.res" />
+    <Content Include="resources\math\math-ak.res" />
+    <Content Include="resources\math\math-grm-atk.res" />
+    <Content Include="resources\shape\shk-diagram.res" />
   </ItemGroup>
   <ItemGroup>
     <ApplicationDefinition Include="App.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
+    <Page Include="BrowsePage.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
     <Page Include="CustomControl\AddInImageControl.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
@@ -180,11 +208,23 @@
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
+    <Page Include="CustomControl\MyScriptTextEditor.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
     <Page Include="CustomControl\NotePageControl.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
+    <Page Include="CustomControl\PhenotypeBriefControl.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
     <Page Include="CustomControl\PhenotypeDetail.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="PageOverview.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
@@ -223,6 +263,9 @@
     <PackageReference Include="Microsoft.NETCore.UniversalWindowsPlatform">
       <Version>5.4.0</Version>
     </PackageReference>
+    <PackageReference Include="MyScript.InteractiveInk.Uwp">
+      <Version>1.1.2</Version>
+    </PackageReference>
     <PackageReference Include="NETStandard.Library">
       <Version>2.0.0</Version>
     </PackageReference>
@@ -246,6 +289,12 @@
     <Reference Include="netstandard">
       <HintPath>..\..\..\..\..\..\Program Files (x86)\Microsoft Visual Studio\2017\Community\MSBuild\Microsoft\Microsoft.NET.Build.Extensions\net461\lib\netstandard.dll</HintPath>
     </Reference>
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\UIReferenceImplementation\MyScript.InteractiveInk.UIReferenceImplementation.Uwp-VS2017.csproj">
+      <Project>{667892f3-1761-4ea9-bdfa-71944c768bad}</Project>
+      <Name>MyScript.InteractiveInk.UIReferenceImplementation.Uwp-VS2017</Name>
+    </ProjectReference>
   </ItemGroup>
   <PropertyGroup Condition=" '$(VisualStudioVersion)' == '' or '$(VisualStudioVersion)' &lt; '14.0' ">
     <VisualStudioVersion>14.0</VisualStudioVersion>

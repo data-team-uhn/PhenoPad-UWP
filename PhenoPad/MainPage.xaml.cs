@@ -36,9 +36,36 @@ using PhenoPad.Styles;
 using Windows.Graphics.Imaging;
 using Windows.UI.Xaml.Media.Imaging;
 using Microsoft.Graphics.Canvas;
-
+using PhenoPad.FileService;
 namespace PhenoPad
 {
+    // MyScript 
+    public class FlyoutCommand : System.Windows.Input.ICommand
+    {
+        public delegate void InvokedHandler(FlyoutCommand command);
+
+        public string Id { get; set; }
+        private InvokedHandler _handler = null;
+
+        public FlyoutCommand(string id, InvokedHandler handler)
+        {
+            Id = id;
+            _handler = handler;
+        }
+
+        public bool CanExecute(object parameter)
+        {
+            return _handler != null;
+        }
+
+        public void Execute(object parameter)
+        {
+            _handler(this);
+        }
+
+        public event EventHandler CanExecuteChanged;
+    }
+
     public class CalligraphicPen : InkToolbarCustomPen
     {
         public CalligraphicPen()
@@ -73,10 +100,10 @@ namespace PhenoPad
     public sealed partial class MainPage : Page
     {
         
-        
+
         // private MainPage rootPage = MainPage.Current;
-                
-        
+
+
         Symbol LassoSelect = (Symbol)0xEF20;
         Symbol TouchWriting = (Symbol)0xED5F;
         
@@ -106,8 +133,11 @@ namespace PhenoPad
         private NotePageControl curPage = null;
         private int curPageIndex = -1;
         public static MainPage Current;
+        private string curPageId = "";
+        private string notebookId = "";
 
         public SpeechManager speechManager = SpeechManager.getSharedSpeechManager();
+
 
         public MainPage()
         {
@@ -144,30 +174,31 @@ namespace PhenoPad
 
 
             //PC customization
-            var titleBar = ApplicationView.GetForCurrentView().TitleBar;
-            if (titleBar != null)
-            {
-                titleBar.ButtonBackgroundColor = MyColors.TITLE_BAR_COLOR;
+            
+           // var titleBar = ApplicationView.GetForCurrentView().TitleBar;
+            //if (titleBar != null)
+            //{
+                //titleBar.ButtonBackgroundColor = MyColors.TITLE_BAR_WHITE_COLOR;
                 //titleBar.ForegroundColor = MyColors.TITLE_BAR_WHITE_COLOR;
-                titleBar.ButtonInactiveBackgroundColor = MyColors.TITLE_BAR_COLOR;
+                //titleBar.ButtonInactiveBackgroundColor = MyColors.TITLE_BAR_WHITE_COLOR;
               
-            }
+            //}
             // Hide default title bar.
             var coreTitleBar = CoreApplication.GetCurrentView().TitleBar;
-            coreTitleBar.ExtendViewIntoTitleBar = true;
+            coreTitleBar.ExtendViewIntoTitleBar = false;
             
-            UpdateTitleBarLayout(coreTitleBar);
+            //UpdateTitleBarLayout(coreTitleBar);
 
             // Set XAML element as a draggable region.
-            Window.Current.SetTitleBar(fakeTileBar);
+            //Window.Current.SetTitleBar(logoImage);
 
             // Register a handler for when the size of the overlaid caption control changes.
             // For example, when the app moves to a screen with a different DPI.
-            coreTitleBar.LayoutMetricsChanged += CoreTitleBar_LayoutMetricsChanged;
+            //coreTitleBar.LayoutMetricsChanged += CoreTitleBar_LayoutMetricsChanged;
 
             // Register a handler for when the title bar visibility changes.
             // For example, when the title bar is invoked in full screen mode.
-            coreTitleBar.IsVisibleChanged += CoreTitleBar_IsVisibleChanged;
+            //coreTitleBar.IsVisibleChanged += CoreTitleBar_IsVisibleChanged;
 
 
             
@@ -231,6 +262,7 @@ namespace PhenoPad
             
         }
 
+        /**
         private void CoreTitleBar_LayoutMetricsChanged(CoreApplicationViewTitleBar sender, object args)
         {
             UpdateTitleBarLayout(sender);
@@ -240,7 +272,7 @@ namespace PhenoPad
         {
             
         }
-        
+
         private void CoreTitleBar_IsVisibleChanged(CoreApplicationViewTitleBar sender, object args)
         {
             if (sender.IsVisible)
@@ -252,6 +284,7 @@ namespace PhenoPad
                 fakeTileBar.Visibility = Visibility.Collapsed;
             }
         }
+        **/
 
         // Update text to display latest sentence
         // TODO : Feels like there exists more legitimate wasy to do this
@@ -339,6 +372,8 @@ namespace PhenoPad
                 this.cmdBarTextBlock.Text = "Permission to access capture resources was not given by the user, reset the application setting in Settings->Privacy->Microphone.";
                 //micButton.IsEnabled = false;
             }
+
+            
         }
 
         protected async override void OnNavigatedTo(NavigationEventArgs e)
@@ -406,11 +441,13 @@ namespace PhenoPad
         {
             if (toggleButton.IsChecked == true)
             {
-                inkCanvas.InkPresenter.InputDeviceTypes |= CoreInputDeviceTypes.Touch;
+                curPage.inkCan.InkPresenter.InputDeviceTypes |= CoreInputDeviceTypes.Touch;
+                //toggleButton.Background = MyColors.TITLE_BAR_WHITE_COLOR_BRUSH;
             }
             else
             {
-                inkCanvas.InkPresenter.InputDeviceTypes &= ~CoreInputDeviceTypes.Touch;
+                curPage.inkCan.InkPresenter.InputDeviceTypes &= ~CoreInputDeviceTypes.Touch;
+                //toggleButton.Background = MyColors.PHENOTYPE_BLUE;
             }
         }
        
@@ -422,13 +459,23 @@ namespace PhenoPad
         {
             // By default, pen barrel button or right mouse button is processed for inking
             // Set the configuration to instead allow processing these input on the UI thread
-            /**
-            inkCanvas.InkPresenter.InputProcessingConfiguration.RightDragAction = InkInputRightDragAction.LeaveUnprocessed;
-
-            inkCanvas.InkPresenter.UnprocessedInput.PointerPressed += UnprocessedInput_PointerPressed;
-            inkCanvas.InkPresenter.UnprocessedInput.PointerMoved += UnprocessedInput_PointerMoved;
-            inkCanvas.InkPresenter.UnprocessedInput.PointerReleased += UnprocessedInput_PointerReleased;
-            **/
+            if (BallpointPenButton.IsChecked == true)
+            {
+                if (toolButtonLasso.IsChecked == true)
+                {
+                    curPage.enableLeftButtonLasso();
+                    BallpointPenButton.IsEnabled = false;
+                    EraserButton.IsEnabled = false;
+                }
+                else
+                {
+                    curPage.disableLeftButtonLasso();
+                    BallpointPenButton.IsEnabled = true;
+                    EraserButton.IsEnabled = true;
+                }
+            }
+           
+            
         }
 
        
@@ -939,8 +986,13 @@ namespace PhenoPad
 
         private async void PhotoButton_Click(object sender, RoutedEventArgs e)
         {
-            var imageSource = await captureControl.TakePhotoAsync();
-            curPage.AddImageControl(imageSource);
+            string imagename = FileManager.getSharedFileManager().CreateUniqueName();
+            var imageSource = await captureControl.TakePhotoAsync(notebookId, curPageId, imagename + ".jpg");
+            if(imageSource != null)
+            {
+                curPage.AddImageControl(imagename, imageSource);
+
+            }
         }
 
         private void CameraClose_Click(object sender, RoutedEventArgs e)
@@ -954,9 +1006,9 @@ namespace PhenoPad
             foreach (var btn in pageIndexButtons)
             {
                 btn.Background = new SolidColorBrush(Colors.WhiteSmoke);
-                btn.Foreground = MyColors.TITLE_BAR_COLOR_BRUSH;
+                btn.Foreground = new SolidColorBrush(Colors.LightBlue);
             }
-            pageIndexButtons.ElementAt(index).Background = MyColors.TITLE_BAR_COLOR_BRUSH;
+            pageIndexButtons.ElementAt(index).Background = new SolidColorBrush(Colors.LightBlue);
             pageIndexButtons.ElementAt(index).Foreground = new SolidColorBrush(Colors.WhiteSmoke);
         }
 
@@ -965,7 +1017,7 @@ namespace PhenoPad
             Button btn = new Button();
             btn.Click += IndexBtn_Click;
             btn.Background = new SolidColorBrush(Colors.WhiteSmoke);
-            btn.Foreground = MyColors.TITLE_BAR_COLOR_BRUSH;
+            btn.Foreground = new SolidColorBrush(Colors.LightGoldenrodYellow);
             btn.Padding = new Thickness(0, 0, 0, 0);
             btn.Content = "" + (index+1);
             btn.Width = 30;
@@ -983,9 +1035,9 @@ namespace PhenoPad
             foreach (var btn in pageIndexButtons)
             {
                 btn.Background = new SolidColorBrush(Colors.WhiteSmoke);
-                btn.Foreground = MyColors.TITLE_BAR_COLOR_BRUSH;
+                btn.Foreground = new SolidColorBrush(Colors.LightBlue);
             }
-            button.Background = MyColors.TITLE_BAR_COLOR_BRUSH;
+            button.Background = new SolidColorBrush(Colors.LightBlue);
             button.Foreground = new SolidColorBrush(Colors.WhiteSmoke);
             
             curPageIndex = Int32.Parse(button.Content.ToString()) - 1;
@@ -1174,7 +1226,7 @@ namespace PhenoPad
                     BitmapAlphaMode.Premultiplied);
                     SoftwareBitmapSource bitmapSource = new SoftwareBitmapSource();
                     await bitmapSource.SetBitmapAsync(softwareBitmapBGR8);
-                    curPage.AddImageControl(bitmapSource);
+                    curPage.AddImageControl("FIXME",bitmapSource);
                 }
                 stream.Dispose();
             }
@@ -1310,6 +1362,153 @@ namespace PhenoPad
                         SpeechManager.getSharedSpeechManager().setServerPort(text.Substring(colonIndex + 1).Trim());
                     }
                 }
+            }
+        }
+
+        private void KeyboardButton_Click(object sender, RoutedEventArgs e)
+        {
+            modeTextBlock.Text = "Typing Mode";
+            writeButton.IsChecked = false;
+            keyboardButton.IsChecked = true;
+            boldButton.Visibility = Visibility.Visible;
+            italicButton.Visibility = Visibility.Visible;
+            underlineButton.Visibility = Visibility.Visible;
+            MainPageInkBar.Visibility = Visibility.Collapsed;
+            curPage.showTextEditGrid();
+        }
+
+        private void WriteButton_Click(object sender, RoutedEventArgs e)
+        {
+            modeTextBlock.Text = "Handwriting Mode";
+            keyboardButton.IsChecked = false;
+            writeButton.IsChecked = true;
+            boldButton.Visibility = Visibility.Collapsed;
+            italicButton.Visibility = Visibility.Collapsed;
+            underlineButton.Visibility = Visibility.Collapsed;
+            MainPageInkBar.Visibility = Visibility.Visible;
+            curPage.hideTextEditGrid();
+        }
+        
+        private void MyScriptButton_Click(object sender, RoutedEventArgs e)
+        {
+            /**
+            if (myScriptEditor.Visibility == Visibility.Collapsed)
+            {
+                myScriptEditor.Visibility = Visibility.Visible;
+                myScriptEditor.NewFile();
+            }
+            else
+            {
+                myScriptEditor.Visibility = Visibility.Collapsed;
+            }
+    **/
+            
+        }
+
+        private void ConnectBluetooth_Click(object sender, RoutedEventArgs e)
+        {
+            BluetoothService.BluetoothService bs = new BluetoothService.BluetoothService();
+            bs.Initialize();
+        }
+
+        private void FullscreenButton_Click(object sender, RoutedEventArgs e)
+        {
+            var view = ApplicationView.GetForCurrentView();
+            if (view.IsFullScreenMode)
+            {
+                view.ExitFullScreenMode();
+                this.NotifyUser("Exiting full screen mode", NotifyType.StatusMessage, 2);
+                this.FullscreenBtn.Icon = new SymbolIcon(Symbol.FullScreen);
+                // The SizeChanged event will be raised when the exit from full screen mode is complete.
+            }
+            else
+            {
+                if (view.TryEnterFullScreenMode())
+                {
+                    this.NotifyUser("Entering full screen mode", NotifyType.StatusMessage, 2);
+                    this.FullscreenBtn.Icon = new SymbolIcon(Symbol.BackToWindow);
+                    // The SizeChanged event will be raised when the entry to full screen mode is complete.
+                }
+                else
+                {
+                    this.NotifyUser("Failed to enter full screen mode", NotifyType.ErrorMessage, 2);
+                }
+            }
+        }
+
+        private void OpenCandidate_Click(object sender, RoutedEventArgs e)
+        {
+            if (OpenCandidatePanelButton.IsChecked == true)
+            {
+                candidatePhenoListView.Visibility = Visibility.Visible;
+            }
+            else {
+                candidatePhenoListView.Visibility = Visibility.Collapsed;
+            }
+            
+        }
+
+        private void OverViewToggleButton_Click(object sender, RoutedEventArgs e)
+        {   if (MainSplitView.IsPaneOpen == false)
+            {
+                MainSplitView.IsPaneOpen = true;
+                QuickViewButtonSymbol.Symbol = Symbol.Clear;
+            }
+            else
+            {
+                if (SpeechToggleButton.IsChecked == true)
+                {
+                    OverViewToggleButton.IsChecked = true;
+                    SpeechToggleButton.IsChecked = false;
+                }
+                else
+                {
+                    MainSplitView.IsPaneOpen = false;
+                    QuickViewButtonSymbol.Symbol = Symbol.GlobalNavigationButton;
+                }
+
+            }
+        }
+
+        private void SpeechToggleButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (MainSplitView.IsPaneOpen == false)
+            {
+                MainSplitView.IsPaneOpen = true;
+                QuickViewButtonSymbol.Symbol = Symbol.Clear;
+            }
+            else
+            {
+                if (OverViewToggleButton.IsChecked == true)
+                {
+                    OverViewToggleButton.IsChecked = false;
+                    SpeechToggleButton.IsChecked = true;
+                }
+                else
+                {
+                    MainSplitView.IsPaneOpen = false;
+                    QuickViewButtonSymbol.Symbol = Symbol.GlobalNavigationButton;
+                }
+
+            }
+        }
+
+        private void QuickViewButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (MainSplitView.IsPaneOpen == true)
+            {
+                MainSplitView.IsPaneOpen = false;
+                OverViewToggleButton.IsChecked = false;
+                SpeechToggleButton.IsChecked = false;
+                QuickViewButtonSymbol.Symbol = Symbol.GlobalNavigationButton;
+            }
+            else
+            {
+                MainSplitView.IsPaneOpen = true;
+                QuickViewButtonSymbol.Symbol = Symbol.Clear;
+                OverViewToggleButton.IsChecked = true;
+                SpeechToggleButton.IsChecked = false;
+
             }
         }
     }

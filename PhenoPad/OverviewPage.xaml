@@ -6,7 +6,7 @@
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:phenotypeservice="using:PhenoPad.PhenotypeService"
-    xmlns:customcontorl="using:PhenoPad.CustomContorl"
+    xmlns:customcontrol="using:PhenoPad.CustomControl"
     mc:Ignorable="d">
     <Page.Transitions>
         <TransitionCollection>
@@ -33,12 +33,15 @@
                 <ListView x:Name="savedPhenoListView" Grid.Row="1" ItemsSource="{x:Bind PhenoMana.savedPhenotypes, Mode=OneWay}">
                     <ListView.ItemTemplate>
                         <DataTemplate x:DataType="phenotypeservice:Phenotype">
-                            <customcontorl:PhenotypeControl phenotypeName="{x:Bind name}" phenotypeId="{x:Bind hpId}" phenotypeState="{x:Bind state}" sourceType="Saved"></customcontorl:PhenotypeControl>
+                            <customcontrol:PhenotypeControl phenotypeName="{x:Bind name}" phenotypeId="{x:Bind hpId}" phenotypeState="{x:Bind state}" sourceType="Saved"></customcontrol:PhenotypeControl>
                         </DataTemplate>
                     </ListView.ItemTemplate>
                     <ListView.ItemContainerStyle>
                         <Style TargetType="ListViewItem">
                             <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                            <Setter Property="Margin" Value="0,0,0,0" />
+                            <Setter Property="Padding" Value="5,0,0,0" />
+                            <Setter Property="MinHeight" Value="20" />
                         </Style>
                     </ListView.ItemContainerStyle>
                 </ListView>
@@ -60,12 +63,15 @@
                     <ListView x:Name="phenoOfNotesListView" Grid.Row="1" ItemsSource="{x:Bind PhenoMana.phenotypesInNote, Mode=OneWay}">
                         <ListView.ItemTemplate>
                             <DataTemplate x:DataType="phenotypeservice:Phenotype">
-                                <customcontorl:PhenotypeControl phenotypeName="{x:Bind name}" phenotypeId="{x:Bind hpId}" phenotypeState="{x:Bind state}" sourceType="Notes"></customcontorl:PhenotypeControl>
+                                <customcontrol:PhenotypeControl phenotypeName="{x:Bind name}" phenotypeId="{x:Bind hpId}" phenotypeState="{x:Bind state}" sourceType="Notes"></customcontrol:PhenotypeControl>
                             </DataTemplate>
                         </ListView.ItemTemplate>
                         <ListView.ItemContainerStyle>
                             <Style TargetType="ListViewItem">
                                 <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                                <Setter Property="Margin" Value="0,0,0,0" />
+                                <Setter Property="Padding" Value="5,0,0,0" />
+                                <Setter Property="MinHeight" Value="20" />
                             </Style>
                         </ListView.ItemContainerStyle>
                     </ListView>
@@ -79,12 +85,15 @@
                     <ListView x:Name="phenoOfSpeechListView" Grid.Row="1" ItemsSource="{x:Bind PhenoMana.phenotypesInSpeech, Mode=OneWay}">
                         <ListView.ItemTemplate>
                             <DataTemplate x:DataType="phenotypeservice:Phenotype">
-                                <customcontorl:PhenotypeControl phenotypeName="{x:Bind name}" phenotypeId="{x:Bind hpId}" phenotypeState="{x:Bind state}" sourceType="Speech"></customcontorl:PhenotypeControl>
+                                <customcontrol:PhenotypeControl phenotypeName="{x:Bind name}" phenotypeId="{x:Bind hpId}" phenotypeState="{x:Bind state}" sourceType="Speech"></customcontrol:PhenotypeControl>
                             </DataTemplate>
                         </ListView.ItemTemplate>
                         <ListView.ItemContainerStyle>
                             <Style TargetType="ListViewItem">
                                 <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                                <Setter Property="Margin" Value="0,0,0,0" />
+                                <Setter Property="Padding" Value="5,0,0,0" />
+                                <Setter Property="MinHeight" Value="20" />
                             </Style>
                         </ListView.ItemContainerStyle>
                     </ListView>
@@ -102,12 +111,15 @@
                 <ListView x:Name="suggestedPhenoListView" Grid.Row="1" ItemsSource="{x:Bind PhenoMana.suggestedPhenotypes, Mode=OneWay}">
                     <ListView.ItemTemplate>
                         <DataTemplate x:DataType="phenotypeservice:Phenotype">
-                            <customcontorl:PhenotypeControl phenotypeName="{x:Bind name}" phenotypeId="{x:Bind hpId}" phenotypeState="{x:Bind state}" sourceType="Suggested"></customcontorl:PhenotypeControl>
+                            <customcontrol:PhenotypeControl phenotypeName="{x:Bind name}" phenotypeId="{x:Bind hpId}" phenotypeState="{x:Bind state}" sourceType="Suggested"></customcontrol:PhenotypeControl>
                         </DataTemplate>
                     </ListView.ItemTemplate>
                     <ListView.ItemContainerStyle>
                         <Style TargetType="ListViewItem">
                             <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                            <Setter Property="Margin" Value="0,0,0,0" />
+                            <Setter Property="Padding" Value="5,0,0,0" />
+                            <Setter Property="MinHeight" Value="20" />
                         </Style>
                     </ListView.ItemContainerStyle>
                 </ListView>
@@ -130,6 +142,9 @@
                     <ListView.ItemContainerStyle>
                         <Style TargetType="ListViewItem">
                             <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                            <Setter Property="Margin" Value="0,0,0,0" />
+                            <Setter Property="Padding" Value="5,0,0,0" />
+                            <Setter Property="MinHeight" Value="20" />
                         </Style>
                     </ListView.ItemContainerStyle>
                 </ListView>

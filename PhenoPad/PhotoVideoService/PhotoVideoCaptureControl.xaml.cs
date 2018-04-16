@@ -88,7 +88,7 @@ namespace PhenoPad.PhotoVideoService
 
         private async void PhotoButton_Click(object sender, RoutedEventArgs e)
         {
-            await TakePhotoAsync();
+            await TakePhotoAsync("","","");
         }
 
         private async void VideoButton_Click(object sender, RoutedEventArgs e)
@@ -289,7 +289,7 @@ namespace PhenoPad.PhotoVideoService
         /// Takes a photo to a StorageFile and adds rotation metadata to it
         /// </summary>
         /// <returns></returns>
-        public async Task<SoftwareBitmapSource> TakePhotoAsync()
+        public async Task<SoftwareBitmapSource> TakePhotoAsync(string notebookId, string pageId, string name)
         {
             // While taking a photo, keep the video button enabled only if the camera supports simultaneously taking pictures and recording video
             VideoButton.IsEnabled = _mediaCapture.MediaCaptureSettings.ConcurrentRecordAndPhotoSupported;
@@ -313,7 +313,10 @@ namespace PhenoPad.PhotoVideoService
 
             try
             {
-                var file = await _captureFolder.CreateFileAsync("SimplePhoto.jpg", CreationCollisionOption.GenerateUniqueName);
+                //var file = await _captureFolder.CreateFileAsync("SimplePhoto.jpg", CreationCollisionOption.GenerateUniqueName);
+                var file = await PhenoPad.FileService.FileManager.getSharedFileManager().CreateImageFileForPage(notebookId, pageId, name);
+                if (file == null)
+                    return null;
                 Debug.WriteLine("Photo taken! Saving to " + file.Path);
 
                 var photoOrientation = CameraRotationHelper.ConvertSimpleOrientationToPhotoOrientation(_rotationHelper.GetCameraCaptureOrientation());
@@ -327,6 +330,7 @@ namespace PhenoPad.PhotoVideoService
             {
                 // File I/O errors are reported as exceptions
                 Debug.WriteLine("Exception when taking a photo: " + ex.ToString());
+                return null;
             }
 
             // Done taking a photo, so re-enable the button

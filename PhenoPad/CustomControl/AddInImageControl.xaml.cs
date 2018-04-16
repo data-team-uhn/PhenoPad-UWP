@@ -1,10 +1,12 @@
-﻿using System;
+﻿using PhenoPad.FileService;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices.WindowsRuntime;
 using Windows.Foundation;
 using Windows.Foundation.Collections;
+using Windows.Storage;
 using Windows.UI.Input.Inking;
 using Windows.UI.Input.Inking.Analysis;
 using Windows.UI.Xaml;
@@ -26,10 +28,23 @@ namespace PhenoPad.CustomControl
         IReadOnlyList<InkStroke> inkStrokes = null;
         InkAnalysisResult inkAnalysisResults = null;
 
-        public AddInImageControl()
+        public string name { get; }
+        public string notebookId { get; }
+        public string pageId { get; }
+        public double height;
+        public double width;
+        public double canvasLeft;
+        public double canvasTop;
+        public InkCanvas inkCan
+        {
+            get {
+                return this.inkCanvas;
+            }
+        }
+        public AddInImageControl(string notebookId, string pageId, string name)
         {
             this.InitializeComponent();
-
+            this.name = name;
             // Set supported inking device types.
             inkCanvas.InkPresenter.InputDeviceTypes =
                 Windows.UI.Core.CoreInputDeviceTypes.Mouse |
@@ -50,6 +65,13 @@ namespace PhenoPad.CustomControl
         private void Delete_Click(object sender, RoutedEventArgs e)
         {
             ((Panel)this.Parent).Children.Remove(this);
+        }
+
+        public async void SaveToDisk()
+        {
+            StorageFile file = await FileManager.getSharedFileManager().GetNoteFile(notebookId, pageId, NoteFileType.ImageAnnotation, name);
+            if (file != null)
+                await FileManager.getSharedFileManager().saveStrokes(file, this.inkCan);
         }
     }
 }

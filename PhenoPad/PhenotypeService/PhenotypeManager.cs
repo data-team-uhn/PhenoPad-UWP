@@ -5,8 +5,10 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Linq;
+using System.Runtime.Serialization;
 using System.Text;
 using System.Threading.Tasks;
+using System.Xml;
 using Windows.Web.Http;
 
 namespace PhenoPad.PhenotypeService
@@ -144,12 +146,13 @@ namespace PhenoPad.PhenotypeService
             }
 
             temp = phenotypesCandidates.Where(x => x == pheno).FirstOrDefault();
+            int ind = phenotypesCandidates.IndexOf(temp);
             if (temp != null)
             {
                 temp.state = 1;
                 Phenotype pp = temp.Clone();
                 phenotypesCandidates.Remove(temp);
-                phenotypesCandidates.Insert(0, pp);
+                phenotypesCandidates.Insert(ind, pp);
             }
             
 
@@ -306,12 +309,13 @@ namespace PhenoPad.PhenotypeService
             }
 
             temp = phenotypesCandidates.Where(x => x.hpId == pid).FirstOrDefault();
+            int ind = phenotypesCandidates.IndexOf(temp);
             if (temp != null)
             {
                 temp.state = state;
                 Phenotype pp = temp.Clone();
                 phenotypesCandidates.Remove(temp);
-                phenotypesCandidates.Insert(0, pp);
+                phenotypesCandidates.Insert(ind, pp);
             }
 
             updateSuggestionAndDifferential();
@@ -417,6 +421,7 @@ namespace PhenoPad.PhenotypeService
             catch (Exception ex)
             {
                 httpResponseBody = "Error: " + ex.HResult.ToString("X") + " Message: " + ex.Message;
+                rootPage.NotifyUser(httpResponseBody, NotifyType.ErrorMessage, 3);
             }
             return null;
         }
@@ -589,6 +594,12 @@ namespace PhenoPad.PhenotypeService
                 httpResponseBody = "Error: " + ex.HResult.ToString("X") + " Message: " + ex.Message;
             }
             return null;
+        }
+
+        public void SaveToDisk(string notebookId)
+        {
+            string filename = FileService.FileManager.getSharedFileManager().GetNoteFilePath(notebookId, "", FileService.NoteFileType.Phenotypes);
+            FileService.FileManager.getSharedFileManager().SaveObjectSerilization(filename, this, typeof(PhenotypeManager));
         }
     }
 }
