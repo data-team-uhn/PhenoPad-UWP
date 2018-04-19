@@ -9,6 +9,7 @@ using System.Runtime.Serialization;
 using System.Text;
 using System.Threading.Tasks;
 using System.Xml;
+using Windows.Storage;
 using Windows.Web.Http;
 
 namespace PhenoPad.PhenotypeService
@@ -216,6 +217,8 @@ namespace PhenoPad.PhenotypeService
             }
             return false;
         }
+
+
         public void updatePhenotype(Phenotype pheno)
         {
             Phenotype temp = savedPhenotypes.Where(x => x == pheno).FirstOrDefault();
@@ -262,6 +265,7 @@ namespace PhenoPad.PhenotypeService
 
         public void updatePhenoStateById(string pid, int state, SourceType type)
         {
+            int ind = -1;
             Phenotype temp = savedPhenotypes.Where(x => x.hpId == pid).FirstOrDefault();
             if (temp != null)
             {
@@ -269,9 +273,10 @@ namespace PhenoPad.PhenotypeService
                 if (type != SourceType.Saved)
                 {
                     Phenotype pp = temp.Clone();
+                    ind = savedPhenotypes.IndexOf(temp);
                     savedPhenotypes.Remove(temp);
                     //savedPhenotypes.Add(pp);
-                    savedPhenotypes.Insert(0, pp);
+                    savedPhenotypes.Insert(ind, pp);
                 }
             }
             temp = suggestedPhenotypes.Where(x => x.hpId == pid).FirstOrDefault();
@@ -281,8 +286,9 @@ namespace PhenoPad.PhenotypeService
                 if (type != SourceType.Suggested)
                 {
                     Phenotype pp = temp.Clone();
+                    ind = suggestedPhenotypes.IndexOf(temp);
                     suggestedPhenotypes.Remove(temp);
-                    suggestedPhenotypes.Insert(0, pp);
+                    suggestedPhenotypes.Insert(ind, pp);
                 }
             }
             temp = phenotypesInNote.Where(x => x.hpId == pid).FirstOrDefault();
@@ -292,8 +298,9 @@ namespace PhenoPad.PhenotypeService
                 if (type != SourceType.Notes)
                 {
                     Phenotype pp = temp.Clone();
+                    ind = phenotypesInNote.IndexOf(temp);
                     phenotypesInNote.Remove(temp);
-                    phenotypesInNote.Insert(0, pp);
+                    phenotypesInNote.Insert(ind, pp);
                 }
             }
             temp = phenotypesInSpeech.Where(x => x.hpId == pid).FirstOrDefault();
@@ -303,17 +310,18 @@ namespace PhenoPad.PhenotypeService
                 if (type != SourceType.Speech)
                 {
                     Phenotype pp = temp.Clone();
+                    ind = phenotypesInSpeech.IndexOf(temp);
                     phenotypesInSpeech.Remove(temp);
-                    phenotypesInSpeech.Insert(0, pp);
+                    phenotypesInSpeech.Insert(ind, pp);
                 }
             }
 
             temp = phenotypesCandidates.Where(x => x.hpId == pid).FirstOrDefault();
-            int ind = phenotypesCandidates.IndexOf(temp);
             if (temp != null)
             {
                 temp.state = state;
                 Phenotype pp = temp.Clone();
+                ind = phenotypesCandidates.IndexOf(temp);
                 phenotypesCandidates.Remove(temp);
                 phenotypesCandidates.Insert(ind, pp);
             }
@@ -598,8 +606,11 @@ namespace PhenoPad.PhenotypeService
 
         public void SaveToDisk(string notebookId)
         {
-            string filename = FileService.FileManager.getSharedFileManager().GetNoteFilePath(notebookId, "", FileService.NoteFileType.Phenotypes);
-            FileService.FileManager.getSharedFileManager().SaveObjectSerilization(filename, this, typeof(PhenotypeManager));
+            //StorageFile filename = FileService.FileManager.getSharedFileManager().GetNoteFile(notebookId, "", FileService.NoteFileType.Phenotypes);
+            //FileService.FileManager.getSharedFileManager().SaveObjectSerilization(filename, this, typeof(PhenotypeManager));
         }
+
+
+       
     }
 }

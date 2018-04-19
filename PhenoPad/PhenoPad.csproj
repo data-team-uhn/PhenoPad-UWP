@@ -129,7 +129,10 @@
     <Compile Include="CustomControl\PhenotypeDetail.xaml.cs">
       <DependentUpon>PhenotypeDetail.xaml</DependentUpon>
     </Compile>
+    <Compile Include="FileService\Class1.cs" />
     <Compile Include="FileService\FileManager.cs" />
+    <Compile Include="FileService\Notebook.cs" />
+    <Compile Include="FileService\NotePage.cs" />
     <Compile Include="HWRService\HWRManager.cs" />
     <Compile Include="PageOverview.xaml.cs">
       <DependentUpon>PageOverview.xaml</DependentUpon>
@@ -168,6 +171,7 @@
     <AppxManifest Include="Package.appxmanifest">
       <SubType>Designer</SubType>
     </AppxManifest>
+    <Content Include="Assets\written_notes.jpg" />
     <Content Include="conf\diagram.conf" />
     <Content Include="conf\en_US.conf" />
     <Content Include="conf\math.conf" />
@@ -286,15 +290,15 @@
     </PackageReference>
   </ItemGroup>
   <ItemGroup>
-    <Reference Include="netstandard">
-      <HintPath>..\..\..\..\..\..\Program Files (x86)\Microsoft Visual Studio\2017\Community\MSBuild\Microsoft\Microsoft.NET.Build.Extensions\net461\lib\netstandard.dll</HintPath>
-    </Reference>
-  </ItemGroup>
-  <ItemGroup>
     <ProjectReference Include="..\UIReferenceImplementation\MyScript.InteractiveInk.UIReferenceImplementation.Uwp-VS2017.csproj">
       <Project>{667892f3-1761-4ea9-bdfa-71944c768bad}</Project>
       <Name>MyScript.InteractiveInk.UIReferenceImplementation.Uwp-VS2017</Name>
     </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <Reference Include="netstandard">
+      <HintPath>..\..\..\..\..\..\Program Files (x86)\Microsoft Visual Studio\2017\Community\MSBuild\Microsoft\Microsoft.NET.Build.Extensions\net461\lib\netstandard.dll</HintPath>
+    </Reference>
   </ItemGroup>
   <PropertyGroup Condition=" '$(VisualStudioVersion)' == '' or '$(VisualStudioVersion)' &lt; '14.0' ">
     <VisualStudioVersion>14.0</VisualStudioVersion>

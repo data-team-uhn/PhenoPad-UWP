@@ -147,15 +147,15 @@ namespace PhenoPad.CustomControl
 
         private void setYNSwitchColor(int state)
         {
-            NSwitchBtn.Background = MyColors.BUTTON_GRAY;
-            YSwitchBtn.Background = MyColors.BUTTON_GRAY;
+            NSwitchBtn.Background = new SolidColorBrush(Colors.LightGray);
+            YSwitchBtn.Background = new SolidColorBrush(Colors.LightGray);
             switch (state)
             {
                 case 0:
-                    NSwitchBtn.Background = MyColors.PHENOTYPE_BLUE;
+                    NSwitchBtn.Background = Application.Current.Resources["Button_Background"] as SolidColorBrush;
                     break;
                 case 1:
-                    YSwitchBtn.Background = MyColors.PHENOTYPE_BLUE;
+                    YSwitchBtn.Background = Application.Current.Resources["Button_Background"] as SolidColorBrush;
                     break;
                 default:
                     break;

@@ -192,7 +192,7 @@
                     <RowDefinition Height="25"/>
                     <RowDefinition Height="*"/>
                 </Grid.RowDefinitions>
-                <TextBlock Grid.Row="0" Margin="10 0 0 0" Foreground="{x:Bind styles:MyColors.PHENOTYPE_BLUE}">Are you looking for:</TextBlock>
+                <TextBlock Grid.Row="0" Margin="10 0 0 0" Foreground="{StaticResource Button_Background}">Are you looking for:</TextBlock>
                 <ListView x:Name="candidatePhenoListView" Grid.Row="1" ItemsSource="{x:Bind PhenoMana.phenotypesCandidates, Mode=OneWay}">
 
                     <ListView.ItemTemplate>

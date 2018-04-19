@@ -16,7 +16,7 @@
 
     <Grid Padding="0 0 0 0" Name="NameGrid" >
 
-        <TextBlock Tapped="nameTextBlockTapped"  Padding="10 0 10 0" FontSize="18" Grid.Column="1" x:Name="phenotypeNameTextBlock" Text="" VerticalAlignment="Center" HorizontalAlignment="Stretch"/>
+        <TextBlock Tapped="nameTextBlockTapped"  Padding="10 0 10 0" FontSize="15" Grid.Column="1" x:Name="phenotypeNameTextBlock" Text="" VerticalAlignment="Center" HorizontalAlignment="Stretch"/>
         <Line Stretch="Fill" Stroke="white" StrokeThickness="2 " X1="1" HorizontalAlignment="Stretch" VerticalAlignment="Center" Name="NameCrossLine" />
 
     </Grid>

@@ -26,10 +26,10 @@
         <Grid Grid.Row="0" Grid.Column="0" BorderBrush="{ThemeResource AppBarBackground}" BorderThickness="10 10 0 0">
             <Grid>
                 <Grid.RowDefinitions>
-                    <RowDefinition Height="50"/>
+                    <RowDefinition Height="30"/>
                     <RowDefinition Height="*"/>
                 </Grid.RowDefinitions>
-                <TextBlock Grid.Row="0" Margin="10 0 0 0">Collected Phenotypes</TextBlock>
+                <TextBlock Grid.Row="0" FontSize="16" Foreground="DodgerBlue" Margin="10 0 0 0">Collected Phenotypes</TextBlock>
                 <ListView x:Name="savedPhenoListView" Grid.Row="1" ItemsSource="{x:Bind PhenoMana.savedPhenotypes, Mode=OneWay}">
                     <ListView.ItemTemplate>
                         <DataTemplate x:DataType="phenotypeservice:Phenotype">
@@ -56,10 +56,10 @@
                 </Grid.RowDefinitions>
                 <Grid Grid.Row="0">
                     <Grid.RowDefinitions>
-                        <RowDefinition Height="50"/>
+                        <RowDefinition Height="30"/>
                         <RowDefinition Height="*"/>
                     </Grid.RowDefinitions>
-                    <TextBlock Grid.Row="0"  Margin="10 0 0 0">Phenotypes From Notes</TextBlock>
+                    <TextBlock Grid.Row="0"  FontSize="16" Foreground="DodgerBlue" Margin="10 0 0 0">Phenotypes From Notes</TextBlock>
                     <ListView x:Name="phenoOfNotesListView" Grid.Row="1" ItemsSource="{x:Bind PhenoMana.phenotypesInNote, Mode=OneWay}">
                         <ListView.ItemTemplate>
                             <DataTemplate x:DataType="phenotypeservice:Phenotype">
@@ -78,10 +78,10 @@
                 </Grid>
                 <Grid Grid.Row="1" BorderBrush="{ThemeResource AppBarBackground}" BorderThickness="0 10 0 0">
                     <Grid.RowDefinitions>
-                        <RowDefinition Height="50"/>
+                        <RowDefinition Height="30"/>
                         <RowDefinition Height="*"/>
                     </Grid.RowDefinitions>
-                    <TextBlock Grid.Row="0"  Margin="10 0 0 0">Phenotypes From Speech</TextBlock>
+                    <TextBlock Grid.Row="0"  FontSize="16" Foreground="DodgerBlue" Margin="10 0 0 0">Phenotypes From Speech</TextBlock>
                     <ListView x:Name="phenoOfSpeechListView" Grid.Row="1" ItemsSource="{x:Bind PhenoMana.phenotypesInSpeech, Mode=OneWay}">
                         <ListView.ItemTemplate>
                             <DataTemplate x:DataType="phenotypeservice:Phenotype">
@@ -104,10 +104,10 @@
         <Grid Grid.Row="1" Grid.Column="0" BorderBrush="{ThemeResource AppBarBackground}" BorderThickness="10 10 0 10">
             <Grid>
                 <Grid.RowDefinitions>
-                    <RowDefinition Height="50"/>
+                    <RowDefinition Height="30"/>
                     <RowDefinition Height="*"/>
                 </Grid.RowDefinitions>
-                <TextBlock Grid.Row="0"  Margin="10 0 0 0">Suggested Phenotypes</TextBlock>
+                <TextBlock Grid.Row="0"  FontSize="16" Foreground="DodgerBlue" Margin="10 0 0 0">Suggested Phenotypes</TextBlock>
                 <ListView x:Name="suggestedPhenoListView" Grid.Row="1" ItemsSource="{x:Bind PhenoMana.suggestedPhenotypes, Mode=OneWay}">
                     <ListView.ItemTemplate>
                         <DataTemplate x:DataType="phenotypeservice:Phenotype">
@@ -129,10 +129,10 @@
         <RelativePanel Grid.Row="1" Grid.Column="1" BorderBrush="{ThemeResource AppBarBackground}" BorderThickness="10">
             <Grid>
                 <Grid.RowDefinitions>
-                    <RowDefinition Height="50"/>
+                    <RowDefinition Height="30"/>
                     <RowDefinition Height="*"/>
                 </Grid.RowDefinitions>
-                <TextBlock Grid.Row="0"  Margin="10 0 0 0">Differential diagnosis</TextBlock>
+                <TextBlock Grid.Row="0"  FontSize="16" Foreground="DodgerBlue" Margin="10 0 0 0">Differential diagnosis</TextBlock>
                 <ListView x:Name="diseaseListView" Grid.Row="1" ItemsSource="{x:Bind PhenoMana.predictedDiseases}">
                     <ListView.ItemTemplate>
                         <DataTemplate x:DataType="phenotypeservice:Disease">

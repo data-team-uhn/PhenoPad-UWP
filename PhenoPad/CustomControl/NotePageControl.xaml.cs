@@ -53,12 +53,15 @@ namespace PhenoPad.CustomControl
         // Max hight for writing, those with hight exceeding this values will be deleted.
         private static float MAX_WRITING = (float)1.5 * LINE_HEIGHT;
         // Style of "unprocessed stroke" or right dragging stroke.
-        private SolidColorBrush UNPROCESSED_COLOR = new SolidColorBrush(MyColors.PHENOTYPE_BLUE_COLOR);
+
+        // can not do this, modify opacity of UNPROCESSED_COLOR will modify the static resource for the whole application
+        // private SolidColorBrush UNPROCESSED_COLOR = Application.Current.Resources["Button_Background"] as SolidColorBrush;
+        private SolidColorBrush UNPROCESSED_COLOR = Application.Current.Resources["WORD_DARK"] as SolidColorBrush;
         private float UNPROCESSED_OPACITY = 0.2f;
         private int UNPROCESSED_THICKNESS = 20;
         private int UNPROCESSED_RESOLUTION = 5;
-        private Color DEFAULT_STROKE_COLOR = MyColors.DEFUALT_STROKE;
-        private Color SELECTED_STROKE_COLOR = MyColors.PHENOTYPE_BLUE_COLOR;
+        private Color DEFAULT_STROKE_COLOR = Colors.Black;
+        private Color SELECTED_STROKE_COLOR = (Color) Application.Current.Resources["WORD_DARK_COLOR"];
         public float PAGE_HEIGHT = 2000;
         public float PAGE_WIDTH = 1400;
 
@@ -126,6 +129,7 @@ namespace PhenoPad.CustomControl
             this.InitializeComponent();
             this.DrawBackgroundLines();
 
+            UNPROCESSED_COLOR = new SolidColorBrush(UNPROCESSED_COLOR.Color);
             UNPROCESSED_COLOR.Opacity = UNPROCESSED_OPACITY;
             // Initialize the InkCanvas
             inkCanvas.InkPresenter.InputDeviceTypes = CoreInputDeviceTypes.Mouse | CoreInputDeviceTypes.Pen;
@@ -208,7 +212,7 @@ namespace PhenoPad.CustomControl
             drawingAttributesBackUp = inkCanvas.InkPresenter.CopyDefaultDrawingAttributes();
             var temp = inkCanvas.InkPresenter.CopyDefaultDrawingAttributes();
             temp.Size = new Size(0, 0);
-            temp.Color = MyColors.PHENOTYPE_BLUE_COLOR;
+            temp.Color = (Color) Application.Current.Resources["Button_Background_Color"];
             inkCanvas.InkPresenter.UpdateDefaultDrawingAttributes(temp);
             leftLasso = true;
 
@@ -488,7 +492,11 @@ namespace PhenoPad.CustomControl
                     if (s.BoundingRect.Height > MAX_WRITING)
                     {
                         inkOperationAnalyzer.AddDataForStroke(s);
-                        await RecognizeInkOperation();
+                        try
+                        {
+                            await RecognizeInkOperation();
+                        }
+                        catch (Exception) { }
                     }
                     else
                     {
@@ -664,22 +672,24 @@ namespace PhenoPad.CustomControl
             Canvas.SetTop(rectangle, boundingRect.Y);
             selectionCanvas.Children.Add(rectangle);
             ***/
-            PopupCommandBar.Visibility = Visibility.Visible;
-            recognizedPhenoBriefPanel.Visibility = Visibility.Visible;
-            Canvas.SetLeft(PopupCommandBar, boundingRect.X);
-            Canvas.SetTop(PopupCommandBar, boundingRect.Y - PopupCommandBar.Height);
-            PopupCommandBar.Width = Math.Max(boundingRect.Width, PopupCommandBar.MinWidth);
-            Canvas.SetLeft(recognizedPhenoBriefPanel, Math.Max(boundingRect.X, boundingRect.X));
-            Canvas.SetTop(recognizedPhenoBriefPanel, boundingRect.Y + boundingRect.Height);
             
-            selectionCanvas.Children.Add(PopupCommandBar);
-            selectionCanvas.Children.Add(recognizedPhenoBriefPanel);
-            var recogPhenoFlyout = (Flyout)this.Resources["PhenotypeSelectionFlyout"];
             //recogPhenoFlyout.ShowAt(rectangle);
             string str = await recognizeSelection();
             if (!str.Equals(String.Empty) && !str.Equals(""))
             {
-                Debug.WriteLine("$$$$   " + str);
+                Debug.WriteLine("Recognize:   " + str);
+                PopupCommandBar.Visibility = Visibility.Visible;
+                recognizedPhenoBriefPanel.Visibility = Visibility.Visible;
+                Canvas.SetLeft(PopupCommandBar, boundingRect.X);
+                Canvas.SetTop(PopupCommandBar, boundingRect.Y - PopupCommandBar.Height);
+                PopupCommandBar.Width = Math.Max(boundingRect.Width, PopupCommandBar.MinWidth);
+                Canvas.SetLeft(recognizedPhenoBriefPanel, Math.Max(boundingRect.X, boundingRect.X));
+                Canvas.SetTop(recognizedPhenoBriefPanel, boundingRect.Y + boundingRect.Height);
+
+                selectionCanvas.Children.Add(PopupCommandBar);
+                selectionCanvas.Children.Add(recognizedPhenoBriefPanel);
+                var recogPhenoFlyout = (Flyout)this.Resources["PhenotypeSelectionFlyout"];
+                
                 recognizedResultTextBlock.Text = str;
                 searchPhenotypes(str);
             }
@@ -1665,15 +1675,21 @@ namespace PhenoPad.CustomControl
                 //result.ToList().ForEach(recognizedPhenotypes.Add);
                 recognizedPhenoListView.ItemsSource = result;
                 recognizedPhenoBriefListView.ItemsSource = result;
-            }
 
-
-            
                 breifPhenoProgressBar.Visibility = Visibility.Collapsed;
                 recognizedPhenoBriefListView.Visibility = Visibility.Visible;
            
                 phenoProgressRing.Visibility = Visibility.Collapsed;
                 recognizedPhenoListView.Visibility = Visibility.Visible;
+            }
+            else
+            {
+                ClearSelection();
+                rootPage.NotifyUser("No phenotypes recognized by the selected strokes.", NotifyType.ErrorMessage, 2);
+            }
+
+            
+                
         }
 
         private void OnCopy(object sender, RoutedEventArgs e)

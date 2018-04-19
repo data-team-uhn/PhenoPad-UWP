@@ -138,69 +138,31 @@ namespace PhenoPad
 
         public SpeechManager speechManager = SpeechManager.getSharedSpeechManager();
 
+        private bool loadFromDisk = false;
 
         public MainPage()
         {
             Current = this;
             this.InitializeComponent();
-            notePages = new List<NotePageControl>();
-            pageIndexButtons = new List<Button>();
-            NotePageControl aPage = new NotePageControl();
-            notePages.Add(aPage);
-            inkCanvas = aPage.inkCan;
-            MainPageInkBar.TargetInkCanvas = inkCanvas;
-            curPage = aPage;
-            // var screenSize = HelperFunctions.GetCurrentDisplaySize();
-            //aPage.Height = screenSize.Height;
-            //aPage.Width = screenSize.Width;
-            curPageIndex = 0;
-            PageHost.Content = curPage;
-            setPageIndexText();
-            addNoteIndex(curPageIndex);
-            setNotePageIndex(curPageIndex);
+            
 
             isListening = false;
             dictatedTextBuilder = new StringBuilder();
 
-            _simpleorientation = SimpleOrientationSensor.GetDefault();
-
-            // Assign an event handler for the sensor orientation-changed event 
             
+           
+            _simpleorientation = SimpleOrientationSensor.GetDefault();
+            // Assign an event handler for the sensor orientation-changed event 
             if (_simpleorientation != null)
             {
                 _simpleorientation.OrientationChanged += new TypedEventHandler<SimpleOrientationSensor, SimpleOrientationSensorOrientationChangedEventArgs>(OrientationChanged);
             }
             
-
-
-            //PC customization
             
-           // var titleBar = ApplicationView.GetForCurrentView().TitleBar;
-            //if (titleBar != null)
-            //{
-                //titleBar.ButtonBackgroundColor = MyColors.TITLE_BAR_WHITE_COLOR;
-                //titleBar.ForegroundColor = MyColors.TITLE_BAR_WHITE_COLOR;
-                //titleBar.ButtonInactiveBackgroundColor = MyColors.TITLE_BAR_WHITE_COLOR;
-              
-            //}
             // Hide default title bar.
             var coreTitleBar = CoreApplication.GetCurrentView().TitleBar;
             coreTitleBar.ExtendViewIntoTitleBar = false;
             
-            //UpdateTitleBarLayout(coreTitleBar);
-
-            // Set XAML element as a draggable region.
-            //Window.Current.SetTitleBar(logoImage);
-
-            // Register a handler for when the size of the overlaid caption control changes.
-            // For example, when the app moves to a screen with a different DPI.
-            //coreTitleBar.LayoutMetricsChanged += CoreTitleBar_LayoutMetricsChanged;
-
-            // Register a handler for when the title bar visibility changes.
-            // For example, when the title bar is invoked in full screen mode.
-            //coreTitleBar.IsVisibleChanged += CoreTitleBar_IsVisibleChanged;
-
-
             
             // We want to react whenever speech engine has new results
             this.speechManager.EngineHasResult += SpeechManager_EngineHasResult;
@@ -213,9 +175,126 @@ namespace PhenoPad
             showTextGrid.PointerCaptureLost += new PointerEventHandler(showTextGrid_PointerExited);
             showTextGrid.PointerEntered += new PointerEventHandler(showTextGrid_PointerEntered);
             showTextGrid.PointerExited += new PointerEventHandler(showTextGrid_PointerExited);
+
+            StreamView.Visibility = Visibility.Collapsed;
         }
 
-       
+        private async void InitiateNotebook()
+        {
+            // create file structure
+            notebookId = FileManager.getSharedFileManager().CreateUniqueName();
+            notebookId = FileManager.getSharedFileManager().getNotebookNameById(notebookId);
+            bool result = await FileManager.getSharedFileManager().CreateNotebook(notebookId);
+
+            if (!result)
+                NotifyUser("Failed to create file structure, notes may not be saved.", NotifyType.ErrorMessage, 2);
+
+            notePages = new List<NotePageControl>();
+            pageIndexButtons = new List<Button>();
+            NotePageControl aPage = new NotePageControl();
+            notePages.Add(aPage);
+            inkCanvas = aPage.inkCan;
+            MainPageInkBar.TargetInkCanvas = inkCanvas;
+            curPage = aPage;
+            // var screenSize = HelperFunctions.GetCurrentDisplaySize();
+            //aPage.Height = screenSize.Height;
+            //aPage.Width = screenSize.Width;
+            curPageIndex = 0;
+            PageHost.Content = curPage;
+            addNoteIndex(curPageIndex);
+            setNotePageIndex(curPageIndex);
+
+            // create file sturcture for this page
+            await FileManager.getSharedFileManager().CreateNotePage(notebookId, curPageIndex.ToString());
+        }
+
+        private async void InitiateNotebookFromDisk()
+        {
+            List<string> pageIds = await FileService.FileManager.getSharedFileManager().GetPageIdsByNotebook(notebookId);
+            if (pageIds == null || pageIds.Count == 0)
+            {
+                NotifyUser("Did not find anything in this notebook, will create a new one.", NotifyType.ErrorMessage, 2);
+                this.InitiateNotebook();
+            }
+
+            notePages = new List<NotePageControl>();
+            pageIndexButtons = new List<Button>();
+
+            for (int i = 0; i < pageIds.Count; ++i)
+            {
+                NotePageControl aPage = new NotePageControl();
+                notePages.Add(aPage);
+                await FileManager.getSharedFileManager().LoadNotePageStroke(notebookId, pageIds[i], aPage);
+                addNoteIndex(i);
+            }
+            
+            inkCanvas = notePages[0].inkCan;
+            MainPageInkBar.TargetInkCanvas = inkCanvas;
+            curPage = notePages[0];
+            curPageIndex = 0;
+            PageHost.Content = curPage;
+            setNotePageIndex(curPageIndex);
+        }
+
+        /**
+         * Save everything to disk, include: 
+         * handwritten strokes, typing words, photos and annotations, drawing, collected phenotypes
+         * 
+         */
+        private async Task<bool> saveNoteToDisk()
+        {
+            bool isSuccessful = true;
+            bool result;
+
+            for (int i = 0; i < notePages.Count; ++i)
+            {
+                // handwritten strokes
+                result = await FileManager.getSharedFileManager().SaveNotePageStrokes(notebookId, i.ToString(), notePages[i]);
+            }
+            
+            // collected phenotypes
+            result = await FileManager.getSharedFileManager().saveCollectedPhenotypesToFile(notebookId);
+            if (result)
+                Debug.WriteLine("Successfully save collected phenotypes.");
+            else
+            {
+                Debug.WriteLine("Failed to save collected phenotypes.");
+                isSuccessful = false;
+            }
+             
+            return isSuccessful;
+        }
+
+        /**
+        * Load everything from disk, include: 
+        * handwritten strokes, typing words, photos and annotations, drawing, collected phenotypes
+        * 
+        */
+        private async Task<bool> loadNoteFromDisk()
+        {
+            bool isSuccessful = true;
+            bool result;
+
+            for (int i = 0; i < notePages.Count; ++i)
+            {
+                // handwritten strokes
+                result = await FileManager.getSharedFileManager().SaveNotePageStrokes(notebookId, i.ToString(), notePages[i]);
+            }
+
+            // collected phenotypes
+            result = await FileManager.getSharedFileManager().saveCollectedPhenotypesToFile(notebookId);
+            if (result)
+                Debug.WriteLine("Successfully save collected phenotypes.");
+            else
+            {
+                Debug.WriteLine("Failed to save collected phenotypes.");
+                isSuccessful = false;
+            }
+
+            return isSuccessful;
+        }
+
+
 
         private void showTextGrid_PointerExited(object sender, PointerRoutedEventArgs e)
         {
@@ -329,7 +408,8 @@ namespace PhenoPad
                         break;
                 }
             **/
-            curPage.DrawBackgroundLines();
+            if(curPage != null)
+                curPage.DrawBackgroundLines();
            });
         }
 
@@ -357,29 +437,51 @@ namespace PhenoPad
             }
 
             // Draw background lines
-            curPage.DrawBackgroundLines();
+            if(curPage != null)
+                curPage.DrawBackgroundLines();
 
             // Prompt the user for permission to access the microphone. This request will only happen
             // once, it will not re-prompt if the user rejects the permission.
-            bool permissionGained = await AudioCapturePermissions.RequestMicrophonePermission();
-            if (permissionGained)
-            {
+           // bool permissionGained = await AudioCapturePermissions.RequestMicrophonePermission();
+           // if (permissionGained)
+          // {
                 //micButton.IsEnabled = true;
-                await InitializeRecognizer(SpeechRecognizer.SystemSpeechLanguage);
-            }
-            else
-            {
-                this.cmdBarTextBlock.Text = "Permission to access capture resources was not given by the user, reset the application setting in Settings->Privacy->Microphone.";
+                //await InitializeRecognizer(SpeechRecognizer.SystemSpeechLanguage);
+            //}
+           // else
+            //{
+               // this.cmdBarTextBlock.Text = "Permission to access capture resources was not given by the user, reset the application setting in Settings->Privacy->Microphone.";
                 //micButton.IsEnabled = false;
-            }
+            //}
 
             
         }
-
-        protected async override void OnNavigatedTo(NavigationEventArgs e)
+        protected override void OnNavigatedFrom(NavigationEventArgs e)
         {
-           
+            this.Frame.BackStack.Clear();
+        }
+        protected override void OnNavigatedTo(NavigationEventArgs e)
+        {
+            //BackButton.IsEnabled = this.Frame.CanGoBack;
 
+            var nid = e.Parameter as string;
+            if (nid == "__new__")
+            {
+                this.loadFromDisk = false;
+            }
+            else
+            {
+                this.loadFromDisk = true;
+                this.notebookId = nid;
+            }
+            if (loadFromDisk) // Load notes from file
+            {
+                this.InitiateNotebookFromDisk();
+            }
+            else // Create new notebook
+            {
+                this.InitiateNotebook();
+            }
         }
         protected async override void OnNavigatingFrom(NavigatingCancelEventArgs e)
         {
@@ -447,7 +549,7 @@ namespace PhenoPad
             else
             {
                 curPage.inkCan.InkPresenter.InputDeviceTypes &= ~CoreInputDeviceTypes.Touch;
-                //toggleButton.Background = MyColors.PHENOTYPE_BLUE;
+                //toggleButton.Background = MyColors.Button_Background;
             }
         }
        
@@ -626,8 +728,8 @@ namespace PhenoPad
             if (!SpeechPopUp.IsOpen)
             {
                 SpeechPopUpPage.Width = Window.Current.Bounds.Width;
-                SpeechPopUpPage.Height = Window.Current.Bounds.Height - topCmdBar.ActualHeight- savedPhenoListView.ActualHeight;
-                SpeechPopUpPage.Margin = new Thickness(0, topCmdBar.ActualHeight, 0, savedPhenoListView.ActualHeight);
+                SpeechPopUpPage.Height = Window.Current.Bounds.Height - topCmdBar.ActualHeight- candidatePhenoListView.ActualHeight;
+                SpeechPopUpPage.Margin = new Thickness(0, topCmdBar.ActualHeight, 0, candidatePhenoListView.ActualHeight);
                 SpeechPopUp.IsOpen = true;
             }
             else
@@ -920,7 +1022,7 @@ namespace PhenoPad
 
         }
 
-        private void AddPageButton_Click(object sender, RoutedEventArgs e)
+        private async void AddPageButton_Click(object sender, RoutedEventArgs e)
         {
             NotePageControl aPage = new NotePageControl();
             notePages.Add(aPage);
@@ -936,6 +1038,8 @@ namespace PhenoPad
 
             setPageIndexText();
             addNoteIndex(curPageIndex);
+
+            await FileService.FileManager.getSharedFileManager().CreateNotePage(notebookId, curPageIndex.ToString());
 
         }
 
@@ -987,7 +1091,7 @@ namespace PhenoPad
         private async void PhotoButton_Click(object sender, RoutedEventArgs e)
         {
             string imagename = FileManager.getSharedFileManager().CreateUniqueName();
-            var imageSource = await captureControl.TakePhotoAsync(notebookId, curPageId, imagename + ".jpg");
+            var imageSource = await captureControl.TakePhotoAsync(notebookId, curPageIndex.ToString(), imagename + ".jpg");
             if(imageSource != null)
             {
                 curPage.AddImageControl(imagename, imageSource);
@@ -1006,10 +1110,10 @@ namespace PhenoPad
             foreach (var btn in pageIndexButtons)
             {
                 btn.Background = new SolidColorBrush(Colors.WhiteSmoke);
-                btn.Foreground = new SolidColorBrush(Colors.LightBlue);
-            }
-            pageIndexButtons.ElementAt(index).Background = new SolidColorBrush(Colors.LightBlue);
-            pageIndexButtons.ElementAt(index).Foreground = new SolidColorBrush(Colors.WhiteSmoke);
+                btn.Foreground = new SolidColorBrush(Colors.Gray);
+             }
+            pageIndexButtons.ElementAt(index).Background = Application.Current.Resources["Button_Background"] as SolidColorBrush;
+            pageIndexButtons.ElementAt(index).Foreground = new SolidColorBrush(Colors.Black);
         }
 
         private void addNoteIndex(int index)
@@ -1017,7 +1121,7 @@ namespace PhenoPad
             Button btn = new Button();
             btn.Click += IndexBtn_Click;
             btn.Background = new SolidColorBrush(Colors.WhiteSmoke);
-            btn.Foreground = new SolidColorBrush(Colors.LightGoldenrodYellow);
+            btn.Foreground = new SolidColorBrush(Colors.Black);
             btn.Padding = new Thickness(0, 0, 0, 0);
             btn.Content = "" + (index+1);
             btn.Width = 30;
@@ -1035,9 +1139,9 @@ namespace PhenoPad
             foreach (var btn in pageIndexButtons)
             {
                 btn.Background = new SolidColorBrush(Colors.WhiteSmoke);
-                btn.Foreground = new SolidColorBrush(Colors.LightBlue);
+                btn.Foreground = Application.Current.Resources["Button_Background"] as SolidColorBrush;
             }
-            button.Background = new SolidColorBrush(Colors.LightBlue);
+            button.Background = Application.Current.Resources["Button_Background"] as SolidColorBrush;
             button.Foreground = new SolidColorBrush(Colors.WhiteSmoke);
             
             curPageIndex = Int32.Parse(button.Content.ToString()) - 1;
@@ -1509,6 +1613,48 @@ namespace PhenoPad
                 OverViewToggleButton.IsChecked = true;
                 SpeechToggleButton.IsChecked = false;
 
+            }
+        }
+        
+        private void BackButton_Click(object sender, RoutedEventArgs e)
+        {
+            //On_BackRequested();
+            this.Frame.Navigate(typeof(PageOverview));
+        }
+        // Handles system-level BackRequested events and page-level back button Click events
+        private bool On_BackRequested()
+        {
+            if (this.Frame.CanGoBack)
+            {
+                this.Frame.GoBack();
+                return true;
+            }
+            return false;
+        }
+
+        private void StreamButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (StreamButton.IsChecked == true)
+            {
+                StreamView.Visibility = Visibility.Visible;
+            }
+            else
+            {
+                StreamView.Visibility = Visibility.Collapsed;
+            }
+        }
+
+        private async void SaveButton_Click(object sender, RoutedEventArgs e)
+        {
+            bool result = await saveNoteToDisk();
+            if (result)
+            {
+                Debug.WriteLine("Successfully saved to disk.");
+            }
+            else
+            {
+                Debug.WriteLine("Failed to save to disk.");
+                NotifyUser("Failed to save to disk.", NotifyType.ErrorMessage, 2);
             }
         }
     }

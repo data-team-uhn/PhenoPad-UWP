@@ -130,13 +130,13 @@ namespace PhenoPad.CustomControl
             if (state == -1)
             {
                 NameGrid.Background = new SolidColorBrush(Colors.White);
-                phenotypeNameTextBlock.Foreground = MyColors.PHENOTYPE_BLUE;
+                phenotypeNameTextBlock.Foreground = Application.Current.Resources["Button_Background"] as SolidColorBrush;
                 phenotypeNameTextBlock.Text = phenotypeName;
                 NameCrossLine.Visibility = Visibility.Collapsed;
             }
             else if (state == 1)
             {
-                NameGrid.Background = MyColors.PHENOTYPE_BLUE;
+                NameGrid.Background = Application.Current.Resources["Button_Background"] as SolidColorBrush;
                 phenotypeNameTextBlock.Foreground = new SolidColorBrush(Colors.White);
                 phenotypeNameTextBlock.Text = phenotypeName;
                 NameCrossLine.Visibility = Visibility.Collapsed;
