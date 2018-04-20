@@ -6,7 +6,6 @@
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:phenotypeservice="using:PhenoPad.PhenotypeService"
-    xmlns:customcontrol="using:PhenoPad.CustomContorl"
 
      xmlns:hwrservice="using:PhenoPad.HWRService"
     mc:Ignorable="d"
@@ -83,7 +82,7 @@
                     <ListView x:Name="recognizedPhenoListView"  Height="300" HorizontalAlignment="Stretch" Visibility="Collapsed">
                         <ListView.ItemTemplate>
                             <DataTemplate x:DataType="phenotypeservice:Phenotype">
-                                <customcontrol:PhenotypeControl phenotypeName="{x:Bind name}" phenotypeId="{x:Bind hpId}" phenotypeState="{x:Bind state}" sourceType="Notes"></customcontrol:PhenotypeControl>
+                                <local:PhenotypeControl phenotypeName="{x:Bind name}" phenotypeId="{x:Bind hpId}" phenotypeState="{x:Bind state}" sourceType="Notes"></local:PhenotypeControl>
                             </DataTemplate>
                         </ListView.ItemTemplate>
                         <ListView.ItemContainerStyle>
@@ -134,10 +133,22 @@
             -->
             <Grid x:Name="outputGrid" Background="{ThemeResource SystemControlBackgroundChromeWhiteBrush}" Height="{x:Bind PAGE_HEIGHT}" Width="{x:Bind PAGE_WIDTH}">
                 <!-- Inking area -->
-                
-                <Canvas x:Name="backgroundCanvas"/>
-                <InkCanvas x:Name="inkCanvas" />
-                <Canvas x:Name="selectionCanvas">
+
+                <Canvas x:Name="backgroundCanvas">
+                    
+                </Canvas>
+                <Grid x:Name="textEditGrid">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <RichEditBox Style="{StaticResource MyRichEditBoxStyle}" Background="Transparent" x:Name="textNoteEditBox" TextChanged="TextNoteEdit_TextChanged" BorderThickness="0">
+                    </RichEditBox>
+                </Grid>
+                <InkCanvas x:Name="inkCanvas"/>
+                <Canvas x:Name="selectionCanvas" Canvas.ZIndex="3">
                     <Rectangle x:Name="SelectionRect" Stroke="Gray" StrokeThickness="2" StrokeDashArray="2,2" StrokeDashCap="Round" Visibility="Collapsed"/>
                     <RelativePanel x:Name="PopupCommandBar" MinWidth="60" Height="30"  Visibility="Collapsed">
                         <Button Foreground="Red" Click="PopupDeleteButton_Click" Background="WhiteSmoke" Padding="0" RelativePanel.AlignLeftWithPanel="True">
@@ -151,7 +162,7 @@
                         <ListView x:Name="recognizedPhenoBriefListView" Height="200" HorizontalAlignment="Stretch" Visibility="Collapsed">
                             <ListView.ItemTemplate>
                                 <DataTemplate x:DataType="phenotypeservice:Phenotype">
-                                    <customcontrol:PhenotypeControl Padding="0" phenotypeName="{x:Bind name}" phenotypeId="{x:Bind hpId}" phenotypeState="{x:Bind state}" sourceType="Notes"></customcontrol:PhenotypeControl>
+                                    <local:PhenotypeControl Padding="0" phenotypeName="{x:Bind name}" phenotypeId="{x:Bind hpId}" phenotypeState="{x:Bind state}" sourceType="Notes"></local:PhenotypeControl>
                                 </DataTemplate>
                             </ListView.ItemTemplate>
                             <ListView.ItemContainerStyle>
@@ -175,22 +186,17 @@
                         </Style>
                     </Canvas.Resources>
                 </Canvas>
-                <Canvas x:Name="recognizedTextCanvas"></Canvas>
-                <Grid x:Name="textEditGrid">
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="*"/>
-                    </Grid.RowDefinitions>
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*"/>
-                    </Grid.ColumnDefinitions>
-                    <RichEditBox Style="{StaticResource MyRichEditBoxStyle}" Background="Transparent" x:Name="textNoteEditBox" BorderThickness="0">
-                    </RichEditBox>
-                </Grid>
-                <Canvas x:Name="userControlCanvas">
+
+
+                <Canvas x:Name="userControlCanvas" Canvas.ZIndex="4">
+                   <!--
                     <StackPanel Name="HoverPhenoPanel" BorderBrush="Black" PointerEntered="HoverPhenoPanel_PointerEntered" PointerExited="HoverPhenoPanel_PointerExited" Orientation="Horizontal" FlowDirection="RightToLeft" Background="SkyBlue" Padding="5 3" Opacity="0.5" HorizontalAlignment="Right" Visibility="Collapsed">
                         <TextBlock Name="HoverPhenoPopupText" Height="{Binding LINE_HEIGHT}" Text="" FontSize="14" Foreground="OrangeRed"></TextBlock>
                     </StackPanel>
+                    -->
                 </Canvas>
+
+                <Canvas x:Name="recognizedTextCanvas" Canvas.ZIndex="5"></Canvas>
             </Grid>
         </ScrollViewer>
     </Grid>

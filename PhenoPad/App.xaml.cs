@@ -1,12 +1,15 @@
-﻿using System;
+﻿using MyScript.IInk;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices.WindowsRuntime;
+using System.Threading.Tasks;
 using Windows.ApplicationModel;
 using Windows.ApplicationModel.Activation;
 using Windows.Foundation;
 using Windows.Foundation.Collections;
+using Windows.UI.Popups;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
 using Windows.UI.Xaml.Controls.Primitives;
@@ -22,6 +25,9 @@ namespace PhenoPad
     /// </summary>
     sealed partial class App : Application
     {
+        //MyScript 
+        public static Engine Engine { get; private set; }
+
         /// <summary>
         /// Initializes the singleton application object.  This is the first line of authored code
         /// executed, and as such is the logical equivalent of main() or WinMain().
@@ -30,6 +36,28 @@ namespace PhenoPad
         {
             this.InitializeComponent();
             this.Suspending += OnSuspending;
+
+            // MyScript
+            UnhandledException += OnUnhandledException;
+        }
+        //Mysript 
+        private static async void OnUnhandledException(object sender, UnhandledExceptionEventArgs e)
+        {
+            e.Handled = true;
+            await ShowErrorDialog(e.Message);
+        }
+
+        private static async System.Threading.Tasks.Task<bool> ShowErrorDialog(string message)
+        {
+            var dialog = new MessageDialog("Error: " + message);
+
+            dialog.Commands.Add(new UICommand("Abort", delegate
+            {
+                Current.Exit();
+            }));
+
+            await dialog.ShowAsync();
+            return false;
         }
 
         /// <summary>
@@ -37,9 +65,20 @@ namespace PhenoPad
         /// will be used such as when the application is launched to open a specific file.
         /// </summary>
         /// <param name="e">Details about the launch request and process.</param>
-        protected override void OnLaunched(LaunchActivatedEventArgs e)
+        protected override async void OnLaunched(LaunchActivatedEventArgs e)
         {
             Frame rootFrame = Window.Current.Content as Frame;
+
+            // MyScript 
+            try
+            {
+                // Initialize Interactive Ink runtime environment
+                Engine = Engine.Create((byte[])(Array)MyScript.Certificate.MyCertificate.Bytes);
+            }
+            catch (Exception err)
+            {
+                await ShowErrorDialog(err.Message);
+            }
 
             // Do not repeat app initialization when the Window already has content,
             // just ensure that the window is active
@@ -66,12 +105,14 @@ namespace PhenoPad
                     // When the navigation stack isn't restored navigate to the first page,
                     // configuring the new page by passing required information as a navigation
                     // parameter
-                    rootFrame.Navigate(typeof(MainPage), e.Arguments);
+                    rootFrame.Navigate(typeof(PageOverview), e.Arguments);
                 }
                 // Ensure the current window is active
                 Window.Current.Activate();
             }
         }
+
+     
 
         /// <summary>
         /// Invoked when Navigation to a certain page fails

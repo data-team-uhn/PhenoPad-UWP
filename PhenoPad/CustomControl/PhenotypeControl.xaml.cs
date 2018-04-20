@@ -18,7 +18,7 @@ using PhenoPad.Styles;
 
 // The User Control item template is documented at https://go.microsoft.com/fwlink/?LinkId=234236
 
-namespace PhenoPad.CustomContorl
+namespace PhenoPad.CustomControl
 {
     public sealed partial class PhenotypeControl : UserControl
     {
@@ -147,15 +147,15 @@ namespace PhenoPad.CustomContorl
 
         private void setYNSwitchColor(int state)
         {
-            NSwitchBtn.Background = MyColors.BUTTON_GRAY;
-            YSwitchBtn.Background = MyColors.BUTTON_GRAY;
+            NSwitchBtn.Background = new SolidColorBrush(Colors.LightGray);
+            YSwitchBtn.Background = new SolidColorBrush(Colors.LightGray);
             switch (state)
             {
                 case 0:
-                    NSwitchBtn.Background = (SolidColorBrush)Application.Current.Resources["PHENOTYPE_BLUE"];
+                    NSwitchBtn.Background = Application.Current.Resources["Button_Background"] as SolidColorBrush;
                     break;
                 case 1:
-                    YSwitchBtn.Background = (SolidColorBrush)Application.Current.Resources["PHENOTYPE_BLUE"];
+                    YSwitchBtn.Background = Application.Current.Resources["Button_Background"] as SolidColorBrush;
                     break;
                 default:
                     break;

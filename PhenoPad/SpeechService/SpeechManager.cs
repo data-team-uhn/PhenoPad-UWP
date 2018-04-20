@@ -229,7 +229,7 @@ namespace PhenoPad.SpeechService
                      // do the work in the loop
                      string serverResult = speechStreamSocket.ReceiveMessageUsingStreamWebSocket().Result;
 
-                     //Debug.WriteLine("Got server message");
+                    // Debug.WriteLine("Got server message");
 
                      serverResult = serverResult.Replace('-', '_');     // So that we can parse objects
 

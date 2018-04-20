@@ -1,17 +1,16 @@
 ﻿<UserControl
-    x:Class="PhenoPad.CustomContorl.PhenotypeControl"
+    x:Class="PhenoPad.CustomControl.PhenotypeControl"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:local="using:PhenoPad.CustomControl"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-    xmlns:customcontrol="using:PhenoPad.CustomControl"
     xmlns:styles="using:PhenoPad.Styles"
     mc:Ignorable="d">
 
     <UserControl.Resources>
         <Flyout x:Key="PhenotypeDetailFlyout" Placement="Right">
-            <customcontrol:PhenotypeDetail x:Name="phenotypeDetailControl"/>
+            <local:PhenotypeDetail x:Name="phenotypeDetailControl"/>
         </Flyout>
     </UserControl.Resources>
 
@@ -51,8 +50,8 @@
             <Button Padding="0" Content="N" Name="NSwitchBtn"  Click="NSwitchBtn_Click" Opacity="1.0" Grid.Column="1" Width="25" Height="25"></Button>
         </Grid>
 
-        <TextBlock Tapped="nameTextBlockTapped" Margin="5 0 0 0" FontSize="13" Grid.Column="1" x:Name="phenotypeNameTextBlock" Text="" VerticalAlignment="Center" HorizontalAlignment="Stretch"/>
-        <Button x:Name="DeleteBtn"  Grid.Column="2" Visibility="Collapsed" Click="DeleteBtn_Click" Width="25" MinWidth="25" MinHeight="25" Height="25" Padding="0"  Background="{x:Null}">
+        <TextBlock Tapped="nameTextBlockTapped" Margin="5 0 0 0" FontSize="14" Grid.Column="1" x:Name="phenotypeNameTextBlock" Text="" VerticalAlignment="Center" HorizontalAlignment="Stretch"/>
+        <Button x:Name="DeleteBtn"  Grid.Column="2" Foreground="LightCoral" Visibility="Collapsed" Click="DeleteBtn_Click" Width="25" MinWidth="25" MinHeight="25" Height="25" Padding="0"  Background="{x:Null}">
             <SymbolIcon Symbol="Delete"/>
         </Button>
     </Grid>

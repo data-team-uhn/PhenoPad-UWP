@@ -36,9 +36,36 @@ using PhenoPad.Styles;
 using Windows.Graphics.Imaging;
 using Windows.UI.Xaml.Media.Imaging;
 using Microsoft.Graphics.Canvas;
-
+using PhenoPad.FileService;
 namespace PhenoPad
 {
+    // MyScript 
+    public class FlyoutCommand : System.Windows.Input.ICommand
+    {
+        public delegate void InvokedHandler(FlyoutCommand command);
+
+        public string Id { get; set; }
+        private InvokedHandler _handler = null;
+
+        public FlyoutCommand(string id, InvokedHandler handler)
+        {
+            Id = id;
+            _handler = handler;
+        }
+
+        public bool CanExecute(object parameter)
+        {
+            return _handler != null;
+        }
+
+        public void Execute(object parameter)
+        {
+            _handler(this);
+        }
+
+        public event EventHandler CanExecuteChanged;
+    }
+
     public class CalligraphicPen : InkToolbarCustomPen
     {
         public CalligraphicPen()
@@ -73,10 +100,10 @@ namespace PhenoPad
     public sealed partial class MainPage : Page
     {
         
-        
+
         // private MainPage rootPage = MainPage.Current;
-                
-        
+
+
         Symbol LassoSelect = (Symbol)0xEF20;
         Symbol TouchWriting = (Symbol)0xED5F;
         
@@ -106,70 +133,36 @@ namespace PhenoPad
         private NotePageControl curPage = null;
         private int curPageIndex = -1;
         public static MainPage Current;
+        private string curPageId = "";
+        private string notebookId = "";
 
         public SpeechManager speechManager = SpeechManager.getSharedSpeechManager();
+
+        private bool loadFromDisk = false;
 
         public MainPage()
         {
             Current = this;
             this.InitializeComponent();
-            notePages = new List<NotePageControl>();
-            pageIndexButtons = new List<Button>();
-            NotePageControl aPage = new NotePageControl();
-            notePages.Add(aPage);
-            inkCanvas = aPage.inkCan;
-            MainPageInkBar.TargetInkCanvas = inkCanvas;
-            curPage = aPage;
-            // var screenSize = HelperFunctions.GetCurrentDisplaySize();
-            //aPage.Height = screenSize.Height;
-            //aPage.Width = screenSize.Width;
-            curPageIndex = 0;
-            PageHost.Content = curPage;
-            setPageIndexText();
-            addNoteIndex(curPageIndex);
-            setNotePageIndex(curPageIndex);
+            
 
             isListening = false;
             dictatedTextBuilder = new StringBuilder();
 
-            _simpleorientation = SimpleOrientationSensor.GetDefault();
-
-            // Assign an event handler for the sensor orientation-changed event 
             
+           
+            _simpleorientation = SimpleOrientationSensor.GetDefault();
+            // Assign an event handler for the sensor orientation-changed event 
             if (_simpleorientation != null)
             {
                 _simpleorientation.OrientationChanged += new TypedEventHandler<SimpleOrientationSensor, SimpleOrientationSensorOrientationChangedEventArgs>(OrientationChanged);
             }
             
-
-
-            //PC customization
-            var titleBar = ApplicationView.GetForCurrentView().TitleBar;
-            if (titleBar != null)
-            {
-                titleBar.ButtonBackgroundColor = MyColors.TITLE_BAR_COLOR;
-                //titleBar.ForegroundColor = MyColors.TITLE_BAR_WHITE_COLOR;
-                titleBar.ButtonInactiveBackgroundColor = MyColors.TITLE_BAR_COLOR;
-              
-            }
+            
             // Hide default title bar.
             var coreTitleBar = CoreApplication.GetCurrentView().TitleBar;
-            coreTitleBar.ExtendViewIntoTitleBar = true;
+            coreTitleBar.ExtendViewIntoTitleBar = false;
             
-            UpdateTitleBarLayout(coreTitleBar);
-
-            // Set XAML element as a draggable region.
-            Window.Current.SetTitleBar(fakeTileBar);
-
-            // Register a handler for when the size of the overlaid caption control changes.
-            // For example, when the app moves to a screen with a different DPI.
-            coreTitleBar.LayoutMetricsChanged += CoreTitleBar_LayoutMetricsChanged;
-
-            // Register a handler for when the title bar visibility changes.
-            // For example, when the title bar is invoked in full screen mode.
-            coreTitleBar.IsVisibleChanged += CoreTitleBar_IsVisibleChanged;
-
-
             
             // We want to react whenever speech engine has new results
             this.speechManager.EngineHasResult += SpeechManager_EngineHasResult;
@@ -182,9 +175,126 @@ namespace PhenoPad
             showTextGrid.PointerCaptureLost += new PointerEventHandler(showTextGrid_PointerExited);
             showTextGrid.PointerEntered += new PointerEventHandler(showTextGrid_PointerEntered);
             showTextGrid.PointerExited += new PointerEventHandler(showTextGrid_PointerExited);
+
+            StreamView.Visibility = Visibility.Collapsed;
         }
 
-       
+        private async void InitiateNotebook()
+        {
+            // create file structure
+            notebookId = FileManager.getSharedFileManager().CreateUniqueName();
+            notebookId = FileManager.getSharedFileManager().getNotebookNameById(notebookId);
+            bool result = await FileManager.getSharedFileManager().CreateNotebook(notebookId);
+
+            if (!result)
+                NotifyUser("Failed to create file structure, notes may not be saved.", NotifyType.ErrorMessage, 2);
+
+            notePages = new List<NotePageControl>();
+            pageIndexButtons = new List<Button>();
+            NotePageControl aPage = new NotePageControl();
+            notePages.Add(aPage);
+            inkCanvas = aPage.inkCan;
+            MainPageInkBar.TargetInkCanvas = inkCanvas;
+            curPage = aPage;
+            // var screenSize = HelperFunctions.GetCurrentDisplaySize();
+            //aPage.Height = screenSize.Height;
+            //aPage.Width = screenSize.Width;
+            curPageIndex = 0;
+            PageHost.Content = curPage;
+            addNoteIndex(curPageIndex);
+            setNotePageIndex(curPageIndex);
+
+            // create file sturcture for this page
+            await FileManager.getSharedFileManager().CreateNotePage(notebookId, curPageIndex.ToString());
+        }
+
+        private async void InitiateNotebookFromDisk()
+        {
+            List<string> pageIds = await FileService.FileManager.getSharedFileManager().GetPageIdsByNotebook(notebookId);
+            if (pageIds == null || pageIds.Count == 0)
+            {
+                NotifyUser("Did not find anything in this notebook, will create a new one.", NotifyType.ErrorMessage, 2);
+                this.InitiateNotebook();
+            }
+
+            notePages = new List<NotePageControl>();
+            pageIndexButtons = new List<Button>();
+
+            for (int i = 0; i < pageIds.Count; ++i)
+            {
+                NotePageControl aPage = new NotePageControl();
+                notePages.Add(aPage);
+                await FileManager.getSharedFileManager().LoadNotePageStroke(notebookId, pageIds[i], aPage);
+                addNoteIndex(i);
+            }
+            
+            inkCanvas = notePages[0].inkCan;
+            MainPageInkBar.TargetInkCanvas = inkCanvas;
+            curPage = notePages[0];
+            curPageIndex = 0;
+            PageHost.Content = curPage;
+            setNotePageIndex(curPageIndex);
+        }
+
+        /**
+         * Save everything to disk, include: 
+         * handwritten strokes, typing words, photos and annotations, drawing, collected phenotypes
+         * 
+         */
+        private async Task<bool> saveNoteToDisk()
+        {
+            bool isSuccessful = true;
+            bool result;
+
+            for (int i = 0; i < notePages.Count; ++i)
+            {
+                // handwritten strokes
+                result = await FileManager.getSharedFileManager().SaveNotePageStrokes(notebookId, i.ToString(), notePages[i]);
+            }
+            
+            // collected phenotypes
+            result = await FileManager.getSharedFileManager().saveCollectedPhenotypesToFile(notebookId);
+            if (result)
+                Debug.WriteLine("Successfully save collected phenotypes.");
+            else
+            {
+                Debug.WriteLine("Failed to save collected phenotypes.");
+                isSuccessful = false;
+            }
+             
+            return isSuccessful;
+        }
+
+        /**
+        * Load everything from disk, include: 
+        * handwritten strokes, typing words, photos and annotations, drawing, collected phenotypes
+        * 
+        */
+        private async Task<bool> loadNoteFromDisk()
+        {
+            bool isSuccessful = true;
+            bool result;
+
+            for (int i = 0; i < notePages.Count; ++i)
+            {
+                // handwritten strokes
+                result = await FileManager.getSharedFileManager().SaveNotePageStrokes(notebookId, i.ToString(), notePages[i]);
+            }
+
+            // collected phenotypes
+            result = await FileManager.getSharedFileManager().saveCollectedPhenotypesToFile(notebookId);
+            if (result)
+                Debug.WriteLine("Successfully save collected phenotypes.");
+            else
+            {
+                Debug.WriteLine("Failed to save collected phenotypes.");
+                isSuccessful = false;
+            }
+
+            return isSuccessful;
+        }
+
+
 
         private void showTextGrid_PointerExited(object sender, PointerRoutedEventArgs e)
         {
@@ -231,6 +341,7 @@ namespace PhenoPad
             
         }
 
+        /**
         private void CoreTitleBar_LayoutMetricsChanged(CoreApplicationViewTitleBar sender, object args)
         {
             UpdateTitleBarLayout(sender);
@@ -240,7 +351,7 @@ namespace PhenoPad
         {
             
         }
-        
+
         private void CoreTitleBar_IsVisibleChanged(CoreApplicationViewTitleBar sender, object args)
         {
             if (sender.IsVisible)
@@ -252,6 +363,7 @@ namespace PhenoPad
                 fakeTileBar.Visibility = Visibility.Collapsed;
             }
         }
+        **/
 
         // Update text to display latest sentence
         // TODO : Feels like there exists more legitimate wasy to do this
@@ -296,7 +408,8 @@ namespace PhenoPad
                         break;
                 }
             **/
-            curPage.DrawBackgroundLines();
+            if(curPage != null)
+                curPage.DrawBackgroundLines();
            });
         }
 
@@ -324,27 +437,51 @@ namespace PhenoPad
             }
 
             // Draw background lines
-            curPage.DrawBackgroundLines();
+            if(curPage != null)
+                curPage.DrawBackgroundLines();
 
             // Prompt the user for permission to access the microphone. This request will only happen
             // once, it will not re-prompt if the user rejects the permission.
-            bool permissionGained = await AudioCapturePermissions.RequestMicrophonePermission();
-            if (permissionGained)
-            {
+           // bool permissionGained = await AudioCapturePermissions.RequestMicrophonePermission();
+           // if (permissionGained)
+          // {
                 //micButton.IsEnabled = true;
-                await InitializeRecognizer(SpeechRecognizer.SystemSpeechLanguage);
+                //await InitializeRecognizer(SpeechRecognizer.SystemSpeechLanguage);
+            //}
+           // else
+            //{
+               // this.cmdBarTextBlock.Text = "Permission to access capture resources was not given by the user, reset the application setting in Settings->Privacy->Microphone.";
+                //micButton.IsEnabled = false;
+            //}
+
+            
+        }
+        protected override void OnNavigatedFrom(NavigationEventArgs e)
+        {
+            this.Frame.BackStack.Clear();
+        }
+        protected override void OnNavigatedTo(NavigationEventArgs e)
+        {
+            //BackButton.IsEnabled = this.Frame.CanGoBack;
+
+            var nid = e.Parameter as string;
+            if (nid == "__new__")
+            {
+                this.loadFromDisk = false;
             }
             else
             {
-                this.cmdBarTextBlock.Text = "Permission to access capture resources was not given by the user, reset the application setting in Settings->Privacy->Microphone.";
-                //micButton.IsEnabled = false;
+                this.loadFromDisk = true;
+                this.notebookId = nid;
             }
-        }
-
-        protected async override void OnNavigatedTo(NavigationEventArgs e)
-        {
-           
-
+            if (loadFromDisk) // Load notes from file
+            {
+                this.InitiateNotebookFromDisk();
+            }
+            else // Create new notebook
+            {
+                this.InitiateNotebook();
+            }
         }
         protected async override void OnNavigatingFrom(NavigatingCancelEventArgs e)
         {
@@ -406,11 +543,13 @@ namespace PhenoPad
         {
             if (toggleButton.IsChecked == true)
             {
-                inkCanvas.InkPresenter.InputDeviceTypes |= CoreInputDeviceTypes.Touch;
+                curPage.inkCan.InkPresenter.InputDeviceTypes |= CoreInputDeviceTypes.Touch;
+                //toggleButton.Background = MyColors.TITLE_BAR_WHITE_COLOR_BRUSH;
             }
             else
             {
-                inkCanvas.InkPresenter.InputDeviceTypes &= ~CoreInputDeviceTypes.Touch;
+                curPage.inkCan.InkPresenter.InputDeviceTypes &= ~CoreInputDeviceTypes.Touch;
+                //toggleButton.Background = MyColors.Button_Background;
             }
         }
        
@@ -422,13 +561,23 @@ namespace PhenoPad
         {
             // By default, pen barrel button or right mouse button is processed for inking
             // Set the configuration to instead allow processing these input on the UI thread
-            /**
-            inkCanvas.InkPresenter.InputProcessingConfiguration.RightDragAction = InkInputRightDragAction.LeaveUnprocessed;
-
-            inkCanvas.InkPresenter.UnprocessedInput.PointerPressed += UnprocessedInput_PointerPressed;
-            inkCanvas.InkPresenter.UnprocessedInput.PointerMoved += UnprocessedInput_PointerMoved;
-            inkCanvas.InkPresenter.UnprocessedInput.PointerReleased += UnprocessedInput_PointerReleased;
-            **/
+            if (BallpointPenButton.IsChecked == true)
+            {
+                if (toolButtonLasso.IsChecked == true)
+                {
+                    curPage.enableLeftButtonLasso();
+                    BallpointPenButton.IsEnabled = false;
+                    EraserButton.IsEnabled = false;
+                }
+                else
+                {
+                    curPage.disableLeftButtonLasso();
+                    BallpointPenButton.IsEnabled = true;
+                    EraserButton.IsEnabled = true;
+                }
+            }
+           
+            
         }
 
        
@@ -579,8 +728,8 @@ namespace PhenoPad
             if (!SpeechPopUp.IsOpen)
             {
                 SpeechPopUpPage.Width = Window.Current.Bounds.Width;
-                SpeechPopUpPage.Height = Window.Current.Bounds.Height - topCmdBar.ActualHeight- savedPhenoListView.ActualHeight;
-                SpeechPopUpPage.Margin = new Thickness(0, topCmdBar.ActualHeight, 0, savedPhenoListView.ActualHeight);
+                SpeechPopUpPage.Height = Window.Current.Bounds.Height - topCmdBar.ActualHeight- candidatePhenoListView.ActualHeight;
+                SpeechPopUpPage.Margin = new Thickness(0, topCmdBar.ActualHeight, 0, candidatePhenoListView.ActualHeight);
                 SpeechPopUp.IsOpen = true;
             }
             else
@@ -873,7 +1022,7 @@ namespace PhenoPad
 
         }
 
-        private void AddPageButton_Click(object sender, RoutedEventArgs e)
+        private async void AddPageButton_Click(object sender, RoutedEventArgs e)
         {
             NotePageControl aPage = new NotePageControl();
             notePages.Add(aPage);
@@ -889,6 +1038,8 @@ namespace PhenoPad
 
             setPageIndexText();
             addNoteIndex(curPageIndex);
+
+            await FileService.FileManager.getSharedFileManager().CreateNotePage(notebookId, curPageIndex.ToString());
 
         }
 
@@ -939,8 +1090,13 @@ namespace PhenoPad
 
         private async void PhotoButton_Click(object sender, RoutedEventArgs e)
         {
-            var imageSource = await captureControl.TakePhotoAsync();
-            curPage.AddImageControl(imageSource);
+            string imagename = FileManager.getSharedFileManager().CreateUniqueName();
+            var imageSource = await captureControl.TakePhotoAsync(notebookId, curPageIndex.ToString(), imagename + ".jpg");
+            if(imageSource != null)
+            {
+                curPage.AddImageControl(imagename, imageSource);
+
+            }
         }
 
         private void CameraClose_Click(object sender, RoutedEventArgs e)
@@ -954,10 +1110,10 @@ namespace PhenoPad
             foreach (var btn in pageIndexButtons)
             {
                 btn.Background = new SolidColorBrush(Colors.WhiteSmoke);
-                btn.Foreground = MyColors.TITLE_BAR_COLOR_BRUSH;
-            }
-            pageIndexButtons.ElementAt(index).Background = MyColors.TITLE_BAR_COLOR_BRUSH;
-            pageIndexButtons.ElementAt(index).Foreground = new SolidColorBrush(Colors.WhiteSmoke);
+                btn.Foreground = new SolidColorBrush(Colors.Gray);
+             }
+            pageIndexButtons.ElementAt(index).Background = Application.Current.Resources["Button_Background"] as SolidColorBrush;
+            pageIndexButtons.ElementAt(index).Foreground = new SolidColorBrush(Colors.Black);
         }
 
         private void addNoteIndex(int index)
@@ -965,7 +1121,7 @@ namespace PhenoPad
             Button btn = new Button();
             btn.Click += IndexBtn_Click;
             btn.Background = new SolidColorBrush(Colors.WhiteSmoke);
-            btn.Foreground = MyColors.TITLE_BAR_COLOR_BRUSH;
+            btn.Foreground = new SolidColorBrush(Colors.Black);
             btn.Padding = new Thickness(0, 0, 0, 0);
             btn.Content = "" + (index+1);
             btn.Width = 30;
@@ -983,9 +1139,9 @@ namespace PhenoPad
             foreach (var btn in pageIndexButtons)
             {
                 btn.Background = new SolidColorBrush(Colors.WhiteSmoke);
-                btn.Foreground = MyColors.TITLE_BAR_COLOR_BRUSH;
+                btn.Foreground = Application.Current.Resources["Button_Background"] as SolidColorBrush;
             }
-            button.Background = MyColors.TITLE_BAR_COLOR_BRUSH;
+            button.Background = Application.Current.Resources["Button_Background"] as SolidColorBrush;
             button.Foreground = new SolidColorBrush(Colors.WhiteSmoke);
             
             curPageIndex = Int32.Parse(button.Content.ToString()) - 1;
@@ -1174,7 +1330,7 @@ namespace PhenoPad
                     BitmapAlphaMode.Premultiplied);
                     SoftwareBitmapSource bitmapSource = new SoftwareBitmapSource();
                     await bitmapSource.SetBitmapAsync(softwareBitmapBGR8);
-                    curPage.AddImageControl(bitmapSource);
+                    curPage.AddImageControl("FIXME",bitmapSource);
                 }
                 stream.Dispose();
             }
@@ -1328,6 +1484,195 @@ namespace PhenoPad
 
             AppConfigurations.saveSetting("serverIP", ipResult);
             AppConfigurations.saveSetting("serverPort", portResult);
+        }
+
+        private void KeyboardButton_Click(object sender, RoutedEventArgs e)
+        {
+            modeTextBlock.Text = "Typing Mode";
+            writeButton.IsChecked = false;
+            keyboardButton.IsChecked = true;
+            boldButton.Visibility = Visibility.Visible;
+            italicButton.Visibility = Visibility.Visible;
+            underlineButton.Visibility = Visibility.Visible;
+            MainPageInkBar.Visibility = Visibility.Collapsed;
+            curPage.showTextEditGrid();
+        }
+
+        private void WriteButton_Click(object sender, RoutedEventArgs e)
+        {
+            modeTextBlock.Text = "Handwriting Mode";
+            keyboardButton.IsChecked = false;
+            writeButton.IsChecked = true;
+            boldButton.Visibility = Visibility.Collapsed;
+            italicButton.Visibility = Visibility.Collapsed;
+            underlineButton.Visibility = Visibility.Collapsed;
+            MainPageInkBar.Visibility = Visibility.Visible;
+            curPage.hideTextEditGrid();
+        }
+        
+        private void MyScriptButton_Click(object sender, RoutedEventArgs e)
+        {
+            /**
+            if (myScriptEditor.Visibility == Visibility.Collapsed)
+            {
+                myScriptEditor.Visibility = Visibility.Visible;
+                myScriptEditor.NewFile();
+            }
+            else
+            {
+                myScriptEditor.Visibility = Visibility.Collapsed;
+            }
+    **/
+            
+        }
+
+        private void ConnectBluetooth_Click(object sender, RoutedEventArgs e)
+        {
+            BluetoothService.BluetoothService bs = new BluetoothService.BluetoothService();
+            bs.Initialize();
+        }
+
+        private void FullscreenButton_Click(object sender, RoutedEventArgs e)
+        {
+            var view = ApplicationView.GetForCurrentView();
+            if (view.IsFullScreenMode)
+            {
+                view.ExitFullScreenMode();
+                this.NotifyUser("Exiting full screen mode", NotifyType.StatusMessage, 2);
+                this.FullscreenBtn.Icon = new SymbolIcon(Symbol.FullScreen);
+                // The SizeChanged event will be raised when the exit from full screen mode is complete.
+            }
+            else
+            {
+                if (view.TryEnterFullScreenMode())
+                {
+                    this.NotifyUser("Entering full screen mode", NotifyType.StatusMessage, 2);
+                    this.FullscreenBtn.Icon = new SymbolIcon(Symbol.BackToWindow);
+                    // The SizeChanged event will be raised when the entry to full screen mode is complete.
+                }
+                else
+                {
+                    this.NotifyUser("Failed to enter full screen mode", NotifyType.ErrorMessage, 2);
+                }
+            }
+        }
+
+        private void OpenCandidate_Click(object sender, RoutedEventArgs e)
+        {
+            if (OpenCandidatePanelButton.IsChecked == true)
+            {
+                candidatePhenoListView.Visibility = Visibility.Visible;
+            }
+            else {
+                candidatePhenoListView.Visibility = Visibility.Collapsed;
+            }
+            
+        }
+
+        private void OverViewToggleButton_Click(object sender, RoutedEventArgs e)
+        {   if (MainSplitView.IsPaneOpen == false)
+            {
+                MainSplitView.IsPaneOpen = true;
+                QuickViewButtonSymbol.Symbol = Symbol.Clear;
+            }
+            else
+            {
+                if (SpeechToggleButton.IsChecked == true)
+                {
+                    OverViewToggleButton.IsChecked = true;
+                    SpeechToggleButton.IsChecked = false;
+                }
+                else
+                {
+                    MainSplitView.IsPaneOpen = false;
+                    QuickViewButtonSymbol.Symbol = Symbol.GlobalNavigationButton;
+                }
+
+            }
+        }
+
+        private void SpeechToggleButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (MainSplitView.IsPaneOpen == false)
+            {
+                MainSplitView.IsPaneOpen = true;
+                QuickViewButtonSymbol.Symbol = Symbol.Clear;
+            }
+            else
+            {
+                if (OverViewToggleButton.IsChecked == true)
+                {
+                    OverViewToggleButton.IsChecked = false;
+                    SpeechToggleButton.IsChecked = true;
+                }
+                else
+                {
+                    MainSplitView.IsPaneOpen = false;
+                    QuickViewButtonSymbol.Symbol = Symbol.GlobalNavigationButton;
+                }
+
+            }
+        }
+
+        private void QuickViewButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (MainSplitView.IsPaneOpen == true)
+            {
+                MainSplitView.IsPaneOpen = false;
+                OverViewToggleButton.IsChecked = false;
+                SpeechToggleButton.IsChecked = false;
+                QuickViewButtonSymbol.Symbol = Symbol.GlobalNavigationButton;
+            }
+            else
+            {
+                MainSplitView.IsPaneOpen = true;
+                QuickViewButtonSymbol.Symbol = Symbol.Clear;
+                OverViewToggleButton.IsChecked = true;
+                SpeechToggleButton.IsChecked = false;
+
+            }
+        }
+        
+        private void BackButton_Click(object sender, RoutedEventArgs e)
+        {
+            //On_BackRequested();
+            this.Frame.Navigate(typeof(PageOverview));
+        }
+        // Handles system-level BackRequested events and page-level back button Click events
+        private bool On_BackRequested()
+        {
+            if (this.Frame.CanGoBack)
+            {
+                this.Frame.GoBack();
+                return true;
+            }
+            return false;
+        }
+
+        private void StreamButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (StreamButton.IsChecked == true)
+            {
+                StreamView.Visibility = Visibility.Visible;
+            }
+            else
+            {
+                StreamView.Visibility = Visibility.Collapsed;
+            }
+        }
+
+        private async void SaveButton_Click(object sender, RoutedEventArgs e)
+        {
+            bool result = await saveNoteToDisk();
+            if (result)
+            {
+                Debug.WriteLine("Successfully saved to disk.");
+            }
+            else
+            {
+                Debug.WriteLine("Failed to save to disk.");
+                NotifyUser("Failed to save to disk.", NotifyType.ErrorMessage, 2);
+            }
         }
     }
 
