@@ -49,7 +49,8 @@ namespace PhenoPad.SpeechService
 
     public class SpeechManager
     {
-        private string serverAddress = "54.226.217.30";
+        //private string serverAddress = "54.226.217.30";
+        private string serverAddress = "speechengine.ccm.sickkids.ca";
         private string serverPort = "8888";
 
         public static SpeechManager sharedSpeechManager;
@@ -76,10 +77,23 @@ namespace PhenoPad.SpeechService
 
         public SpeechManager()
         {
+            object val = AppConfigurations.readSetting("serverIP");
+            Debug.WriteLine(val);
+            if (val != null && ((string)val).Length != 0)
+            {
+                this.serverAddress = (string)val;
+            }
+
+            object val2 = AppConfigurations.readSetting("serverPort");
+            Debug.WriteLine(val2);
+            if (val2 != null && ((string)val).Length != 0)
+            {
+                this.serverPort = (string)val2;
+            }
+
             this.speechInterpreter = new SpeechEngineInterpreter(this.conversation, this.realtimeConversation);
             this.speechStreamSocket = new SpeechStreamSocket(this.serverAddress, this.serverPort);
             this.speechAPI = new SpeechRESTAPI();
-            //this.speechAPI.setupClient("54.226.217.30");
         }
 
         public static SpeechManager getSharedSpeechManager()
@@ -180,6 +194,7 @@ namespace PhenoPad.SpeechService
             await Task.Delay(3000);
             MainPage.Current.NotifyUser("Connection established", NotifyType.StatusMessage, 2);
             SpeechPage.Current.setSpeakerButtonEnabled(true);
+            SpeechPage.Current.adjustSpeakerCount(2);
 
             if (useFile)
             {

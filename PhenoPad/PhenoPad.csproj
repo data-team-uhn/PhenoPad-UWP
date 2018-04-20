@@ -106,6 +106,7 @@
     <Compile Include="App.xaml.cs">
       <DependentUpon>App.xaml</DependentUpon>
     </Compile>
+    <Compile Include="AppConfigurations.cs" />
     <Compile Include="AudioCapturePermissions.cs" />
     <Compile Include="CustomControl\AddInImageControl.xaml.cs">
       <DependentUpon>AddInImageControl.xaml</DependentUpon>
