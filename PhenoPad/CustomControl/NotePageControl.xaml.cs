@@ -1670,6 +1670,8 @@ namespace PhenoPad.CustomControl
             List<Phenotype> result = await PhenotypeManager.getSharedPhenotypeManager().searchPhenotypeByPhenotipsAsync(str);
             if (result != null && result.Count > 0)
             {
+                foreach (var pp in result)
+                    pp.sourceType = SourceType.Notes;
                 //recognizedPhenotypes.Clear();
                 //recognizedPhenotypes = new ObservableCollection<Phenotype>(result);
                 //result.ToList().ForEach(recognizedPhenotypes.Add);

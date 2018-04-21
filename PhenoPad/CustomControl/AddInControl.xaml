@@ -17,19 +17,23 @@
         
         <Grid Name="contentGrid">
             <!-- The canvas where we render the replacement text and shapes. -->
+            <!--
             <Canvas x:Name="recognitionCanvas" />
+            -->
             <!-- The canvas for ink input. -->
+            <!--
             <InkCanvas x:Name="inkCanvas" />
+            -->
         </Grid>
         <Grid Name="categoryGrid" Background="White">
-            <StackPanel Width="200"  HorizontalAlignment="Center" VerticalAlignment="Center">
-                <Button Style="{StaticResource MyButtonStyle}" HorizontalAlignment="Stretch" Height="{StaticResource categoryButtonHeight}">
+            <StackPanel Name="SelectionStackPanel"  Width="200"  HorizontalAlignment="Center" VerticalAlignment="Center">
+                <Button Style="{StaticResource MyButtonStyle}" HorizontalAlignment="Stretch" Click="DrawingButton_Click"  Name="DrawingButton" Height="{StaticResource categoryButtonHeight}">
                     <TextBlock FontSize="{StaticResource categoryButtonFontSize}" >Drawing</TextBlock>
                 </Button>
-                <Button Style="{StaticResource MyButtonStyle}" HorizontalAlignment="Stretch" Height="{StaticResource categoryButtonHeight}">
+                <Button Style="{StaticResource MyButtonStyle}" HorizontalAlignment="Stretch" Name="InsertPhotoButton" Click="InsertPhotoButton_Click" Height="{StaticResource categoryButtonHeight}">
                     <TextBlock FontSize="{StaticResource categoryButtonFontSize}" >Insert a photo</TextBlock>
                 </Button>
-                <Button Style="{StaticResource MyButtonStyle}" HorizontalAlignment="Stretch" Height="{StaticResource categoryButtonHeight}">
+                <Button Style="{StaticResource MyButtonStyle}" HorizontalAlignment="Stretch" Name="TakePhotoButton" Click="TakePhotoButton_Click" Height="{StaticResource categoryButtonHeight}">
                     <TextBlock FontSize="{StaticResource categoryButtonFontSize}" >Take a photo</TextBlock>
                 </Button>
             </StackPanel>

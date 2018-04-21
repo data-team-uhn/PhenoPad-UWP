@@ -135,6 +135,7 @@ namespace PhenoPad
         public static MainPage Current;
         private string curPageId = "";
         private string notebookId = "";
+        private Notebook notebookObject;
 
         public SpeechManager speechManager = SpeechManager.getSharedSpeechManager();
 
@@ -179,15 +180,19 @@ namespace PhenoPad
             StreamView.Visibility = Visibility.Collapsed;
         }
 
-        private async void InitiateNotebook()
+        private async void InitializeNotebook()
         {
             // create file structure
-            notebookId = FileManager.getSharedFileManager().CreateUniqueName();
-            notebookId = FileManager.getSharedFileManager().getNotebookNameById(notebookId);
+            notebookId = FileManager.getSharedFileManager().createNotebookId();
             bool result = await FileManager.getSharedFileManager().CreateNotebook(notebookId);
 
             if (!result)
                 NotifyUser("Failed to create file structure, notes may not be saved.", NotifyType.ErrorMessage, 2);
+            else
+                notebookObject = await FileManager.getSharedFileManager().GetNotebookObjectFromXML(notebookId);
+
+            if(notebookObject != null)
+                noteNameTextBox.Text = notebookObject.name;
 
             notePages = new List<NotePageControl>();
             pageIndexButtons = new List<Button>();
@@ -205,16 +210,27 @@ namespace PhenoPad
             setNotePageIndex(curPageIndex);
 
             // create file sturcture for this page
-            await FileManager.getSharedFileManager().CreateNotePage(notebookId, curPageIndex.ToString());
+            await FileManager.getSharedFileManager().CreateNotePage(notebookObject, curPageIndex.ToString());
         }
 
-        private async void InitiateNotebookFromDisk()
+        private async void InitializeNotebookFromDisk()
         {
             List<string> pageIds = await FileService.FileManager.getSharedFileManager().GetPageIdsByNotebook(notebookId);
+            notebookObject = await FileManager.getSharedFileManager().GetNotebookObjectFromXML(notebookId);
+
+            if (notebookObject != null)
+                noteNameTextBox.Text = notebookObject.name;
+
+            List<Phenotype> phenos = await FileManager.getSharedFileManager().GetSavedPhenotypeObjectsFromXML(notebookId);
+            if (phenos != null && phenos.Count > 0)
+            {
+                PhenotypeManager.getSharedPhenotypeManager().addPhenotypesFromFile(phenos);
+            }
+
             if (pageIds == null || pageIds.Count == 0)
             {
                 NotifyUser("Did not find anything in this notebook, will create a new one.", NotifyType.ErrorMessage, 2);
-                this.InitiateNotebook();
+                this.InitializeNotebook();
             }
 
             notePages = new List<NotePageControl>();
@@ -459,6 +475,7 @@ namespace PhenoPad
         protected override void OnNavigatedFrom(NavigationEventArgs e)
         {
             this.Frame.BackStack.Clear();
+            PhenotypeManager.getSharedPhenotypeManager().phenotypesCandidates.Clear();
         }
         protected override void OnNavigatedTo(NavigationEventArgs e)
         {
@@ -476,11 +493,11 @@ namespace PhenoPad
             }
             if (loadFromDisk) // Load notes from file
             {
-                this.InitiateNotebookFromDisk();
+                this.InitializeNotebookFromDisk();
             }
             else // Create new notebook
             {
-                this.InitiateNotebook();
+                this.InitializeNotebook();
             }
         }
         protected async override void OnNavigatingFrom(NavigatingCancelEventArgs e)
@@ -681,33 +698,15 @@ namespace PhenoPad
             if (!OverviewPopUp.IsOpen)
             {
                 OverivePopUpPage.Width = Window.Current.Bounds.Width;
-                OverivePopUpPage.Height = Window.Current.Bounds.Height - topCmdBar.ActualHeight;
-                OverviewPopUp.Margin = new Thickness(0, topCmdBar.ActualHeight, 0, 0);
+                OverivePopUpPage.Height = Window.Current.Bounds.Height - topCmdBar.ActualHeight - 40;
+                OverivePopUpPage.Margin = new Thickness(0, topCmdBar.ActualHeight, 0, 40);
                 OverviewPopUp.IsOpen = true;
 
-                if (ApiInformation.IsTypePresent("Windows.UI.ViewManagement.ApplicationView"))
-                {
-                    var titleBar = ApplicationView.GetForCurrentView().TitleBar;
-                    if (titleBar != null)
-                    {
-                        titleBar.BackgroundColor = (Application.Current.Resources["AppBarBackground"] as SolidColorBrush).Color;
-                        titleBar.ButtonBackgroundColor = (Application.Current.Resources["AppBarBackground"] as SolidColorBrush).Color;
-                    }
-                }
             }
             else
             {
                 OverviewPopUp.IsOpen = false;
-
-                if (ApiInformation.IsTypePresent("Windows.UI.ViewManagement.ApplicationView"))
-                {
-                    var titleBar = ApplicationView.GetForCurrentView().TitleBar;
-                    if (titleBar != null)
-                    {
-                        titleBar.BackgroundColor = Colors.White;
-                        titleBar.ButtonBackgroundColor = Colors.White;
-                    }
-                }
+                
             }
             
             /**
@@ -728,8 +727,8 @@ namespace PhenoPad
             if (!SpeechPopUp.IsOpen)
             {
                 SpeechPopUpPage.Width = Window.Current.Bounds.Width;
-                SpeechPopUpPage.Height = Window.Current.Bounds.Height - topCmdBar.ActualHeight- candidatePhenoListView.ActualHeight;
-                SpeechPopUpPage.Margin = new Thickness(0, topCmdBar.ActualHeight, 0, candidatePhenoListView.ActualHeight);
+                SpeechPopUpPage.Height = Window.Current.Bounds.Height - topCmdBar.ActualHeight- 40;
+                SpeechPopUpPage.Margin = new Thickness(0, topCmdBar.ActualHeight, 0, 40);
                 SpeechPopUp.IsOpen = true;
             }
             else
@@ -1039,7 +1038,7 @@ namespace PhenoPad
             setPageIndexText();
             addNoteIndex(curPageIndex);
 
-            await FileService.FileManager.getSharedFileManager().CreateNotePage(notebookId, curPageIndex.ToString());
+            await FileService.FileManager.getSharedFileManager().CreateNotePage(notebookObject, curPageIndex.ToString());
 
         }
 
@@ -1539,15 +1538,23 @@ namespace PhenoPad
                 }
             }
         }
+        public void OpenCandidate()
+        {
+            OpenCandidatePanelButton.IsChecked = true;
+            CandidatePanelStackPanel.Visibility = Visibility.Visible;
+            OpenCandidatePanelButtonIcon.Glyph = "\uE8BB";
+        }
 
         private void OpenCandidate_Click(object sender, RoutedEventArgs e)
         {
             if (OpenCandidatePanelButton.IsChecked == true)
             {
-                candidatePhenoListView.Visibility = Visibility.Visible;
+                CandidatePanelStackPanel.Visibility = Visibility.Visible;
+                OpenCandidatePanelButtonIcon.Glyph = "\uE8BB";
             }
             else {
-                candidatePhenoListView.Visibility = Visibility.Collapsed;
+                CandidatePanelStackPanel.Visibility = Visibility.Collapsed;
+                 OpenCandidatePanelButtonIcon.Glyph = "\uE82F";
             }
             
         }
@@ -1656,6 +1663,33 @@ namespace PhenoPad
                 Debug.WriteLine("Failed to save to disk.");
                 NotifyUser("Failed to save to disk.", NotifyType.ErrorMessage, 2);
             }
+        }
+
+        private async void noteNameTextBox_KeyDown(object sender, KeyRoutedEventArgs e)
+        {
+            if (e.Key == Windows.System.VirtualKey.Enter)
+            {
+                if (notebookObject != null && !string.IsNullOrEmpty(noteNameTextBox.Text))
+                {
+                    notebookObject.name = noteNameTextBox.Text;
+                    await FileManager.getSharedFileManager().SaveToMetaFile(notebookObject);
+                    LoseFocus(sender);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Makes virtual keyboard disappear
+        /// </summary>
+        /// <param name="sender"></param>
+        private void LoseFocus(object sender)
+        {
+            var control = sender as Control;
+            var isTabStop = control.IsTabStop;
+            control.IsTabStop = false;
+            control.IsEnabled = false;
+            control.IsEnabled = true;
+            control.IsTabStop = isTabStop;
         }
     }
 

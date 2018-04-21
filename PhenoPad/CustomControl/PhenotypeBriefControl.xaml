@@ -14,10 +14,18 @@
         </Flyout>
     </UserControl.Resources>
 
-    <Grid Padding="0 0 0 0" Name="NameGrid" >
+    <Grid Padding="0 0 0 0" Name="NameGrid" Background="White">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="Auto"></ColumnDefinition>
+            <ColumnDefinition Width="25"></ColumnDefinition>
 
-        <TextBlock Tapped="nameTextBlockTapped"  Padding="10 0 10 0" FontSize="15" Grid.Column="1" x:Name="phenotypeNameTextBlock" Text="" VerticalAlignment="Center" HorizontalAlignment="Stretch"/>
-        <Line Stretch="Fill" Stroke="white" StrokeThickness="2 " X1="1" HorizontalAlignment="Stretch" VerticalAlignment="Center" Name="NameCrossLine" />
-
+        </Grid.ColumnDefinitions>
+        <Grid Grid.Column="0">
+            <TextBlock  Tapped="phenotypeNameTextBlock_Tapped" VerticalAlignment="Center"  Padding="10 0 10 0" FontSize="15" Grid.Column="1" x:Name="phenotypeNameTextBlock" Text=""  HorizontalAlignment="Stretch"/>
+            <Line Stretch="Fill" Stroke="LightCoral" StrokeThickness="2 " X1="1" Y1="13" HorizontalAlignment="Stretch" VerticalAlignment="Center" Name="NameCrossLine" />
+        </Grid>
+        <Button Grid.Column="1" x:Name="DeleteBtn" Background="{x:Null}" Foreground="Gray" Click="DeleteBtn_Click" Width="25" MinWidth="25" MinHeight="25" Height="25" Padding="0">
+            <SymbolIcon Symbol="Delete"/>
+        </Button>
     </Grid>
 </UserControl>

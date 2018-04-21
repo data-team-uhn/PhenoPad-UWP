@@ -8,6 +8,10 @@
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     mc:Ignorable="d"
     NavigationCacheMode="Disabled">
+    <Page.Resources>
+       
+       
+    </Page.Resources>
 
     <Grid Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
         <Grid.ColumnDefinitions>
@@ -29,7 +33,7 @@
                     </StackPanel>
                 </Button>
             </Border>
-            <ListView x:Name="notebookList" ItemClick="notebookList_ItemClick" IsItemClickEnabled="True" Grid.Row="1">
+            <ListView  x:Name="notebookList" ItemClick="notebookList_ItemClick" IsItemClickEnabled="True" Grid.Row="1">
                 <ListView.ItemTemplate>
                     <DataTemplate x:DataType="fileservice:Notebook">
                         <Grid>
@@ -60,6 +64,37 @@
                     <Style TargetType="ListViewItem">
                         <Setter Property="HorizontalContentAlignment" Value="Stretch" />
                         <Setter Property="Padding" Value="0 0 0 0"/>
+                        <Setter Property="Template">
+                            <Setter.Value>
+                                <ControlTemplate TargetType="ListViewItem">
+                                    <ListViewItemPresenter
+                                      ContentTransitions="{TemplateBinding ContentTransitions}"
+                                      SelectionCheckMarkVisualEnabled="True"
+                                      CheckBrush="{ThemeResource SystemControlForegroundBaseMediumHighBrush}"
+                                      CheckBoxBrush="{ThemeResource SystemControlForegroundBaseMediumHighBrush}"
+                                      DragBackground="{ThemeResource ListViewItemDragBackgroundThemeBrush}"
+                                      DragForeground="{ThemeResource ListViewItemDragForegroundThemeBrush}"
+                                      FocusBorderBrush="{ThemeResource SystemControlForegroundAltHighBrush}"
+                                      FocusSecondaryBorderBrush="{ThemeResource SystemControlForegroundBaseHighBrush}"
+                                      PlaceholderBackground="{ThemeResource ListViewItemPlaceholderBackgroundThemeBrush}"
+                                      PointerOverBackground="{ThemeResource SystemControlHighlightListLowBrush}"
+                                      PointerOverForeground="{ThemeResource SystemControlHighlightAltBaseHighBrush}"
+                                      
+                                      SelectedBackground="{ThemeResource SystemControlHighlightListLowBrush}"
+                                      SelectedForeground="{ThemeResource SystemControlHighlightAltBaseHighBrush}"
+                                      SelectedPointerOverBackground="{ThemeResource SystemControlHighlightListLowBrush}"
+                                      PressedBackground="{ThemeResource SystemControlHighlightListMediumBrush}"
+                                      SelectedPressedBackground="{ThemeResource SystemControlHighlightListAccentHighBrush}"
+                                      DisabledOpacity="{ThemeResource ListViewItemDisabledThemeOpacity}"
+                                      DragOpacity="{ThemeResource ListViewItemDragThemeOpacity}"
+                                      ReorderHintOffset="{ThemeResource ListViewItemReorderHintThemeOffset}"
+                                      HorizontalContentAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                      VerticalContentAlignment="{TemplateBinding VerticalContentAlignment}"
+                                      ContentMargin="{TemplateBinding Padding}"
+                                      CheckMode="Inline"/>
+                                </ControlTemplate>
+                            </Setter.Value>
+                        </Setter>
                     </Style>
                 </ListView.ItemContainerStyle>
             </ListView>
@@ -122,7 +157,7 @@
         </GridView>
 
         <Grid Name="MessageGrid" Grid.Column="1" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Background="White">
-            <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="50" Foreground="LightGray">Click a note to preview</TextBlock>
+            <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="50" Foreground="LightGray">Select a note to preview</TextBlock>
         </Grid>
     </Grid>
 </Page>

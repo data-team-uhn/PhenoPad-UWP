@@ -72,7 +72,7 @@ namespace PhenoPad.FileService
             {
                 var notebookFolder = await localFolder.CreateFolderAsync(notebookId, CreationCollisionOption.OpenIfExists);
                 Notebook nb = new Notebook(notebookId);
-                var metaFile = await notebookFolder.CreateFileAsync(NOTE_META_FILE, CreationCollisionOption.ReplaceExisting);
+                var metaFile = GetNoteFilePath(notebookId, "", NoteFileType.Meta);
                 result = await SaveObjectSerilization(metaFile, nb, nb.GetType()); // save meta data to xml file
             }
             catch (Exception)
@@ -127,13 +127,16 @@ namespace PhenoPad.FileService
         }
 
         // create file structure for a note page
-        public async Task<bool> CreateNotePage(string id, string pageId)
+        public async Task<bool> CreateNotePage(Notebook note, string pageId)
         {
+            if (note == null)
+                return false;
+
             bool result = true;
             StorageFolder localFolder = ApplicationData.Current.LocalFolder;
             Debug.WriteLine("Local Path: " + localFolder.Path);
             try {
-                var notebookFolder = await localFolder.GetFolderAsync(id);
+                var notebookFolder = await localFolder.GetFolderAsync(note.id);
                 var pageFolder = await notebookFolder.CreateFolderAsync(pageId.ToString(), CreationCollisionOption.OpenIfExists);
                 await pageFolder.CreateFolderAsync("Strokes", CreationCollisionOption.OpenIfExists);
                 await pageFolder.CreateFolderAsync("ImagesWithAnnotations", CreationCollisionOption.OpenIfExists);
@@ -143,14 +146,11 @@ namespace PhenoPad.FileService
 
 
                 // update meta data
-                var metafile = await GetNoteFile(id, pageId, NoteFileType.Meta);
-                object obj = await LoadObjectFromSerilization(metafile, typeof(Notebook));
-                if (obj != null)
+                if (note != null)
                 {
-                    Notebook nb = obj as Notebook;
-                    NotePage np = new NotePage(id, pageId);
-                    nb.notePages.Add(np);
-                    result = await SaveObjectSerilization(metafile, nb, typeof(Notebook));
+                    NotePage np = new NotePage(note.id, pageId);
+                    note.notePages.Add(np);
+                    result = await SaveToMetaFile(note);
                 }
                 else
                 {
@@ -166,7 +166,38 @@ namespace PhenoPad.FileService
             return result;
         }
 
-      
+
+        public async Task<bool> SaveToMetaFile(Notebook notebook)
+        {
+            var metafile = GetNoteFilePath(notebook.id, "", NoteFileType.Meta);
+            return await SaveObjectSerilization(metafile, notebook, typeof(Notebook));
+        }
+
+        // get notebook object from meta file
+        public async Task<Notebook> GetNotebookObjectFromXML(string notebookId)
+        {
+            // meta data
+            var metafile = await GetNoteFile(notebookId, "", NoteFileType.Meta);
+            object obj = await LoadObjectFromSerilization(metafile, typeof(Notebook));
+            if (obj != null)
+            {
+                return obj as Notebook;
+            }
+            return null;
+        }
+
+        // get saved phenotypes object from meta file
+        public async Task<List<Phenotype>> GetSavedPhenotypeObjectsFromXML(string notebookId)
+        {
+            // meta data
+            var phenofile = await GetNoteFile(notebookId, "", NoteFileType.Phenotypes);
+            object obj = await LoadObjectFromSerilization(phenofile, typeof(List<Phenotype>));
+            if (obj != null)
+            {
+                return obj as List<Phenotype>;
+            }
+            return null;
+        }
 
         // save ink data to disk 
         public async Task<bool> SaveNotePageStrokes(string notebookId, string pageId, NotePageControl notePage)
@@ -218,7 +249,7 @@ namespace PhenoPad.FileService
             {
                 Stream stream = await metaFile.OpenStreamForReadAsync();
                 //tosave = new Class1("ididid", "namename");
-                var serializer = new XmlSerializer(typeof(Notebook));
+                var serializer = new XmlSerializer(type);
                 using (stream)
                 {
                     object obj = serializer.Deserialize(stream);
@@ -230,18 +261,40 @@ namespace PhenoPad.FileService
             }
         }
 
-        public async Task<bool> SaveObjectSerilization(StorageFile metaFile, Object tosave, Type type)
+        public async Task<bool> SaveObjectSerilization(string filepath, Object tosave, Type type)
         {
-
-            Stream stream = await metaFile.OpenStreamForWriteAsync();
-            //tosave = new Class1("ididid", "namename");
-            var serializer = new XmlSerializer(typeof(Notebook));
-            using (stream)
+            bool result = true;
+            try
             {
-                serializer.Serialize(stream, tosave);
+                StorageFolder localFolder = ApplicationData.Current.LocalFolder;
+                StorageFile sfile = await localFolder.CreateFileAsync(filepath, CreationCollisionOption.ReplaceExisting);
+                Windows.Storage.CachedFileManager.DeferUpdates(sfile);
+                Stream stream = await sfile.OpenStreamForWriteAsync();
+                var serializer = new XmlSerializer(type);
+                using (stream)
+                {
+                    serializer.Serialize(stream, tosave);
+                }
+                stream.Dispose();
+
+                // Finalize write so other apps can update file.
+                Windows.Storage.Provider.FileUpdateStatus status =
+                    await Windows.Storage.CachedFileManager.CompleteUpdatesAsync(sfile);
+
+                if (status == Windows.Storage.Provider.FileUpdateStatus.Complete)
+                {
+                }
+                else
+                {
+                    Debug.WriteLine(status.ToString());
+                    result = false;
+                }
             }
-            stream.Dispose();
-            return true;
+            catch (Exception)
+            {
+                result = false;
+            }
+            return result;
         }
 
         // save strokes to gif file
@@ -346,7 +399,7 @@ namespace PhenoPad.FileService
             switch (fileType)
             {
                 case NoteFileType.Meta:
-                    foldername = notebookId + "\\";
+                    foldername = String.Format(@"{0}\", notebookId);
                     break;
                 case NoteFileType.ImageAnnotation:
                     foldername += @"ImagesWithAnnotations\";
@@ -383,53 +436,29 @@ namespace PhenoPad.FileService
         }
 
         // create note name by id
-        public string getNotebookNameById(string notebookId)
+        public string createNotebookId()
         {
-            return NOTENOOK_NAME_PREFIX + notebookId;
+            return NOTENOOK_NAME_PREFIX + CreateUniqueName();
         }
         
         // Save collected phenotypes to file
         public async Task<bool> saveCollectedPhenotypesToFile(string notebookId)
         {
-            Windows.Storage.StorageFolder localFolder = Windows.Storage.ApplicationData.Current.LocalFolder;
+            bool result = true;
             try
             {
-                Windows.Storage.StorageFolder notebookFolder = await localFolder.GetFolderAsync(notebookId);
+                string phenopath = GetNoteFilePath(notebookId, "", NoteFileType.Phenotypes);
+                List<Phenotype> saved = new List<Phenotype>(PhenotypeManager.getSharedPhenotypeManager().savedPhenotypes);
+                result = await SaveObjectSerilization(phenopath, saved, typeof(List<Phenotype>));
 
-                Windows.Storage.StorageFile phenoFile = await notebookFolder.CreateFileAsync("phenotypes.txt",
-                       Windows.Storage.CreationCollisionOption.ReplaceExisting);
-
-                // Prevent updates to the file until updates are 
-                // finalized with call to CompleteUpdatesAsync.
-                Windows.Storage.CachedFileManager.DeferUpdates(phenoFile);
-
-                List<string> strToSave = new List<string>();
-                foreach (Phenotype pp in PhenotypeManager.getSharedPhenotypeManager().savedPhenotypes)
-                {
-                    strToSave.Add($"{pp.hpId}\t{pp.state}");
-                }
-                await Windows.Storage.FileIO.WriteLinesAsync(phenoFile, strToSave);
-
-                // Finalize write so other apps can update file.
-                Windows.Storage.Provider.FileUpdateStatus status =
-                    await Windows.Storage.CachedFileManager.CompleteUpdatesAsync(phenoFile);
-
-                if (status == Windows.Storage.Provider.FileUpdateStatus.Complete)
-                {
-                    Debug.WriteLine("Collected phenotypes have been saved.");
-                    return true;
-                }
-                else
-                {
-                    Debug.WriteLine("Collected phenotypes couldn't be saved.");
-                    return false;
-                }
+               
             }
             catch (FileNotFoundException)
             {
                 Debug.WriteLine("Failed to found note folder of " + notebookId);
-                return false;
+                result = false;
             }
+            return result;
         }
 
 

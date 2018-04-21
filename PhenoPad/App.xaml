@@ -16,7 +16,7 @@
                  -->
                 <ResourceDictionary Source="/Styles/Styles.xaml"/>
             </ResourceDictionary.MergedDictionaries>
-
+            <SolidColorBrush x:Key="Light_Red">#EDADB3</SolidColorBrush>
             <SolidColorBrush x:Key="Button_Background">#A2CEFF</SolidColorBrush>
             <SolidColorBrush x:Key="BUTTON_GRAY">#E3E1DA</SolidColorBrush>
             <Style x:Key="MyButtonStyle" TargetType="Button">

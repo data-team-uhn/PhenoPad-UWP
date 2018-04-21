@@ -40,6 +40,14 @@ namespace PhenoPad.PhenotypeService
             this.state = state;
             sourceType = SourceType.None;
         }
+        public Phenotype(string hpid, string name, List<String> alter, int state, SourceType st)
+        {
+            this.hpId = hpid;
+            this.name = name;
+            this.alternatives = alter;
+            this.state = state;
+            this.sourceType = st;
+        }
         public Phenotype(string hpid, string name, int state)
         {
             this.hpId = hpid;
@@ -61,7 +69,7 @@ namespace PhenoPad.PhenotypeService
         public Phenotype Clone()
         {
 
-            Phenotype p = new Phenotype(this.hpId, this.name, this.alternatives, this.state);
+            Phenotype p = new Phenotype(this.hpId, this.name, this.alternatives, this.state, this.sourceType);
             return p;
         }
 

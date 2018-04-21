@@ -10,7 +10,7 @@
     d:DesignHeight="300"
     d:DesignWidth="400">
 
-    <Grid>
+    <Grid FlowDirection="LeftToRight">
         <Grid.Resources>
             <Style TargetType="TextBlock">
                 <Setter  Property="Margin" Value="5 1"></Setter>
@@ -20,6 +20,7 @@
             <ColumnDefinition Width="100"></ColumnDefinition>
             <ColumnDefinition Width="300"></ColumnDefinition>
         </Grid.ColumnDefinitions>
+        
         <Grid.RowDefinitions>
             <RowDefinition Height="*"/>
             <RowDefinition Height="*"/>
@@ -65,6 +66,11 @@
                 </DataTemplate>
             </ListView.ItemTemplate>
         </ListView>
+
+        <Grid Grid.Row="0" Grid.Column="0" Name="ProgressRingGrid" Grid.ColumnSpan="2" Grid.RowSpan="5" Background="WhiteSmoke">
+            <ProgressRing VerticalAlignment="Center" HorizontalAlignment="Center" Height="100" Width="100" x:Name="aProgressRing" IsActive="True"></ProgressRing>
+        </Grid>
         
+
     </Grid>
 </UserControl>
