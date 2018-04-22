@@ -26,7 +26,7 @@
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="50"/>
             <ColumnDefinition Width="*"/>
-            <ColumnDefinition Width="25"/>
+            <ColumnDefinition Width="50"/>
         </Grid.ColumnDefinitions>
 
         <Button x:Name="AddBtn" Padding="0" Background="{x:Null}" Grid.Column="0"  Click="AddBtn_Click" Width="50" MinWidth="50" MinHeight="25" Height="25">
@@ -34,7 +34,7 @@
         </Button>
 
 
-        <Grid x:Name="YNSwitch"  Padding="0" Grid.Column="0" Visibility="Collapsed" Background="{ThemeResource BUTTON_GRAY}" Width="50" MinWidth="50" MinHeight="25" Height="25">
+        <Grid x:Name="YNSwitch"  BorderThickness="1" Padding="0" Grid.Column="0" Visibility="Collapsed" Background="{ThemeResource BUTTON_GRAY}" Width="50" MinWidth="50" MinHeight="25" Height="25">
             <!--
             <Grid.Transitions>
                 <TransitionCollection>
@@ -46,13 +46,30 @@
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>
-            <Button Padding="0" Content="Y" Name="YSwitchBtn" Click="YSwitchBtn_Click"  Grid.Column="0" Width="25" Height="25"></Button>
-            <Button Padding="0" Content="N" Name="NSwitchBtn"  Click="NSwitchBtn_Click" Opacity="1.0" Grid.Column="1" Width="25" Height="25"></Button>
+            <Button Style="{StaticResource MyButtonStyle}" Padding="0" Content="Y"  Name="YSwitchBtn" Click="YSwitchBtn_Click"  Grid.Column="0" Width="25" Height="25"></Button>
+            <Button Style="{StaticResource MyButtonStyle}" Padding="0" Content="N" Name="NSwitchBtn"   Click="NSwitchBtn_Click" Opacity="1.0" Grid.Column="1" Width="25" Height="25"></Button>
         </Grid>
 
-        <TextBlock Tapped="nameTextBlockTapped" Margin="5 0 0 0" FontSize="14" Grid.Column="1" x:Name="phenotypeNameTextBlock" Text="" VerticalAlignment="Center" HorizontalAlignment="Stretch"/>
-        <Button x:Name="DeleteBtn"  Grid.Column="2" Foreground="LightCoral" Visibility="Collapsed" Click="DeleteBtn_Click" Width="25" MinWidth="25" MinHeight="25" Height="25" Padding="0"  Background="{x:Null}">
-            <SymbolIcon Symbol="Delete"/>
-        </Button>
+        <Grid Padding="0 0 0 0" Name="NameGrid" Grid.Column="1">
+            <RelativePanel Tapped="RelativePanel_Tapped">
+                <TextBlock  Margin="5 0 0 0" FontSize="15" Grid.Column="1" x:Name="phenotypeNameTextBlock" Text="" VerticalAlignment="Center" />
+                <Line RelativePanel.AlignVerticalCenterWith="phenotypeNameTextBlock" RelativePanel.AlignLeftWith="phenotypeNameTextBlock" RelativePanel.AlignRightWith="phenotypeNameTextBlock" Stretch="Fill" Stroke="{StaticResource Light_Red}" StrokeThickness="2" X1="1" Y1="0" HorizontalAlignment="Stretch" VerticalAlignment="Center" Name="NameCrossLine" Visibility="Collapsed"/>
+                
+            </RelativePanel>
+            
+          
+         </Grid>
+        <StackPanel Orientation="Horizontal" Grid.Column="2" FlowDirection="RightToLeft">
+            <Button Background="Transparent" Style="{StaticResource MyButtonStyle}" RelativePanel.AlignRightWithPanel="True" x:Name="DetailButton"  Grid.Column="2" Foreground="Gray" Click="DetailButton_Click" Width="25" MinWidth="25" MinHeight="25" Height="25" Padding="0">
+                <SymbolIcon Symbol="More"/>
+            </Button>
+            <Button x:Name="DeleteBtn"   Background="{x:Null}" Foreground="LightCoral" Click="DeleteBtn_Click" Width="25" MinWidth="25" MinHeight="25" Height="25" Padding="0">
+                <SymbolIcon Symbol="Delete"/>
+            </Button>
+            
+
+        </StackPanel>
+       
+       
     </Grid>
 </UserControl>

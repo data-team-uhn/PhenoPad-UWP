@@ -1,10 +1,15 @@
-﻿using System;
+﻿using PhenoPad.FileService;
+using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices.WindowsRuntime;
 using Windows.Foundation;
 using Windows.Foundation.Collections;
+using Windows.Graphics.Imaging;
+using Windows.Storage.Streams;
+using Windows.UI;
 using Windows.UI.Input.Inking;
 using Windows.UI.Input.Inking.Analysis;
 using Windows.UI.Xaml;
@@ -13,6 +18,7 @@ using Windows.UI.Xaml.Controls.Primitives;
 using Windows.UI.Xaml.Data;
 using Windows.UI.Xaml.Input;
 using Windows.UI.Xaml.Media;
+using Windows.UI.Xaml.Media.Imaging;
 using Windows.UI.Xaml.Navigation;
 using Windows.UI.Xaml.Shapes;
 
@@ -22,188 +28,339 @@ namespace PhenoPad.CustomControl
 {
     public sealed partial class AddInControl : UserControl
     {
+        private double DEFAULT_WIDTH = 400;
+        private double DEFAULT_HEIGHT = 400;
+        public string type;
         InkAnalyzer inkAnalyzer = new InkAnalyzer();
         IReadOnlyList<InkStroke> inkStrokes = null;
         InkAnalysisResult inkAnalysisResults = null;
 
+        //public string name { get; }
+        //public string notebookId { get; }
+        //public string pageId { get; }
+
+        public double height;
+        public double width;
+        public double canvasLeft;
+        public double canvasTop;
+
+        public InkCanvas inkCan;
+
+        private bool isInitialized = false;
+        private ScaleTransform scaleTransform;
+        private TranslateTransform translateTransform;
+
+
+        public String name
+        {
+            get { return (String)GetValue(nameProperty); }
+            set
+            {
+                SetValue(nameProperty, value);
+            }
+        }
+        public static readonly DependencyProperty nameProperty = DependencyProperty.Register(
+         "name",
+         typeof(String),
+         typeof(TextBlock),
+         new PropertyMetadata(null)
+       );
+        public String notebookId
+        {
+            get { return (String)GetValue(notebookIdProperty); }
+            set
+            {
+                SetValue(notebookIdProperty, value);
+            }
+        }
+        public static readonly DependencyProperty notebookIdProperty = DependencyProperty.Register(
+         "notebookId",
+         typeof(String),
+         typeof(TextBlock),
+         new PropertyMetadata(null)
+       );
+        public String pageId
+        {
+            get { return (String)GetValue(pageIdProperty); }
+            set
+            {
+                SetValue(pageIdProperty, value);
+            }
+        }
+        public static readonly DependencyProperty pageIdProperty = DependencyProperty.Register(
+         "pageId",
+         typeof(String),
+         typeof(TextBlock),
+         new PropertyMetadata(null)
+       );
+
+        public bool viewOnly
+        {
+            get { return (bool)GetValue(viewOnlyProperty); }
+            set
+            {
+                SetValue(viewOnlyProperty, value);
+            }
+        }
+        public static readonly DependencyProperty viewOnlyProperty = DependencyProperty.Register(
+         "viewOnly",
+         typeof(bool),
+         typeof(TextBlock),
+         new PropertyMetadata(null)
+       );
+
         public AddInControl()
         {
             this.InitializeComponent();
-
-            // Set supported inking device types.
-            inkCanvas.InkPresenter.InputDeviceTypes =
-                Windows.UI.Core.CoreInputDeviceTypes.Mouse |
-                Windows.UI.Core.CoreInputDeviceTypes.Pen;
-
-            // Set initial ink stroke attributes.
-            InkDrawingAttributes drawingAttributes = new InkDrawingAttributes();
-            drawingAttributes.Color = Windows.UI.Colors.Black;
-            drawingAttributes.IgnorePressure = false;
-            drawingAttributes.FitToCurve = true;
-            inkCanvas.InkPresenter.UpdateDefaultDrawingAttributes(drawingAttributes);
         }
 
-        private async void transformButton_Click(object sender, RoutedEventArgs e)
+        public AddInControl(string name, string notebookId, string pageId)
         {
-            inkStrokes = inkCanvas.InkPresenter.StrokeContainer.GetStrokes();
-            // Ensure an ink stroke is present.
-            if (inkStrokes.Count > 0)
+            this.InitializeComponent();
+            this.Height = DEFAULT_HEIGHT;
+            this.Width = DEFAULT_WIDTH;
+
+            this.name = name;
+            this.notebookId = notebookId;
+            this.pageId = pageId;
+
+            this.CanDrag = true;
+            this.ManipulationMode = ManipulationModes.TranslateX | ManipulationModes.TranslateY | ManipulationModes.Scale;
+            this.ManipulationStarted += TitleRelativePanel_ManipulationStarted;
+            this.ManipulationDelta += TitleRelativePanel_ManipulationDelta;
+            this.ManipulationCompleted += TitleRelativePanel_ManipulationCompleted;
+            scaleTransform = new ScaleTransform();
+            this.RenderTransform = this.scaleTransform;
+            //translateTransform = new TranslateTransform();
+            //this.RenderTransform.translateTransform;
+
+            /**
+            TitleRelativePanel.ManipulationDelta += delegate (object sdr, ManipulationDeltaRoutedEventArgs args)
             {
-                inkAnalyzer.AddDataForStrokes(inkStrokes);
-
-                // In this example, we try to recognizing both 
-                // writing and drawing, so the platform default 
-                // of "InkAnalysisStrokeKind.Auto" is used.
-                // If you're only interested in a specific type of recognition,
-                // such as writing or drawing, you can constrain recognition 
-                // using the SetStrokDataKind method as follows:
-                // foreach (var stroke in strokesText)
-                // {
-                //     analyzerText.SetStrokeDataKind(
-                //      stroke.Id, InkAnalysisStrokeKind.Writing);
-                // }
-                // This can improve both efficiency and recognition results.
-                inkAnalysisResults = await inkAnalyzer.AnalyzeAsync();
-
-                // Have ink strokes on the canvas changed?
-                if (inkAnalysisResults.Status == InkAnalysisStatus.Updated)
+                if (args.Delta.Expansion == 0)
                 {
-                    // Find all strokes that are recognized as handwriting and 
-                    // create a corresponding ink analysis InkWord node.
-                    var inkwordNodes =
-                        inkAnalyzer.AnalysisRoot.FindNodes(
-                            InkAnalysisNodeKind.InkWord);
-
-                    // Iterate through each InkWord node.
-                    // Draw primary recognized text on recognitionCanvas 
-                    // (for this example, we ignore alternatives), and delete 
-                    // ink analysis data and recognized strokes.
-                    /**
-                    foreach (InkAnalysisInkWord node in inkwordNodes)
-                    {
-                        // Draw a TextBlock object on the recognitionCanvas.
-                        DrawText(node.RecognizedText, node.BoundingRect);
-
-                        foreach (var strokeId in node.GetStrokeIds())
-                        {
-                            var stroke =
-                                inkCanvas.InkPresenter.StrokeContainer.GetStrokeById(strokeId);
-                            stroke.Selected = true;
-                        }
-                        inkAnalyzer.RemoveDataForStrokes(node.GetStrokeIds());
-                    }
-                    inkCanvas.InkPresenter.StrokeContainer.DeleteSelected();
-                    **/
-                    // Find all strokes that are recognized as a drawing and 
-                    // create a corresponding ink analysis InkDrawing node.
-                    var inkdrawingNodes =
-                        inkAnalyzer.AnalysisRoot.FindNodes(
-                            InkAnalysisNodeKind.InkDrawing);
-                    // Iterate through each InkDrawing node.
-                    // Draw recognized shapes on recognitionCanvas and
-                    // delete ink analysis data and recognized strokes.
-                    foreach (InkAnalysisInkDrawing node in inkdrawingNodes)
-                    {
-                        if (node.DrawingKind == InkAnalysisDrawingKind.Drawing)
-                        {
-                            // Catch and process unsupported shapes (lines and so on) here.
-                        }
-                        // Process generalized shapes here (ellipses and polygons).
-                        else
-                        {
-                            // Draw an Ellipse object on the recognitionCanvas (circle is a specialized ellipse).
-                            if (node.DrawingKind == InkAnalysisDrawingKind.Circle || node.DrawingKind == InkAnalysisDrawingKind.Ellipse)
-                            {
-                                DrawEllipse(node);
-                            }
-                            // Draw a Polygon object on the recognitionCanvas.
-                            else
-                            {
-                                DrawPolygon(node);
-                            }
-                            foreach (var strokeId in node.GetStrokeIds())
-                            {
-                                var stroke = inkCanvas.InkPresenter.StrokeContainer.GetStrokeById(strokeId);
-                                stroke.Selected = true;
-                            }
-                        }
-                        inkAnalyzer.RemoveDataForStrokes(node.GetStrokeIds());
-                    }
-                    inkCanvas.InkPresenter.StrokeContainer.DeleteSelected();
+                    Canvas.SetLeft(this, Canvas.GetLeft(this) + args.Delta.Translation.X);
+                    Canvas.SetTop(this, Canvas.GetTop(this) + args.Delta.Translation.Y);
                 }
-            }
+                else
+                {
+                    //canvasAddIn.Width += args.Delta.Translation.X * 2;
+                    //canvasAddIn.Height += args.Delta.Translation.Y * 2;
+                }
+            };
+    **/
         }
 
-        // Draw text on the recognitionCanvas.
-        private void DrawText(string recognizedText, Rect boundingRect)
+        private void TitleRelativePanel_ManipulationCompleted(object sender, ManipulationCompletedRoutedEventArgs e)
         {
-            TextBlock text = new TextBlock();
-            TranslateTransform translateTransform = new TranslateTransform();
-            TransformGroup transformGroup = new TransformGroup();
-
-            translateTransform.X = boundingRect.Left;
-            translateTransform.Y = boundingRect.Top;
-            transformGroup.Children.Add(translateTransform);
-            text.RenderTransform = transformGroup;
-
-            text.Text = recognizedText;
-            text.FontSize = boundingRect.Height;
-
-            recognitionCanvas.Children.Add(text);
+            // this.Opacity = 1;
         }
 
-        // Draw an ellipse on the recognitionCanvas.
-        private void DrawEllipse(InkAnalysisInkDrawing shape)
+        private void TitleRelativePanel_ManipulationStarted(object sender, ManipulationStartedRoutedEventArgs e)
         {
-            var points = shape.Points;
-            Ellipse ellipse = new Ellipse();
-            ellipse.Width = Math.Sqrt((points[0].X - points[2].X) * (points[0].X - points[2].X) +
-                    (points[0].Y - points[2].Y) * (points[0].Y - points[2].Y));
-            ellipse.Height = Math.Sqrt((points[1].X - points[3].X) * (points[1].X - points[3].X) +
-                    (points[1].Y - points[3].Y) * (points[1].Y - points[3].Y));
-
-            var rotAngle = Math.Atan2(points[2].Y - points[0].Y, points[2].X - points[0].X);
-            RotateTransform rotateTransform = new RotateTransform();
-            rotateTransform.Angle = rotAngle * 180 / Math.PI;
-            rotateTransform.CenterX = ellipse.Width / 2.0;
-            rotateTransform.CenterY = ellipse.Height / 2.0;
-
-            TranslateTransform translateTransform = new TranslateTransform();
-            translateTransform.X = shape.Center.X - ellipse.Width / 2.0;
-            translateTransform.Y = shape.Center.Y - ellipse.Height / 2.0;
-
-            TransformGroup transformGroup = new TransformGroup();
-            transformGroup.Children.Add(rotateTransform);
-            transformGroup.Children.Add(translateTransform);
-            ellipse.RenderTransform = transformGroup;
-
-            var brush = new SolidColorBrush(Windows.UI.ColorHelper.FromArgb(255, 0, 0, 255));
-            ellipse.Stroke = brush;
-            ellipse.StrokeThickness = 2;
-            recognitionCanvas.Children.Add(ellipse);
+            // this.Opacity = 0.4;
         }
 
-        // Draw a polygon on the recognitionCanvas.
-        private void DrawPolygon(InkAnalysisInkDrawing shape)
+        double scale;
+        private void TitleRelativePanel_ManipulationDelta(object sender, ManipulationDeltaRoutedEventArgs e)
         {
-            var points = shape.Points;
-            Polygon polygon = new Polygon();
+            canvasLeft = Canvas.GetLeft(this) + e.Delta.Translation.X > 0 ? Canvas.GetLeft(this) + e.Delta.Translation.X : 0;
+            canvasTop = Canvas.GetTop(this) + e.Delta.Translation.Y > 0 ? Canvas.GetTop(this) + e.Delta.Translation.Y : 0;
+            Canvas.SetLeft(this, canvasLeft);
+            Canvas.SetTop(this, canvasTop);
 
-            foreach (var point in points)
-            {
-                polygon.Points.Add(point);
-            }
+            scale = scaleTransform.ScaleX * e.Delta.Scale;
+            scale = scale > 2.0 ? 2.0 : scale;
+            scale = scale < 0.5 ? 0.5 : scale;
+            scaleTransform.ScaleX = scale;
 
-            var brush = new SolidColorBrush(Windows.UI.ColorHelper.FromArgb(255, 0, 0, 255));
-            polygon.Stroke = brush;
-            polygon.StrokeThickness = 2;
-            recognitionCanvas.Children.Add(polygon);
+            scale = scaleTransform.ScaleY * e.Delta.Scale;
+            scale = scale > 2.0 ? 2.0 : scale;
+            scale = scale < 0.5 ? 0.5 : scale;
+            scaleTransform.ScaleY = scale;
+
         }
-
 
         private void Delete_Click(object sender, RoutedEventArgs e)
         {
             ((Panel)this.Parent).Children.Remove(this);
+        }
+
+        private void InitiateInkCanvas(bool onlyView = false)
+        {
+            isInitialized = true;
+            //this.ControlStackPanel.Visibility = Visibility.Visible;
+            InkCanvas inkCanvas = new InkCanvas();
+            this.inkCan = inkCanvas;
+            contentGrid.Children.Add(inkCanvas);
+            if (!onlyView) // added from note page, need editing
+            {
+                // Set supported inking device types.
+                inkCanvas.InkPresenter.InputDeviceTypes =
+                    Windows.UI.Core.CoreInputDeviceTypes.Mouse |
+                    Windows.UI.Core.CoreInputDeviceTypes.Pen;
+
+                // Set initial ink stroke attributes.
+                InkDrawingAttributes drawingAttributes = new InkDrawingAttributes();
+                drawingAttributes.Color = Windows.UI.Colors.Black;
+                drawingAttributes.IgnorePressure = false;
+                drawingAttributes.FitToCurve = true;
+                inkCanvas.InkPresenter.UpdateDefaultDrawingAttributes(drawingAttributes);
+            
+                inkToolbar.TargetInkCanvas = inkCanvas;
+                inkToolbar.Visibility = Visibility.Visible;
+            }
+            else // only for viewing on page overview page
+            {
+                
+            }
+
+        }
+
+        private void DrawingButton_Click(object sender, RoutedEventArgs e)
+        {
+            type = "drawing";
+            isInitialized = true;
+            //this.ControlStackPanel.Visibility = Visibility.Visible;
+            categoryGrid.Visibility = Visibility.Collapsed;
+
+            InitiateInkCanvas();
+
+        }
+
+        public async void InitializeFromDisk(bool onlyView = false)
+        {
+            this.categoryGrid.Visibility = Visibility.Collapsed;
+            // photo file
+            var file = await FileService.FileManager.getSharedFileManager().GetNoteFileNotCreate(notebookId, pageId, FileService.NoteFileType.Image, name);
+            if (file != null)
+            {
+                // Open a file stream for reading.
+                IRandomAccessStream stream = await file.OpenAsync(Windows.Storage.FileAccessMode.Read);
+                // Read from file.
+                using (var inputStream = stream.GetInputStreamAt(0))
+                {
+                    BitmapDecoder decoder = await BitmapDecoder.CreateAsync(stream);
+                    SoftwareBitmap softwareBitmap = await decoder.GetSoftwareBitmapAsync();
+                    SoftwareBitmap softwareBitmapBGR8 = SoftwareBitmap.Convert(softwareBitmap,
+                    BitmapPixelFormat.Bgra8,
+                    BitmapAlphaMode.Premultiplied);
+                    SoftwareBitmapSource bitmapSource = new SoftwareBitmapSource();
+                    await bitmapSource.SetBitmapAsync(softwareBitmapBGR8);
+                    Image imageControl = new Image();
+                    imageControl.Source = bitmapSource;
+                    contentGrid.Children.Add(imageControl);
+                    categoryGrid.Visibility = Visibility.Collapsed;
+                   
+                }
+                stream.Dispose();
+            }
+
+
+           
+                InitiateInkCanvas(onlyView);
+
+
+                var annofile = await FileService.FileManager.getSharedFileManager().GetNoteFileNotCreate(notebookId, pageId, FileService.NoteFileType.ImageAnnotation, name);
+                if (annofile != null)
+                    await FileService.FileManager.getSharedFileManager().loadStrokes(annofile, this.inkCan);
+
+            /**
+                string strokeUri = "ms-appdata:///local/" + FileManager.getSharedFileManager().GetNoteFilePath(notebookId, pageId, NoteFileType.ImageAnnotation, name);
+                BitmapIcon anno = new BitmapIcon();
+                anno.UriSource = new Uri(strokeUri);
+                contentGrid.Children.Add(anno);
+    **/
+            
+
+            
+
+        }
+
+        private async void InsertPhotoButton_Click(object sender, RoutedEventArgs e)
+        {
+            type = "photo";
+            isInitialized = true;
+            //this.ControlStackPanel.Visibility = Visibility.Visible;
+            // Let users choose their ink file using a file picker.
+            // Initialize the picker.
+            Windows.Storage.Pickers.FileOpenPicker openPicker =
+                new Windows.Storage.Pickers.FileOpenPicker();
+            openPicker.SuggestedStartLocation =
+                Windows.Storage.Pickers.PickerLocationId.DocumentsLibrary;
+            openPicker.FileTypeFilter.Add(".gif");
+            openPicker.FileTypeFilter.Add(".png");
+            openPicker.FileTypeFilter.Add(".jpg");
+            openPicker.FileTypeFilter.Add(".tif");
+            // Show the file picker.
+            Windows.Storage.StorageFile file = await openPicker.PickSingleFileAsync();
+            // User selects a file and picker returns a reference to the selected file.
+            if (file != null)
+            {
+                await FileService.FileManager.getSharedFileManager().CopyPhotoToLocal(file, notebookId, pageId, name);
+
+                // Open a file stream for reading.
+                IRandomAccessStream stream = await file.OpenAsync(Windows.Storage.FileAccessMode.Read);
+                // Read from file.
+                using (var inputStream = stream.GetInputStreamAt(0))
+                {
+                    BitmapDecoder decoder = await BitmapDecoder.CreateAsync(stream);
+                    SoftwareBitmap softwareBitmap = await decoder.GetSoftwareBitmapAsync();
+                    SoftwareBitmap softwareBitmapBGR8 = SoftwareBitmap.Convert(softwareBitmap,
+                    BitmapPixelFormat.Bgra8,
+                    BitmapAlphaMode.Premultiplied);
+                    SoftwareBitmapSource bitmapSource = new SoftwareBitmapSource();
+                    await bitmapSource.SetBitmapAsync(softwareBitmapBGR8);
+                    Image imageControl = new Image();
+                    imageControl.Source = bitmapSource;
+                    contentGrid.Children.Add(imageControl);
+                    categoryGrid.Visibility = Visibility.Collapsed;
+                    InitiateInkCanvas();
+                }
+                stream.Dispose();
+            }
+            // User selects Cancel and picker returns null.
+            else
+            {
+                // Operation cancelled.
+            }
+        }
+
+        private void TakePhotoButton_Click(object sender, RoutedEventArgs e)
+        {
+
+        }
+
+        public void showControlPanel()
+        {
+            if (isInitialized) ;
+                //this.ControlStackPanel.Visibility = Visibility.Visible;
+
+        }
+        public void hideControlPanel()
+        {
+            if (isInitialized) ;
+                //this.ControlStackPanel.Visibility = Visibility.Collapsed;
+        }
+
+       
+
+        private void EditButton_Click(object sender, RoutedEventArgs e)
+        {
+
+        }
+
+        
+        
+        private void UserControl_Loaded(object sender, RoutedEventArgs e)
+        {
+            if (viewOnly)
+            {
+                this.Width = DEFAULT_WIDTH;
+                this.Height = DEFAULT_HEIGHT;
+                TitleRelativePanel.Visibility = Visibility.Collapsed;
+                InitializeFromDisk(true);
+            }
         }
     }
 }

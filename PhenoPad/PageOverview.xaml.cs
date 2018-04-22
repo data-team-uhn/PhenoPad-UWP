@@ -5,14 +5,20 @@ using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Numerics;
 using System.Runtime.InteropServices.WindowsRuntime;
+using Windows.ApplicationModel.Core;
 using Windows.Foundation;
 using Windows.Foundation.Collections;
 using Windows.Storage;
+using Windows.UI;
+using Windows.UI.Composition;
+using Windows.UI.ViewManagement;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
 using Windows.UI.Xaml.Controls.Primitives;
 using Windows.UI.Xaml.Data;
+using Windows.UI.Xaml.Hosting;
 using Windows.UI.Xaml.Input;
 using Windows.UI.Xaml.Media;
 using Windows.UI.Xaml.Media.Imaging;
@@ -33,13 +39,26 @@ namespace PhenoPad
             Windows.ApplicationModel.Core.CoreApplication.GetCurrentView().TitleBar.ExtendViewIntoTitleBar = false;
 
             loadAllNotes();
-            
+
+            //draw into the title bar
+            CoreApplication.GetCurrentView().TitleBar.ExtendViewIntoTitleBar = true;
+
+            //remove the solid-colored backgrounds behind the caption controls and system back button
+            ApplicationViewTitleBar titleBar = ApplicationView.GetForCurrentView().TitleBar;
+            titleBar.ButtonBackgroundColor = Colors.Transparent;
+            titleBar.ButtonInactiveBackgroundColor = Colors.Transparent;
+
+            // https://stackoverflow.com/questions/43699256/how-to-use-acrylic-accent-in-windows-10-creators-update/43711413#43711413
+
+
         }
+
+        private List<Notebook> notebooks;
         private async void loadAllNotes()
         {
-            List<Notebook> notebooks = await FileManager.getSharedFileManager().GetAllNotebookObjects();
-
-            notebookList.ItemsSource = notebooks;
+            notebooks = await FileManager.getSharedFileManager().GetAllNotebookObjects();
+            if(notebooks != null)
+                notebookList.ItemsSource = notebooks;
             
    
         }
@@ -70,6 +89,23 @@ namespace PhenoPad
             }
             else
                 MessageGrid.Visibility = Visibility.Visible;
+
+
+            List<ImageAndAnnotation> images = await FileManager.getSharedFileManager().GetAllImageAndAnnotationObjects(clickNotebook.id);
+            if (images.Count > 0)
+            {
+                ImageAnnotationGridView.Visibility = Visibility.Visible;
+                ImageAnnotationPlaceHoder.Visibility = Visibility.Collapsed;
+                ImageAnnotationGridView.ItemsSource = images;
+            }
+            else
+            {
+                ImageAnnotationGridView.ItemsSource = new List<ImageAndAnnotation>();
+                ImageAnnotationGridView.Visibility = Visibility.Collapsed;
+
+                ImageAnnotationPlaceHoder.Visibility = Visibility.Visible;
+            }
+
         }
 
         private void OpenButton_Click(object sender, RoutedEventArgs e)
@@ -82,6 +118,24 @@ namespace PhenoPad
         protected override void OnNavigatedFrom(NavigationEventArgs e)
         {
             this.Frame.BackStack.Clear();
+        }
+
+        private void autosuggesttextchanged(AutoSuggestBox sender, AutoSuggestBoxTextChangedEventArgs args)
+        {
+            if (args.Reason == AutoSuggestionBoxTextChangeReason.UserInput)
+            {
+                var filtered = notebooks.Where(i => i.name.Contains(this.autoSuggestBox.Text)).ToList();
+                //if(filtered != null && filtered.Count() != 0)
+                notebookList.ItemsSource = filtered;
+              
+
+
+            }
+        }
+
+        private void autosuggestquerysubmitted(AutoSuggestBox sender, AutoSuggestBoxQuerySubmittedEventArgs args)
+        {
+
         }
     }
     

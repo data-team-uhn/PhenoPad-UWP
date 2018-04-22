@@ -106,12 +106,11 @@ namespace PhenoPad.CustomControl
             //YNSwitch.Margin = new Thickness(-100, 0, 0, 0);
             YNSwitch.Visibility = Visibility.Collapsed;
             DeleteBtn.Visibility = Visibility.Collapsed;
-            if(sourceType == SourceType.Speech)
-                PhenotypeManager.getSharedPhenotypeManager().removeById(phenotypeId, SourceType.Speech);
-            else
-                PhenotypeManager.getSharedPhenotypeManager().updatePhenoStateById(phenotypeId, -1, sourceType);
-
-                PhenotypeManager.getSharedPhenotypeManager().removeById(phenotypeId, SourceType.Saved);
+            //if(sourceType == SourceType.Speech)
+            //    PhenotypeManager.getSharedPhenotypeManager().removeById(phenotypeId, SourceType.Speech);
+            //else
+            //    PhenotypeManager.getSharedPhenotypeManager().updatePhenoStateById(phenotypeId, -1, sourceType);
+             PhenotypeManager.getSharedPhenotypeManager().removeById(phenotypeId, SourceType.Saved);
         }
         
         private void YSwitchBtn_Click(object sender, RoutedEventArgs e)
@@ -130,6 +129,9 @@ namespace PhenoPad.CustomControl
         {
             if (state == -1)
             {
+                NameCrossLine.Visibility = Visibility.Collapsed;
+                phenotypeNameTextBlock.Text = phenotypeName;
+                phenotypeNameTextBlock.Foreground = new SolidColorBrush(Colors.Black);
                 YNSwitch.Visibility = Visibility.Collapsed;
                 if(sourceType == SourceType.Speech)
                     DeleteBtn.Visibility = Visibility.Visible;
@@ -141,34 +143,78 @@ namespace PhenoPad.CustomControl
                 YNSwitch.Visibility = Visibility.Visible;
                 DeleteBtn.Visibility = Visibility.Visible;
                 setYNSwitchColor(state);
+
+                if (state == 1)
+                {
+                    NameCrossLine.Visibility = Visibility.Collapsed;
+                    phenotypeNameTextBlock.Text = phenotypeName;
+                    phenotypeNameTextBlock.Foreground = Application.Current.Resources["WORD_DARK"] as SolidColorBrush;
+                }
+                else
+                {
+                    NameCrossLine.Visibility = Visibility.Visible;
+                    phenotypeNameTextBlock.Text = "NO " + phenotypeName;
+                    phenotypeNameTextBlock.Foreground = new SolidColorBrush(Colors.LightCoral);
+                }
             }
             
         }
 
         private void setYNSwitchColor(int state)
         {
-            NSwitchBtn.Background = new SolidColorBrush(Colors.LightGray);
-            YSwitchBtn.Background = new SolidColorBrush(Colors.LightGray);
             switch (state)
             {
                 case 0:
-                    NSwitchBtn.Background = Application.Current.Resources["Button_Background"] as SolidColorBrush;
+
+                    NSwitchBtn.Background = new SolidColorBrush(Colors.PaleVioletRed);
+                    NSwitchBtn.Foreground = new SolidColorBrush(Colors.White);
+                    YSwitchBtn.Background = new SolidColorBrush(Colors.White);
+                    YSwitchBtn.Foreground = new SolidColorBrush(Colors.Gray);
+                    YNSwitch.BorderBrush = new SolidColorBrush(Colors.PaleVioletRed);
+
                     break;
                 case 1:
-                    YSwitchBtn.Background = Application.Current.Resources["Button_Background"] as SolidColorBrush;
+                    NSwitchBtn.Background = new SolidColorBrush(Colors.White);
+                    NSwitchBtn.Foreground = new SolidColorBrush(Colors.Gray);
+                    YSwitchBtn.Background = new SolidColorBrush(Colors.CornflowerBlue);
+                    YSwitchBtn.Foreground = new SolidColorBrush(Colors.White);
+                    YNSwitch.BorderBrush = new SolidColorBrush(Colors.CornflowerBlue);
                     break;
                 default:
                     break;
             }
         }
-
-        private async void nameTextBlockTapped(object sender, TappedRoutedEventArgs e)
+        
+        private async void DetailButton_Click(object sender, RoutedEventArgs e)
         {
-            Row pinfo = await PhenotypeManager.getSharedPhenotypeManager().getDetailById(phenotypeId);
-            
             var recogPhenoFlyout = (Flyout)this.Resources["PhenotypeDetailFlyout"];
+            recogPhenoFlyout.ShowAt((Button)sender);
+            Row pinfo = await PhenotypeManager.getSharedPhenotypeManager().getDetailById(phenotypeId);
+
+            
             phenotypeDetailControl.setByPhenotypeInfo(pinfo);
-            recogPhenoFlyout.ShowAt((TextBlock)sender);
+            
+        }
+
+        private void RelativePanel_Tapped(object sender, TappedRoutedEventArgs e)
+        {
+            switch (phenotypeState)
+            {
+                case -1:
+                    //setPhenotypeState(1);
+                    PhenotypeManager.getSharedPhenotypeManager().addPhenotype(new Phenotype(phenotypeId, phenotypeName, 1), sourceType);
+                    break;
+                case 0:
+                    //PhenotypeManager.getSharedPhenotypeManager().removeById(phenotypeId, SourceType.Saved);
+                    // PhenotypeManager.getSharedPhenotypeManager().removeById(phenotypeId, sourceType);
+                    //setPhenotypeState(-1);
+                    PhenotypeManager.getSharedPhenotypeManager().updatePhenoStateById(phenotypeId, 1, sourceType);
+                    break;
+                case 1:
+                    // setPhenotypeState(0);
+                    PhenotypeManager.getSharedPhenotypeManager().updatePhenoStateById(phenotypeId, 0, sourceType);
+                    break;
+            }
         }
     }
 }

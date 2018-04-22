@@ -23,14 +23,16 @@
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
         <!-- Added Phenotypes-->
-        <Grid Grid.Row="0" Grid.Column="0" BorderBrush="{ThemeResource AppBarBackground}" BorderThickness="10 10 0 0">
+        <Grid Grid.Row="0" Grid.Column="0" BorderBrush="{StaticResource Title_Background}" Margin="10 10 10 10" BorderThickness="1 1 1 1" Padding="0">
             <Grid>
                 <Grid.RowDefinitions>
                     <RowDefinition Height="30"/>
                     <RowDefinition Height="*"/>
                 </Grid.RowDefinitions>
-                <TextBlock Grid.Row="0" FontSize="16" Foreground="DodgerBlue" Margin="10 0 0 0">Collected Phenotypes</TextBlock>
-                <ListView x:Name="savedPhenoListView" Grid.Row="1" ItemsSource="{x:Bind PhenoMana.savedPhenotypes, Mode=OneWay}">
+                <Border Background="{StaticResource Title_Background}">
+                <TextBlock Grid.Row="0" FontSize="18" Foreground="Black" Margin="10 0 0 0">Saved Phenotypes</TextBlock>
+                </Border>
+                <ListView x:Name="savedPhenoListView" Grid.Row="1" ItemsSource="{x:Bind PhenoMana.savedPhenotypes, Mode=OneWay}" Padding="5">
                     <ListView.ItemTemplate>
                         <DataTemplate x:DataType="phenotypeservice:Phenotype">
                             <customcontrol:PhenotypeControl phenotypeName="{x:Bind name}" phenotypeId="{x:Bind hpId}" phenotypeState="{x:Bind state}" sourceType="Saved"></customcontrol:PhenotypeControl>
@@ -40,7 +42,7 @@
                         <Style TargetType="ListViewItem">
                             <Setter Property="HorizontalContentAlignment" Value="Stretch" />
                             <Setter Property="Margin" Value="0,0,0,0" />
-                            <Setter Property="Padding" Value="5,0,0,0" />
+                            <Setter Property="Padding" Value="5,0,20,0" />
                             <Setter Property="MinHeight" Value="20" />
                         </Style>
                     </ListView.ItemContainerStyle>
@@ -48,7 +50,7 @@
             </Grid>
         </Grid>
         <!-- Phenotypes from notes and speech-->
-        <Grid Grid.Row="0" Grid.Column="1" BorderBrush="{ThemeResource AppBarBackground}" BorderThickness="10 10 10 0">
+        <Grid Grid.Row="0"  Grid.Column="1" BorderBrush="{StaticResource Title_Background}" Margin="10 10 10 10" BorderThickness="1 1 1 1">
             <Grid>
                 <Grid.RowDefinitions>
                     <RowDefinition Height="*"/>
@@ -59,8 +61,10 @@
                         <RowDefinition Height="30"/>
                         <RowDefinition Height="*"/>
                     </Grid.RowDefinitions>
-                    <TextBlock Grid.Row="0"  FontSize="16" Foreground="DodgerBlue" Margin="10 0 0 0">Phenotypes From Notes</TextBlock>
-                    <ListView x:Name="phenoOfNotesListView" Grid.Row="1" ItemsSource="{x:Bind PhenoMana.phenotypesInNote, Mode=OneWay}">
+                    <Border Background="{StaticResource Title_Background}">
+                    <TextBlock Grid.Row="0"  FontSize="18" Foreground="Black" Margin="10 0 0 0">Phenotypes From Notes</TextBlock>
+                    </Border>
+                    <ListView x:Name="phenoOfNotesListView" Grid.Row="1" ItemsSource="{x:Bind PhenoMana.phenotypesInNote, Mode=OneWay}" Padding="5">
                         <ListView.ItemTemplate>
                             <DataTemplate x:DataType="phenotypeservice:Phenotype">
                                 <customcontrol:PhenotypeControl phenotypeName="{x:Bind name}" phenotypeId="{x:Bind hpId}" phenotypeState="{x:Bind state}" sourceType="Notes"></customcontrol:PhenotypeControl>
@@ -70,19 +74,21 @@
                             <Style TargetType="ListViewItem">
                                 <Setter Property="HorizontalContentAlignment" Value="Stretch" />
                                 <Setter Property="Margin" Value="0,0,0,0" />
-                                <Setter Property="Padding" Value="5,0,0,0" />
+                                <Setter Property="Padding" Value="5,0,20,0" />
                                 <Setter Property="MinHeight" Value="20" />
                             </Style>
                         </ListView.ItemContainerStyle>
                     </ListView>
                 </Grid>
-                <Grid Grid.Row="1" BorderBrush="{ThemeResource AppBarBackground}" BorderThickness="0 10 0 0">
+                <Grid Grid.Row="1" BorderBrush="White" BorderThickness="0 10 0 0">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="30"/>
                         <RowDefinition Height="*"/>
                     </Grid.RowDefinitions>
-                    <TextBlock Grid.Row="0"  FontSize="16" Foreground="DodgerBlue" Margin="10 0 0 0">Phenotypes From Speech</TextBlock>
-                    <ListView x:Name="phenoOfSpeechListView" Grid.Row="1" ItemsSource="{x:Bind PhenoMana.phenotypesInSpeech, Mode=OneWay}">
+                    <Border Background="{StaticResource Title_Background}">
+                    <TextBlock Grid.Row="0"  FontSize="18" Foreground="Black" Margin="10 0 0 0">Phenotypes From Speech</TextBlock>
+                    </Border>
+                    <ListView x:Name="phenoOfSpeechListView" Grid.Row="1" ItemsSource="{x:Bind PhenoMana.phenotypesInSpeech, Mode=OneWay}" Padding="5">
                         <ListView.ItemTemplate>
                             <DataTemplate x:DataType="phenotypeservice:Phenotype">
                                 <customcontrol:PhenotypeControl phenotypeName="{x:Bind name}" phenotypeId="{x:Bind hpId}" phenotypeState="{x:Bind state}" sourceType="Speech"></customcontrol:PhenotypeControl>
@@ -92,7 +98,7 @@
                             <Style TargetType="ListViewItem">
                                 <Setter Property="HorizontalContentAlignment" Value="Stretch" />
                                 <Setter Property="Margin" Value="0,0,0,0" />
-                                <Setter Property="Padding" Value="5,0,0,0" />
+                                <Setter Property="Padding" Value="5,0,20,0" />
                                 <Setter Property="MinHeight" Value="20" />
                             </Style>
                         </ListView.ItemContainerStyle>
@@ -101,14 +107,16 @@
             </Grid>
         </Grid>
         <!-- Suggested phenotyeps-->
-        <Grid Grid.Row="1" Grid.Column="0" BorderBrush="{ThemeResource AppBarBackground}" BorderThickness="10 10 0 10">
+        <Grid Grid.Row="1" Grid.Column="0" BorderBrush="{StaticResource Title_Background}" Margin="10 10 10 10" BorderThickness="1 1 1 1">
             <Grid>
                 <Grid.RowDefinitions>
                     <RowDefinition Height="30"/>
                     <RowDefinition Height="*"/>
                 </Grid.RowDefinitions>
-                <TextBlock Grid.Row="0"  FontSize="16" Foreground="DodgerBlue" Margin="10 0 0 0">Suggested Phenotypes</TextBlock>
-                <ListView x:Name="suggestedPhenoListView" Grid.Row="1" ItemsSource="{x:Bind PhenoMana.suggestedPhenotypes, Mode=OneWay}">
+                <Border Background="{StaticResource Title_Background}">
+                <TextBlock Grid.Row="0"  FontSize="18" Foreground="Black" Margin="10 0 0 0">Suggested Phenotypes</TextBlock>
+                </Border>
+                <ListView x:Name="suggestedPhenoListView" Grid.Row="1" ItemsSource="{x:Bind PhenoMana.suggestedPhenotypes, Mode=OneWay}" Padding="5">
                     <ListView.ItemTemplate>
                         <DataTemplate x:DataType="phenotypeservice:Phenotype">
                             <customcontrol:PhenotypeControl phenotypeName="{x:Bind name}" phenotypeId="{x:Bind hpId}" phenotypeState="{x:Bind state}" sourceType="Suggested"></customcontrol:PhenotypeControl>
@@ -118,7 +126,7 @@
                         <Style TargetType="ListViewItem">
                             <Setter Property="HorizontalContentAlignment" Value="Stretch" />
                             <Setter Property="Margin" Value="0,0,0,0" />
-                            <Setter Property="Padding" Value="5,0,0,0" />
+                            <Setter Property="Padding" Value="5,0,20,0" />
                             <Setter Property="MinHeight" Value="20" />
                         </Style>
                     </ListView.ItemContainerStyle>
@@ -126,14 +134,16 @@
             </Grid>
         </Grid>
         <!-- Diseases -->
-        <RelativePanel Grid.Row="1" Grid.Column="1" BorderBrush="{ThemeResource AppBarBackground}" BorderThickness="10">
+        <Grid Grid.Row="1" Grid.Column="1" BorderBrush="{StaticResource TITLE_BAR_WHITE}" Margin="10 10 10 10" BorderThickness="1 1 1 1">
             <Grid>
                 <Grid.RowDefinitions>
                     <RowDefinition Height="30"/>
                     <RowDefinition Height="*"/>
                 </Grid.RowDefinitions>
-                <TextBlock Grid.Row="0"  FontSize="16" Foreground="DodgerBlue" Margin="10 0 0 0">Differential diagnosis</TextBlock>
-                <ListView x:Name="diseaseListView" Grid.Row="1" ItemsSource="{x:Bind PhenoMana.predictedDiseases}">
+                <Border Background="{StaticResource Title_Background}">
+                <TextBlock Grid.Row="0"  FontSize="18" Foreground="Black" Margin="10 0 0 0">Differential diagnosis</TextBlock>
+                </Border>
+                <ListView x:Name="diseaseListView" Grid.Row="1" ItemsSource="{x:Bind PhenoMana.predictedDiseases}" Padding="5">
                     <ListView.ItemTemplate>
                         <DataTemplate x:DataType="phenotypeservice:Disease">
                             <TextBlock Text="{x:Bind name}"></TextBlock>
@@ -143,12 +153,12 @@
                         <Style TargetType="ListViewItem">
                             <Setter Property="HorizontalContentAlignment" Value="Stretch" />
                             <Setter Property="Margin" Value="0,0,0,0" />
-                            <Setter Property="Padding" Value="5,0,0,0" />
+                            <Setter Property="Padding" Value="5,0,20,0" />
                             <Setter Property="MinHeight" Value="20" />
                         </Style>
                     </ListView.ItemContainerStyle>
                 </ListView>
             </Grid>
-        </RelativePanel>
+        </Grid>
     </Grid>
 </Page>

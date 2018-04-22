@@ -24,6 +24,7 @@ namespace PhenoPad.CustomControl
         public PhenotypeDetail()
         {
             this.InitializeComponent();
+            ProgressRingGrid.Visibility = Visibility.Visible ;
         }
 
         public void setByPhenotypeInfo(Row pheno)
@@ -33,6 +34,8 @@ namespace PhenoPad.CustomControl
             definitionTextBlock.Text = pheno.def == null ? "Not found." : pheno.def;
             alterListView.ItemsSource = pheno.synonym;
             parentsListView.ItemsSource = pheno.parents;
+
+            ProgressRingGrid.Visibility = Visibility.Collapsed;
         }
     }
 }

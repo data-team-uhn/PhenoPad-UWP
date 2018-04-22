@@ -188,7 +188,8 @@
                 </Canvas>
 
 
-                <Canvas x:Name="userControlCanvas" Canvas.ZIndex="4">
+                <Canvas x:Name="userControlCanvas" Canvas.ZIndex="4" >
+                   
                    <!--
                     <StackPanel Name="HoverPhenoPanel" BorderBrush="Black" PointerEntered="HoverPhenoPanel_PointerEntered" PointerExited="HoverPhenoPanel_PointerExited" Orientation="Horizontal" FlowDirection="RightToLeft" Background="SkyBlue" Padding="5 3" Opacity="0.5" HorizontalAlignment="Right" Visibility="Collapsed">
                         <TextBlock Name="HoverPhenoPopupText" Height="{Binding LINE_HEIGHT}" Text="" FontSize="14" Foreground="OrangeRed"></TextBlock>
@@ -199,5 +200,7 @@
                 <Canvas x:Name="recognizedTextCanvas" Canvas.ZIndex="5"></Canvas>
             </Grid>
         </ScrollViewer>
+
+        
     </Grid>
 </UserControl>
