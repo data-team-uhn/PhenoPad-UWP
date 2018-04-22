@@ -182,6 +182,7 @@ namespace PhenoPad
 
         private async void InitializeNotebook()
         {
+            PhenotypeManager.clearCache();
             // create file structure
             notebookId = FileManager.getSharedFileManager().createNotebookId();
             bool result = await FileManager.getSharedFileManager().CreateNotebook(notebookId);
@@ -215,6 +216,7 @@ namespace PhenoPad
 
         private async void InitializeNotebookFromDisk()
         {
+            PhenotypeManager.clearCache();
             List<string> pageIds = await FileService.FileManager.getSharedFileManager().GetPageIdsByNotebook(notebookId);
             notebookObject = await FileManager.getSharedFileManager().GetNotebookObjectFromXML(notebookId);
 
@@ -227,6 +229,7 @@ namespace PhenoPad
                 PhenotypeManager.getSharedPhenotypeManager().addPhenotypesFromFile(phenos);
             }
 
+            
             if (pageIds == null || pageIds.Count == 0)
             {
                 NotifyUser("Did not find anything in this notebook, will create a new one.", NotifyType.ErrorMessage, 2);
@@ -240,10 +243,19 @@ namespace PhenoPad
             {
                 NotePageControl aPage = new NotePageControl();
                 notePages.Add(aPage);
+                aPage.pageId = pageIds[i];
+                aPage.notebookId = notebookId;
                 await FileManager.getSharedFileManager().LoadNotePageStroke(notebookId, pageIds[i], aPage);
                 addNoteIndex(i);
+
+                List<ImageAndAnnotation> imageAndAnno = await FileManager.getSharedFileManager().GetImgageAndAnnotationObjectFromXML(notebookId, pageIds[i]);
+                if(imageAndAnno != null)
+                    foreach (var ia in imageAndAnno)
+                    {
+                        aPage.addImageAndAnnotationControl(ia.name, ia.canvasLeft, ia.canvasTop, true);
+                    }
             }
-            
+
             inkCanvas = notePages[0].inkCan;
             MainPageInkBar.TargetInkCanvas = inkCanvas;
             curPage = notePages[0];
@@ -266,8 +278,11 @@ namespace PhenoPad
             {
                 // handwritten strokes
                 result = await FileManager.getSharedFileManager().SaveNotePageStrokes(notebookId, i.ToString(), notePages[i]);
+
+                // save photos and annotations to disk
+                result = await FileManager.getSharedFileManager().SaveNotePageDrawingAndPhotos(notebookId, i.ToString(), notePages[i]);
             }
-            
+
             // collected phenotypes
             result = await FileManager.getSharedFileManager().saveCollectedPhenotypesToFile(notebookId);
             if (result)

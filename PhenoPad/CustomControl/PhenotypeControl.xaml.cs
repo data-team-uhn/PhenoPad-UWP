@@ -184,12 +184,7 @@ namespace PhenoPad.CustomControl
                     break;
             }
         }
-
-        private async void nameTextBlockTapped(object sender, TappedRoutedEventArgs e)
-        {
-
-        }
-
+        
         private async void DetailButton_Click(object sender, RoutedEventArgs e)
         {
             var recogPhenoFlyout = (Flyout)this.Resources["PhenotypeDetailFlyout"];
@@ -199,6 +194,27 @@ namespace PhenoPad.CustomControl
             
             phenotypeDetailControl.setByPhenotypeInfo(pinfo);
             
+        }
+
+        private void RelativePanel_Tapped(object sender, TappedRoutedEventArgs e)
+        {
+            switch (phenotypeState)
+            {
+                case -1:
+                    //setPhenotypeState(1);
+                    PhenotypeManager.getSharedPhenotypeManager().addPhenotype(new Phenotype(phenotypeId, phenotypeName, 1), sourceType);
+                    break;
+                case 0:
+                    //PhenotypeManager.getSharedPhenotypeManager().removeById(phenotypeId, SourceType.Saved);
+                    // PhenotypeManager.getSharedPhenotypeManager().removeById(phenotypeId, sourceType);
+                    //setPhenotypeState(-1);
+                    PhenotypeManager.getSharedPhenotypeManager().updatePhenoStateById(phenotypeId, 1, sourceType);
+                    break;
+                case 1:
+                    // setPhenotypeState(0);
+                    PhenotypeManager.getSharedPhenotypeManager().updatePhenoStateById(phenotypeId, 0, sourceType);
+                    break;
+            }
         }
     }
 }

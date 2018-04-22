@@ -5,11 +5,9 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Linq;
-using System.Runtime.Serialization;
 using System.Text;
 using System.Threading.Tasks;
 using System.Xml;
-using Windows.Storage;
 using Windows.Web.Http;
 
 namespace PhenoPad.PhenotypeService
@@ -52,6 +50,11 @@ namespace PhenoPad.PhenotypeService
             {
                 return sharedPhenotypeManager;
             }
+        }
+
+        public static void clearCache()
+        {
+            sharedPhenotypeManager = new PhenotypeManager();
         }
 
         // return # of added phenotypes

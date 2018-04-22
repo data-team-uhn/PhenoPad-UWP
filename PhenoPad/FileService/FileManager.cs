@@ -1,19 +1,14 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 using Windows.Storage;
 using PhenoPad.CustomControl;
 using Windows.Storage.Streams;
 using Windows.UI.Xaml.Media.Imaging;
 using Windows.UI.Xaml.Controls;
-//using System.Runtime.Serialization;
-using System.Xml;
 using System.IO;
 using PhenoPad.PhenotypeService;
-using System.Runtime.Serialization;
 using System.Xml.Serialization;
 using Windows.Storage.Search;
 
@@ -27,7 +22,8 @@ namespace PhenoPad.FileService
         Phenotypes,
         Audio,
         Video,
-        Meta
+        Meta,
+        ImageAnnotationMeta
     };
 
     class FileManager
@@ -35,6 +31,7 @@ namespace PhenoPad.FileService
         public static FileManager sharedFileManager;
         private MainPage rootPage = MainPage.Current;
         private string STROKE_FILE_NAME = "strokes.gif";
+        private string PHENOTYPE_FILE_NAME = "phenotypes.txt";
         private string NOTENOOK_NAME_PREFIX = "note_";
         private string NOTE_META_FILE = "meta.xml";
 
@@ -186,6 +183,17 @@ namespace PhenoPad.FileService
             return null;
         }
 
+        public async Task<List<ImageAndAnnotation>> GetImgageAndAnnotationObjectFromXML(string notebookId, string pageId)
+        {
+            var metafile = await GetNoteFile(notebookId, pageId, NoteFileType.ImageAnnotationMeta);
+            object obj = await LoadObjectFromSerilization(metafile, typeof(List<ImageAndAnnotation>));
+            if (obj != null)
+            {
+                return obj as List<ImageAndAnnotation>;
+            }
+            return null;
+        }
+
         // get saved phenotypes object from meta file
         public async Task<List<Phenotype>> GetSavedPhenotypeObjectsFromXML(string notebookId)
         {
@@ -197,6 +205,65 @@ namespace PhenoPad.FileService
                 return obj as List<Phenotype>;
             }
             return null;
+        }
+
+        //copy photo to local folder
+        public async Task<bool> CopyPhotoToLocal(StorageFile photo, string notebookId, string pageid, string name)
+        {
+            bool isSuc = true;
+            try
+            {
+                string filename = GetNoteFilePath(notebookId, pageid, NoteFileType.Image, name);
+                string path = System.IO.Path.GetDirectoryName(filename);
+                StorageFolder localFolder = ApplicationData.Current.LocalFolder;
+                var pfile = await localFolder.CreateFileAsync(filename, CreationCollisionOption.ReplaceExisting);
+                await photo.CopyAndReplaceAsync(pfile);
+            }
+            catch
+            {
+                isSuc = false;
+            }
+            return isSuc;
+        }
+
+        // save photos and annotations to disk
+        public async Task<bool> SaveNotePageDrawingAndPhotos(string notebookId, string pageId, NotePageControl notePage)
+        {
+            bool isSuccessful = true;
+            StorageFolder localFolder = ApplicationData.Current.LocalFolder;
+
+            try
+            {
+                List<ImageAndAnnotation> imageList = new List<ImageAndAnnotation>();
+                foreach (AddInControl con in notePage.GetAllAddInControls())
+                {
+                    ImageAndAnnotation temp = new ImageAndAnnotation(con.name, notebookId, pageId, con.canvasLeft, con.canvasTop);
+                    imageList.Add(temp);
+                    // image
+                    if (con.type == "photo")
+                    {
+                        //saved after insertion
+
+
+                        //string imagePath = GetNoteFilePath(notebookId, pageId, NoteFileType.ImageAnnotation, con.name);
+                        //var imageFile = await localFolder.CreateFileAsync(imagePath, CreationCollisionOption.ReplaceExisting);
+                    }
+                    // annotations
+                    string strokePath = GetNoteFilePath(notebookId, pageId, NoteFileType.ImageAnnotation, con.name);
+                    var strokesFile = await localFolder.CreateFileAsync(strokePath, CreationCollisionOption.ReplaceExisting);
+                    isSuccessful = await saveStrokes(strokesFile, con.inkCan);
+                    
+                }
+                string metapath = GetNoteFilePath(notebookId, pageId, NoteFileType.ImageAnnotationMeta);
+                isSuccessful = await SaveObjectSerilization(metapath, imageList, typeof(List<ImageAndAnnotation>));
+            }
+            catch (Exception e)
+            {
+                Debug.WriteLine(e.Message);
+                isSuccessful = false;
+            }
+
+            return isSuccessful;
         }
 
         // save ink data to disk 
@@ -215,8 +282,7 @@ namespace PhenoPad.FileService
             }
             catch (Exception e)
             {
-                Debug.WriteLine(e.Message);
-                return false;
+               
             }
             return true;
         }
@@ -387,6 +453,24 @@ namespace PhenoPad.FileService
             catch (Exception)
             {
                 Debug.WriteLine($"Failed to get {filepath}");
+                return null;
+            }
+            return notefile;
+        }
+
+        public async Task<StorageFile> GetNoteFileNotCreate(string notebookId, string notePageId, NoteFileType fileType, string name = "")
+        {
+            StorageFile notefile = null;
+            StorageFolder localFolder = ApplicationData.Current.LocalFolder;
+            string filepath = GetNoteFilePath(notebookId, notePageId, fileType, name);
+            try
+            {
+                notefile = await localFolder.GetFileAsync(filepath);
+            }
+            catch (Exception)
+            {
+                Debug.WriteLine($"Failed to get {filepath}");
+                return null;
             }
             return notefile;
         }
@@ -394,7 +478,6 @@ namespace PhenoPad.FileService
         // return a file path by notebook and page id, apply to various file types 
         public string GetNoteFilePath(string notebookId, string notePageId, NoteFileType fileType, string name = "")
         {
-            StorageFolder localFolder = ApplicationData.Current.LocalFolder;
             string foldername = String.Format(@"{0}\{1}\", notebookId, notePageId);
             switch (fileType)
             {
@@ -402,6 +485,10 @@ namespace PhenoPad.FileService
                     foldername = String.Format(@"{0}\", notebookId);
                     break;
                 case NoteFileType.ImageAnnotation:
+                    foldername += @"ImagesWithAnnotations\";
+                    break;
+
+                case NoteFileType.ImageAnnotationMeta:
                     foldername += @"ImagesWithAnnotations\";
                     break;
                 case NoteFileType.Strokes:
@@ -421,14 +508,18 @@ namespace PhenoPad.FileService
                 case NoteFileType.ImageAnnotation:
                     filename = name + ".gif";
                     break;
+
                 case NoteFileType.Image:
                     filename = name + ".jpg";
                     break;
+                case NoteFileType.ImageAnnotationMeta:
+                    filename = NOTE_META_FILE;
+                    break;
                 case NoteFileType.Strokes:
-                    filename = "strokes.gif";
+                    filename = STROKE_FILE_NAME;
                     break;
                 case NoteFileType.Phenotypes:
-                    filename = "phenotypes.txt";
+                    filename = PHENOTYPE_FILE_NAME;
                     break;
             }
 
@@ -508,6 +599,24 @@ namespace PhenoPad.FileService
                 rootPage.NotifyUser("Failed to get all notebook ids.", NotifyType.ErrorMessage, 2);
             }
             return null;
+        }
+
+
+        // get all image and annotation objects
+        public async Task<List<ImageAndAnnotation>> GetAllImageAndAnnotationObjects(string notebookId)
+        {
+            List<string> pageIds = await GetPageIdsByNotebook(notebookId);
+            if (pageIds == null)
+                return null;
+
+            List<ImageAndAnnotation> result = new List<ImageAndAnnotation>();
+            foreach (var pid in pageIds)
+            {
+                List<ImageAndAnnotation> imageAndAnno = await FileManager.getSharedFileManager().GetImgageAndAnnotationObjectFromXML(notebookId, pid);
+                if (imageAndAnno != null && imageAndAnno.Count != 0)
+                    result.AddRange(imageAndAnno);
+            }
+            return result;
         }
 
         // get all note page objects

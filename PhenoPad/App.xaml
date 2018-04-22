@@ -4,6 +4,8 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:local="using:PhenoPad"
     xmlns:styles="using:PhenoPad.Styles"
+    xmlns:media="using:Windows.UI.Xaml.Media"
+    xmlns:Windows10FallCreatorsUpdate="http://schemas.microsoft.com/winfx/2006/xaml/presentation?IsApiContractPresent(Windows.Foundation.UniversalApiContract, 5)"
     RequestedTheme="Light">
 
     <Application.Resources>
@@ -19,6 +21,11 @@
             <SolidColorBrush x:Key="Light_Red">#EDADB3</SolidColorBrush>
             <SolidColorBrush x:Key="Button_Background">#A2CEFF</SolidColorBrush>
             <SolidColorBrush x:Key="BUTTON_GRAY">#E3E1DA</SolidColorBrush>
+            <SolidColorBrush x:Key="Title_Background">#EDEDED</SolidColorBrush>
+
+            <media:AcrylicBrush x:Key="CustomAcrylicInAppBrush" BackgroundSource="Backdrop" TintOpacity="0.3" TintColor="Black" FallbackColor="Green"/>
+            <media:AcrylicBrush x:Key="CustomAcrylicBackgroundBrush" BackgroundSource="HostBackdrop" TintOpacity="0.5" TintColor="White" FallbackColor="LightGray"/>
+
             <Style x:Key="MyButtonStyle" TargetType="Button">
                 <Setter Property="Background" Value="White"/>
                 <Setter Property="Foreground" Value="{StaticResource WORD_DARK}"/>

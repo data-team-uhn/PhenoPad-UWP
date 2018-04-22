@@ -44,8 +44,8 @@ namespace PhenoPad.CustomControl
 {
     public sealed partial class NotePageControl : UserControl
     {
-        private string pageId;
-        private string notebookId;
+        public string pageId;
+        public string notebookId;
 
         /***** configurable settings *****/
         // Distance between two neighboring note lines
@@ -128,6 +128,7 @@ namespace PhenoPad.CustomControl
             rootPage = MainPage.Current;
             this.InitializeComponent();
             this.DrawBackgroundLines();
+            
 
             UNPROCESSED_COLOR = new SolidColorBrush(UNPROCESSED_COLOR.Color);
             UNPROCESSED_COLOR.Opacity = UNPROCESSED_OPACITY;
@@ -749,6 +750,34 @@ namespace PhenoPad.CustomControl
         }
 
         // recognize ink as operation
+        public List<AddInControl> GetAllAddInControls()
+        {
+            List<AddInControl> cons = new List<AddInControl>();
+            foreach (var c in this.userControlCanvas.Children)
+            {
+                if (c.GetType() == typeof(AddInControl))
+                {
+                    cons.Add(c as AddInControl);
+                }
+            }
+            return cons;
+        }
+
+        public void addImageAndAnnotationControl(string name, double left, double top, bool loadFromDisk)
+        {
+            AddInControl canvasAddIn = new AddInControl(name, notebookId, pageId);
+            //canvasAddIn.Width = 400; //stroke.BoundingRect.Width;
+            //canvasAddIn.Height = 400;  //stroke.BoundingRect.Height;
+            canvasAddIn.canvasLeft = left;
+            canvasAddIn.canvasTop = top;
+            Canvas.SetLeft(canvasAddIn, left);
+            Canvas.SetTop(canvasAddIn, top);
+            userControlCanvas.Children.Add(canvasAddIn);
+
+            if (loadFromDisk)
+                canvasAddIn.InitializeFromDisk();
+        }
+
         private async Task<int> RecognizeInkOperation()
         {
             var result = await inkOperationAnalyzer.AnalyzeAsync();
@@ -763,11 +792,17 @@ namespace PhenoPad.CustomControl
                         foreach (var dstroke in drawNode.GetStrokeIds())
                         {
                             var stroke = inkCanvas.InkPresenter.StrokeContainer.GetStrokeById(dstroke);
-                            AddInControl canvasAddIn = new AddInControl();
-                            canvasAddIn.Width = stroke.BoundingRect.Width;
-                            canvasAddIn.Height = stroke.BoundingRect.Height;
-                            Canvas.SetLeft(canvasAddIn, stroke.BoundingRect.X);
-                            Canvas.SetTop(canvasAddIn, stroke.BoundingRect.Y);
+                            addImageAndAnnotationControl(FileManager.getSharedFileManager().CreateUniqueName(), stroke.BoundingRect.X, stroke.BoundingRect.Y, false);
+                            /**
+                            canvasAddIn.PointerEntered += delegate (object sender, PointerRoutedEventArgs e)
+                            {
+                                canvasAddIn.showControlPanel();
+                            };
+                            canvasAddIn.PointerExited += delegate (object sender, PointerRoutedEventArgs e)
+                            {
+                                canvasAddIn.hideControlPanel();
+                            };
+                            
                             canvasAddIn.CanDrag = true;
                             canvasAddIn.ManipulationMode = ManipulationModes.All;
                             canvasAddIn.ManipulationDelta += delegate (object sdr, ManipulationDeltaRoutedEventArgs args)
@@ -779,26 +814,11 @@ namespace PhenoPad.CustomControl
                                 }
                                 else
                                 {
-                                    canvasAddIn.Width += args.Delta.Translation.X * 2;
-                                    canvasAddIn.Height += args.Delta.Translation.Y * 2;
+                                    //canvasAddIn.Width += args.Delta.Translation.X * 2;
+                                    //canvasAddIn.Height += args.Delta.Translation.Y * 2;
                                 }
-                                /**
-                                if (Math.Abs(args.Delta.Translation.X) > Math.Abs(args.Delta.Translation.Y))
-                                {
-                                    //canvasAddIn.Width += args.Delta.Expansion;
-                                    Debug.WriteLine(args.Delta.Scale);
-                                    canvasAddIn.Width *= args.Delta.Scale;
-                                }
-                                else
-                                {
-                                    //canvasAddIn.Height += args.Delta.Expansion;
-                                    canvasAddIn.Height *= args.Delta.Scale;
-                                }
-                                **/
                             };
-
-
-                            userControlCanvas.Children.Add(canvasAddIn);
+                            **/
                             stroke.Selected = true;
                         }
                         inkOperationAnalyzer.RemoveDataForStrokes(drawNode.GetStrokeIds());
@@ -828,6 +848,9 @@ namespace PhenoPad.CustomControl
             }
             return -1;
         }
+
+       
+
         private void SelectWithLineWithThickness(Point p1, Point p2, double thickness)
         {
             double x1 = p1.X;
@@ -946,7 +969,7 @@ namespace PhenoPad.CustomControl
                                 foreach (var dstroke in drawNode.GetStrokeIds())
                                 {
                                     var stroke = inkCanvas.InkPresenter.StrokeContainer.GetStrokeById(dstroke);
-                                    AddInControl canvasAddIn = new AddInControl();
+                                    AddInControl canvasAddIn = new AddInControl(FileService.FileManager.getSharedFileManager().CreateUniqueName(), notebookId, pageId);
                                     canvasAddIn.Width = stroke.BoundingRect.Width;
                                     canvasAddIn.Height = stroke.BoundingRect.Height;
                                     Canvas.SetLeft(canvasAddIn, stroke.BoundingRect.X);

@@ -51,7 +51,7 @@
         </Grid>
 
         <Grid Padding="0 0 0 0" Name="NameGrid" Grid.Column="1">
-            <RelativePanel>
+            <RelativePanel Tapped="RelativePanel_Tapped">
                 <TextBlock  Margin="5 0 0 0" FontSize="15" Grid.Column="1" x:Name="phenotypeNameTextBlock" Text="" VerticalAlignment="Center" />
                 <Line RelativePanel.AlignVerticalCenterWith="phenotypeNameTextBlock" RelativePanel.AlignLeftWith="phenotypeNameTextBlock" RelativePanel.AlignRightWith="phenotypeNameTextBlock" Stretch="Fill" Stroke="{StaticResource Light_Red}" StrokeThickness="2" X1="1" Y1="0" HorizontalAlignment="Stretch" VerticalAlignment="Center" Name="NameCrossLine" Visibility="Collapsed"/>
                 

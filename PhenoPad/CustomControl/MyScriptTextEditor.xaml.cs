@@ -47,7 +47,7 @@ namespace PhenoPad.CustomControl
             this.InitializeComponent();
 
             //MyScript
-            _engine = App.Engine;
+            //_engine = App.Engine;
 
             // Folders "conf" and "resources" are currently parts of the layout
             // (for each conf/res file of the project => properties => "Build Action = content")
