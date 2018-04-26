@@ -245,8 +245,8 @@
                 <Grid Name="QuickViewGrid" BorderThickness="0 0 0 0" Background="WhiteSmoke">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="*"/>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="*"/>
                     </Grid.RowDefinitions>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="40"/>
@@ -299,7 +299,7 @@
 
                     </Grid>
 
-                    <Grid Name="QuickView2" MaxHeight="400" Background="White" BorderBrush="#EEEEEE" BorderThickness="0"  Grid.Row="1" Grid.Column="1">
+                    <Grid Name="QuickView2" Background="White" BorderBrush="#EEEEEE" BorderThickness="0"  Grid.Row="1" Grid.Column="1">
                         <Grid.RowDefinitions>
                             <RowDefinition Height="30"/>
                             <RowDefinition Height="*"/>
@@ -327,7 +327,7 @@
                         </ListView>
                     </Grid>
 
-                    <Grid Name="QuickView3" MaxHeight="400" Background="White" BorderBrush="#EEEEEE" BorderThickness="0" Grid.Row="2" Grid.Column="1">
+                    <Grid Name="QuickView3" Background="White" BorderBrush="#EEEEEE" BorderThickness="0" Grid.Row="2" Grid.Column="1">
                         <Grid.RowDefinitions>
                             <RowDefinition Height="30"/>
                             <RowDefinition Height="*"/>
@@ -377,7 +377,7 @@
         <Grid  Padding="0 0 0 0" Grid.Row="2" >
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="40"></ColumnDefinition>
-                <ColumnDefinition Width="Auto"></ColumnDefinition>
+                <ColumnDefinition Width="*"></ColumnDefinition>
             </Grid.ColumnDefinitions>
 
             <Grid Name="OpenCandidatePanelButtonGrid" Grid.Column="0">
@@ -388,15 +388,10 @@
             <StackPanel Padding="5 5 0 5" Orientation="Horizontal" Grid.Column="1" Name="CandidatePanelStackPanel" Visibility="Collapsed">
                 <TextBlock Name="CandidatePanelTextBlock" FontSize="16" Foreground="Gray" VerticalAlignment="Center">Are you looking for:</TextBlock>
 
-                <ListView Grid.Column="2" Padding="0 0 0 0" Width="800"
-                          ScrollViewer.HorizontalScrollMode="Enabled"
-                          ScrollViewer.VerticalScrollMode="Disabled"
-                          ScrollViewer.HorizontalScrollBarVisibility="Hidden"
-                          ScrollViewer.IsHorizontalRailEnabled="True"
-                          x:Name="candidatePhenoListView" ItemsSource="{x:Bind PhenoMana.phenotypesCandidates, Mode=OneWay}">
+                <ListView Grid.Column="2" Padding="0 0 0 0" x:Name="candidatePhenoListView" ItemsSource="{x:Bind PhenoMana.phenotypesCandidates, Mode=OneWay}">
                     <ListView.ItemsPanel>
                         <ItemsPanelTemplate>
-                            <VirtualizingStackPanel  Orientation="Horizontal"/>
+                            <StackPanel Orientation="Horizontal"  Padding="0"/>
                         </ItemsPanelTemplate>
                     </ListView.ItemsPanel>
                     <ListView.ItemTemplate>
@@ -505,9 +500,7 @@
                         Grid.Row="2" Grid.Column="1" RequestedTheme="Default"
                         VerticalAlignment="Center" HorizontalAlignment="Center"
                               Click="CameraButton_Click" IsEnabled="False"/>
-            
-                <!--
-                We have made Bluetooth connection automatic
+
                 <TextBlock Text="Bluetooh" Grid.Row="3" Grid.Column="0"
                            VerticalAlignment="Center" HorizontalAlignment="Center"/>
                 <Button Name="bluetoothButton"
@@ -516,10 +509,9 @@
                         Grid.Row="3" Grid.Column="1" RequestedTheme="Default"
                         VerticalAlignment="Center" HorizontalAlignment="Center"
                               Click="BluetoothButton_Click"  IsEnabled="True"/>
-                -->
-                
-                <WebView Name="StreamView" Width="360" Height="280"
-                         Grid.Row="0" Grid.Column="2" Grid.RowSpan="5"
+
+                <WebView Name="StreamView" Width="320" Height="240"
+                         Grid.Row="0" Grid.Column="2" Grid.RowSpan="4"
                          HorizontalAlignment="Center" VerticalAlignment="Center"
                          Visibility="Visible" Canvas.ZIndex="999"
                      Source="http://192.168.137.112:8000" />

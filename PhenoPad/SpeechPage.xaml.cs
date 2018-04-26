@@ -657,6 +657,14 @@ namespace PhenoPad
                 {
                     proposed = 5;
                 }
+
+                if (proposed == 5)
+                {
+                    this.addSpeakerBtn.IsEnabled = false;
+                } else
+                {
+                    this.addSpeakerBtn.IsEnabled = true;
+                }
             }
             else
             {
@@ -664,6 +672,15 @@ namespace PhenoPad
                 if (proposed < 1)
                 {
                     proposed = 1;
+                }
+
+                if (proposed == 1)
+                {
+                    this.removeSpeakerBtn.IsEnabled = false;
+                }
+                else
+                {
+                    this.removeSpeakerBtn.IsEnabled = true;
                 }
             }
 
@@ -683,22 +700,17 @@ namespace PhenoPad
             {
                 Debug.WriteLine("Unable to update");
             }
-            
+
             //0, Int32.Parse(proposedText));
 
             //Debug.WriteLine("Detected speaker " + message.Speaker.ToString());
             //for (var i = maxSpeaker + 1; i <= message.Speaker; i++)
             //{
 
+            Debug.WriteLine("Old text: " + proposedText + "\tNew text: " + this.numSpeakerBox.Text);
             if (proposedText != this.numSpeakerBox.Text)
             {
-                this.curSpeakerCount += 1;
-                ComboBoxItem item = new ComboBoxItem();
-                item.Background = (Windows.UI.Xaml.Media.Brush)Application.Current.Resources["Background_" + (this.curSpeakerCount - 1).ToString()];
-                item.Background.Opacity = 0.75;
-                item.Content = "Speaker " + curSpeakerCount.ToString();
-
-                this.speakerBox.Items.Add(item);
+                this.adjustSpeakerCount(Int32.Parse(this.numSpeakerBox.Text));
             }
             //}
             //this.maxSpeaker = (int)message.Speaker;
@@ -720,15 +732,10 @@ namespace PhenoPad
             }
             //0, Int32.Parse(proposedText));
 
+            Debug.WriteLine("Old text: " + proposedText + "\tNew text: " + this.numSpeakerBox.Text);
             if (proposedText != this.numSpeakerBox.Text)
             {
-                this.curSpeakerCount -= 1;
-                Debug.WriteLine(this.curSpeakerCount);
-                if (this.speakerBox.SelectedIndex + 1 > this.curSpeakerCount)
-                {
-                    this.speakerBox.SelectedIndex--;
-                }
-                this.speakerBox.Items.RemoveAt(this.speakerBox.Items.Count - 1);
+                this.adjustSpeakerCount(Int32.Parse(this.numSpeakerBox.Text));
             }
         }
 
@@ -736,6 +743,35 @@ namespace PhenoPad
         {
             this.addSpeakerBtn.IsEnabled = enabled;
             this.removeSpeakerBtn.IsEnabled = enabled;
+        }
+
+        public void adjustSpeakerCount(int newCount)
+        {
+            Debug.WriteLine("New Count: " + newCount.ToString() + "\tCurSpeaker Count: " + this.curSpeakerCount.ToString());
+            while (newCount != this.curSpeakerCount)
+            {
+                if (newCount > this.curSpeakerCount)
+                {
+                    Debug.WriteLine("Incrementing speaker count to " + newCount.ToString());
+                    this.curSpeakerCount += 1;
+                    ComboBoxItem item = new ComboBoxItem();
+                    item.Background = (Windows.UI.Xaml.Media.Brush)Application.Current.Resources["Background_" + (this.curSpeakerCount - 1).ToString()];
+                    item.Background.Opacity = 0.75;
+                    item.Content = "Speaker " + curSpeakerCount.ToString();
+
+                    this.speakerBox.Items.Add(item);
+                }
+                else
+                {
+                    Debug.WriteLine("Decrementing speaker count to " + newCount.ToString());
+                    this.curSpeakerCount -= 1;
+                    if (this.speakerBox.SelectedIndex + 1 > this.curSpeakerCount)
+                    {
+                        this.speakerBox.SelectedIndex--;
+                    }
+                    this.speakerBox.Items.RemoveAt(this.speakerBox.Items.Count - 1);
+                }
+            }
         }
     }
 }

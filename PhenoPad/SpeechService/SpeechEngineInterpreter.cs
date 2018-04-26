@@ -188,7 +188,7 @@ namespace PhenoPad.SpeechService
             if (json.worker_pid != 0)
             {
                 this.worker_pid = json.worker_pid;
-                //Debug.WriteLine("Worker PID upon processing " + this.worker_pid.ToString());
+                Debug.WriteLine("Worker PID upon processing " + this.worker_pid.ToString());
             }
 
             // First check if speech is final (remember that diarization is always slower)

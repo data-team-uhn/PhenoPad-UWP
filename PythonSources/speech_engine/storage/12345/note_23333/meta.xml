@@ -1,0 +1,17 @@
+<?xml version="1.0"?>
+<Notebook xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+  <id>note_636600988302743039</id>
+  <name>Untitled note</name>
+  <date>04-23-2018 16:47:10</date>
+  <patientName>Unknown</patientName>
+  <notePages>
+    <NotePage>
+      <id>0</id>
+      <notebookId>note_636600988302743039</notebookId>
+      <date>04-23-2018 16:47:10</date>
+      <strokeUri>ms-appdata:///local/note_636600988302743039\0\Strokes\strokes.gif</strokeUri>
+      <name>Page 1</name>
+    </NotePage>
+  </notePages>
+  <firstPageUri>ms-appdata:///local/note_636600988302743039\0\Strokes\strokes.gif</firstPageUri>
+</Notebook>

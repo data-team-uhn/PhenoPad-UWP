@@ -115,6 +115,37 @@ namespace PhenoPad
                 this.Frame.Navigate(typeof(MainPage), notebookId);
         }
 
+        private async void UploadServerButton_Click(object sender, RoutedEventArgs e)
+        {
+            Debug.WriteLine("Upload to server");
+
+            try
+            {
+                await FileServerClient.HTTPPut();
+            } catch (Exception ex)
+            {
+                Debug.WriteLine("Unable to upload to server due to " + ex.Message);
+            }
+
+            loadAllNotes();
+        }
+
+        private async void DownloadServerButton_Click(object sender, RoutedEventArgs e)
+        {
+            Debug.WriteLine("Download from server");
+
+            try
+            {
+                await FileServerClient.HTTPGet();
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine("Unable to load from server due to " + ex.Message);
+            }
+
+            loadAllNotes();
+        }
+
         protected override void OnNavigatedFrom(NavigationEventArgs e)
         {
             this.Frame.BackStack.Clear();
