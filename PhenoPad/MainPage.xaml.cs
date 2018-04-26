@@ -186,6 +186,10 @@ namespace PhenoPad
         private string curPageId = "";
         private string notebookId = "";
         private Notebook notebookObject;
+        public static readonly string TypeMode = "Typing Mode";
+        public static readonly string WritingMode = "Handwriting Mode";
+        public static readonly string ViewMode = "View Mode";
+        private string currentMode = WritingMode;
 
         public string RPI_ADDRESS { get; } = "http://192.168.137.112:8000";
         public BluetoothService.BluetoothService bluetoothService = null;
@@ -224,11 +228,11 @@ namespace PhenoPad
             //scrollViewer.RegisterPropertyChangedCallback(ScrollViewer.ZoomFactorProperty, OnPropertyChanged);
 
             //showTextGrid.PointerPressed += new PointerEventHandler(showTextGrid_PointerPressed);
-            showTextGrid.PointerReleased += new PointerEventHandler(showTextGrid_PointerReleased);
-            showTextGrid.PointerCanceled += new PointerEventHandler(showTextGrid_PointerExited);
-            showTextGrid.PointerCaptureLost += new PointerEventHandler(showTextGrid_PointerExited);
-            showTextGrid.PointerEntered += new PointerEventHandler(showTextGrid_PointerEntered);
-            showTextGrid.PointerExited += new PointerEventHandler(showTextGrid_PointerExited);
+            modeTextBlock.PointerReleased += new PointerEventHandler(modeTextBlock_PointerReleased);
+            modeTextBlock.PointerCanceled += new PointerEventHandler(modeTextBlock_PointerExited);
+            modeTextBlock.PointerCaptureLost += new PointerEventHandler(modeTextBlock_PointerExited);
+            modeTextBlock.PointerEntered += new PointerEventHandler(modeTextBlock_PointerEntered);
+            modeTextBlock.PointerExited += new PointerEventHandler(modeTextBlock_PointerExited);
 
             ControlView.Visibility = Visibility.Collapsed;
 
@@ -264,6 +268,9 @@ namespace PhenoPad
             PageHost.Content = curPage;
             addNoteIndex(curPageIndex);
             setNotePageIndex(curPageIndex);
+
+            currentMode = WritingMode;
+            modeTextBlock.Text = WritingMode;
 
             // create file sturcture for this page
             await FileManager.getSharedFileManager().CreateNotePage(notebookObject, curPageIndex.ToString());
@@ -384,43 +391,39 @@ namespace PhenoPad
 
 
 
-        private void showTextGrid_PointerExited(object sender, PointerRoutedEventArgs e)
+        private void modeTextBlock_PointerExited(object sender, PointerRoutedEventArgs e)
         {
-            if (!ifShowTextGrid)
+            if (!ifViewMode)
             {
                 curPage.hideRecognizedTextCanvas();
-                printImage.Visibility = Visibility.Collapsed;
-                writeImage.Visibility = Visibility.Visible;
+                modeTextBlock.Text = currentMode;
 
             }
         }
 
-        private void showTextGrid_PointerEntered(object sender, PointerRoutedEventArgs e)
+        private void modeTextBlock_PointerEntered(object sender, PointerRoutedEventArgs e)
         {
-            if (!ifShowTextGrid)
+            if (!ifViewMode)
             {
                 curPage.showRecognizedTextCanvas();
-                printImage.Visibility = Visibility.Visible;
-                writeImage.Visibility = Visibility.Collapsed;
+                modeTextBlock.Text = ViewMode;
             }
         }
 
-        private bool ifShowTextGrid = false; 
-        private void showTextGrid_PointerReleased(object sender, PointerRoutedEventArgs e)
+        private bool ifViewMode = false;
+        private void modeTextBlock_PointerReleased(object sender, PointerRoutedEventArgs e)
         {
-            if (!ifShowTextGrid)
+            if (!ifViewMode)
             {
                 curPage.showRecognizedTextCanvas();
-                ifShowTextGrid = true;
-                printImage.Visibility = Visibility.Visible;
-                writeImage.Visibility = Visibility.Collapsed;
+                ifViewMode = true;
+                modeTextBlock.Text = ViewMode;
             }
             else
             {
                 curPage.hideRecognizedTextCanvas();
-                ifShowTextGrid = false;
-                printImage.Visibility = Visibility.Collapsed;
-                writeImage.Visibility = Visibility.Visible;
+                ifViewMode = false;
+                modeTextBlock.Text = currentMode;
             }
         }
 
@@ -1148,7 +1151,6 @@ namespace PhenoPad
 
         private void setPageIndexText()
         {
-            pageIndexTextBlock.Text = "Page: " + (curPageIndex+1) + "/" + notePages.Count;
             MainPageInkBar.TargetInkCanvas = inkCanvas;
         }
         
@@ -1559,7 +1561,10 @@ namespace PhenoPad
 
         private void KeyboardButton_Click(object sender, RoutedEventArgs e)
         {
-            modeTextBlock.Text = "Typing Mode";
+            curPage.hideRecognizedTextCanvas();
+            ifViewMode = false;
+            currentMode = TypeMode;
+            modeTextBlock.Text = TypeMode;
             writeButton.IsChecked = false;
             keyboardButton.IsChecked = true;
             boldButton.Visibility = Visibility.Visible;
@@ -1571,7 +1576,11 @@ namespace PhenoPad
 
         private void WriteButton_Click(object sender, RoutedEventArgs e)
         {
-            modeTextBlock.Text = "Handwriting Mode";
+            curPage.hideRecognizedTextCanvas();
+            ifViewMode = false;
+            currentMode = WritingMode;
+            modeTextBlock.Text = WritingMode;
+
             keyboardButton.IsChecked = false;
             writeButton.IsChecked = true;
             boldButton.Visibility = Visibility.Collapsed;

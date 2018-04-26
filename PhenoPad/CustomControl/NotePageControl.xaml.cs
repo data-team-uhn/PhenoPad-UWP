@@ -1711,7 +1711,12 @@ namespace PhenoPad.CustomControl
             }
             else
             {
-                ClearSelection();
+                recognizedPhenoBriefPanel.Visibility = Visibility.Collapsed;
+                // ClearSelection();
+                breifPhenoProgressBar.Visibility = Visibility.Collapsed;
+                recognizedPhenoBriefListView.Visibility = Visibility.Collapsed;
+                phenoProgressRing.Visibility = Visibility.Collapsed;
+                recognizedPhenoListView.Visibility = Visibility.Collapsed;
                 rootPage.NotifyUser("No phenotypes recognized by the selected strokes.", NotifyType.ErrorMessage, 2);
             }
 
