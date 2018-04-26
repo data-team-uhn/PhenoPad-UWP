@@ -1853,14 +1853,19 @@ namespace PhenoPad
             this.bluetoothService.Initialize();
         }*/
 
-
+        private bool serverConnectButtonPressed = false;
         private void ServerConnectButton_Click(object sender, RoutedEventArgs e)
         {
-            uiClinet = UIWebSocketClient.getSharedUIWebSocketClient();
-            uiClinet.ConnectToServer();
+            if (!serverConnectButtonPressed)
+            {
+                uiClinet = UIWebSocketClient.getSharedUIWebSocketClient();
+                uiClinet.ConnectToServer();
 
-            this.bluetoothService = BluetoothService.BluetoothService.getBluetoothService();
-            this.bluetoothService.Initialize();
+                this.bluetoothService = BluetoothService.BluetoothService.getBluetoothService();
+                this.bluetoothService.Initialize();
+
+                this.serverConnectButtonPressed = true;
+            }
         }
 
         public void setStatus(string item)
