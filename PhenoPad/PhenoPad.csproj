@@ -167,6 +167,7 @@
     <Compile Include="SpeechService\SpeechEngineJSON.cs" />
     <Compile Include="SpeechService\SpeechRESTAPI.cs" />
     <Compile Include="Styles\MyColors.cs" />
+    <Compile Include="WebSocketService\UIWebSocketClient.cs" />
     <Compile Include="WebSocketService\SpeechStreamSocket.cs" />
   </ItemGroup>
   <ItemGroup>
