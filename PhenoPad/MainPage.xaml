@@ -275,8 +275,8 @@
                 <Grid Name="QuickViewGrid" BorderThickness="0 0 0 0" Background="WhiteSmoke">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="*"/>
-                        <RowDefinition Height="*"/>
-                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
                     </Grid.RowDefinitions>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="40"/>
@@ -329,7 +329,7 @@
 
                     </Grid>
 
-                    <Grid Name="QuickView2" Background="White" BorderBrush="#EEEEEE" BorderThickness="0"  Grid.Row="1" Grid.Column="1">
+                    <Grid Name="QuickView2" MaxHeight="400" Background="White" BorderBrush="#EEEEEE" BorderThickness="0"  Grid.Row="1" Grid.Column="1">
                         <Grid.RowDefinitions>
                             <RowDefinition Height="30"/>
                             <RowDefinition Height="*"/>
@@ -357,7 +357,7 @@
                         </ListView>
                     </Grid>
 
-                    <Grid Name="QuickView3" Background="White" BorderBrush="#EEEEEE" BorderThickness="0" Grid.Row="2" Grid.Column="1">
+                    <Grid Name="QuickView3" MaxHeight="400" Background="White" BorderBrush="#EEEEEE" BorderThickness="0" Grid.Row="2" Grid.Column="1">
                         <Grid.RowDefinitions>
                             <RowDefinition Height="30"/>
                             <RowDefinition Height="*"/>
@@ -407,7 +407,7 @@
         <Grid  Padding="0 0 0 0" Grid.Row="2" >
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="40"></ColumnDefinition>
-                <ColumnDefinition Width="*"></ColumnDefinition>
+                <ColumnDefinition Width="Auto"></ColumnDefinition>
             </Grid.ColumnDefinitions>
 
             <Grid Name="OpenCandidatePanelButtonGrid" Grid.Column="0">
@@ -418,10 +418,15 @@
             <StackPanel Padding="5 5 0 5" Orientation="Horizontal" Grid.Column="1" Name="CandidatePanelStackPanel" Visibility="Collapsed">
                 <TextBlock Name="CandidatePanelTextBlock" FontSize="16" Foreground="Gray" VerticalAlignment="Center">Are you looking for:</TextBlock>
 
-                <ListView Grid.Column="2" Padding="0 0 0 0" x:Name="candidatePhenoListView" ItemsSource="{x:Bind PhenoMana.phenotypesCandidates, Mode=OneWay}">
+                <ListView Grid.Column="2" Padding="0 0 0 0" Width="800"
+                          ScrollViewer.HorizontalScrollMode="Enabled"
+                          ScrollViewer.VerticalScrollMode="Disabled"
+                          ScrollViewer.HorizontalScrollBarVisibility="Hidden"
+                          ScrollViewer.IsHorizontalRailEnabled="True"
+                          x:Name="candidatePhenoListView" ItemsSource="{x:Bind PhenoMana.phenotypesCandidates, Mode=OneWay}">
                     <ListView.ItemsPanel>
                         <ItemsPanelTemplate>
-                            <StackPanel Orientation="Horizontal"  Padding="0"/>
+                            <VirtualizingStackPanel  Orientation="Horizontal"/>
                         </ItemsPanelTemplate>
                     </ListView.ItemsPanel>
                     <ListView.ItemTemplate>
@@ -457,8 +462,7 @@
                                    MaxWidth="{Binding ElementName=Splitter, Path=ActualWidth}" Margin="10,10,10,10" TextWrapping="Wrap"  />
             </Border>
 
-            <TextBlock Visibility="Collapsed" Name="pageIndexTextBlock" RelativePanel.Above="cmdBar" RelativePanel.AlignRightWithPanel="True" Text=""/>
-            <StackPanel Name="AnnoPhenoStackPanel" RelativePanel.Above="cmdBar" RelativePanel.AlignLeftWithPanel="True" Orientation="Horizontal"/>
+          
             
             <!-- Photo service -->
             <!--
@@ -552,7 +556,7 @@
 
             <CommandBar Padding="0 0 0 0" Visibility="Visible"
                         Width="Auto" Height="Auto"
-                        RelativePanel.AlignRightWithPanel="True" RelativePanel.Above="showTextGrid"
+                        RelativePanel.AlignRightWithPanel="True" RelativePanel.AlignBottomWithPanel="True"
                         OverflowButtonVisibility="Collapsed" Background="{StaticResource TITLE_BAR_WHITE}"
                         Canvas.ZIndex="999"
                         x:Name="controlCmdBar"
@@ -583,19 +587,21 @@
                 </AppBarToggleButton>
             </CommandBar>
 
+            <!--
             <Grid Height="40" Width="90" Padding="0 0 0 0" Background="WhiteSmoke" Name="showTextGrid" RelativePanel.AlignBottomWithPanel="True" RelativePanel.AlignRightWithPanel="True">
                 <Image  Visibility="Collapsed" Name="printImage" Width="70" Source="Assets/abc_print.png" VerticalAlignment="Center" HorizontalAlignment="Center" Opacity="0.3"/>
                 <Image  Name="writeImage" Width="70" Source="Assets/abc_write.png" VerticalAlignment="Center" HorizontalAlignment="Center" Opacity="0.3"/>
             </Grid>
-
-            <TextBlock x:Name="modeTextBlock" Margin="0 0 10 0" RelativePanel.AlignTopWithPanel="True" RelativePanel.AlignRightWithPanel="True" Padding=" 0 0 10 0" FontSize="25" FontFamily="Segoe UI" FontWeight="ExtraBold" Foreground="LightGray" Opacity="0.5">Handwriting Mode</TextBlock>
+-->
+            
+            <TextBlock x:Name="modeTextBlock" Width="240" HorizontalTextAlignment="Right" Margin="0 0 10 0" RelativePanel.AlignTopWithPanel="True" RelativePanel.AlignRightWithPanel="True" Padding=" 0 0 10 0" FontSize="25" FontFamily="Segoe UI" FontWeight="ExtraBold" Foreground="LightGray" Opacity="0.5">Handwriting Mode</TextBlock>
 
             <StackPanel  Name="pageIndexPanel"  Margin="0 0 0 40" Orientation="Horizontal" RelativePanel.AlignBottomWithPanel="True" RelativePanel.AlignHorizontalCenterWithPanel="True" Padding="0 5 22 0">
                 <Button Height="30" Width="30" Padding="0 0 0 0" Background="WhiteSmoke"  Click="AddPageButton_Click">
                     <SymbolIcon Symbol="Add" Foreground="{StaticResource Button_Background}" />
                 </Button>
             </StackPanel>
-            <TextBlock Name="cmdBarTextBlock" Margin="12,14" RelativePanel.AlignLeftWithPanel="True" RelativePanel.Above="showTextGrid"
+            <TextBlock Name="cmdBarTextBlock" Margin="12,14" RelativePanel.AlignRightWithPanel="True" RelativePanel.Above="controlCmdBar"
                                Text=""
                                Visibility="Visible"/>
             <CommandBar RelativePanel.AlignBottomWithPanel="True"
