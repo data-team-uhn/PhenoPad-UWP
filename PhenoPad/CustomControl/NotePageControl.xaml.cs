@@ -313,6 +313,7 @@ namespace PhenoPad.CustomControl
             textEditGrid.SetValue(Canvas.ZIndexProperty, 2);
             inkCanvas.SetValue(Canvas.ZIndexProperty, 1);
             textNoteEditBox.IsReadOnly = false;
+            textNoteEditBox.IsTapEnabled = false;
         }
         public void hideTextEditGrid()
         {
@@ -320,6 +321,7 @@ namespace PhenoPad.CustomControl
             textEditGrid.SetValue(Canvas.ZIndexProperty, 1);
             inkCanvas.SetValue(Canvas.ZIndexProperty, 2);
             textNoteEditBox.IsReadOnly = true;
+            textNoteEditBox.IsTapEnabled = false;
         }
 
         public void showRecognizedTextCanvas()

@@ -107,8 +107,12 @@ namespace PhenoPad.PhenotypeService
             if(temp != null)
                 phenotypesCandidates.Remove(temp);
             Phenotype pp = pheno.Clone();
-            
+
+            temp = savedPhenotypes.Where(x => x == pheno).FirstOrDefault();
+            if (temp != null)
+                pp.state = temp.state;
             phenotypesCandidates.Insert(0, pp);
+            
             rootPage.OpenCandidate();
       
             return;

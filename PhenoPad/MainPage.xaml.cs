@@ -1558,6 +1558,8 @@ namespace PhenoPad
             OpenCandidatePanelButton.IsChecked = true;
             CandidatePanelStackPanel.Visibility = Visibility.Visible;
             OpenCandidatePanelButtonIcon.Glyph = "\uE8BB";
+
+            candidatePhenoListView.ScrollIntoView(candidatePhenoListView.Items.ElementAt(0));
         }
 
         private void OpenCandidate_Click(object sender, RoutedEventArgs e)
