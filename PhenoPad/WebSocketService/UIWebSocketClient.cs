@@ -25,9 +25,26 @@ using Windows.Networking;
 using Windows.Networking.Connectivity;
 using Windows.Networking.Sockets;
 using Windows.Storage.Streams;
+using Newtonsoft.Json;
+using Windows.UI.Core;
 
 namespace PhenoPad.WebSocketService
 {
+
+    // JSON for parsing server status messages
+    public class ServerStatus
+    {
+        public bool ready { get; set; }
+        public List<string> waiting_for_server { get; set; }
+        public List<string> waiting_for_client { get; set; }
+    }
+
+    public class ServerStatusRootObject
+    {
+        public ServerStatus server_status { get; set; }
+    }
+
+
     public class UIWebSocketClient
     {
         private static UIWebSocketClient sharedUIWebSocketClient = new UIWebSocketClient();
@@ -89,7 +106,6 @@ namespace PhenoPad.WebSocketService
         private async void clientClosedHandler(Windows.Networking.Sockets.IWebSocket sender, 
                                                 Windows.Networking.Sockets.WebSocketClosedEventArgs args)
         {
-
             MainPage.Current.NotifyUser("Websocket connection is closed. Please try to reconnect.", NotifyType.ErrorMessage, 1);
             Debug.WriteLine("WebSocket_Closed; Code: " + args.Code + ", Reason: \"" + args.Reason + "\"");
             // Add additional code here to handle the WebSocket being closed.
@@ -121,7 +137,7 @@ namespace PhenoPad.WebSocketService
         }
 
 
-        private void clientMessageReceivedHandler(Windows.Networking.Sockets.MessageWebSocket sender, 
+        private async void clientMessageReceivedHandler(Windows.Networking.Sockets.MessageWebSocket sender, 
                                 Windows.Networking.Sockets.MessageWebSocketMessageReceivedEventArgs args)
         {
             try
@@ -131,7 +147,31 @@ namespace PhenoPad.WebSocketService
                     dataReader.UnicodeEncoding = Windows.Storage.Streams.UnicodeEncoding.Utf8;
                     string message = dataReader.ReadString(dataReader.UnconsumedBufferLength);
                     Debug.WriteLine("Message received from MessageWebSocket: " + message);
-                    this.client.Dispose();
+
+                    var parsed = this.tryParseUIMessage(message);
+
+                    if (parsed.GetType() == typeof(ServerStatusRootObject))
+                    {
+                        await MainPage.Current.Dispatcher.RunAsync(CoreDispatcherPriority.High, async () =>
+                        {
+                            ServerStatusRootObject json = (ServerStatusRootObject)(parsed);
+                            if (json.server_status != null)
+                            {
+                                if (json.server_status.waiting_for_server.Contains("ASR") == false)
+                                {
+                                    MainPage.Current.setStatus("recognition");
+                                }
+                                if (json.server_status.waiting_for_server.Contains("Diarization") == false)
+                                {
+                                    MainPage.Current.setStatus("diarization");
+                                }
+                                if (json.server_status.ready)
+                                {
+                                    MainPage.Current.setStatus("ready");
+                                }
+                            }
+                        });
+                    }
                 }
             }
             catch (Exception ex)
@@ -140,6 +180,21 @@ namespace PhenoPad.WebSocketService
                 // Add additional code here to handle exceptions.
                 Debug.WriteLine("Receve message failed because " + ex.Message);
             }
+        }
+
+        private object tryParseUIMessage(string message)
+        {
+            object result = null;
+            try
+            {
+                var parsedSpeech = JsonConvert.DeserializeObject<ServerStatusRootObject>(message);
+                result = parsedSpeech;
+            } catch (Exception ex)
+            {
+                Debug.WriteLine("Message of length " + message.Length.ToString() + " cannot be parsed as ServerStatusRootObject");
+            }
+
+            return result;
         }
     }
 }

@@ -189,6 +189,7 @@ namespace PhenoPad
 
         public string RPI_ADDRESS { get; } = "http://192.168.137.112:8000";
         public BluetoothService.BluetoothService bluetoothService = null;
+        public UIWebSocketClient uiClinet = null;
 
         public SpeechManager speechManager = SpeechManager.getSharedSpeechManager();
 
@@ -198,12 +199,9 @@ namespace PhenoPad
         {
             Current = this;
             this.InitializeComponent();
-            
 
             isListening = false;
             dictatedTextBuilder = new StringBuilder();
-
-            
            
             _simpleorientation = SimpleOrientationSensor.GetDefault();
             // Assign an event handler for the sensor orientation-changed event 
@@ -211,7 +209,6 @@ namespace PhenoPad
             {
                 _simpleorientation.OrientationChanged += new TypedEventHandler<SimpleOrientationSensor, SimpleOrientationSensorOrientationChangedEventArgs>(OrientationChanged);
             }
-            
             
             // Hide default title bar.
             var coreTitleBar = CoreApplication.GetCurrentView().TitleBar;
@@ -231,8 +228,6 @@ namespace PhenoPad
             showTextGrid.PointerExited += new PointerEventHandler(showTextGrid_PointerExited);
 
             ControlView.Visibility = Visibility.Collapsed;
-
-            BluetoothButton_Click(null, null);
         }
 
         private async void InitializeNotebook()
@@ -1006,7 +1001,7 @@ namespace PhenoPad
             //SpeechStreamSocket sss = new SpeechStreamSocket();
             //sss.connect();
             Task speechManagerTask;
-            if (speechEngineRunning == false)
+            if (speechEngineRunning == false && (this.testButton.IsChecked == true))
             {
                 speechManagerTask = SpeechManager.getSharedSpeechManager().StartAudio();
                 //this.cmdBarTextBlock.Visibility = Visibility.Visible;
@@ -1024,6 +1019,7 @@ namespace PhenoPad
             // Note that we have a giant loop in speech manager so that after it is done
             // there won't be any audio processing going on
             speechEngineRunning = false;
+            this.AudioOn = false;
             //testButton.IsChecked = false;
         }
 
@@ -1777,7 +1773,10 @@ namespace PhenoPad
         private void AudioToggleSwitch_Toggled(object sender, RoutedEventArgs e)
         {
             // Same as audio button click :D
-            AudioStreamButton_Clicked(null, null);
+            //if (this.audioSwitch.IsOn == false)
+            //{
+            //    AudioStreamButton_Clicked(null, null);
+            //}
         }
 
         private void VideoToggleSwitch_Toggled(object sender, RoutedEventArgs e)
@@ -1841,13 +1840,49 @@ namespace PhenoPad
             this.shutterButton.IsEnabled = val;
             this.cameraButton.IsEnabled = val;
             this.cameraButton.IsEnabled = val;
+
+            if (val)
+            {
+                setStatus("bluetooth");
+            }
         }
 
-        private void BluetoothButton_Click(object sender, RoutedEventArgs e)
+        /*private void BluetoothButton_Click(object sender, RoutedEventArgs e)
         {
             this.bluetoothService = BluetoothService.BluetoothService.getBluetoothService();
             this.bluetoothService.Initialize();
+        }*/
+
+
+        private void ServerConnectButton_Click(object sender, RoutedEventArgs e)
+        {
+            uiClinet = UIWebSocketClient.getSharedUIWebSocketClient();
+            uiClinet.ConnectToServer();
+
+            this.bluetoothService = BluetoothService.BluetoothService.getBluetoothService();
+            this.bluetoothService.Initialize();
         }
+
+        public void setStatus(string item)
+        {
+            if (item == "bluetooth")
+            {
+                this.BluetoothProgress.IsActive = false;
+            }
+            else if (item == "diarization")
+            {
+                this.DiarizationProgress.IsActive = false;
+            }
+            else if (item == "recognition")
+            {
+                this.RecognitionProgress.IsActive = false;
+            }
+            else if (item == "ready")
+            {
+                this.testButton.IsEnabled = true;
+            }
+        }
+        
     }
 
     public enum NotifyType
