@@ -37,6 +37,12 @@ using Windows.Graphics.Imaging;
 using Windows.UI.Xaml.Media.Imaging;
 using Microsoft.Graphics.Canvas;
 using PhenoPad.FileService;
+using Windows.UI.Xaml.Data;
+using System.ComponentModel;
+using System.Threading;
+
+using PhenoPad.BluetoothService;
+
 namespace PhenoPad
 {
     // MyScript 
@@ -94,14 +100,58 @@ namespace PhenoPad
         
     }
 
+    // private MainPage rootPage = MainPage.Current;
+
     /// <summary>
     /// This page shows the code to configure the InkToolbar.
     /// </summary>
-    public sealed partial class MainPage : Page
+    public sealed partial class MainPage : Page, INotifyPropertyChanged
     {
-        
 
-        // private MainPage rootPage = MainPage.Current;
+        private bool _videoOn = false;
+        public bool VideoOn
+        {
+            get
+            {
+                return this._videoOn;
+            }
+
+            set
+            {
+                if (value != this._videoOn)
+                {
+                    this._videoOn = value;
+                    NotifyPropertyChanged("VideoOn");
+                }
+            }
+        }
+
+        private bool _audioOn;
+        public bool AudioOn
+        {
+            get
+            {
+                return this._audioOn;
+            }
+
+            set
+            {
+                if (value != this._audioOn)
+                {
+                    this._audioOn = value;
+                    NotifyPropertyChanged("AudioOn");
+                }
+            }
+        }
+
+        public event PropertyChangedEventHandler PropertyChanged;
+        private void NotifyPropertyChanged(string info)
+        {
+            if (PropertyChanged != null)
+            {
+                PropertyChanged(this, new PropertyChangedEventArgs(info));
+            }
+        }
 
 
         Symbol LassoSelect = (Symbol)0xEF20;
@@ -136,6 +186,9 @@ namespace PhenoPad
         private string curPageId = "";
         private string notebookId = "";
         private Notebook notebookObject;
+
+        public string RPI_ADDRESS { get; } = "http://192.168.137.112:8000";
+        public BluetoothService.BluetoothService bluetoothService = null;
 
         public SpeechManager speechManager = SpeechManager.getSharedSpeechManager();
 
@@ -177,7 +230,9 @@ namespace PhenoPad
             showTextGrid.PointerEntered += new PointerEventHandler(showTextGrid_PointerEntered);
             showTextGrid.PointerExited += new PointerEventHandler(showTextGrid_PointerExited);
 
-            StreamView.Visibility = Visibility.Collapsed;
+            ControlView.Visibility = Visibility.Collapsed;
+
+            BluetoothButton_Click(null, null);
         }
 
         private async void InitializeNotebook()
@@ -262,6 +317,8 @@ namespace PhenoPad
             curPageIndex = 0;
             PageHost.Content = curPage;
             setNotePageIndex(curPageIndex);
+
+            
         }
 
         /**
@@ -944,7 +1001,7 @@ namespace PhenoPad
         }
 
         bool speechEngineRunning = false;
-        private async void TestWS_Click(object sender, RoutedEventArgs e) {
+        private async void AudioStreamButton_Clicked(object sender, RoutedEventArgs e) {
 
             //SpeechStreamSocket sss = new SpeechStreamSocket();
             //sss.connect();
@@ -967,7 +1024,7 @@ namespace PhenoPad
             // Note that we have a giant loop in speech manager so that after it is done
             // there won't be any audio processing going on
             speechEngineRunning = false;
-            testButton.IsChecked = false;
+            //testButton.IsChecked = false;
         }
 
         private async void MicButton_Click(object sender, RoutedEventArgs e)
@@ -1096,7 +1153,7 @@ namespace PhenoPad
         }
         
 
-        private void TakePhoto_Click(object sender, RoutedEventArgs e)
+        /*private void TakePhoto_Click(object sender, RoutedEventArgs e)
         {
             CameraCanvas.Visibility = Visibility.Visible;
             captureControl.setUp();
@@ -1117,7 +1174,7 @@ namespace PhenoPad
         {
             CameraCanvas.Visibility = Visibility.Collapsed;
             captureControl.unSetUp();
-        }
+        }*/
 
         private void setNotePageIndex(int index)
         {
@@ -1540,12 +1597,6 @@ namespace PhenoPad
             
         }
 
-        private void ConnectBluetooth_Click(object sender, RoutedEventArgs e)
-        {
-            BluetoothService.BluetoothService bs = new BluetoothService.BluetoothService();
-            bs.Initialize();
-        }
-
         private void FullscreenButton_Click(object sender, RoutedEventArgs e)
         {
             var view = ApplicationView.GetForCurrentView();
@@ -1651,7 +1702,6 @@ namespace PhenoPad
                 QuickViewButtonSymbol.Symbol = Symbol.Clear;
                 OverViewToggleButton.IsChecked = true;
                 SpeechToggleButton.IsChecked = false;
-
             }
         }
         
@@ -1671,15 +1721,15 @@ namespace PhenoPad
             return false;
         }
 
-        private void StreamButton_Click(object sender, RoutedEventArgs e)
+        private void PreviewButton_Click(object sender, RoutedEventArgs e)
         {
-            if (StreamButton.IsChecked == true)
+            if (PreviewButton.IsChecked == true)
             {
-                StreamView.Visibility = Visibility.Visible;
+                ControlView.Visibility = Visibility.Visible;
             }
             else
             {
-                StreamView.Visibility = Visibility.Collapsed;
+                ControlView.Visibility = Visibility.Collapsed;
             }
         }
 
@@ -1722,6 +1772,81 @@ namespace PhenoPad
             control.IsEnabled = false;
             control.IsEnabled = true;
             control.IsTabStop = isTabStop;
+        }
+
+        private void AudioToggleSwitch_Toggled(object sender, RoutedEventArgs e)
+        {
+            // Same as audio button click :D
+            AudioStreamButton_Clicked(null, null);
+        }
+
+        private void VideoToggleSwitch_Toggled(object sender, RoutedEventArgs e)
+        {
+            videoStreamStatusUpdateAsync(this._videoOn);
+        }
+
+        private void StreamButton_Click(object sender, RoutedEventArgs e)
+        {
+            videoStreamStatusUpdateAsync(!this._videoOn);
+        }
+
+        private async Task videoStreamStatusUpdateAsync(bool desiredStatus)
+        {
+            if (this.bluetoothService == null)
+            {
+                NotifyUser("Could not reach Bluetooth device, try to connect again",
+                                   NotifyType.ErrorMessage, 2);
+                this.VideoOn = false;
+
+                this.bluetoothInitialized(false);
+                this.StreamButton.IsChecked = false;
+                this.videoSwitch.IsOn = false;
+                return;
+            }
+
+            Debug.WriteLine("Sending message");
+            
+            if (!desiredStatus)
+            {
+                await this.bluetoothService.sendBluetoothMessage("start");
+            }
+            else
+            {
+                await this.bluetoothService.sendBluetoothMessage("stop");
+            }
+            //this.videoSwitch.IsOn = desiredStatus;
+            //this.StreamButton.IsChecked = desiredStatus;
+
+            Debug.WriteLine("Setting status value to " + (this.bluetoothService.initialized && desiredStatus).ToString());
+            //this.VideoOn = this.bluetoothService.initialized && desiredStatus;
+        }
+
+        private async void CameraButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (this.bluetoothService == null)
+            {
+                NotifyUser("Could not reach Bluetooth device, try to connect again",
+                                   NotifyType.ErrorMessage, 2);
+                this.bluetoothInitialized(false);
+                return;
+            }
+
+            await this.bluetoothService.sendBluetoothMessage("picture");
+        }
+
+        public void bluetoothInitialized(bool val)
+        {
+            this.StreamButton.IsEnabled = val;
+            this.videoSwitch.IsEnabled = val;
+            this.shutterButton.IsEnabled = val;
+            this.cameraButton.IsEnabled = val;
+            this.cameraButton.IsEnabled = val;
+        }
+
+        private void BluetoothButton_Click(object sender, RoutedEventArgs e)
+        {
+            this.bluetoothService = BluetoothService.BluetoothService.getBluetoothService();
+            this.bluetoothService.Initialize();
         }
     }
 

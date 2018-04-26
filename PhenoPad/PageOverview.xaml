@@ -49,7 +49,22 @@
                 </Button>
             </Border>
             <StackPanel Grid.Row="0" Margin="5" >
-                <TextBlock  Name="AllNotesTextBlock" Foreground="Black" Margin="5 10 0 5"  FontSize="30">All notes</TextBlock>
+                <Grid >
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="2*"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="1*"/>
+                        <ColumnDefinition Width="1.2*"/>
+                    </Grid.ColumnDefinitions>
+                    
+                    <TextBlock Grid.Column="0" Name="AllNotesTextBlock" Foreground="Black" Margin="5 10 0 5"  FontSize="30">All notes</TextBlock>
+                    <Button Grid.Column="2" Style="{StaticResource MyButtonStyle}" x:Name="UploadButton"  Click="UploadServerButton_Click" Background="Transparent" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+                        <TextBlock Foreground="{StaticResource WORD_DARK}">Upload</TextBlock>
+                    </Button>
+                    <Button Grid.Column="3" Style="{StaticResource MyButtonStyle}" x:Name="DownloadButton"  Click="DownloadServerButton_Click" Background="Transparent" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+                        <TextBlock Foreground="{StaticResource WORD_DARK}">Download</TextBlock>
+                    </Button>
+                </Grid>
                 <AutoSuggestBox QueryIcon="Find" HorizontalAlignment="Stretch" Margin="5 0 5 0" RelativePanel.AlignVerticalCenterWithPanel="True" Name="autoSuggestBox" PlaceholderText="Search" TextChanged="autosuggesttextchanged" QuerySubmitted="autosuggestquerysubmitted" ></AutoSuggestBox>
             </StackPanel>
             <ListView  Margin="5"  x:Name="notebookList" ItemClick="notebookList_ItemClick" IsItemClickEnabled="True" Grid.Row="1">

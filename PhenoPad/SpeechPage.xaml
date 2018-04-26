@@ -32,7 +32,6 @@
     <Page.Resources>
         <local:BackgroundColorConverter x:Key="bcConverter" />
         <local:IntervalDisplayConverter x:Key="intervalConverter" />
-        
     </Page.Resources>
 
     

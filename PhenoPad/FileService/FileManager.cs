@@ -35,6 +35,8 @@ namespace PhenoPad.FileService
         private string NOTENOOK_NAME_PREFIX = "note_";
         private string NOTE_META_FILE = "meta.xml";
 
+        private StorageFolder ROOT_FOLDER = ApplicationData.Current.LocalFolder;
+
         public static FileManager getSharedFileManager()
         {
             if (sharedFileManager == null)
@@ -49,9 +51,9 @@ namespace PhenoPad.FileService
         }
         public FileManager()
         {
-            //StorageFolder localFolder = ApplicationData.Current.LocalFolder;
+            Debug.WriteLine("Application local folder is " + ROOT_FOLDER.Path.ToString());
         }
-
+        
         // return a unique name based on time tick
         public string CreateUniqueName()
         {
@@ -63,11 +65,12 @@ namespace PhenoPad.FileService
         public async Task<bool> CreateNotebook(string notebookId)
         {
             bool result = true;
-            StorageFolder localFolder = ApplicationData.Current.LocalFolder;
+            //StorageFolder localFolder = ApplicationData.Current.LocalFolder;
             // create folder structure
             try
             {
-                var notebookFolder = await localFolder.CreateFolderAsync(notebookId, CreationCollisionOption.OpenIfExists);
+                var notebookFolder = await ROOT_FOLDER.CreateFolderAsync(notebookId, CreationCollisionOption.OpenIfExists);
+                Debug.WriteLine("Notebook Folder is " + notebookFolder);
                 Notebook nb = new Notebook(notebookId);
                 var metaFile = GetNoteFilePath(notebookId, "", NoteFileType.Meta);
                 result = await SaveObjectSerilization(metaFile, nb, nb.GetType()); // save meta data to xml file
@@ -86,8 +89,8 @@ namespace PhenoPad.FileService
             List<string> result = new List<string>();
             try
             {
-                StorageFolder localFolder = ApplicationData.Current.LocalFolder;
-                var folders = await localFolder.GetFoldersAsync();
+                //StorageFolder localFolder = ApplicationData.Current.LocalFolder;
+                var folders = await ROOT_FOLDER.GetFoldersAsync();
                 foreach (var f in folders)
                 {
                     if (f.Name.IndexOf(NOTENOOK_NAME_PREFIX) == 0)
@@ -105,10 +108,10 @@ namespace PhenoPad.FileService
         public async Task<List<string>> GetPageIdsByNotebook(string notebookId)
         {
             List<string> result = new List<string>();
-            StorageFolder localFolder = ApplicationData.Current.LocalFolder;
+            //StorageFolder localFolder = ApplicationData.Current.LocalFolder;
             try
             {
-                var notebookFolder = await localFolder.GetFolderAsync(notebookId);
+                var notebookFolder = await ROOT_FOLDER.GetFolderAsync(notebookId);
                 var folders = await notebookFolder.GetFoldersAsync();
                 foreach (var f in folders)
                 {
@@ -130,10 +133,11 @@ namespace PhenoPad.FileService
                 return false;
 
             bool result = true;
-            StorageFolder localFolder = ApplicationData.Current.LocalFolder;
-            Debug.WriteLine("Local Path: " + localFolder.Path);
+            //StorageFolder localFolder = ApplicationData.Current.LocalFolder;
+            //StorageFolder localFolder = KnownFolders.DocumentsLibrary;
+            Debug.WriteLine("Local Path: " + ROOT_FOLDER.Path);
             try {
-                var notebookFolder = await localFolder.GetFolderAsync(note.id);
+                var notebookFolder = await ROOT_FOLDER.GetFolderAsync(note.id);
                 var pageFolder = await notebookFolder.CreateFolderAsync(pageId.ToString(), CreationCollisionOption.OpenIfExists);
                 await pageFolder.CreateFolderAsync("Strokes", CreationCollisionOption.OpenIfExists);
                 await pageFolder.CreateFolderAsync("ImagesWithAnnotations", CreationCollisionOption.OpenIfExists);
@@ -215,8 +219,8 @@ namespace PhenoPad.FileService
             {
                 string filename = GetNoteFilePath(notebookId, pageid, NoteFileType.Image, name);
                 string path = System.IO.Path.GetDirectoryName(filename);
-                StorageFolder localFolder = ApplicationData.Current.LocalFolder;
-                var pfile = await localFolder.CreateFileAsync(filename, CreationCollisionOption.ReplaceExisting);
+                //StorageFolder localFolder = ApplicationData.Current.LocalFolder;
+                var pfile = await ROOT_FOLDER.CreateFileAsync(filename, CreationCollisionOption.ReplaceExisting);
                 await photo.CopyAndReplaceAsync(pfile);
             }
             catch
@@ -230,7 +234,7 @@ namespace PhenoPad.FileService
         public async Task<bool> SaveNotePageDrawingAndPhotos(string notebookId, string pageId, NotePageControl notePage)
         {
             bool isSuccessful = true;
-            StorageFolder localFolder = ApplicationData.Current.LocalFolder;
+            //StorageFolder localFolder = ApplicationData.Current.LocalFolder;
 
             try
             {
@@ -250,7 +254,7 @@ namespace PhenoPad.FileService
                     }
                     // annotations
                     string strokePath = GetNoteFilePath(notebookId, pageId, NoteFileType.ImageAnnotation, con.name);
-                    var strokesFile = await localFolder.CreateFileAsync(strokePath, CreationCollisionOption.ReplaceExisting);
+                    var strokesFile = await ROOT_FOLDER.CreateFileAsync(strokePath, CreationCollisionOption.ReplaceExisting);
                     isSuccessful = await saveStrokes(strokesFile, con.inkCan);
                     
                 }
@@ -270,11 +274,11 @@ namespace PhenoPad.FileService
         public async Task<bool> SaveNotePageStrokes(string notebookId, string pageId, NotePageControl notePage)
         {
             bool isSuccessful = true;
-            StorageFolder localFolder = ApplicationData.Current.LocalFolder;
-            Debug.WriteLine("Local Path: " + localFolder.Path);
+            //StorageFolder localFolder = ApplicationData.Current.LocalFolder;
+            Debug.WriteLine("Local Path: " + ROOT_FOLDER.Path);
           
             try {
-                var notebookFolder = await localFolder.GetFolderAsync(notebookId);
+                var notebookFolder = await ROOT_FOLDER.GetFolderAsync(notebookId);
                 var pageFolder = await notebookFolder.GetFolderAsync(pageId);
                 var strokesFolder = await pageFolder.GetFolderAsync("Strokes");
                 var  strokesFile = await strokesFolder.CreateFileAsync(this.STROKE_FILE_NAME, CreationCollisionOption.OpenIfExists);
@@ -291,12 +295,12 @@ namespace PhenoPad.FileService
         public async Task<bool> LoadNotePageStroke(string notebookId, string pageId, NotePageControl notePage)
         {
             bool isSuccessful = true;
-            StorageFolder localFolder = ApplicationData.Current.LocalFolder;
-            Debug.WriteLine("Local Path: " + localFolder.Path);
+            //StorageFolder localFolder = ApplicationData.Current.LocalFolder;
+            Debug.WriteLine("Local Path: " + ROOT_FOLDER.Path);
             try
             {
                 string strokePath = GetNoteFilePath(notebookId, pageId, NoteFileType.Strokes);
-                var strokesFile = await localFolder.GetFileAsync(strokePath);
+                var strokesFile = await ROOT_FOLDER.GetFileAsync(strokePath);
                 isSuccessful = await loadStrokes(strokesFile, notePage.inkCan);
 
             }
@@ -332,8 +336,8 @@ namespace PhenoPad.FileService
             bool result = true;
             try
             {
-                StorageFolder localFolder = ApplicationData.Current.LocalFolder;
-                StorageFile sfile = await localFolder.CreateFileAsync(filepath, CreationCollisionOption.ReplaceExisting);
+                //StorageFolder localFolder = ApplicationData.Current.LocalFolder;
+                StorageFile sfile = await ROOT_FOLDER.CreateFileAsync(filepath, CreationCollisionOption.ReplaceExisting);
                 Windows.Storage.CachedFileManager.DeferUpdates(sfile);
                 Stream stream = await sfile.OpenStreamForWriteAsync();
                 var serializer = new XmlSerializer(type);
@@ -429,9 +433,9 @@ namespace PhenoPad.FileService
         // create file to save images and annotations on note
         public async Task<StorageFile> CreateImageFileForPage(string notebookId, string pageId, string name)
         {
-            StorageFolder localFolder = ApplicationData.Current.LocalFolder;
+            //StorageFolder localFolder = ApplicationData.Current.LocalFolder;
             string foldername = String.Format("{0}\\{1}\\ImagesWithAnnotations", notebookId, pageId);
-            var imageFolder = await localFolder.GetFolderAsync(foldername);
+            var imageFolder = await ROOT_FOLDER.GetFolderAsync(foldername);
             if (imageFolder != null)
             {
 
@@ -444,11 +448,11 @@ namespace PhenoPad.FileService
         public async Task<StorageFile> GetNoteFile(string notebookId, string notePageId, NoteFileType fileType, string name = "")
         {
             StorageFile notefile = null;
-            StorageFolder localFolder = ApplicationData.Current.LocalFolder;
+            //StorageFolder localFolder = ApplicationData.Current.LocalFolder;
             string filepath = GetNoteFilePath(notebookId, notePageId, fileType);
             try
             {
-                notefile = await localFolder.CreateFileAsync(filepath, CreationCollisionOption.OpenIfExists);
+                notefile = await ROOT_FOLDER.CreateFileAsync(filepath, CreationCollisionOption.OpenIfExists);
             }
             catch (Exception)
             {
@@ -461,11 +465,11 @@ namespace PhenoPad.FileService
         public async Task<StorageFile> GetNoteFileNotCreate(string notebookId, string notePageId, NoteFileType fileType, string name = "")
         {
             StorageFile notefile = null;
-            StorageFolder localFolder = ApplicationData.Current.LocalFolder;
+            //StorageFolder localFolder = ApplicationData.Current.LocalFolder;
             string filepath = GetNoteFilePath(notebookId, notePageId, fileType, name);
             try
             {
-                notefile = await localFolder.GetFileAsync(filepath);
+                notefile = await ROOT_FOLDER.GetFileAsync(filepath);
             }
             catch (Exception)
             {
@@ -569,7 +573,7 @@ namespace PhenoPad.FileService
             List<Notebook> result = new List<Notebook>();
             try
             {
-                StorageFolder localFolder = ApplicationData.Current.LocalFolder;
+                //StorageFolder localFolder = ApplicationData.Current.LocalFolder;
                 QueryOptions queryOptions = new QueryOptions(CommonFolderQuery.DefaultQuery);
                 queryOptions.SortOrder.Clear();
                 SortEntry se = new SortEntry();
@@ -577,7 +581,7 @@ namespace PhenoPad.FileService
                 se.AscendingOrder = false;
                 queryOptions.SortOrder.Add(se);
 
-                StorageFolderQueryResult queryResult = localFolder.CreateFolderQueryWithOptions(queryOptions);
+                StorageFolderQueryResult queryResult = ROOT_FOLDER.CreateFolderQueryWithOptions(queryOptions);
                 var folders = await queryResult.GetFoldersAsync();
                 foreach (var f in folders)
                 {
@@ -596,6 +600,7 @@ namespace PhenoPad.FileService
             }
             catch (FileNotFoundException)
             {
+                Debug.WriteLine("Failed to get all notebook IDs");
                 rootPage.NotifyUser("Failed to get all notebook ids.", NotifyType.ErrorMessage, 2);
             }
             return null;

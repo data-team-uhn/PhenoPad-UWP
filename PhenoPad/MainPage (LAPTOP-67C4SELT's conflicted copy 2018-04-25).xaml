@@ -500,9 +500,7 @@
                         Grid.Row="2" Grid.Column="1" RequestedTheme="Default"
                         VerticalAlignment="Center" HorizontalAlignment="Center"
                               Click="CameraButton_Click" IsEnabled="False"/>
-            
-                <!--
-                We have made Bluetooth connection automatic
+
                 <TextBlock Text="Bluetooh" Grid.Row="3" Grid.Column="0"
                            VerticalAlignment="Center" HorizontalAlignment="Center"/>
                 <Button Name="bluetoothButton"
@@ -511,10 +509,9 @@
                         Grid.Row="3" Grid.Column="1" RequestedTheme="Default"
                         VerticalAlignment="Center" HorizontalAlignment="Center"
                               Click="BluetoothButton_Click"  IsEnabled="True"/>
-                -->
-                
-                <WebView Name="StreamView" Width="360" Height="280"
-                         Grid.Row="0" Grid.Column="2" Grid.RowSpan="5"
+
+                <WebView Name="StreamView" Width="320" Height="240"
+                         Grid.Row="0" Grid.Column="2" Grid.RowSpan="4"
                          HorizontalAlignment="Center" VerticalAlignment="Center"
                          Visibility="Visible" Canvas.ZIndex="999"
                      Source="http://192.168.137.112:8000" />
