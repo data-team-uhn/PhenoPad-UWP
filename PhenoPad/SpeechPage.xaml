@@ -137,9 +137,9 @@
                                 MinWidth="300"
                                 MaxWidth="500"
                                 FontSize="18"
-                                Padding="3"
+                                Padding="10"
                                 VerticalAlignment="Center"
-                                Foreground="WhiteSmoke"/>
+                                Foreground="Black"/>
 
                             <Button Grid.Row="1" 
                                     Background="Transparent"
@@ -150,7 +150,7 @@
                                     Text="{Binding Converter={StaticResource intervalConverter}}"
                                     TextWrapping="Wrap"
                                     Padding="3" 
-                                    Foreground="WhiteSmoke"
+                                    Foreground="Black"
                                 />
                             </Button>
                         </Grid>
@@ -250,7 +250,7 @@
                             <!--Message color-->
                             <Grid
                             Grid.Row="0"
-                            Background="LightSlateGray"/>
+                            Background="LightGray"/>
 
                             <Grid
                             Grid.Row="0">
@@ -269,7 +269,7 @@
                                 FontSize="18"
                                 Padding="3"
                                 VerticalAlignment="Center"
-                                Foreground="WhiteSmoke"/>
+                                Foreground="Black"/>
 
                                 <TextBlock
                                 Grid.Row="1"
@@ -278,7 +278,7 @@
                                 TextWrapping="Wrap"
                                 Opacity="0.7"
                                 Padding="3" 
-                                Foreground="WhiteSmoke"/>
+                                Foreground="Black"/>
                             </Grid>
 
                         </Grid>

@@ -513,11 +513,16 @@ namespace PhenoPad
         private string loadedMedia = String.Empty;
         private void SpeechPage_RecordingCreated(SpeechManager sender, Windows.Storage.StorageFile args)
         {
-            this._mediaPlayerElement.Source = MediaSource.CreateFromStorageFile(args);
-            this._mediaPlayerElement.Visibility = Visibility.Visible;
-            this.mediaText.Visibility = Visibility.Visible;
-            this.loadedMedia = args.Name;
-            this.mediaText.Text = args.Name;
+            Windows.ApplicationModel.Core.CoreApplication.MainView.CoreWindow.Dispatcher.RunAsync(CoreDispatcherPriority.Normal,
+            () =>
+            {
+                this._mediaPlayerElement.Source = MediaSource.CreateFromStorageFile(args);
+                        this._mediaPlayerElement.Visibility = Visibility.Visible;
+                        this.mediaText.Visibility = Visibility.Visible;
+                        this.loadedMedia = args.Name;
+                        this.mediaText.Text = args.Name;
+            }
+            );
         }
 
         private int doctor = 0;

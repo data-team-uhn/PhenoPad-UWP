@@ -31,6 +31,8 @@
         <!-- Don't need to convert toggle status
         <local:ToggleValueConverter x:Key="toggleValueConverter" />
         -->
+        <local:BackgroundColorConverter x:Key="bcConverter" />
+        <local:IntervalDisplayConverter x:Key="intervalConverter" />
     </Page.Resources>
 
     <Grid x:Name="RootGrid" Margin="0 0 0 0">
@@ -395,9 +397,172 @@
                         </ListView>
                     </Grid>
 
-                    <Grid Grid.Column="2" Grid.RowSpan="3"></Grid>
+                    <Grid Name="speechQuickView" Grid.Row="0" Grid.Column="1" Grid.RowSpan="3" Visibility="Collapsed">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="*"></RowDefinition>
+                            <RowDefinition Height="Auto"></RowDefinition>
+                        </Grid.RowDefinitions>
+                        <local:ChatListView x:Name="chatView" Visibility="Visible" Background="White"  Grid.Row="0"
+                            IncrementalLoadingThreshold="2" 
+                            ScrollViewer.VerticalScrollBarVisibility="Hidden">
+                            <ListView.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <!--" ItemsStackPanel ItemsUpdatingScrollMode="KeepLastItemInView" VerticalAlignment="Bottom"/-->
+                                    <ItemsStackPanel ItemsUpdatingScrollMode="KeepLastItemInView"  VerticalAlignment="Bottom"/>
+                                </ItemsPanelTemplate>
+                            </ListView.ItemsPanel>
+
+                            <ListView.ItemContainerStyle>
+                                <Style TargetType="ListViewItem">
+                                    <Setter Property="Padding" Value="0"/>
+                                    <Setter Property="Margin" Value="0"/>
+                                </Style>
+                            </ListView.ItemContainerStyle>
+
+                            <ListView.ItemTemplate>
+                                <DataTemplate x:DataType="local:TextMessage">
+                                    <Grid Margin="6">
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="Auto" />
+                                        </Grid.RowDefinitions>
+
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto"/>
+                                        </Grid.ColumnDefinitions>
+
+                                        <!--
+                        
+                        <Polygon
+                            Grid.Row="1"
+                            Grid.Column="{Binding TextColumn}"
+                            Fill="{Binding Converter={StaticResource bcConverter}}"
+                            HorizontalAlignment="Left"
+                            Points="0,0 0,18 18,18"
+                            Visibility="{x:Bind OnLeft}"
+                            Margin="0,0,10,0">
+                        </Polygon>
+
+                        <Polygon
+                            Grid.Row="1"
+                            Grid.Column="{Binding TextColumn}"
+                            Fill="{Binding Converter={StaticResource bcConverter}}"
+                            HorizontalAlignment="Right"
+                            Points="18,0 18,18 0,18"
+                            Visibility="{x:Bind OnRight}"
+                            Margin="0,0,10,0"/>
+                        -->
+
+                                        <!--Finalized message color-->
+                                        <Grid
+                            Grid.Row="0"
+                            Grid.Column="0"
+                            Background="{Binding Converter={StaticResource bcConverter}}"
+                            Visibility="{x:Bind Path=IsFinal}"/>
+
+                                        <!--Not finalized message color-->
+                                        <Grid
+                            Grid.Row="0"
+                            Grid.Column="0"
+                            Background="{StaticResource Background_Temp}"
+                            Visibility="{x:Bind Path=IsNotFinal}"/>
+
+                                        <Grid MaxWidth="260" MinWidth="100"
+                            Grid.Row="0"
+                            Grid.Column="0">
+                                            <Grid.RowDefinitions>
+                                                <RowDefinition Height="Auto"/>
+                                            </Grid.RowDefinitions>
+
+                                            <TextBlock
+                                Text="{x:Bind Body}"
+                                Grid.Row="0"
+                                Grid.Column="0"
+                                TextWrapping="Wrap"
+                               
+                                FontSize="18"
+                                Padding="3"
+                                VerticalAlignment="Center"
+                                Foreground="Black"/>
+
+
+                                        </Grid>
+
+
+                                    </Grid>
+                                </DataTemplate>
+                            </ListView.ItemTemplate>
+                        </local:ChatListView>
+
+                        <local:ChatListView x:Name="realtimeChatView" Grid.Row="1" Background="White"
+                            IncrementalLoadingThreshold="2" 
+                            ScrollViewer.VerticalScrollBarVisibility="Hidden">
+                            <ListView.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <ItemsStackPanel ItemsUpdatingScrollMode="KeepLastItemInView" VerticalAlignment="Bottom"  HorizontalAlignment="Right"/>
+                                </ItemsPanelTemplate>
+                            </ListView.ItemsPanel>
+
+                            <ListView.ItemContainerStyle>
+                                <Style TargetType="ListViewItem">
+                                    <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                                    <Setter Property="Padding" Value="0"/>
+                                    <Setter Property="Margin" Value="0"/>
+                                </Style>
+                            </ListView.ItemContainerStyle>
+
+                            <ListView.ItemContainerTransitions>
+                                <TransitionCollection/>
+                            </ListView.ItemContainerTransitions>
+
+                            <ListView.ItemTemplate>
+                                <DataTemplate x:DataType="local:TextMessage">
+                                    <Grid Margin="6">
+
+                                        <!--Right/Bottom polygon-->
+                                        <!--<Polygon
+                            Grid.Row="1"
+                            Fill="LightSlateGray"
+                            HorizontalAlignment="Right"
+                            Points="0,0 18,0 18,18"
+                            Visibility="Visible"
+                            Margin="0,0,10,0"/>-->
+
+                                        <!--Message color-->
+                                        <Grid
+                            Grid.Row="0"
+                            Background="LightGray"/>
+
+                                        <Grid MaxWidth="260" MinWidth="100"
+                            Grid.Row="0">
+                                            <Grid.RowDefinitions>
+                                                <RowDefinition Height="Auto"/>
+                                                <RowDefinition Height="Auto"/>
+                                            </Grid.RowDefinitions>
+
+                                            <TextBlock 
+                                Text="{x:Bind Body}"
+                                Grid.Row="0"
+                                Grid.Column="0"
+                                TextWrapping="Wrap"
+                               
+                                FontSize="18"
+                                Padding="3"
+                                VerticalAlignment="Center"
+                                Foreground="Black"/>
+
+                                          
+                                        </Grid>
+
+                                    </Grid>
+                                </DataTemplate>
+                            </ListView.ItemTemplate>
+                        </local:ChatListView>
+                    </Grid>
+                   
                 </Grid>
 
+                
+                
             </SplitView.Pane>
 
             <ContentControl x:Name="PageHost" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch">

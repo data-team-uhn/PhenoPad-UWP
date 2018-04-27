@@ -232,6 +232,10 @@ namespace PhenoPad
             modeTextBlock.PointerExited += new PointerEventHandler(modeTextBlock_PointerExited);
 
             ControlView.Visibility = Visibility.Collapsed;
+
+            chatView.ItemsSource = SpeechManager.getSharedSpeechManager().conversation;
+            chatView.ContainerContentChanging += OnChatViewContainerContentChanging;
+            realtimeChatView.ItemsSource = SpeechManager.getSharedSpeechManager().realtimeConversation;
         }
 
         private async void InitializeNotebook()
@@ -1040,7 +1044,7 @@ namespace PhenoPad
             //SpeechStreamSocket sss = new SpeechStreamSocket();
             //sss.connect();
             Task speechManagerTask;
-            if (state == true)
+            if (speechEngineRunning == false)
             {
                 speechManagerTask = SpeechManager.getSharedSpeechManager().StartAudio();
                 this.cmdBarTextBlock.Visibility = Visibility.Visible;
@@ -1695,6 +1699,7 @@ namespace PhenoPad
             {
                 MainSplitView.IsPaneOpen = true;
                 QuickViewButtonSymbol.Symbol = Symbol.Clear;
+                speechQuickView.Visibility = Visibility.Collapsed;
             }
             else
             {
@@ -1702,6 +1707,7 @@ namespace PhenoPad
                 {
                     OverViewToggleButton.IsChecked = true;
                     SpeechToggleButton.IsChecked = false;
+                    speechQuickView.Visibility = Visibility.Collapsed;
                 }
                 else
                 {
@@ -1718,6 +1724,7 @@ namespace PhenoPad
             {
                 MainSplitView.IsPaneOpen = true;
                 QuickViewButtonSymbol.Symbol = Symbol.Clear;
+                speechQuickView.Visibility = Visibility.Visible;
             }
             else
             {
@@ -1725,6 +1732,7 @@ namespace PhenoPad
                 {
                     OverViewToggleButton.IsChecked = false;
                     SpeechToggleButton.IsChecked = true;
+                    speechQuickView.Visibility = Visibility.Visible;
                 }
                 else
                 {
@@ -1830,7 +1838,7 @@ namespace PhenoPad
             //{
             //AudioStreamButton_Clicked(null, null);
             //}
-            changeSpeechEngineState(!this.AudioOn);
+            //changeSpeechEngineState(!this.AudioOn);
         }
 
         private void VideoToggleSwitch_Toggled(object sender, RoutedEventArgs e)
@@ -1945,7 +1953,40 @@ namespace PhenoPad
                 this.audioSwitch.IsEnabled = true;
             }
         }
-        
+
+
+        private int doctor = 0;
+        private void OnChatViewContainerContentChanging(ListViewBase sender, ContainerContentChangingEventArgs args)
+        {
+            if (args.InRecycleQueue) return;
+            TextMessage message = (TextMessage)args.Item;
+
+            // Only display message on the right when speaker index = 0
+            //args.ItemContainer.HorizontalAlignment = (message.Speaker == 0) ? Windows.UI.Xaml.HorizontalAlignment.Right : Windows.UI.Xaml.HorizontalAlignment.Left;
+
+            if (message.IsNotFinal)
+            {
+                args.ItemContainer.HorizontalAlignment = Windows.UI.Xaml.HorizontalAlignment.Right;
+            }
+            else
+            {
+                args.ItemContainer.HorizontalAlignment = (message.Speaker == doctor) ? Windows.UI.Xaml.HorizontalAlignment.Right : Windows.UI.Xaml.HorizontalAlignment.Left;
+            }
+
+            /*if (message.Speaker != 99 && message.Speaker != -1 && message.Speaker > maxSpeaker)
+            {
+                Debug.WriteLine("Detected speaker " + message.Speaker.ToString());
+                for (var i = maxSpeaker + 1; i <= message.Speaker; i++)
+                {
+                    ComboBoxItem item = new ComboBoxItem();
+                    item.Background = (Windows.UI.Xaml.Media.Brush)Application.Current.Resources["Background_" + i.ToString()];
+                    item.Content = "Speaker " + (i + 1).ToString();
+                    this.speakerBox.Items.Add(item);
+                }
+                maxSpeaker = (int)message.Speaker;
+            }*/
+        }
+
     }
 
     public enum NotifyType
