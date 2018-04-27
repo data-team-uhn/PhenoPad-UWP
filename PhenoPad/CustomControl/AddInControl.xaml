@@ -17,9 +17,9 @@
             <x:Double x:Key="categoryButtonFontSize">27</x:Double>
         </ResourceDictionary>
     </UserControl.Resources>
-    <Grid Background="{StaticResource Title_Background}" BorderBrush="LightGray">
+    <Grid Background="WhiteSmoke" BorderBrush="LightGray">
         <Grid.RowDefinitions>
-            <RowDefinition Height="35"></RowDefinition>
+            <RowDefinition Height="48"></RowDefinition>
             <RowDefinition Height="*"></RowDefinition>
         </Grid.RowDefinitions>
 
@@ -48,7 +48,7 @@
                 </Button>
             </StackPanel>
         </Grid>
-        <RelativePanel Name="TitleRelativePanel" Background="LightGray">
+        <RelativePanel Name="TitleRelativePanel" Background="WhiteSmoke">
             <Button Style="{StaticResource MyButtonStyle}" Background="Transparent" Foreground="LightCoral" Height="35" VerticalAlignment="Top" Width="35" Padding="0" Name="deleteButton" Click="Delete_Click">
                 <SymbolIcon Symbol="Clear" Height="35" Width="35"></SymbolIcon>
             </Button>
@@ -71,7 +71,7 @@
         </StackPanel>
         -->
        
-        <InkToolbar x:Name="inkToolbar"  Visibility="Collapsed"  Grid.Row="1"
+        <InkToolbar x:Name="inkToolbar"  Visibility="Collapsed"  Grid.Row="0" Margin="0 0 0 0" 
         VerticalAlignment="Top" 
         HorizontalAlignment="Right" 
         Orientation="Horizontal"   />
