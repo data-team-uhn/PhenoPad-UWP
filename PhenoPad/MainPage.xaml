@@ -130,7 +130,7 @@
                     </AppBarButton>
                     <AppBarToggleButton Icon="PreviewLink" Style="{StaticResource MyAppBarToggleButtonStyle}" Label="Overview" Name="sdf" Click="OverviewButton_Click"/>
                     <AppBarToggleButton Icon="Message" Style="{StaticResource MyAppBarToggleButtonStyle}" Label="Speech" Name="ddd" Click="SpeechButton_Click"/>
-                    
+
                     <AppBarSeparator/>
 
                     <!--
@@ -165,7 +165,7 @@
                     </AppBarToggleButton>
 
                     <AppBarSeparator/>
-                    
+
                     <AppBarButton Icon="Bold" x:Name="boldButton"  ToolTipService.ToolTip="Bold" Visibility="Collapsed"/>
                     <AppBarButton x:Name="italicButton" Icon="Italic"     ToolTipService.ToolTip="Italic" Visibility="Collapsed"/>
                     <AppBarButton x:Name="underlineButton" Icon="Underline"  ToolTipService.ToolTip="Underline" Visibility="Collapsed"/>
@@ -240,13 +240,24 @@
                                         <RowDefinition Height="*"/>
                                     </Grid.RowDefinitions>
 
-                                    <TextBlock Grid.Row="0" Grid.Column="0" Text="Bluetooth"/>
-                                    <TextBlock Grid.Row="1" Grid.Column="0" Text="Recognition"/>
-                                    <TextBlock Grid.Row="2" Grid.Column="0" Text="Diarization"/>
+                                    <TextBlock Grid.Row="0" Grid.Column="0" Text="Bluetooth" Margin="5"/>
+                                    <TextBlock Grid.Row="1" Grid.Column="0" Text="Recognition" Margin="5"/>
+                                    <TextBlock Grid.Row="2" Grid.Column="0" Text="Diarization" Margin="5"/>
 
-                                    <ProgressRing Grid.Row="0" Grid.Column="1" Name="BluetoothProgress" IsActive="True"/>
-                                    <ProgressRing Grid.Row="1" Grid.Column="1" Name="RecognitionProgress" IsActive="True"/>
-                                    <ProgressRing Grid.Row="2" Grid.Column="1" Name="DiarizationProgress" IsActive="True"/>
+                                    <ProgressRing Grid.Row="0" Grid.Column="1" Margin="5" Name="BluetoothProgress" IsActive="True"/>
+                                    <ProgressRing Grid.Row="1" Grid.Column="1" Margin="5" Name="RecognitionProgress" IsActive="True"/>
+                                    <ProgressRing Grid.Row="2" Grid.Column="1" Margin="5" Name="DiarizationProgress" IsActive="True"/>
+
+                                    <BitmapIcon Grid.Row="0" Grid.Column="1" Width="32" Height="32"
+                                                UriSource="ms-appx:///Assets/checkmark.png" 
+                                                Name="BluetoothComplete" Visibility="Collapsed"/>
+                                    <BitmapIcon Grid.Row="1" Grid.Column="1" Width="32" Height="32" 
+                                                UriSource="ms-appx:///Assets/checkmark.png" 
+                                                Name="RecognitionComplete" Visibility="Collapsed"/>
+                                    <BitmapIcon Grid.Row="2" Grid.Column="1"  Width="32" Height="32"
+                                                UriSource="ms-appx:///Assets/checkmark.png" 
+                                                Name="DiarizationComplete" Visibility="Collapsed"/>
+
                                 </Grid>
                             </Flyout>
                         </AppBarButton.Flyout>
@@ -462,8 +473,8 @@
                                    MaxWidth="{Binding ElementName=Splitter, Path=ActualWidth}" Margin="10,10,10,10" TextWrapping="Wrap"  />
             </Border>
 
-          
-            
+
+
             <!-- Photo service -->
             <!--
             <Grid Background="WhiteSmoke" Name="CameraCanvas" Height="300" Width="530" RelativePanel.Above="pageIndexTextBlock" RelativePanel.AlignRightWithPanel="True" Visibility="Collapsed">
@@ -515,7 +526,7 @@
                                 IsOn="{x:Bind AudioOn, Mode=TwoWay}"
                               OffContent="Record" OnContent="Disconnect"
                               Grid.Row="1" Grid.Column="1" RequestedTheme="Default"
-                              Toggled="AudioToggleSwitch_Toggled"/>
+                              Toggled="AudioToggleSwitch_Toggled" IsEnabled="False"/>
 
                 <TextBlock Text="Video" Grid.Row="2" Grid.Column="0"
                            VerticalAlignment="Center" HorizontalAlignment="Center"/>
@@ -529,12 +540,12 @@
                 <TextBlock Text="Camera" Grid.Row="3" Grid.Column="0"
                            VerticalAlignment="Center" HorizontalAlignment="Center"/>
                 <Button Name="cameraButton"
-                        Margin="1" FlowDirection="LeftToRight"
+                        Margin="19.8,0,20.6,0.2" FlowDirection="LeftToRight"
                         Content="Snap a photo"
                         Grid.Row="3" Grid.Column="1" RequestedTheme="Default"
-                        VerticalAlignment="Center" HorizontalAlignment="Center"
+                        VerticalAlignment="Bottom" HorizontalAlignment="Center"
                               Click="CameraButton_Click" IsEnabled="False"/>
-            
+
                 <!--
                 We have made Bluetooth connection automatic
                 <TextBlock Text="Bluetooh" Grid.Row="3" Grid.Column="0"
@@ -546,7 +557,7 @@
                         VerticalAlignment="Center" HorizontalAlignment="Center"
                               Click="BluetoothButton_Click"  IsEnabled="True"/>
                 -->
-                
+
                 <WebView Name="StreamView" Width="360" Height="280"
                          Grid.Row="0" Grid.Column="2" Grid.RowSpan="5"
                          HorizontalAlignment="Center" VerticalAlignment="Center"
@@ -563,7 +574,7 @@
                         >
 
                 <AppBarToggleButton Name="testButton" Icon="Microphone" Label="Speech Recognition" Click="AudioStreamButton_Clicked"
-                                    IsChecked="{x:Bind AudioOn, Mode=TwoWay}" IsEnabled="False">
+                                    IsChecked="{x:Bind AudioOn, Mode=TwoWay}" IsEnabled="True">
                     <ToolTipService.ToolTip>
                         <TextBlock Text="Enable/Disable audio recording"/>
                     </ToolTipService.ToolTip>
@@ -593,7 +604,7 @@
                 <Image  Name="writeImage" Width="70" Source="Assets/abc_write.png" VerticalAlignment="Center" HorizontalAlignment="Center" Opacity="0.3"/>
             </Grid>
 -->
-            
+
             <TextBlock x:Name="modeTextBlock" Width="240" HorizontalTextAlignment="Right" Margin="0 0 10 0" RelativePanel.AlignTopWithPanel="True" RelativePanel.AlignRightWithPanel="True" Padding=" 0 0 10 0" FontSize="25" FontFamily="Segoe UI" FontWeight="ExtraBold" Foreground="LightGray" Opacity="0.5">Handwriting Mode</TextBlock>
 
             <StackPanel  Name="pageIndexPanel"  Margin="0 0 0 40" Orientation="Horizontal" RelativePanel.AlignBottomWithPanel="True" RelativePanel.AlignHorizontalCenterWithPanel="True" Padding="0 5 22 0">
@@ -634,7 +645,7 @@
                     </ToolTipService.ToolTip>
                 </AppBarButton>
                 -->
-            
+
                 <AppBarSeparator/>
 
                 <AppBarButton Icon="Page2" Label="Notes" Click="NotesButton_Click">

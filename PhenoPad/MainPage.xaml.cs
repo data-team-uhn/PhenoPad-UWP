@@ -1000,29 +1000,70 @@ namespace PhenoPad
 
         bool speechEngineRunning = false;
         private async void AudioStreamButton_Clicked(object sender, RoutedEventArgs e) {
+            changeSpeechEngineState(this.AudioOn);
+        }
 
+        private async void changeSpeechEngineState_BT(bool state)
+        {
             //SpeechStreamSocket sss = new SpeechStreamSocket();
             //sss.connect();
             Task speechManagerTask;
-            if (speechEngineRunning == false && (this.testButton.IsChecked == true))
+            if (state == true)
             {
-                speechManagerTask = SpeechManager.getSharedSpeechManager().StartAudio();
+                //speechManagerTask = SpeechManager.getSharedSpeechManager().StartAudio();
                 //this.cmdBarTextBlock.Visibility = Visibility.Visible;
                 speechEngineRunning = !speechEngineRunning;
 
-                await speechManagerTask;
+                //await speechManagerTask;
+
+                await BluetoothService.BluetoothService.getBluetoothService().sendBluetoothMessage("audio start");
             }
-            else {
-                speechManagerTask = SpeechManager.getSharedSpeechManager().EndAudio();
+            else
+            {
+                //speechManagerTask = SpeechManager.getSharedSpeechManager().EndAudio();
                 //this.cmdBarTextBlock.Visibility = Visibility.Collapsed;
                 speechEngineRunning = !speechEngineRunning;
                 //cmdBarTextBlock.Text = "";
+
+                await BluetoothService.BluetoothService.getBluetoothService().sendBluetoothMessage("audio end");
+            }
+
+            // Note that we have a giant loop in speech manager so that after it is done
+            // there won't be any audio processing going on
+            //speechEngineRunning = false;
+            //this.AudioOn = false;
+            //testButton.IsChecked = false;
+        }
+
+        private async void changeSpeechEngineState(bool state)
+        {
+            //SpeechStreamSocket sss = new SpeechStreamSocket();
+            //sss.connect();
+            Task speechManagerTask;
+            if (state == true)
+            {
+                speechManagerTask = SpeechManager.getSharedSpeechManager().StartAudio();
+                this.cmdBarTextBlock.Visibility = Visibility.Visible;
+                speechEngineRunning = !speechEngineRunning;
+
+                await speechManagerTask;
+
+                //await BluetoothService.BluetoothService.getBluetoothService().sendBluetoothMessage("audio start");
+            }
+            else
+            {
+                speechManagerTask = SpeechManager.getSharedSpeechManager().EndAudio();
+                this.cmdBarTextBlock.Visibility = Visibility.Collapsed;
+                speechEngineRunning = !speechEngineRunning;
+                cmdBarTextBlock.Text = "";
+
+                //await BluetoothService.BluetoothService.getBluetoothService().sendBluetoothMessage("audio end");
             }
 
             // Note that we have a giant loop in speech manager so that after it is done
             // there won't be any audio processing going on
             speechEngineRunning = false;
-            this.AudioOn = false;
+            //this.AudioOn = false;
             //testButton.IsChecked = false;
         }
 
@@ -1716,6 +1757,7 @@ namespace PhenoPad
         {
             //On_BackRequested();
             this.Frame.Navigate(typeof(PageOverview));
+            UIWebSocketClient.getSharedUIWebSocketClient().disconnect();
         }
         // Handles system-level BackRequested events and page-level back button Click events
         private bool On_BackRequested()
@@ -1786,8 +1828,9 @@ namespace PhenoPad
             // Same as audio button click :D
             //if (this.audioSwitch.IsOn == false)
             //{
-            //    AudioStreamButton_Clicked(null, null);
+            //AudioStreamButton_Clicked(null, null);
             //}
+            changeSpeechEngineState(!this.AudioOn);
         }
 
         private void VideoToggleSwitch_Toggled(object sender, RoutedEventArgs e)
@@ -1818,11 +1861,11 @@ namespace PhenoPad
             
             if (!desiredStatus)
             {
-                await this.bluetoothService.sendBluetoothMessage("start");
+                await this.bluetoothService.sendBluetoothMessage("camera start");
             }
             else
             {
-                await this.bluetoothService.sendBluetoothMessage("stop");
+                await this.bluetoothService.sendBluetoothMessage("camera stop");
             }
             //this.videoSwitch.IsOn = desiredStatus;
             //this.StreamButton.IsChecked = desiredStatus;
@@ -1841,7 +1884,7 @@ namespace PhenoPad
                 return;
             }
 
-            await this.bluetoothService.sendBluetoothMessage("picture");
+            await this.bluetoothService.sendBluetoothMessage("camera picture");
         }
 
         public void bluetoothInitialized(bool val)
@@ -1884,18 +1927,22 @@ namespace PhenoPad
             if (item == "bluetooth")
             {
                 this.BluetoothProgress.IsActive = false;
+                this.BluetoothComplete.Visibility = Visibility.Visible;
             }
             else if (item == "diarization")
             {
                 this.DiarizationProgress.IsActive = false;
+                this.DiarizationComplete.Visibility = Visibility.Visible;
             }
             else if (item == "recognition")
             {
                 this.RecognitionProgress.IsActive = false;
+                this.RecognitionComplete.Visibility = Visibility.Visible;
             }
             else if (item == "ready")
             {
                 this.testButton.IsEnabled = true;
+                this.audioSwitch.IsEnabled = true;
             }
         }
         

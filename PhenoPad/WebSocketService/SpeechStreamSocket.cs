@@ -68,12 +68,20 @@ namespace PhenoPad.WebSocketService
             //socket.SetRequestHeader("content-type", "audio/x-raw");
             try
             {
-                Task connectTask = this.streamSocket.ConnectAsync(new Uri("ws://" + this.serverAddress + ":" + this.serverPort + 
+                /*Task connectTask = this.streamSocket.ConnectAsync(new Uri("ws://" + this.serverAddress + ":" + this.serverPort + 
+                                            "/client/ws/speech?content-type=audio/x-raw," +
+                                            "+layout=(string)interleaved," +
+                                            "+rate=(int)16000," +
+                                            "+format=(string)F32LE," +
+                                            "+channels=(int)1")).AsTask();*/
+
+                Task connectTask = this.streamSocket.ConnectAsync(new Uri("ws://" + this.serverAddress + ":" + this.serverPort +
                                             "/client/ws/speech?content-type=audio/x-raw," +
                                             "+layout=(string)interleaved," +
                                             "+rate=(int)16000," +
                                             "+format=(string)F32LE," +
                                             "+channels=(int)1")).AsTask();
+
 
                 /**
                 await connectTask.ContinueWith(_ =>
