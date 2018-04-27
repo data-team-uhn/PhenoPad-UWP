@@ -328,7 +328,9 @@ namespace PhenoPad.CustomControl
 
         private void TakePhotoButton_Click(object sender, RoutedEventArgs e)
         {
-
+            this.CameraCanvas.Visibility = Visibility.Visible;
+            captureControl.setUp();
+            this.imageControl.deleteAsHide();
         }
 
         public void showControlPanel()
@@ -361,6 +363,28 @@ namespace PhenoPad.CustomControl
                 TitleRelativePanel.Visibility = Visibility.Collapsed;
                 InitializeFromDisk(true);
             }
+        }
+
+
+        private async void PhotoButton_Click(object sender, RoutedEventArgs e)
+        {
+            string imagename = FileManager.getSharedFileManager().CreateUniqueName();
+            var imageSource = await captureControl.TakePhotoAsync(notebookId, 
+                MainPage.Current.curPageIndex.ToString(), imagename + ".jpg");
+            if(imageSource != null)
+            {
+                //MainPage.Current.curPage.AddImageControl(imagename, imageSource);
+                this.imageControl.initialize("null", "null", imagename);
+                this.imageControl.getImageControl().Source = imageSource;
+                this.imageControl.Visibility = Visibility.Visible;
+                this.CameraCanvas.Visibility = Visibility.Collapsed;
+            }
+        }
+
+        private void CameraClose_Click(object sender, RoutedEventArgs e)
+        {
+            CameraCanvas.Visibility = Visibility.Collapsed;
+            captureControl.unSetUp();
         }
     }
 }

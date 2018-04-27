@@ -180,8 +180,8 @@ namespace PhenoPad
         private List<Button> pageIndexButtons;
         private SimpleOrientationSensor _simpleorientation;
         public InkCanvas inkCanvas = null;
-        private NotePageControl curPage = null;
-        private int curPageIndex = -1;
+        public NotePageControl curPage = null;
+        public int curPageIndex = -1;
         public static MainPage Current;
         private string curPageId = "";
         private string notebookId = "";
