@@ -5,6 +5,8 @@
     xmlns:local="using:PhenoPad.CustomControl"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:photovideoservice="using:PhenoPad.PhotoVideoService"
+    xmlns:customcontrol="using:PhenoPad.CustomControl"
     xmlns:media="using:Windows.UI.Xaml.Media"
     xmlns:core="using:System"
     mc:Ignorable="d"
@@ -76,6 +78,37 @@
         HorizontalAlignment="Right" 
         Orientation="Horizontal"   />
 
- 
+        <!-- Photo service -->
+        <Grid Background="WhiteSmoke" Grid.Row="1"
+              Name="CameraCanvas"
+              RelativePanel.AlignRightWithPanel="True" Visibility="Collapsed">
+            <photovideoservice:PhotoVideoCaptureControl x:Name="captureControl"></photovideoservice:PhotoVideoCaptureControl>
+
+            <StackPanel Height="30" VerticalAlignment="Top" Background="WhiteSmoke" Orientation="Horizontal">
+                <Button  Height="30" Width="40" Click="CameraClose_Click" Background="WhiteSmoke" Foreground="Gray">
+                    <SymbolIcon Symbol="Clear" ></SymbolIcon>
+                </Button>
+                <TextBlock VerticalAlignment="Center" FontSize="16" Margin="20 0 0 0" Text="Camera"/>
+            </StackPanel>
+            <StackPanel Height="30" VerticalAlignment="Top" HorizontalAlignment="Right" Orientation="Horizontal" >
+
+                <!--<Button Height="30" Width="40" Name="VideoButton" Click="VideoButton_Click" IsEnabled="False" Background="WhiteSmoke">
+                    <Grid>
+                        <Ellipse x:Name="StartRecordingIcon" Fill="Red" Width="10" Height="10"/>
+                        <Rectangle x:Name="StopRecordingIcon" Fill="White" Width="20" Height="20" Visibility="Collapsed"/>
+                    </Grid>
+                </Button>-->
+                <Button Height="30" Width="40" Name="PhotoButton" Click="PhotoButton_Click" Foreground="Black" Background="WhiteSmoke">
+                    <SymbolIcon Symbol="Camera" />
+                </Button>
+            </StackPanel>
+        </Grid>
+
+        <local:AddInImageControl Grid.Row="1" Visibility="Collapsed" x:Name="imageControl"/>
+
+
+
+        <!-- END Photo service -->
+
     </Grid> 
 </UserControl>

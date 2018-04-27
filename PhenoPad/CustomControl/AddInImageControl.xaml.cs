@@ -28,22 +28,32 @@ namespace PhenoPad.CustomControl
         IReadOnlyList<InkStroke> inkStrokes = null;
         InkAnalysisResult inkAnalysisResults = null;
 
-        public string name { get; }
-        public string notebookId { get; }
-        public string pageId { get; }
-        public double height;
-        public double width;
-        public double canvasLeft;
-        public double canvasTop;
+        public string name { get; set; }
+        public string notebookId { get; set; }
+        public string pageId { get; set; }
+        public double height { get; set; }
+        public double width { get; set; }
+        public double canvasLeft { get; set; }
+        public double canvasTop { get; set; }
         public InkCanvas inkCan
         {
             get {
                 return this.inkCanvas;
             }
         }
-        public AddInImageControl(string notebookId, string pageId, string name)
+
+        public AddInImageControl()
         {
             this.InitializeComponent();
+        }
+        
+        public AddInImageControl(string notebookId, string pageId, string name)
+        {
+            this.InitializeComponent();  
+        }
+
+        public void initialize(string notebookId, string pageId, string name)
+        {
             this.name = name;
             // Set supported inking device types.
             inkCanvas.InkPresenter.InputDeviceTypes =
@@ -58,13 +68,26 @@ namespace PhenoPad.CustomControl
             inkCanvas.InkPresenter.UpdateDefaultDrawingAttributes(drawingAttributes);
         }
 
+        private bool hide = false;
+        public void deleteAsHide()
+        {
+            hide = true;
+        }
+
         public Image getImageControl()
         {
             return imageControl;
         }
         private void Delete_Click(object sender, RoutedEventArgs e)
         {
-            ((Panel)this.Parent).Children.Remove(this);
+            if (this.hide)
+            {
+                this.Visibility = Visibility.Collapsed;
+            }
+            else
+            {
+                ((Panel)this.Parent).Children.Remove(this);
+            }
         }
 
         public async void SaveToDisk()
