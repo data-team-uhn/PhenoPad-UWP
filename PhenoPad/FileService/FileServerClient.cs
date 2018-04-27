@@ -26,7 +26,7 @@ namespace PhenoPad.FileService
     public class FileServerClient
     {
 
-        static string serverAddress = "54.166.237.238";
+        static string serverAddress = "speechengine.ccm.sickkids.ca";
         static string serverPort = "8888";
         static string fileManagerAddress = "http://" + 
                                 FileServerClient.serverAddress + 

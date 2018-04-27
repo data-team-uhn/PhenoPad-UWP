@@ -42,6 +42,7 @@ using System.ComponentModel;
 using System.Threading;
 
 using PhenoPad.BluetoothService;
+using Windows.System.Threading;
 
 namespace PhenoPad
 {
@@ -236,6 +237,9 @@ namespace PhenoPad
             chatView.ItemsSource = SpeechManager.getSharedSpeechManager().conversation;
             chatView.ContainerContentChanging += OnChatViewContainerContentChanging;
             realtimeChatView.ItemsSource = SpeechManager.getSharedSpeechManager().realtimeConversation;
+            this.StreamView.Navigate(new Uri(RPI_ADDRESS));
+
+            this.saveNotesTimer(15);
         }
 
         private async void InitializeNotebook()
@@ -325,6 +329,22 @@ namespace PhenoPad
             setNotePageIndex(curPageIndex);
 
             
+        }
+
+        private void saveNotesTimer(int seconds)
+        {
+            TimeSpan period = TimeSpan.FromSeconds(seconds);
+
+            ThreadPoolTimer PeriodicTimer = ThreadPoolTimer.CreatePeriodicTimer((source) =>
+            {
+                this.saveNoteToDisk();
+                Dispatcher.RunAsync(CoreDispatcherPriority.High,
+                    () =>
+                    {
+                        NotifyUser("Note " + this.noteNameTextBox.Text + " has been saved", NotifyType.StatusMessage, 1);
+                    });
+
+            }, period);
         }
 
         /**
@@ -1766,6 +1786,7 @@ namespace PhenoPad
             //On_BackRequested();
             this.Frame.Navigate(typeof(PageOverview));
             UIWebSocketClient.getSharedUIWebSocketClient().disconnect();
+            this.saveNoteToDisk();
         }
         // Handles system-level BackRequested events and page-level back button Click events
         private bool On_BackRequested()
@@ -1950,7 +1971,7 @@ namespace PhenoPad
             else if (item == "ready")
             {
                 this.testButton.IsEnabled = true;
-                this.audioSwitch.IsEnabled = true;
+                //this.audioSwitch.IsEnabled = true;
             }
         }
 

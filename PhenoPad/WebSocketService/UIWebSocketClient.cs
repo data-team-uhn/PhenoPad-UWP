@@ -115,7 +115,10 @@ namespace PhenoPad.WebSocketService
 
         public void disconnect()
         {
-            this.client.Dispose();
+            if (this.client != null)
+            {
+                this.client.Dispose();
+            }
             this.client = null;
         }
 

@@ -287,9 +287,9 @@ namespace PhenoPad.BluetoothService
                 Debug.WriteLine("Writing message " + message + " via Bluetooth");
                 await dataWriter.StoreAsync();
 
-                rootPage.NotifyUser(
-                            "Sending message \"" + message + "\"",
-                            NotifyType.StatusMessage, 1);
+                //rootPage.NotifyUser(
+                //            "Sending message \"" + message + "\"",
+                //            NotifyType.StatusMessage, 1);
             }
             catch (Exception ex) when ((uint)ex.HResult == 0x80072745)
             {
