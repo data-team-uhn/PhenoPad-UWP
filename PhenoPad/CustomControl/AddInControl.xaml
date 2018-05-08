@@ -78,18 +78,25 @@
         HorizontalAlignment="Right" 
         Orientation="Horizontal"   />
 
+        <Button Height="30" Width="40" Name="PhotoButton" Click="PhotoButton_Click" Foreground="Black" Background="WhiteSmoke" Grid.Row="0"  HorizontalAlignment="Right" Visibility="Collapsed">
+            <SymbolIcon Symbol="Camera" />
+        </Button>
         <!-- Photo service -->
         <Grid Background="WhiteSmoke" Grid.Row="1"
               Name="CameraCanvas"
               RelativePanel.AlignRightWithPanel="True" Visibility="Collapsed">
             <photovideoservice:PhotoVideoCaptureControl x:Name="captureControl"></photovideoservice:PhotoVideoCaptureControl>
-
+            <!--
             <StackPanel Height="30" VerticalAlignment="Top" Background="WhiteSmoke" Orientation="Horizontal">
+                
                 <Button  Height="30" Width="40" Click="CameraClose_Click" Background="WhiteSmoke" Foreground="Gray">
                     <SymbolIcon Symbol="Clear" ></SymbolIcon>
                 </Button>
+               
                 <TextBlock VerticalAlignment="Center" FontSize="16" Margin="20 0 0 0" Text="Camera"/>
+                 
             </StackPanel>
+            -->
             <StackPanel Height="30" VerticalAlignment="Top" HorizontalAlignment="Right" Orientation="Horizontal" >
 
                 <!--<Button Height="30" Width="40" Name="VideoButton" Click="VideoButton_Click" IsEnabled="False" Background="WhiteSmoke">
@@ -98,9 +105,7 @@
                         <Rectangle x:Name="StopRecordingIcon" Fill="White" Width="20" Height="20" Visibility="Collapsed"/>
                     </Grid>
                 </Button>-->
-                <Button Height="30" Width="40" Name="PhotoButton" Click="PhotoButton_Click" Foreground="Black" Background="WhiteSmoke">
-                    <SymbolIcon Symbol="Camera" />
-                </Button>
+                
             </StackPanel>
         </Grid>
 

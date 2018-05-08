@@ -115,8 +115,12 @@ namespace PhenoPad.WebSocketService
 
         public void disconnect()
         {
-            this.client.Dispose();
-            this.client = null;
+            if (this.client != null)
+            {
+                this.client.Dispose();
+                this.client = null;
+            }
+            
         }
 
         private async void clientClosedHandler(Windows.Networking.Sockets.IWebSocket sender, 

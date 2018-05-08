@@ -288,8 +288,8 @@
                 <Grid Name="QuickViewGrid" BorderThickness="0 0 0 0" Background="WhiteSmoke">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="*"/>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="*"/>
                     </Grid.RowDefinitions>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="40"/>
@@ -727,7 +727,7 @@
                          Grid.Row="0" Grid.Column="2" Grid.RowSpan="5"
                          HorizontalAlignment="Center" VerticalAlignment="Center"
                          Visibility="Visible" Canvas.ZIndex="999"
-                     Source="http://192.168.137.112:8000" />
+                     Source="http://192.168.137.8:8000" />
             </Grid>
 
             <CommandBar Padding="0 0 0 0" Visibility="Visible"
