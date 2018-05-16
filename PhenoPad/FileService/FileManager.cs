@@ -439,7 +439,7 @@ namespace PhenoPad.FileService
             if (imageFolder != null)
             {
 
-                return await imageFolder.CreateFileAsync(name);
+                return await imageFolder.CreateFileAsync(name + ".jpg");
 
             }
             return null;
@@ -491,7 +491,9 @@ namespace PhenoPad.FileService
                 case NoteFileType.ImageAnnotation:
                     foldername += @"ImagesWithAnnotations\";
                     break;
-
+                case NoteFileType.Image:
+                    foldername += @"ImagesWithAnnotations\";
+                    break;
                 case NoteFileType.ImageAnnotationMeta:
                     foldername += @"ImagesWithAnnotations\";
                     break;

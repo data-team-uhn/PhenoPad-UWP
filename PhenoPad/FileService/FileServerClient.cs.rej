@@ -1,0 +1,9 @@
+diff a/PhenoPad/FileService/FileServerClient.cs b/PhenoPad/FileService/FileServerClient.cs	(rejected hunks)
+@@ -26,6 +26,7 @@
+     public class FileServerClient
+     {
+ 
++        static string serverAddress = "speechengine.ccm.sickkids.ca";
+         static string serverPort = "8888";
+         static string fileManagerAddress = "http://" + 
+                                 FileServerClient.serverAddress + 

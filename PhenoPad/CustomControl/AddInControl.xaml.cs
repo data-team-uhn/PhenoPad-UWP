@@ -256,14 +256,11 @@ namespace PhenoPad.CustomControl
                 stream.Dispose();
             }
 
+            InitiateInkCanvas(onlyView);
 
-           
-                InitiateInkCanvas(onlyView);
-
-
-                var annofile = await FileService.FileManager.getSharedFileManager().GetNoteFileNotCreate(notebookId, pageId, FileService.NoteFileType.ImageAnnotation, name);
-                if (annofile != null)
-                    await FileService.FileManager.getSharedFileManager().loadStrokes(annofile, this.inkCan);
+            var annofile = await FileService.FileManager.getSharedFileManager().GetNoteFileNotCreate(notebookId, pageId, FileService.NoteFileType.ImageAnnotation, name);
+            if (annofile != null)
+                await FileService.FileManager.getSharedFileManager().loadStrokes(annofile, this.inkCan);
 
             /**
                 string strokeUri = "ms-appdata:///local/" + FileManager.getSharedFileManager().GetNoteFilePath(notebookId, pageId, NoteFileType.ImageAnnotation, name);
@@ -331,6 +328,7 @@ namespace PhenoPad.CustomControl
             this.CameraCanvas.Visibility = Visibility.Visible;
             captureControl.setUp();
             this.imageControl.deleteAsHide();
+            PhotoButton.Visibility = Visibility.Visible;
         }
 
         public void showControlPanel()
@@ -368,16 +366,19 @@ namespace PhenoPad.CustomControl
 
         private async void PhotoButton_Click(object sender, RoutedEventArgs e)
         {
-            string imagename = FileManager.getSharedFileManager().CreateUniqueName();
             var imageSource = await captureControl.TakePhotoAsync(notebookId, 
-                MainPage.Current.curPageIndex.ToString(), imagename + ".jpg");
+               pageId, name);
             if(imageSource != null)
             {
                 //MainPage.Current.curPage.AddImageControl(imagename, imageSource);
-                this.imageControl.initialize("null", "null", imagename);
-                this.imageControl.getImageControl().Source = imageSource;
-                this.imageControl.Visibility = Visibility.Visible;
+                Image imageControl = new Image();
+                imageControl.Source = imageSource;
+                contentGrid.Children.Add(imageControl);
+                categoryGrid.Visibility = Visibility.Collapsed;
+                InitiateInkCanvas();
+                this.PhotoButton.Visibility = Visibility.Collapsed;
                 this.CameraCanvas.Visibility = Visibility.Collapsed;
+                captureControl.unSetUp();
             }
         }
 

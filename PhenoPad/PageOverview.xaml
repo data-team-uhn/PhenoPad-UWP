@@ -210,7 +210,7 @@
                     <TextBlock VerticalAlignment="Center" Grid.Row="0" FontSize="20" Foreground="Black" Margin="10 0 0 0">Photos and annotations</TextBlock>
                 </Border>
 
-                <GridView Name="ImageAnnotationGridView" ItemClick="GridView_ItemClick" Padding="10 10 10 10" Height="400"
+                <GridView Name="ImageAnnotationGridView"  Padding="10 10 10 10" Height="400"
                            ScrollViewer.HorizontalScrollBarVisibility="Auto"
     ScrollViewer.HorizontalScrollMode="Enabled"
     ScrollViewer.VerticalScrollMode="Disabled">

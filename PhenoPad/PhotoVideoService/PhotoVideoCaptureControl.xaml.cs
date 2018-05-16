@@ -119,10 +119,16 @@ namespace PhenoPad.PhotoVideoService
         private async void MediaCapture_Failed(MediaCapture sender, MediaCaptureFailedEventArgs errorEventArgs)
         {
             Debug.WriteLine("MediaCapture_Failed: (0x{0:X}) {1}", errorEventArgs.Code, errorEventArgs.Message);
+            try
+            {
+                await CleanupCameraAsync();
 
-            await CleanupCameraAsync();
+                await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () => UpdateCaptureControls());
+            }
+            catch (Exception) {
 
-            await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () => UpdateCaptureControls());
+            }
+           
         }
 
         #endregion Event handlers

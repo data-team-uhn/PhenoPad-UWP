@@ -112,6 +112,18 @@ namespace PhenoPad.PhenotypeService
             if (temp != null)
                 pp.state = temp.state;
             phenotypesCandidates.Insert(0, pp);
+
+            if (from == SourceType.Speech)
+            {
+                temp = phenotypesInSpeech.Where(x => x == pheno).FirstOrDefault();
+                if (temp == null)
+                {
+                    phenotypesInSpeech.Insert(0, pp);
+                }
+                else {
+                    temp.state = pheno.state;
+                }
+            }
             
             rootPage.OpenCandidate();
       
