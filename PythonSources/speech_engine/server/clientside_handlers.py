@@ -191,10 +191,11 @@ class AudioSocketHandler(tornado.websocket.WebSocketHandler):
 
 
     def on_message(self, message):
-        is_binary = not isinstance(message, unicode)
+        #is_binary = not isinstance(message, unicode)
         #self.manager.relay_message('ASR', message, is_binary=is_binary)
+        self.manager.relay_message('ASR', message, is_binary=True)
         #self.manager.relay_message('Diarization', message,  is_binary=is_binary)
-        self.manager.relay_message('ODAS', json.dumps({'message_type': 'Audio', 'message': message}))
+        #self.manager.relay_message('ODAS', json.dumps({'message_type': 'Audio', 'message': message}))
 
 
 

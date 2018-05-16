@@ -3,11 +3,15 @@ from ws4py.client.threadedclient import WebSocketClient
 import logging
 import argparse
 import json
+import re
+import signal
+import time
 
 from bluetooth import *
 import subprocess
 
 uuid = "94f39d29-7d6d-437d-973b-fba39e49d4ee"
+REGEX_PID = re.compile(r'PID=(?P<pid>[0-9]+)')
 
 class CameraClient(WebSocketClient):
 
@@ -71,9 +75,67 @@ def camera_command_line(camera_client):
     camera_client.close()
 
 
+
+def launch_odas_service(server_ip, manager_id):
+
+    # manager_id=$1   server_ip=$2
+    command = "bash " + os.path.join('/home/pi', 'speech_engine', 'rpi_controls', 'launch_odas_services.sh')
+    command += ' ' + str(manager_id) + ' ' + str(server_ip)
+
+    logging.info('Executing command ' + str(command))
+    os.system(command)
+    #output = "PID=1 PID=2"
+    #output = subprocess.check_output(command.split(' '))
+    
+    #result = REGEX_PID.findall(output)
+
+    #if len(result) != 2:
+    #    logging.error('Could not obtain PID of launched ODAS services')
+    #    exit(-1)
+
+    #return result[0], result[1]
+
+    results = []
+    with open('/tmp/odas_service_pid', 'r') as f:
+        lines = f.readlines()
+        for l in lines:
+            results.append(l.strip())
+    
+    return results[0], results[1]
+
+
+def launch_odas_hardware():
+    command = "bash " + os.path.join('/home/pi', 'speech_engine', 'rpi_controls', 'launch_odas_hardware.sh')
+
+    logging.info('Executing command ' + str(command))
+    os.system(command)
+    #output = "PID=3"
+
+    #output = subprocess.check_output(command.split(' '))
+    #result = REGEX_PID.findall(output)
+
+    #if len(result) != 1:
+    #    logging.error('Could not obtain PID of launched ODAS core')
+    #    exit(-1)
+
+    #return result[0]
+
+    results = []
+    with open('/tmp/odas_hardware_pid', 'r') as f:
+        lines = f.readlines()
+        for l in lines:
+            results.append(l.strip())
+    
+    return results[0]
+
+
 def rfcomm_loop(camera_client):
 
     count = 0
+    manager_id = None
+    server_ip = None
+
+    pids = []
     while True:
         
         count += 1
@@ -97,8 +159,9 @@ def rfcomm_loop(camera_client):
         logging.info("Waiting for connection on RFCOMM channel %d" % port)
 
         client_sock, client_info = server_sock.accept()
-        logging.info("Accepted connection from ", client_info)
+        logging.info("Accepted connection from " + str(client_info))
 
+        started = False
         try:
             while True:
                 data = client_sock.recv(1024)
@@ -107,7 +170,39 @@ def rfcomm_loop(camera_client):
 
                 data = data.lower()
                 data = data.strip()
-                camera_client.send(data)
+
+                splits = data.split(' ')
+                if splits[0] == 'camera':
+                    camera_client.send(' '.join(splits[1:]))
+                elif splits[0] == 'manager_id':
+                    manager_id = ' '.join(splits[1:])
+                elif splits[0] == 'server_ip':
+                    server_ip = ' '.join(splits[1:])
+                elif splits[0] == 'audio':
+                    if splits[1] == 'start' and not started:
+                        if server_ip is not None and manager_id is not None:
+                            pid1, pid2 = launch_odas_service(server_ip, manager_id)
+                            time.sleep(3)
+                            pid3 = launch_odas_hardware()
+                            pids = [pid1, pid2, pid3]
+                            started = True
+                            logging.info('ODAS PIDs are ' + str(pids))
+                        else:
+                            logging.error('Does not have enough information!')
+                    elif splits[1] == 'start' and started:
+                        logging.warning('Has already started!')
+                    elif splits[1] == 'end' and started:
+                        for p in pids:
+                            try:
+                                actual = int(p) - 1
+                                logging.info('Killing ' + str(actual))
+                                os.kill(actual, signal.SIGTERM) #or signal.SIGKILL 
+                            except:
+                                logging.info('Could not kill ' + str(actual))
+                        os.system('killall odascore')
+                        started = False
+                    elif splits[1] == 'end' and not started:
+                        logging.warning('Has already stopped or has not been started')
 
         except IOError:
             pass
