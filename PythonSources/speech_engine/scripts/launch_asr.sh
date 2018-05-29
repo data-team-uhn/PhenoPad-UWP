@@ -6,7 +6,7 @@ CLIENT_DIR="../client/"
 SERVER_DIR="../server/"
 
 #config_file=${CONFIG_DIR}/use_pubmed.yaml
-config_file=${CONFIG_DIR}/use_nnet3.yaml
+config_file=${CONFIG_DIR}/use_nnet3_jingbo.yaml
 manager_id=$1
 
 export GST_PLUGIN_PATH=${HOME}"/gst-kaldi-nnet2-online/src"

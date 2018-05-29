@@ -76,7 +76,8 @@ class ASRSocketHandler(tornado.websocket.WebSocketHandler):
 
 
     def on_message(self, message):
-        self.manager.write_message(json.dumps({'message_type': 'ASR', 'message': message}))
+        #self.manager.write_message(json.dumps({'message_type': 'ASR', 'message': message}))
+        logging.info('ASR RESULT: ' + str(message))
         
 
 

@@ -445,6 +445,7 @@ def main():
 
     global SILENCE_TIMEOUT
     SILENCE_TIMEOUT = conf.get("silence-timeout", 5)
+    SILENCE_TIMEOUT = 999999
     if USE_NNET2:
         decoder_pipeline = DecoderPipeline2(conf)
     else:

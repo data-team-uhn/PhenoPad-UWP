@@ -63,7 +63,7 @@ class WebSocket(tornado.websocket.WebSocketHandler):
 
     def open(self):
         logging.info('Camera server is opening websocket')
-        self.status = STATUS_RECORD
+        self.status = STATUS_STOP
         self.application.camera_socket = self
 
 
@@ -106,8 +106,8 @@ class WebSocket(tornado.websocket.WebSocketHandler):
             except tornado.websocket.WebSocketClosedError:
                 self.camera_loop.stop()
         elif self.status == STATUS_STOP:
-            logging.info('Not doing anything')
-            time.sleep(2)
+            #logging.info('Not doing anything')
+            time.sleep(1)
 
 
 class ControlSocketHandler(tornado.websocket.WebSocketHandler):
@@ -139,7 +139,8 @@ class ControlSocketHandler(tornado.websocket.WebSocketHandler):
             self.application.camera_socket.status = STATUS_STOP
         elif message == 'picture':
             self.application.camera_socket.status = STATUS_PICTURE
-        
+        else:
+            logging.error('Message -' + str(message) + '- cannot be recognized')
 
 
 def main():

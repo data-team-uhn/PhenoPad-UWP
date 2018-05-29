@@ -135,7 +135,7 @@ class ClientManagerSocketHandler(tornado.websocket.WebSocketHandler):
 
 
     def initialize_socket(self):
-        self.server_side = ['ASR', 'Diarization', 'ODAS', 'FileManager']
+        self.server_side = ['ASR', 'Diarization', 'ODAS']
         self.client_side = ['UI', 'Audio', 'Tracking']
         self.managed_handlers = {   'ASR': None, 
                                     'Diarization': None, 
@@ -179,8 +179,8 @@ class ClientManagerSocketHandler(tornado.websocket.WebSocketHandler):
         time.sleep(1)
         os.system('bash ' + os.path.join(SCRIPT_DIRECTORY, 'launch_diarization.sh') + ' ' + self.id)
         time.sleep(1)
-        os.system('bash ' + os.path.join(SCRIPT_DIRECTORY, 'launch_filemanager.sh') + ' ' + self.id)
-        time.sleep(1)
+        #os.system('bash ' + os.path.join(SCRIPT_DIRECTORY, 'launch_filemanager.sh') + ' ' + self.id)
+        #time.sleep(1)
         os.system('bash ' + os.path.join(SCRIPT_DIRECTORY, 'launch_odas.sh') + ' ' + self.id)
         time.sleep(1)
 
@@ -207,6 +207,7 @@ class ClientManagerSocketHandler(tornado.websocket.WebSocketHandler):
 
     def relay_message(self, handler_name, message, is_binary=False):
 
+        logging.info('Relaying message for ' + str(handler_name))
         try:
             self.managed_handlers[handler_name].write_message(message, binary=is_binary)
         except Exception as e:
