@@ -10,7 +10,7 @@
     mc:Ignorable="d">
     <Page.Transitions>
         <TransitionCollection>
-            <EntranceThemeTransition/>
+            <EntranceThemeTransition FromVerticalOffset="0"/>
         </TransitionCollection>
     </Page.Transitions>
     <Grid Background="White" BorderBrush="{ThemeResource AppBarBackground}">
@@ -146,7 +146,7 @@
                 <ListView x:Name="diseaseListView" Grid.Row="1" ItemsSource="{x:Bind PhenoMana.predictedDiseases}" Padding="5">
                     <ListView.ItemTemplate>
                         <DataTemplate x:DataType="phenotypeservice:Disease">
-                            <TextBlock Text="{x:Bind name}"></TextBlock>
+                            <customcontrol:DiseaseControl name="{x:Bind name}" id="{x:Bind id}" url="{x:Bind url}" score="{x:Bind score}"></customcontrol:DiseaseControl>
                         </DataTemplate>
                     </ListView.ItemTemplate>
                     <ListView.ItemContainerStyle>

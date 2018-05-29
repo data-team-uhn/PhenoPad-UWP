@@ -25,7 +25,7 @@
 
     <Page.Transitions>
         <TransitionCollection>
-            <EntranceThemeTransition/>
+            <EntranceThemeTransition FromVerticalOffset="0"/>
         </TransitionCollection>
     </Page.Transitions>
     

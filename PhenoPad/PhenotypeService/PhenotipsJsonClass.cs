@@ -60,13 +60,41 @@ namespace PhenoPad.PhenotypeService
         public double score { get; set; }
     }
 
-    public class NCRPhenotype
+    public class NCRPhenotype : IEquatable<NCRPhenotype>
     {
         public int end { get; set; }
         public string hp_id { get; set; }
         public List<string> names { get; set; }
         public string score { get; set; }
         public int start { get; set; }
+        
+
+        public bool Equals(NCRPhenotype other)
+        {
+            return other.hp_id == hp_id &&
+                other.start == start
+                && other.end == end;
+        }
+        public override bool Equals(object obj)
+        {
+            var phenotype = obj as NCRPhenotype;
+            return phenotype != null &&
+                   hp_id.Equals(phenotype.hp_id);
+        }
+        public static bool operator ==(NCRPhenotype phenotype1, NCRPhenotype phenotype2)
+        {
+            return EqualityComparer<NCRPhenotype>.Default.Equals(phenotype1, phenotype2);
+        }
+
+        public static bool operator !=(NCRPhenotype phenotype1, NCRPhenotype phenotype2)
+        {
+            return !(phenotype1 == phenotype2);
+        }
+
+        public override int GetHashCode()
+        {
+            return -1032463776 + EqualityComparer<string>.Default.GetHashCode(hp_id);
+        }
     }
     public class NCRResult
     {

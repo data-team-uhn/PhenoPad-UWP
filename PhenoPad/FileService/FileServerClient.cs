@@ -98,7 +98,7 @@ namespace PhenoPad.FileService
                 Debug.WriteLine("Unable to create zip file because " + e.Message);
             }
 
-            int SIZE_GB = 1024 * 1024 * 1024;
+            // int SIZE_GB = 1024 * 1024 * 1024;
             using (HttpClientHandler handler = new HttpClientHandler())
             {
                 //handler.MaxRequestContentBufferSize = SIZE_GB;

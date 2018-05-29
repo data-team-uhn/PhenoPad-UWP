@@ -286,7 +286,7 @@ namespace PhenoPad.FileService
             }
             catch (Exception e)
             {
-               
+                Debug.WriteLine(e.Message);
             }
             return true;
         }
@@ -307,6 +307,7 @@ namespace PhenoPad.FileService
             catch (Exception e)
             {
                 //rootPage.NotifyUser(e.Message, NotifyType.ErrorMessage, 2);
+                Debug.WriteLine(e.Message);
                 Debug.WriteLine("Folder not found when trying to load note page.");
                 return false;
             }

@@ -6,10 +6,17 @@
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:styles="using:PhenoPad.Styles"
-    mc:Ignorable="d">
+    mc:Ignorable="d"
+    Loaded="UserControl_Loaded">
 
     <UserControl.Resources>
         <Flyout x:Key="PhenotypeDetailFlyout" Placement="Right">
+            <Flyout.FlyoutPresenterStyle>
+                <Style TargetType="FlyoutPresenter">
+                    <Setter Property="MaxWidth" Value="1000"/>
+                    <Setter Property="MaxHeight" Value="1000"/>
+                </Style>
+            </Flyout.FlyoutPresenterStyle>
             <local:PhenotypeDetail x:Name="phenotypeDetailControl"/>
         </Flyout>
     </UserControl.Resources>
@@ -50,9 +57,13 @@
             <Button Style="{StaticResource MyButtonStyle}" Padding="0" Content="N" Name="NSwitchBtn"   Click="NSwitchBtn_Click" Opacity="1.0" Grid.Column="1" Width="25" Height="25"></Button>
         </Grid>
 
-        <Grid Padding="0 0 0 0" Name="NameGrid" Grid.Column="1">
-            <RelativePanel Tapped="RelativePanel_Tapped">
-                <TextBlock  Margin="5 0 0 0" FontSize="15" Grid.Column="1" x:Name="phenotypeNameTextBlock" Text="" VerticalAlignment="Center" />
+        <Grid Padding="0 0 0 0" Tapped="NameGrid_Tapped" Name="NameGrid" Grid.Column="1">
+            <RelativePanel  HorizontalAlignment="Stretch" VerticalAlignment="Center">
+                <TextBlock  Margin="5 0 0 0" FontSize="14" Grid.Column="1" x:Name="phenotypeNameTextBlock" Text="" VerticalAlignment="Center" >
+                    <ToolTipService.ToolTip>
+                        <TextBlock  x:Name="phenotypeNameTextBlockTooltip" Text="" VerticalAlignment="Center"></TextBlock>
+                    </ToolTipService.ToolTip>
+                </TextBlock>
                 <Line RelativePanel.AlignVerticalCenterWith="phenotypeNameTextBlock" RelativePanel.AlignLeftWith="phenotypeNameTextBlock" RelativePanel.AlignRightWith="phenotypeNameTextBlock" Stretch="Fill" Stroke="{StaticResource Light_Red}" StrokeThickness="2" X1="1" Y1="0" HorizontalAlignment="Stretch" VerticalAlignment="Center" Name="NameCrossLine" Visibility="Collapsed"/>
                 
             </RelativePanel>
@@ -66,8 +77,6 @@
             <Button x:Name="DeleteBtn"   Background="{x:Null}" Foreground="LightCoral" Click="DeleteBtn_Click" Width="25" MinWidth="25" MinHeight="25" Height="25" Padding="0">
                 <SymbolIcon Symbol="Delete"/>
             </Button>
-            
-
         </StackPanel>
        
        

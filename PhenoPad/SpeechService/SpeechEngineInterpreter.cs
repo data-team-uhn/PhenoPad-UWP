@@ -155,11 +155,17 @@ namespace PhenoPad.SpeechService
 
         private void queryPhenoService(string text)
         {
-            Task<List<Phenotype>> phenosTask = PhenotypeManager.getSharedPhenotypeManager().annotateByNCRAsync(text);
+            Task<Dictionary<string, Phenotype>> phenosTask = PhenotypeManager.getSharedPhenotypeManager().annotateByNCRAsync(text);
 
             phenosTask.ContinueWith(_ =>
             {
-                List<Phenotype> list = phenosTask.Result;
+                if (phenosTask.Result == null)
+                    return;
+                List<Phenotype> list = new List<Phenotype>();
+                foreach(var key in phenosTask.Result.Keys)
+                {
+                    list.Add(phenosTask.Result[key]);
+                }
 
                 if (list != null && list.Count > 0)
                 {

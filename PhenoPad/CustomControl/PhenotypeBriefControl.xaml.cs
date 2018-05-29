@@ -84,11 +84,21 @@ namespace PhenoPad.CustomControl
           new PropertyMetadata(null)
         );
 
+        private int localState;
+
         public PhenotypeBriefControl()
         {
             this.InitializeComponent();
             setPhenotypeState(phenotypeState);
             //DeletePhenotypeSB.Begin();
+        }
+
+        public void initByPhenotype(Phenotype p)
+        {
+            phenotypeName = p.name;
+            phenotypeId = p.hpId;
+            phenotypeState = p.state;
+            sourceType = p.sourceType;
         }
 
         // Add a phenotype
@@ -104,12 +114,12 @@ namespace PhenoPad.CustomControl
         {
             //DeletePhenotypeSB.Begin();   
             //YNSwitch.Margin = new Thickness(-100, 0, 0, 0);
-      
+
             //if(sourceType == SourceType.Speech)
             //    PhenotypeManager.getSharedPhenotypeManager().removeById(phenotypeId, SourceType.Speech);
             //else
             //    PhenotypeManager.getSharedPhenotypeManager().updatePhenoStateById(phenotypeId, -1, sourceType);
-
+            localState = -1;
                 PhenotypeManager.getSharedPhenotypeManager().removeById(phenotypeId, SourceType.Suggested);
         }
         
@@ -129,7 +139,7 @@ namespace PhenoPad.CustomControl
         {
             if (state == -1)
             {
-                NameGrid.Background = new SolidColorBrush(Colors.White);
+                //NameGrid.Background = new SolidColorBrush(Colors.White);
                 phenotypeNameTextBlock.Foreground = new SolidColorBrush(Colors.Gray);
                 //phenotypeNameTextBlock.Foreground = new SolidColorBrush(Colors.Black);
                 phenotypeNameTextBlock.Text = phenotypeName;
@@ -157,23 +167,31 @@ namespace PhenoPad.CustomControl
 
         private void phenotypeNameTextBlock_Tapped(object sender, TappedRoutedEventArgs e)
         {
-            switch (phenotypeState)
+            switch (localState)
             {
                 case -1:
-                    //setPhenotypeState(1);
+                    localState = 1;
+                    setPhenotypeState(1);
                     PhenotypeManager.getSharedPhenotypeManager().addPhenotype(new Phenotype(phenotypeId, phenotypeName, 1), sourceType);
                     break;
                 case 0:
                     //PhenotypeManager.getSharedPhenotypeManager().removeById(phenotypeId, SourceType.Saved);
                     // PhenotypeManager.getSharedPhenotypeManager().removeById(phenotypeId, sourceType);
-                    //setPhenotypeState(-1);
+                    localState = 1;
+                    setPhenotypeState(1);
                     PhenotypeManager.getSharedPhenotypeManager().updatePhenoStateById(phenotypeId, 1, sourceType);
                     break;
                 case 1:
-                    // setPhenotypeState(0);
+                    localState = 0;
+                    setPhenotypeState(0);
                     PhenotypeManager.getSharedPhenotypeManager().updatePhenoStateById(phenotypeId, 0, sourceType);
                     break;
             }
+        }
+
+        private void UserControl_Loaded(object sender, RoutedEventArgs e)
+        {
+            localState = phenotypeState;
         }
     }
 }

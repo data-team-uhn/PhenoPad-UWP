@@ -48,7 +48,7 @@ namespace PhenoPad.CustomControl
 
         private bool isInitialized = false;
         private ScaleTransform scaleTransform;
-        private TranslateTransform translateTransform;
+        private TranslateTransform dragTransform;
 
 
         public String name
@@ -129,8 +129,14 @@ namespace PhenoPad.CustomControl
             this.ManipulationStarted += TitleRelativePanel_ManipulationStarted;
             this.ManipulationDelta += TitleRelativePanel_ManipulationDelta;
             this.ManipulationCompleted += TitleRelativePanel_ManipulationCompleted;
+
+      
             scaleTransform = new ScaleTransform();
-            this.RenderTransform = this.scaleTransform;
+            dragTransform = new TranslateTransform();
+            TransformGroup tg = new TransformGroup();
+            tg.Children.Add(scaleTransform);
+            tg.Children.Add(dragTransform);
+            this.RenderTransform = tg;
             //translateTransform = new TranslateTransform();
             //this.RenderTransform.translateTransform;
 
@@ -151,23 +157,33 @@ namespace PhenoPad.CustomControl
     **/
         }
 
+      
         private void TitleRelativePanel_ManipulationCompleted(object sender, ManipulationCompletedRoutedEventArgs e)
         {
             // this.Opacity = 1;
+            MovingGrid.Visibility = Visibility.Collapsed;
+            Debug.WriteLine("Add-in control manipulation completed");
         }
 
         private void TitleRelativePanel_ManipulationStarted(object sender, ManipulationStartedRoutedEventArgs e)
         {
             // this.Opacity = 0.4;
+            MovingGrid.Visibility = Visibility.Visible;
+            Debug.WriteLine("Add-in control manipulation started");
         }
 
         double scale;
         private void TitleRelativePanel_ManipulationDelta(object sender, ManipulationDeltaRoutedEventArgs e)
         {
+            /**
             canvasLeft = Canvas.GetLeft(this) + e.Delta.Translation.X > 0 ? Canvas.GetLeft(this) + e.Delta.Translation.X : 0;
             canvasTop = Canvas.GetTop(this) + e.Delta.Translation.Y > 0 ? Canvas.GetTop(this) + e.Delta.Translation.Y : 0;
             Canvas.SetLeft(this, canvasLeft);
             Canvas.SetTop(this, canvasTop);
+            **/
+            dragTransform.X += e.Delta.Translation.X;
+            dragTransform.Y += e.Delta.Translation.Y;
+
 
             scale = scaleTransform.ScaleX * e.Delta.Scale;
             scale = scale > 2.0 ? 2.0 : scale;
@@ -178,6 +194,8 @@ namespace PhenoPad.CustomControl
             scale = scale > 2.0 ? 2.0 : scale;
             scale = scale < 0.5 ? 0.5 : scale;
             scaleTransform.ScaleY = scale;
+
+            
 
         }
 

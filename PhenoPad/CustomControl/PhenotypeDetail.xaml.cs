@@ -27,14 +27,23 @@ namespace PhenoPad.CustomControl
             ProgressRingGrid.Visibility = Visibility.Visible ;
         }
 
+        /**
         public void setByPhenotypeInfo(Row pheno)
         {
+
             nameTextBlock.Text = pheno.name;
             idTextBlock.Text = pheno.id;
             definitionTextBlock.Text = pheno.def == null ? "Not found." : pheno.def;
             alterListView.ItemsSource = pheno.synonym;
             parentsListView.ItemsSource = pheno.parents;
 
+            ProgressRingGrid.Visibility = Visibility.Collapsed;
+        }
+    **/
+
+        public void navigateTo(String hpid)
+        {
+            this.webView.Navigate(new Uri("http://compbio.charite.de/hpoweb/showterm?id=HP:0000118#id=" + hpid));
             ProgressRingGrid.Visibility = Visibility.Collapsed;
         }
     }

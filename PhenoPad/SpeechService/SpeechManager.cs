@@ -50,7 +50,7 @@ namespace PhenoPad.SpeechService
     public class SpeechManager
     {
         //private string serverAddress = "54.226.217.30";
-        private string serverAddress = "speechengine.ccm.sickkids.ca";
+        private string serverAddress = "phenopad.ccm.sickkids.ca";
         private string serverPort = "8888";
 
         public static SpeechManager sharedSpeechManager;
@@ -621,6 +621,7 @@ namespace PhenoPad.SpeechService
                     await this.EndAudio();
                 } catch (Exception e)
                 {
+                    Debug.WriteLine(e.Message);
                     Debug.WriteLine("Diarization engine stopped unexpectedly");
                 }
                 

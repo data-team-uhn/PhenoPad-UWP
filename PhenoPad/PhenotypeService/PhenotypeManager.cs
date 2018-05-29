@@ -176,6 +176,14 @@ namespace PhenoPad.PhenotypeService
             updateSuggestionAndDifferential();
         }
 
+        public int getStateByHpid(string hpid)
+        {
+            var temp = savedPhenotypes.Where(x => x.hpId == hpid).FirstOrDefault();
+            if (temp == null)
+                return -1;
+            return temp.state;
+        }
+
         public void addPhenotypesFromFile(List<Phenotype> phenos)
         {
             foreach(var pheno in phenos)
@@ -485,6 +493,11 @@ namespace PhenoPad.PhenotypeService
                 foreach (var row in result.rows)
                 {
                     Phenotype pheno = new Phenotype(row);
+                    Phenotype temp = savedPhenotypes.Where(x => x.hpId == pheno.hpId).FirstOrDefault();
+                    if (temp != null)
+                    {
+                        pheno.state = temp.state;
+                    }
                     phenotypes.Add(pheno);
                 }
                 return phenotypes;
@@ -497,7 +510,7 @@ namespace PhenoPad.PhenotypeService
             return null;
         }
 
-        public async Task<List<Phenotype>> annotateByNCRAsync(string str)
+        public async Task<Dictionary<string, Phenotype>> annotateByNCRAsync(string str)
         {
             //Create an HTTP client object
             Windows.Web.Http.HttpClient httpClient = new Windows.Web.Http.HttpClient();
@@ -532,15 +545,19 @@ namespace PhenoPad.PhenotypeService
                 httpResponse.EnsureSuccessStatusCode();
                 httpResponseBody = await httpResponse.Content.ReadAsStringAsync();
                 var result = JsonConvert.DeserializeObject<NCRResult>(httpResponseBody);
-                if (result == null)
-                    return null;
-                List<Phenotype> phenotypes = new List<Phenotype>();
-                foreach (var row in result.matches)
+
+                Dictionary<string, Phenotype> returnResult = new Dictionary<string, Phenotype>();
+                foreach (var res in result.matches)
                 {
-                    Phenotype pheno = new Phenotype(row);
-                    phenotypes.Add(pheno);
+                    var keystr = str.Substring(res.start, res.end - res.start);
+                    if (!returnResult.ContainsKey(keystr))
+                    {
+                    returnResult.Add(keystr, new Phenotype(res));
+                    Debug.WriteLine("Annotation:\t" + str.Substring(res.start, res.end - res.start) + "\t" + res.names[0]);
+                    }
                 }
-                return phenotypes;
+              
+                return returnResult;
             }
             catch (Exception ex)
             {

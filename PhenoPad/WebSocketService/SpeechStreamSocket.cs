@@ -18,7 +18,7 @@ namespace PhenoPad.WebSocketService
         MainPage rootPage = MainPage.Current;
 
         // !!WARNING !! server address changes every time
-        private string serverAddress = "54.226.217.30";
+        private string serverAddress = "phenopad.ccm.sickkids.ca";
         private string serverPort = "8888";
 
         NetworkAdapter networkAdapter;
@@ -99,7 +99,8 @@ namespace PhenoPad.WebSocketService
                 return true;
             }
             catch (Exception e)
-            { 
+            {
+                Debug.WriteLine(e.Message);
                 streamSocket.Dispose();
                 streamSocket = null;
                 return false;
@@ -128,6 +129,7 @@ namespace PhenoPad.WebSocketService
             }
             catch (Exception ex)
             {
+                Debug.WriteLine(ex.Message);
                 Debug.WriteLine("Send data error.");
                 MainPage.Current.NotifyUser("Error sending data to speech engine", NotifyType.ErrorMessage, 2);
 
@@ -188,6 +190,7 @@ namespace PhenoPad.WebSocketService
             }
             catch (Exception ex)
             {
+                Debug.WriteLine(ex.Message);
                 Debug.WriteLine("Experienced error closing socket to speech engine");
                 MainPage.Current.NotifyUser("Fail to close websocket", NotifyType.ErrorMessage, 2);
 

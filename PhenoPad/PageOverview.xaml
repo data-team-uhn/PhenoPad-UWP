@@ -35,12 +35,13 @@
        
         <Grid>
             <Grid.RowDefinitions>
+
+                <RowDefinition Height="100"></RowDefinition>
                 <RowDefinition Height="100"></RowDefinition>
                 
                 <RowDefinition Height="*"></RowDefinition>
-                <RowDefinition Height="100"></RowDefinition>
             </Grid.RowDefinitions>
-            <Border Grid.Row="2" Padding="5">
+            <Border Grid.Row="0" Padding="5">
                 <Button Background="Transparent" Style="{StaticResource MyButtonStyle}" Click="CreateButton_Click" HorizontalAlignment="Stretch"  VerticalAlignment="Stretch">
                     <StackPanel Orientation="Horizontal" >
                         <FontIcon FontSize="27" FontWeight="ExtraBold" FontFamily="Segoe MDL2 Assets" Glyph="&#xE710;"/>
@@ -48,7 +49,7 @@
                     </StackPanel>
                 </Button>
             </Border>
-            <StackPanel Grid.Row="0" Margin="5" >
+            <StackPanel Grid.Row="1" Margin="5" >
                 <Grid >
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="2*"/>
@@ -67,7 +68,7 @@
                 </Grid>
                 <AutoSuggestBox QueryIcon="Find" HorizontalAlignment="Stretch" Margin="5 0 5 0" RelativePanel.AlignVerticalCenterWithPanel="True" Name="autoSuggestBox" PlaceholderText="Search" TextChanged="autosuggesttextchanged" QuerySubmitted="autosuggestquerysubmitted" ></AutoSuggestBox>
             </StackPanel>
-            <ListView  Margin="5"  x:Name="notebookList" ItemClick="notebookList_ItemClick" IsItemClickEnabled="True" Grid.Row="1">
+            <ListView  Margin="5"  x:Name="notebookList" ItemClick="notebookList_ItemClick" IsItemClickEnabled="True" Grid.Row="2">
                 <ListView.ItemTemplate>
                     <DataTemplate x:DataType="fileservice:Notebook">
                         <Grid >

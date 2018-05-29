@@ -1,0 +1,46 @@
+﻿<UserControl
+    x:Class="PhenoPad.CustomControl.DiseaseControl"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:PhenoPad.CustomControl"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d"
+    d:DesignHeight="300"
+    d:DesignWidth="400">
+    <UserControl.Resources>
+        <Flyout x:Key="DiseaseDetailFlyout" Placement="Right" Opened="Flyout_Opened" >
+            <Flyout.FlyoutPresenterStyle>
+                <Style TargetType="FlyoutPresenter">
+                    <Setter Property="MaxWidth" Value="1000"/>
+                    <Setter Property="MaxHeight" Value="1000"/>
+                </Style>
+            </Flyout.FlyoutPresenterStyle>
+            <local:DiseaseDetailControl x:Name="disDetailControl"/>
+        </Flyout>
+    </UserControl.Resources>
+    <Grid Padding="0" Tapped="NameGrid_Tapped">
+        
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*"/>
+            <ColumnDefinition Width="50"/>
+        </Grid.ColumnDefinitions>
+
+        <Grid Padding="0" Name="NameGrid" Grid.Column="0" >
+            <RelativePanel HorizontalAlignment="Stretch">
+                <TextBlock  Margin="5 0 0 0" FontSize="14" Grid.Column="1" x:Name="disNameTextBlock" Text="" VerticalAlignment="Center" >
+                    <ToolTipService.ToolTip>
+                        <TextBlock x:Name="disNameTextBlockTooltip" Text=""></TextBlock>
+                    </ToolTipService.ToolTip>
+                </TextBlock>
+            </RelativePanel>
+        </Grid>
+        <StackPanel Orientation="Horizontal" Grid.Column="1" FlowDirection="RightToLeft">
+            <Button Background="Transparent" Style="{StaticResource MyButtonStyle}" RelativePanel.AlignRightWithPanel="True" x:Name="DetailButton"  Grid.Column="2" Foreground="Gray" Click="DetailButton_Click" Width="25" MinWidth="25" MinHeight="25" Height="25" Padding="0">
+                <SymbolIcon Symbol="More"/>
+            </Button>
+        </StackPanel>
+
+
+    </Grid>
+</UserControl>

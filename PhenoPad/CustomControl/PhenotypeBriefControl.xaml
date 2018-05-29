@@ -6,7 +6,8 @@
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:styles="using:PhenoPad.Styles"
-    mc:Ignorable="d">
+    mc:Ignorable="d"
+    Loaded="UserControl_Loaded">
 
     <UserControl.Resources>
         <Flyout x:Key="PhenotypeDetailFlyout" Placement="Right">
@@ -14,7 +15,7 @@
         </Flyout>
     </UserControl.Resources>
 
-    <Grid Padding="0 0 0 0" Name="NameGrid" Background="White">
+    <Grid Padding="0 0 0 0" Name="NameGrid">
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="Auto"></ColumnDefinition>
             <ColumnDefinition Width="25"></ColumnDefinition>

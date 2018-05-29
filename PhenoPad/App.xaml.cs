@@ -1,4 +1,4 @@
-﻿//using MyScript.IInk;
+﻿using MyScript.IInk;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -26,7 +26,7 @@ namespace PhenoPad
     sealed partial class App : Application
     {
         //MyScript 
-        //public static Engine Engine { get; private set; }
+        public static Engine Engine { get; private set; }
 
         /// <summary>
         /// Initializes the singleton application object.  This is the first line of authored code
@@ -38,15 +38,16 @@ namespace PhenoPad
             this.Suspending += OnSuspending;
 
             // MyScript
-            //UnhandledException += OnUnhandledException;
+            UnhandledException += OnUnhandledException;
         }
         //Mysript 
-        /**
-        private static async void OnUnhandledException(object sender, UnhandledExceptionEventArgs e)
+        
+        private static async void OnUnhandledException(object sender, Windows.UI.Xaml.UnhandledExceptionEventArgs e)
         {
             e.Handled = true;
             await ShowErrorDialog(e.Message);
-        }**/
+           
+        }
 
         private static async System.Threading.Tasks.Task<bool> ShowErrorDialog(string message)
         {
@@ -71,7 +72,7 @@ namespace PhenoPad
             Frame rootFrame = Window.Current.Content as Frame;
 
             // MyScript 
-            /**
+            
             try
             {
                 // Initialize Interactive Ink runtime environment
@@ -81,7 +82,7 @@ namespace PhenoPad
             {
                 await ShowErrorDialog(err.Message);
             }
-            **/
+            
 
             // Do not repeat app initialization when the Window already has content,
             // just ensure that the window is active

@@ -703,6 +703,7 @@ namespace PhenoPad
                 SpeechManager.getSharedSpeechManager().speechInterpreter.worker_pid, Int32.Parse(proposedText));
             } catch (Exception ex)
             {
+                Debug.WriteLine(ex.Message);
                 Debug.WriteLine("Unable to update");
             }
 
@@ -733,6 +734,7 @@ namespace PhenoPad
             }
             catch (Exception ex)
             {
+                Debug.WriteLine(ex.Message);
                 Debug.WriteLine("Unable to update");
             }
             //0, Int32.Parse(proposedText));

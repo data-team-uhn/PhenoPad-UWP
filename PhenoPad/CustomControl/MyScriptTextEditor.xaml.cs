@@ -20,9 +20,7 @@ using Microsoft.Graphics.Canvas;
 using MyScript.IInk.UIReferenceImplementation;
 using MyScript.IInk.UIReferenceImplementation.UserControls;
 using MyScript.IInk;
-using Windows.UI.Xaml.Controls.Primitives;
 using Windows.Storage;
-using System.IO;
 using Windows.UI.Popups;
 
 // The User Control item template is documented at https://go.microsoft.com/fwlink/?LinkId=234236
@@ -47,7 +45,7 @@ namespace PhenoPad.CustomControl
             this.InitializeComponent();
 
             //MyScript
-            //_engine = App.Engine;
+            _engine = App.Engine;
 
             // Folders "conf" and "resources" are currently parts of the layout
             // (for each conf/res file of the project => properties => "Build Action = content")

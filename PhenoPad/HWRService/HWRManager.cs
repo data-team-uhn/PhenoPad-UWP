@@ -86,11 +86,11 @@ namespace PhenoPad.HWRService
                     return null;
                 }
             }
-            catch (System.Exception)
+            catch (System.Exception e)
             {
                 //MessageDialog dialog = new MessageDialog("No storke selected.");
                 //var cmd = await dialog.ShowAsync();
-                //Console.WriteLine("No stroke selected");
+                Console.WriteLine("HWR error: " + e.Message);
                 return null;
             }
         }

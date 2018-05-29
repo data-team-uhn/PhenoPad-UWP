@@ -24,7 +24,7 @@
             <RowDefinition Height="48"></RowDefinition>
             <RowDefinition Height="*"></RowDefinition>
         </Grid.RowDefinitions>
-
+       
         <Grid Name="contentGrid" Grid.Row="1">
 
             <!-- The canvas where we render the replacement text and shapes. -->
@@ -43,7 +43,7 @@
                     <TextBlock FontSize="{StaticResource categoryButtonFontSize}" >Drawing</TextBlock>
                 </Button>
                 <Button Background="Transparent" Style="{StaticResource MyButtonStyle}" HorizontalAlignment="Stretch" Name="InsertPhotoButton" Click="InsertPhotoButton_Click" Height="{StaticResource categoryButtonHeight}">
-                    <TextBlock FontSize="{StaticResource categoryButtonFontSize}" >Insert a photo</TextBlock>
+                    <TextBlock FontSize="{StaticResource categoryButtonFontSize}" >Insert a image</TextBlock>
                 </Button>
                 <Button Background="Transparent" Style="{StaticResource MyButtonStyle}" HorizontalAlignment="Stretch" Name="TakePhotoButton" Click="TakePhotoButton_Click" Height="{StaticResource categoryButtonHeight}">
                     <TextBlock FontSize="{StaticResource categoryButtonFontSize}" >Take a photo</TextBlock>
@@ -112,8 +112,9 @@
         <local:AddInImageControl Grid.Row="1" Visibility="Collapsed" x:Name="imageControl"/>
 
 
-
-        <!-- END Photo service -->
+        <Grid Grid.Row="0" Grid.RowSpan="2" Background="White" Opacity="0.5" Name="MovingGrid" Visibility="Collapsed">
+            
+        </Grid>
 
     </Grid> 
 </UserControl>

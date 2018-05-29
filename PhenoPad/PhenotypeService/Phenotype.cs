@@ -101,13 +101,13 @@ namespace PhenoPad.PhenotypeService
         {
             var phenotype = obj as Phenotype;
             return phenotype != null &&
-                   hpId == phenotype.hpId;
+                   hpId.Equals(phenotype.hpId);
         }
 
         public bool Equals(Phenotype other)
         {
             return other != null &&
-                   hpId == other.hpId;
+                   hpId.Equals(other.hpId);
         }
 
         public override int GetHashCode()

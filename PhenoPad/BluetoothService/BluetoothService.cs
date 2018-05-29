@@ -55,7 +55,7 @@ namespace PhenoPad.BluetoothService
                 Debug.WriteLine("Bluetooth has been initialized from another page");
                 await rootPage.Dispatcher.RunAsync(CoreDispatcherPriority.High, async () =>
                 {
-                    rootPage.bluetoothInitialized(true);
+                    // rootPage.bluetoothInitialized(true);
                 });
             }
         }
@@ -86,18 +86,13 @@ namespace PhenoPad.BluetoothService
             {
                 await rootPage.Dispatcher.RunAsync(CoreDispatcherPriority.High, async() =>
                 {
-                    rootPage.NotifyUser(
-                           "Found " + deviceInfo.Name,
-                           NotifyType.StatusMessage,
-                           3);
-
                     Debug.WriteLine(deviceInfo.Name);
 
                     // Make sure device name isn't blank
                     if (deviceInfo.Name == "raspberrypi")
                     {
                         rootPage.NotifyUser(
-                           "Found " + deviceInfo.Name,
+                           "Found Raspberry Pi",
                            NotifyType.StatusMessage,
                            3);
 

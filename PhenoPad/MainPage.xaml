@@ -21,7 +21,7 @@
     xmlns:customcontrol="using:PhenoPad.CustomControl"
     xmlns:photovideoservice="using:PhenoPad.PhotoVideoService"
      xmlns:styles="using:PhenoPad.Styles"
-   
+   xmlns:controls="using:Microsoft.Toolkit.Uwp.UI.Controls"
     xmlns:Uc="using:MyScript.IInk.UIReferenceImplementation.UserControls"
     mc:Ignorable="d"
     Loaded="Page_Loaded"
@@ -33,93 +33,102 @@
         -->
         <local:BackgroundColorConverter x:Key="bcConverter" />
         <local:IntervalDisplayConverter x:Key="intervalConverter" />
+        
+        <Flyout x:Key="MultimediaPreviewFlyout" Opened="MultimediaPreviewFlyout_Opened" Placement="Full">
+            <Flyout.FlyoutPresenterStyle>
+                <Style TargetType="FlyoutPresenter">
+                    <Setter Property="MaxWidth" Value="1000"/>
+                    <Setter Property="MaxHeight" Value="1000"/>
+                </Style>
+            </Flyout.FlyoutPresenterStyle>
+            <Grid Name="ControlView"
+                  Background="{StaticResource TITLE_BAR_WHITE}">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="150"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+
+                <TextBlock Text="Audio" Grid.Row="1" Grid.Column="0"
+                           VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                <ToggleSwitch   Name="audioSwitch"
+                                Margin="5" Width="100" FlowDirection="LeftToRight"
+                          
+                              OffContent="Record" OnContent="Disconnect"
+                              Grid.Row="1" Grid.Column="1" RequestedTheme="Default"
+                              Toggled="AudioToggleSwitch_Toggled" IsEnabled="False"/>
+
+                <TextBlock Text="Video" Grid.Row="2" Grid.Column="0"
+                           VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                <ToggleSwitch   Name="videoSwitch"
+                                Margin="5" Width="100" FlowDirection="LeftToRight"
+                               
+                              OffContent="Record" OnContent="Stop"
+                              Grid.Row="2" Grid.Column="1" RequestedTheme="Default"
+                              Toggled="VideoToggleSwitch_Toggled" IsEnabled="False"/>
+
+                <TextBlock Text="Camera" Grid.Row="3" Grid.Column="0"
+                           VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                <Button Name="cameraButton"
+                        Margin="19.8,0,20.6,0.2" FlowDirection="LeftToRight"
+                        Content="Snap a photo"
+                        Grid.Row="3" Grid.Column="1" RequestedTheme="Default"
+                        VerticalAlignment="Bottom" HorizontalAlignment="Center"
+                              Click="CameraButton_Click" IsEnabled="False"/>
+
+                <!--
+                We have made Bluetooth connection automatic
+                <TextBlock Text="Bluetooh" Grid.Row="3" Grid.Column="0"
+                           VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                <Button Name="bluetoothButton"
+                        Margin="1" FlowDirection="LeftToRight"
+                        Content="Connect"
+                        Grid.Row="3" Grid.Column="1" RequestedTheme="Default"
+                        VerticalAlignment="Center" HorizontalAlignment="Center"
+                              Click="BluetoothButton_Click"  IsEnabled="True"/>
+                -->
+
+                <WebView Name="StreamView" Width="360" Height="280"
+                         Grid.Row="0" Grid.Column="2" Grid.RowSpan="5"
+                         HorizontalAlignment="Center" VerticalAlignment="Center"
+                         Visibility="Visible" 
+                     Source="http://192.168.137.8:8000" />
+            </Grid>
+        </Flyout>
     </Page.Resources>
 
     <Grid x:Name="RootGrid" Margin="0 0 0 0">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
-            <RowDefinition Height="40"/>
         </Grid.RowDefinitions>
-        <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="*"/>
-        </Grid.ColumnDefinitions>
-        <!--
-        <VisualStateManager.VisualStateGroups>
-            <VisualStateGroup>
-                <VisualState x:Name="LandscapeState">
-                    <VisualState.Setters>
-                        <Setter Target="RootGrid.ColumnDefinitions[2].MaxWidth" Value="300"/>
-                        <Setter Target="RootGrid.ColumnDefinitions[1].Width" Value="5"/>
-                        <Setter Target="RootGrid.RowDefinitions[3].Height" Value="0"/>
-                        <Setter Target="RootGrid.RowDefinitions[4].MaxHeight" Value="0"/>
-                        <Setter Target="QuickViewGrid.(Grid.Row)" Value="2"/>
-                        <Setter Target="QuickViewGrid.(Grid.Column)" Value="2"/>
-
-                        <Setter Target="QuickViewGrid.ColumnDefinitions[0].Width" Value="*"/>
-                        <Setter Target="QuickViewGrid.ColumnDefinitions[1].Width" Value="0"/>
-                        <Setter Target="QuickViewGrid.ColumnDefinitions[2].Width" Value="0"/>
-                        <Setter Target="QuickViewGrid.RowDefinitions[0].Height" Value="*"/>
-                        <Setter Target="QuickViewGrid.RowDefinitions[1].Height" Value="*"/>
-                        <Setter Target="QuickViewGrid.RowDefinitions[2].Height" Value="*"/>
-                        <Setter Target="QuickView1.(Grid.Row)" Value="0"/>
-                        <Setter Target="QuickView2.(Grid.Row)" Value="1"/>
-                        <Setter Target="QuickView3.(Grid.Row)" Value="2"/>
-                        <Setter Target="QuickView1.(Grid.Column)" Value="0"/>
-                        <Setter Target="QuickView2.(Grid.Column)" Value="0"/>
-                        <Setter Target="QuickView3.(Grid.Column)" Value="0"/>
-                    </VisualState.Setters>
-                </VisualState>
-                <VisualState x:Name="PortraitState">
-                    <VisualState.Setters>
-                        <Setter Target="RootGrid.ColumnDefinitions[2].MaxWidth" Value="0"/>
-                        <Setter Target="RootGrid.ColumnDefinitions[1].Width" Value="0"/>
-                        <Setter Target="RootGrid.RowDefinitions[3].Height" Value="5"/>
-                        <Setter Target="RootGrid.RowDefinitions[4].MaxHeight" Value="300"/>
-                        <Setter Target="QuickViewGrid.(Grid.Row)" Value="4"/>
-                        <Setter Target="QuickViewGrid.(Grid.Column)" Value="0"/>
-                        <Setter Target="QuickViewGrid.RowDefinitions[0].Height" Value="*"/>
-                        <Setter Target="QuickViewGrid.RowDefinitions[1].Height" Value="0"/>
-                        <Setter Target="QuickViewGrid.RowDefinitions[2].Height" Value="0"/>
-                        <Setter Target="QuickViewGrid.ColumnDefinitions[0].Width" Value="*"/>
-                        <Setter Target="QuickViewGrid.ColumnDefinitions[1].Width" Value="*"/>
-                        <Setter Target="QuickViewGrid.ColumnDefinitions[2].Width" Value="*"/>
-                        <Setter Target="QuickView1.(Grid.Row)" Value="0"/>
-                        <Setter Target="QuickView2.(Grid.Row)" Value="0"/>
-                        <Setter Target="QuickView3.(Grid.Row)" Value="0"/>
-                        <Setter Target="QuickView1.(Grid.Column)" Value="0"/>
-                        <Setter Target="QuickView2.(Grid.Column)" Value="1"/>
-                        <Setter Target="QuickView3.(Grid.Column)" Value="2"/>
-                    </VisualState.Setters>
-                </VisualState>
-            </VisualStateGroup>
-        </VisualStateManager.VisualStateGroups>
-    -->
-
-
         <Grid Name="TopMenuRelativePanel" Grid.Row="0" Background="{StaticResource TITLE_BAR_WHITE}">
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="1050"/>
-                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="200"></ColumnDefinition>
+                <ColumnDefinition Width="*"></ColumnDefinition>
+                <ColumnDefinition Width="Auto"></ColumnDefinition>
             </Grid.ColumnDefinitions>
+            <StackPanel Orientation="Horizontal" Grid.Column="0" >
+                <Button Name="BackButton" Click="BackButton_Click" Width="40"  Background="{StaticResource Button_Background}" BorderThickness="0" VerticalAlignment="Stretch">
+                    <SymbolIcon Symbol="Back"></SymbolIcon>
+                </Button>
+                <TextBox Name="noteNameTextBox" KeyDown="noteNameTextBox_KeyDown"  BorderThickness="0" Background="{StaticResource TITLE_BAR_WHITE}" FontSize="18" Text="" Margin="5 0 0 0" VerticalAlignment="Center"></TextBox>
+            </StackPanel>
 
-            <Grid Grid.Column="0" Grid.ColumnSpan="2">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="200"></ColumnDefinition>
-                    <ColumnDefinition Width="Auto"></ColumnDefinition>
-                    <ColumnDefinition Width="*"></ColumnDefinition>
-                    <ColumnDefinition Width="Auto"></ColumnDefinition>
-                    <ColumnDefinition Width="Auto"></ColumnDefinition>
-                </Grid.ColumnDefinitions>
-                <StackPanel Orientation="Horizontal" Grid.Column="0" >
-                    <Button Name="BackButton" Click="BackButton_Click" Width="40"  Background="{StaticResource Button_Background}" BorderThickness="0" VerticalAlignment="Stretch">
-                        <SymbolIcon Symbol="Back"></SymbolIcon>
-                    </Button>
-                    <TextBox Name="noteNameTextBox" KeyDown="noteNameTextBox_KeyDown"  BorderThickness="0" Background="{StaticResource TITLE_BAR_WHITE}" FontSize="18" Text="" Margin="5 0 0 0" VerticalAlignment="Center"></TextBox>
-                </StackPanel>
-
-                <CommandBar Grid.Column="1" HorizontalAlignment="Left" Name="topCmdBar" OverflowButtonVisibility="Collapsed" Background="{StaticResource TITLE_BAR_WHITE}">
-                    <AppBarButton Icon="Page2" Label="Notes"  Click="NotesButton_Click">
+            <CommandBar Grid.Column="1" HorizontalAlignment="Right" Margin="0 0 30 0"  Name="topCmdBar" OverflowButtonVisibility="Collapsed" Background="{StaticResource TITLE_BAR_WHITE}">
+                <AppBarToggleButton Style="{StaticResource MyAppBarToggleButtonStyle}" IsChecked="True" Label="Notes" Name="NotesButton" Click="NotesButton_Click">
+                    <ToolTipService.ToolTip>
+                        <TextBlock>Show notes panel</TextBlock>
+                    </ToolTipService.ToolTip>
+                    <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xF0E3;"/>
+                    <!--
                         <AppBarButton.Flyout>
                             <MenuFlyout>
                                 <MenuFlyoutItem Text="Create new note" Tag="rating"/>
@@ -129,11 +138,33 @@
                                 <MenuFlyoutItem Text="Change a server" Tag="Open a saved note." Click="ChangeServer_Click"/>
                             </MenuFlyout>
                         </AppBarButton.Flyout>
-                    </AppBarButton>
-                    <AppBarToggleButton Icon="PreviewLink" Style="{StaticResource MyAppBarToggleButtonStyle}" Label="Overview" Name="sdf" Click="OverviewButton_Click"/>
-                    <AppBarToggleButton Icon="Message" Style="{StaticResource MyAppBarToggleButtonStyle}" Label="Speech" Name="ddd" Click="SpeechButton_Click"/>
+                    -->
+                    </AppBarToggleButton>
+                <AppBarToggleButton Icon="PreviewLink" Style="{StaticResource MyAppBarToggleButtonStyle}" Label="Overview" Name="OverviewButton" Click="OverviewButton_Click">
+                    <ToolTipService.ToolTip>
+                        <TextBlock >Show overview panel</TextBlock>
+                    </ToolTipService.ToolTip>
+                </AppBarToggleButton>
+                <AppBarToggleButton Icon="Message" Style="{StaticResource MyAppBarToggleButtonStyle}" Label="Speech" Name="SpeechButton" Click="SpeechButton_Click">
+                    <ToolTipService.ToolTip>
+                        <TextBlock  >Show speech recognition panel</TextBlock>
+                    </ToolTipService.ToolTip>
+                </AppBarToggleButton>
 
-                    <AppBarSeparator/>
+                <AppBarSeparator/>
+                
+                <AppBarButton  Name="SaveButton" Icon="Save" Label="Save notes" Click="SaveButton_Click">
+                    <ToolTipService.ToolTip>
+                        <TextBlock Text="Save notes."/>
+                    </ToolTipService.ToolTip>
+                </AppBarButton>
+                <AppBarButton  Name="FullscreenBtn" Icon="FullScreen" Label="Fullscreen Mode" Click="FullscreenButton_Click">
+                    <ToolTipService.ToolTip>
+                        <TextBlock Text="Enter full screen mode."/>
+                    </ToolTipService.ToolTip>
+                </AppBarButton>
+                
+                
 
                     <!--
                     <AppBarButton Name="imageButton" Icon="BrowsePhotos" Label="Speech Recognition" Click="LoadImage_Click">
@@ -154,16 +185,29 @@
                     </AppBarToggleButton>
                     -->
 
+                   
+
+                </CommandBar>
+            <StackPanel Orientation="Horizontal" Grid.Column="2">
+                <CommandBar  OverflowButtonVisibility="Collapsed" Background="{StaticResource TITLE_BAR_WHITE}">
+
+                    <!--
+                <AppBarToggleButton  Name="MyscriptBtn" Icon="FullScreen" Label="Fullscreen Mode" Click="MyscriptBtn_Click">
+                    <ToolTipService.ToolTip>
+                        <TextBlock Text="Enter full screen mode."/>
+                    </ToolTipService.ToolTip>
+                </AppBarToggleButton>-->
                     <AppBarToggleButton Margin="0 0 0 0" Name="keyboardButton"  Style="{StaticResource MyAppBarToggleButtonStyle}" 
                                         Icon="Keyboard" Label="Typing" Click="KeyboardButton_Click" IsChecked="False">
                         <ToolTipService.ToolTip>
                             <TextBlock Text="Switch to typing"/>
                         </ToolTipService.ToolTip>
                     </AppBarToggleButton>
-                    <AppBarToggleButton Style="{StaticResource MyAppBarToggleButtonStyle}" Name="writeButton" Icon="Edit" Label="Handwrting" Click="WriteButton_Click" IsChecked="True">
+                    <AppBarToggleButton Style="{StaticResource MyAppBarToggleButtonStyle}" Name="writeButton"  Label="Handwrting" Click="WriteButton_Click" IsChecked="True">
                         <ToolTipService.ToolTip>
                             <TextBlock Text="Switch to handwriting"/>
                         </ToolTipService.ToolTip>
+                        <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xEE56;"/>
                     </AppBarToggleButton>
 
                     <AppBarSeparator/>
@@ -171,52 +215,18 @@
                     <AppBarButton Icon="Bold" x:Name="boldButton"  ToolTipService.ToolTip="Bold" Visibility="Collapsed"/>
                     <AppBarButton x:Name="italicButton" Icon="Italic"     ToolTipService.ToolTip="Italic" Visibility="Collapsed"/>
                     <AppBarButton x:Name="underlineButton" Icon="Underline"  ToolTipService.ToolTip="Underline" Visibility="Collapsed"/>
-
                 </CommandBar>
-
-                <InkToolbar Grid.Column="2" Margin="0 0 0 0" Visibility="Visible"  Name="MainPageInkBar" 
+                <InkToolbar Margin="0 0 0 0" Visibility="Visible"  Name="MainPageInkBar" Width="204"
                             ActiveToolChanged="CurrentToolChanged" Orientation="Horizontal" 
                             ButtonFlyoutPlacement="Bottom" InitialControls="None">
                     <InkToolbar.Resources>
-                        <!--
-                    <BrushCollection x:Key="CalligraphicPenPalette">
-                        <SolidColorBrush>Black</SolidColorBrush>
-                        <SolidColorBrush>Brown</SolidColorBrush>
-                        <SolidColorBrush>Red</SolidColorBrush>
-                        <SolidColorBrush Color="#FFFFCE00"/>
-                        <SolidColorBrush Color="#FF26E600"/>
-                        <SolidColorBrush Color="#FF004DE6"/>
-                    </BrushCollection>
-                    <local:CalligraphicPen x:Key="CalligraphicPen"/>
-                    <Style TargetType="InkToolbarCustomPenButton">
-                        <Setter Property="SelectedStrokeWidth" Value="1"/>
-                        <Setter Property="Background" Value="LightBlue"/>
-                    </Style>
-                    -->
+
                     </InkToolbar.Resources>
                     <InkToolbarBallpointPenButton Name="BallpointPenButton" SelectedStrokeWidth="2" Background="{StaticResource TITLE_BAR_WHITE}"></InkToolbarBallpointPenButton>
                     <InkToolbarEraserButton  Name="EraserButton" Background="{StaticResource TITLE_BAR_WHITE}"></InkToolbarEraserButton>
 
 
-                    <!--
-                    <InkToolbarCustomPenButton x:Name="calligraphyPen"  Background="LightBlue"
-                                                   CustomPen="{StaticResource CalligraphicPen}"
-                                                   Palette="{StaticResource CalligraphicPenPalette}"
-                                                   SelectedBrushIndex="2"
-                                                   ToolTipService.ToolTip="Calligraphy pen">
-                        <Border>
-                            <Grid>
-                                <TextBlock AutomationProperties.AccessibilityView="Raw" FontFamily="Segoe MDL2 Assets" Text="&#xEDFB;" Canvas.ZIndex="1"/>
-                                <TextBlock AutomationProperties.AccessibilityView="Raw" FontFamily="Segoe MDL2 Assets" Text="&#xF0C7;" 
-                                                       Foreground="{x:Bind calligraphyPen.SelectedBrush, Mode=OneWay}" Canvas.ZIndex="0"/>
-                            </Grid>
-                        </Border>
-                        <InkToolbarCustomPenButton.ConfigurationContent>
-                            <InkToolbarPenConfigurationControl/>
-                        </InkToolbarCustomPenButton.ConfigurationContent>
-                    </InkToolbarCustomPenButton>
-                    
-                    -->
+
                     <InkToolbarCustomToggleButton x:Name="toolButtonLasso"  Click="ToolButton_Lasso" Background="{StaticResource TITLE_BAR_WHITE}" ToolTipService.ToolTip="Selection tool">
                         <SymbolIcon Symbol="{x:Bind LassoSelect}"/>
                     </InkToolbarCustomToggleButton>
@@ -225,105 +235,134 @@
                     </InkToolbarCustomToggleButton>
                 </InkToolbar>
 
-                <CommandBar Grid.Column="4" OverflowButtonVisibility="Collapsed" Background="{StaticResource TITLE_BAR_WHITE}">
-                    <AppBarButton Name="serverConnectButton" Icon="Globe" Label="Server" 
-                              Click="ServerConnectButton_Click" IsEnabled="True">
-                        <AppBarButton.Flyout>
-                            <Flyout>
-                                <Grid>
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="3*"/>
-                                        <ColumnDefinition Width="*"/>
-                                    </Grid.ColumnDefinitions>
-
-                                    <Grid.RowDefinitions>
-                                        <RowDefinition Height="*"/>
-                                        <RowDefinition Height="*"/>
-                                        <RowDefinition Height="*"/>
-                                    </Grid.RowDefinitions>
-
-                                    <TextBlock Grid.Row="0" Grid.Column="0" Text="Bluetooth" Margin="5"/>
-                                    <TextBlock Grid.Row="1" Grid.Column="0" Text="Recognition" Margin="5"/>
-                                    <TextBlock Grid.Row="2" Grid.Column="0" Text="Diarization" Margin="5"/>
-
-                                    <ProgressRing Grid.Row="0" Grid.Column="1" Margin="5" Name="BluetoothProgress" IsActive="True"/>
-                                    <ProgressRing Grid.Row="1" Grid.Column="1" Margin="5" Name="RecognitionProgress" IsActive="True"/>
-                                    <ProgressRing Grid.Row="2" Grid.Column="1" Margin="5" Name="DiarizationProgress" IsActive="True"/>
-
-                                    <BitmapIcon Grid.Row="0" Grid.Column="1" Width="32" Height="32"
-                                                UriSource="ms-appx:///Assets/checkmark.png" 
-                                                Name="BluetoothComplete" Visibility="Collapsed"/>
-                                    <BitmapIcon Grid.Row="1" Grid.Column="1" Width="32" Height="32" 
-                                                UriSource="ms-appx:///Assets/checkmark.png" 
-                                                Name="RecognitionComplete" Visibility="Collapsed"/>
-                                    <BitmapIcon Grid.Row="2" Grid.Column="1"  Width="32" Height="32"
-                                                UriSource="ms-appx:///Assets/checkmark.png" 
-                                                Name="DiarizationComplete" Visibility="Collapsed"/>
-
-                                </Grid>
-                            </Flyout>
-                        </AppBarButton.Flyout>
-                        <ToolTipService.ToolTip>
-                            <TextBlock Text="Connect to server"/>
-                        </ToolTipService.ToolTip>
-                    </AppBarButton>
-                    <AppBarButton  Name="SaveButton" Icon="Save" Label="Save notes" Click="SaveButton_Click">
-                        <ToolTipService.ToolTip>
-                            <TextBlock Text="Enter full screen mode."/>
-                        </ToolTipService.ToolTip>
-                    </AppBarButton>
-                    <AppBarButton  Name="FullscreenBtn" Icon="FullScreen" Label="Fullscreen Mode" Click="FullscreenButton_Click">
-                        <ToolTipService.ToolTip>
-                            <TextBlock Text="Enter full screen mode."/>
-                        </ToolTipService.ToolTip>
-                    </AppBarButton>
-                </CommandBar>
-
-            </Grid>
+            </StackPanel>
+               
+           
         </Grid>
 
-        <SplitView  Name="MainSplitView" Grid.Row="1" DisplayMode="CompactInline" IsPaneOpen="True"  CompactPaneLength="40">
+        <SplitView   Name="MainSplitView" Grid.Row="1" DisplayMode="CompactInline"  IsPaneOpen="True" OpenPaneLength="400"  CompactPaneLength="40" PanePlacement="Left">
+            <SplitView.Style>
+                <Style TargetType="SplitView">
+                    <Setter Property="PaneBackground" Value="{StaticResource Left_Panel_Title_BG}"/>
+                </Style>
+            </SplitView.Style>
+
             <SplitView.Pane>
-                <!-- Added Phenotypes-->
-                <Grid Name="QuickViewGrid" BorderThickness="0 0 0 0" Background="WhiteSmoke">
+                <Grid Name="QuickViewGrid" BorderThickness="0 0 0 0" Background="Transparent">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="*"/>
-                        <RowDefinition Height="*"/>
-                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
                     </Grid.RowDefinitions>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="40"/>
                         <ColumnDefinition Width="*"/>
-                        <ColumnDefinition Width="5"/>
                     </Grid.ColumnDefinitions>
-                    <StackPanel Orientation="Vertical" VerticalAlignment="Top" Grid.Row="0">
-                        <Button BorderThickness="0" Foreground="Gray" Background="WhiteSmoke" Width="40" Height="30" Name="QuickViewButton" Click="QuickViewButton_Click">
+                    <!-- Tab buttons-->
+                    <StackPanel Orientation="Vertical" VerticalAlignment="Top" Grid.Row="0" Grid.Column="0" Background="Transparent">
+                        <Button Visibility="Collapsed" BorderThickness="0" Foreground="Gray" Background="WhiteSmoke" Width="40" Height="30" Name="QuickViewButton" Click="QuickViewButton_Click">
                             <SymbolIcon Name="QuickViewButtonSymbol" Symbol="Clear"></SymbolIcon>
                         </Button>
-                        <ToggleButton IsChecked="True" Style="{StaticResource MyToggleButtonStyle}"  Width="40" Height="80" Name="OverViewToggleButton" Click="OverViewToggleButton_Click">
+                        <ToggleButton IsChecked="True" Style="{StaticResource MyToggleButtonStyle}" Background="{StaticResource Left_Panel_Title_BG}" Width="40" Height="80" Name="OverViewToggleButton" Click="OverViewToggleButton_Click">
                             <Grid>
                                 <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xF0E3;"/>
-                                <TextBlock></TextBlock>
                             </Grid>
                         </ToggleButton>
-                        <ToggleButton Style="{StaticResource MyToggleButtonStyle}"  Width="40" Height="80" Name="SpeechToggleButton" Click="SpeechToggleButton_Click">
+                        <ToggleButton Style="{StaticResource MyToggleButtonStyle}" Background="{StaticResource Left_Panel_Title_BG}"  Width="40" Height="80" Name="SpeechToggleButton" Click="SpeechToggleButton_Click">
                             <Grid>
                                 <SymbolIcon Symbol="Message"></SymbolIcon>
-                                <TextBlock></TextBlock>
+
                             </Grid>
                         </ToggleButton>
-
                     </StackPanel>
 
-                    <Grid Name="QuickView1" Background="White"  BorderBrush="#EEEEEE" BorderThickness="0" Grid.Row="0" Grid.Column="1">
-                        <Grid.RowDefinitions>
-                            <RowDefinition Height="30"/>
-                            <RowDefinition Height="*"/>
-                        </Grid.RowDefinitions>
-                        <Border Background="{StaticResource Title_Background}">
-                            <TextBlock  Grid.Row="0"  Margin="3 0 0 0" VerticalAlignment="Center"  Foreground="Black">Saved phenotypes:</TextBlock>
-                        </Border>
-                        <ListView ScrollViewer.VerticalScrollBarVisibility="Hidden" x:Name="savedPhenoListView" Grid.Row="1" Padding="3" ItemsSource="{x:Bind PhenoMana.savedPhenotypes, Mode=OneWay}">
+                    <StackPanel Orientation="Vertical" VerticalAlignment="Bottom" Grid.Row="2" Grid.Column="0" Background="Transparent">
+              
+                        <Button Name="serverConnectButton" Foreground="Black" Style="{StaticResource MyButtonStyle}" Background="{StaticResource Left_Panel_Title_BG}" Click="ServerConnectButton_Click" IsEnabled="True">
+                            <Button.Flyout>
+                                <Flyout Placement="Right">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="3*"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="*"/>
+                                            <RowDefinition Height="*"/>
+                                            <RowDefinition Height="*"/>
+                                        </Grid.RowDefinitions>
+
+                                        <TextBlock Grid.Row="0" Grid.Column="0" Text="Bluetooth" Margin="5"/>
+                                        <TextBlock Grid.Row="1" Grid.Column="0" Text="Recognition" Margin="5"/>
+                                        <TextBlock Grid.Row="2" Grid.Column="0" Text="Diarization" Margin="5"/>
+
+                                        <ProgressRing Grid.Row="0" Grid.Column="1" Margin="5" Name="BluetoothProgress" IsActive="True"/>
+                                        <ProgressRing Grid.Row="1" Grid.Column="1" Margin="5" Name="RecognitionProgress" IsActive="True"/>
+                                        <ProgressRing Grid.Row="2" Grid.Column="1" Margin="5" Name="DiarizationProgress" IsActive="True"/>
+
+                                        <BitmapIcon Grid.Row="0" Grid.Column="1" Width="32" Height="32"
+                                                UriSource="ms-appx:///Assets/checkmark.png" 
+                                                Name="BluetoothComplete" Visibility="Collapsed"/>
+                                        <BitmapIcon Grid.Row="1" Grid.Column="1" Width="32" Height="32" 
+                                                UriSource="ms-appx:///Assets/checkmark.png" 
+                                                Name="RecognitionComplete" Visibility="Collapsed"/>
+                                        <BitmapIcon Grid.Row="2" Grid.Column="1"  Width="32" Height="32"
+                                                UriSource="ms-appx:///Assets/checkmark.png" 
+                                                Name="DiarizationComplete" Visibility="Collapsed"/>
+                                    </Grid>
+                                </Flyout>
+                            </Button.Flyout>
+                            <ToolTipService.ToolTip>
+                                <TextBlock Text="Connect to server"/>
+                            </ToolTipService.ToolTip>
+                            <SymbolIcon Symbol="Globe"></SymbolIcon>
+                        </Button>
+
+
+                        <ToggleButton HorizontalAlignment="Stretch"  Style="{StaticResource MyToggleButtonStyle}" Background="{StaticResource Left_Panel_Title_BG}" Name="audioButton" Click="AudioStreamButton_Clicked"
+                                    IsEnabled="True">
+                            
+                            <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE720;"/>
+                            
+                        </ToggleButton>
+
+                        <ToggleButton HorizontalAlignment="Stretch" Name="shutterButton"  Style="{StaticResource MyToggleButtonStyle}" Background="{StaticResource Left_Panel_Title_BG}"
+                              Click="CameraButton_Click" IsEnabled="False">
+                            
+                            <SymbolIcon Symbol="WebCam"></SymbolIcon>
+                        </ToggleButton>
+
+                        <ToggleButton HorizontalAlignment="Stretch" Name="StreamButton"   Click="StreamButton_Click" Style="{StaticResource MyToggleButtonStyle}" Background="{StaticResource Left_Panel_Title_BG}"
+                                     IsEnabled="True" >
+                            <SymbolIcon Symbol="Video"></SymbolIcon>
+                        </ToggleButton>
+
+                        <ToggleButton  HorizontalAlignment="Stretch" Name="PreviewButton" Click="PreviewButton_Click" Style="{StaticResource MyToggleButtonStyle}" Background="{StaticResource Left_Panel_Title_BG}">
+                           
+                            <SymbolIcon Symbol="More"></SymbolIcon>
+                        </ToggleButton>
+                    </StackPanel>
+
+                    <Grid Name="QuickView1" Background="White" Grid.Row="0" Grid.Column="1">
+                        <ListView ScrollViewer.VerticalScrollBarVisibility="Hidden" x:Name="savedPhenoListView" Padding="3 0" ItemsSource="{x:Bind PhenoMana.savedPhenotypes, Mode=OneWay}">
+                            <!--
+                            <ListView.HeaderTemplate>
+                                <DataTemplate>
+                                    <StackPanel >
+                                        <TextBlock Text="Saved phenotypes" FontSize="16" Padding="10 5" FontWeight="SemiBold"  Style="{ThemeResource CaptionTextBlockStyle}"/>
+                                    </StackPanel>
+                                </DataTemplate>
+                            </ListView.HeaderTemplate>
+                            -->
+                            <ListView.Header>
+                                <controls:ScrollHeader Mode="Sticky" TargetListViewBase="{x:Bind savedPhenoListView}">
+                                    <StackPanel Background="White">
+                                        <TextBlock  Foreground="{StaticResource WORD_DARKER}" Text="Saved phenotypes" FontSize="16" FontWeight="SemiBold" Padding="5"/>
+                                    </StackPanel>
+                                </controls:ScrollHeader>
+                            </ListView.Header>
+
                             <ListView.ItemTemplate>
                                 <DataTemplate x:DataType="phenotypeservice:Phenotype">
                                     <customcontrol:PhenotypeControl phenotypeName="{x:Bind name}" phenotypeId="{x:Bind hpId}" phenotypeState="{x:Bind state}" sourceType="Saved"></customcontrol:PhenotypeControl>
@@ -338,21 +377,21 @@
                                 </Style>
                             </ListView.ItemContainerStyle>
                         </ListView>
-
-
                     </Grid>
 
-                    <Grid Name="QuickView2" MaxHeight="400" Background="White" BorderBrush="#EEEEEE" BorderThickness="0"  Grid.Row="1" Grid.Column="1">
-                        <Grid.RowDefinitions>
-                            <RowDefinition Height="30"/>
-                            <RowDefinition Height="*"/>
-                        </Grid.RowDefinitions>
-                        <Border Background="{StaticResource Title_Background}">
-                            <TextBlock  Grid.Row="0"  Margin="3 0 0 0" VerticalAlignment="Center"  Foreground="Black">You may also want to investigate:</TextBlock>
-                        </Border>
+                    <Grid Name="QuickView2" MaxHeight="300" Background="White" Grid.Row="1" Grid.Column="1" >
+                       
+                        <ListView ScrollViewer.VerticalScrollBarVisibility="Hidden" x:Name="suggestedPhenoListView"  ItemsSource="{x:Bind PhenoMana.suggestedPhenotypes, Mode=OneWay}">
 
+                            <ListView.Header>
+                                <controls:ScrollHeader Mode="Sticky" TargetListViewBase="{x:Bind suggestedPhenoListView}">
+                                    <StackPanel Background="White" BorderThickness="0 1 0 0" BorderBrush="{StaticResource Left_Panel_Title_BG}">
+                                        <TextBlock Foreground="{StaticResource WORD_DARKER}" Text="You may also want to investigate" FontSize="16" FontWeight="SemiBold" Padding="5"/>
+                                    </StackPanel>
+                                </controls:ScrollHeader>
+                            </ListView.Header>
+                           
 
-                        <ListView ScrollViewer.VerticalScrollBarVisibility="Hidden" x:Name="suggestedPhenoListView" Grid.Row="1" Padding="3" ItemsSource="{x:Bind PhenoMana.suggestedPhenotypes, Mode=OneWay}">
                             <ListView.ItemTemplate>
                                 <DataTemplate x:DataType="phenotypeservice:Phenotype">
                                     <customcontrol:PhenotypeControl phenotypeName="{x:Bind name}" phenotypeId="{x:Bind hpId}" phenotypeState="{x:Bind state}" sourceType="Suggested"></customcontrol:PhenotypeControl>
@@ -370,19 +409,23 @@
                         </ListView>
                     </Grid>
 
-                    <Grid Name="QuickView3" MaxHeight="400" Background="White" BorderBrush="#EEEEEE" BorderThickness="0" Grid.Row="2" Grid.Column="1">
-                        <Grid.RowDefinitions>
-                            <RowDefinition Height="30"/>
-                            <RowDefinition Height="*"/>
-                        </Grid.RowDefinitions>
-                        <Border Background="{StaticResource Title_Background}">
-                            <TextBlock  Grid.Row="0"  Margin="3 0 0 0" VerticalAlignment="Center"  Foreground="Black">Differential diagnosis:</TextBlock>
-                        </Border>
+                    <Grid Name="QuickView3"  MaxHeight="300" Background="White" Grid.Row="2" Grid.Column="1">
+                     
 
-                        <ListView x:Name="diseaseListView" Grid.Row="1" ItemsSource="{x:Bind PhenoMana.predictedDiseases}" Padding="3">
+                        <ListView x:Name="diseaseListView" ScrollViewer.VerticalScrollBarVisibility="Hidden" ItemsSource="{x:Bind PhenoMana.predictedDiseases}">
+                    
+
+                            <ListView.Header>
+                                <controls:ScrollHeader Mode="Sticky" TargetListViewBase="{x:Bind diseaseListView}">
+                                    <StackPanel Background="White" BorderThickness="0 1 0 0" BorderBrush="{StaticResource Left_Panel_Title_BG}">
+                                        <TextBlock  Foreground="{StaticResource WORD_DARKER}" Text="Differential diagnosis" FontSize="16" FontWeight="SemiBold" Padding="5"/>
+                                    </StackPanel>
+                                </controls:ScrollHeader>
+                            </ListView.Header>
+
                             <ListView.ItemTemplate>
                                 <DataTemplate x:DataType="phenotypeservice:Disease">
-                                    <TextBlock Text="{x:Bind name}" FontSize="13"></TextBlock>
+                                    <customcontrol:DiseaseControl name="{x:Bind name}" id="{x:Bind id}" url="{x:Bind url}" score="{x:Bind score}"></customcontrol:DiseaseControl>
                                 </DataTemplate>
                             </ListView.ItemTemplate>
                             <ListView.ItemContainerStyle>
@@ -397,7 +440,7 @@
                         </ListView>
                     </Grid>
 
-                    <Grid Name="speechQuickView" Grid.Row="0" Grid.Column="1" Grid.RowSpan="3" Visibility="Collapsed">
+                    <Grid Name="speechQuickView" Grid.Row="0" Grid.Column="1" Grid.RowSpan="3" Visibility="Collapsed" Padding="5" Background="White">
                         <Grid.RowDefinitions>
                             <RowDefinition Height="*"></RowDefinition>
                             <RowDefinition Height="Auto"></RowDefinition>
@@ -550,7 +593,7 @@
                                 VerticalAlignment="Center"
                                 Foreground="Black"/>
 
-                                          
+
                                         </Grid>
 
                                     </Grid>
@@ -558,13 +601,12 @@
                             </ListView.ItemTemplate>
                         </local:ChatListView>
                     </Grid>
-                   
-                </Grid>
 
-                
-                
+                </Grid>
+                    
             </SplitView.Pane>
 
+            <Grid>
             <ContentControl x:Name="PageHost" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch">
                 <ContentControl.ContentTransitions>
                     <TransitionCollection>
@@ -573,319 +615,95 @@
                 </ContentControl.ContentTransitions>
             </ContentControl>
 
+            <RelativePanel>
+                    <RelativePanel.Resources>
+                        <Storyboard x:Name="StatusBorderEnterStoryboard">
+                            <FadeInThemeAnimation Duration="0:0:0.6" Storyboard.TargetName="StatusBorder" />
+                        </Storyboard>
+                        <Storyboard x:Name="StatusBorderExitStoryboard">
+                            <FadeOutThemeAnimation Duration="0:0:0.6" Storyboard.TargetName="StatusBorder" />
+                        </Storyboard>
+                    </RelativePanel.Resources>
 
-        </SplitView>
+                <TextBlock Visibility="Visible" x:Name="modeTextBlock" Width="240" HorizontalTextAlignment="Right" Margin="0 0 10 0" RelativePanel.AlignBottomWithPanel="True" RelativePanel.AlignRightWithPanel="True" Padding=" 0 0 10 0" FontSize="25" FontFamily="Segoe UI" FontWeight="ExtraBold" Foreground="LightGray" Opacity="0.5">Handwriting Mode</TextBlock>
 
-        <!--
-        <customcontrol:MyScriptTextEditor x:Name="myScriptEditor" Visibility="Collapsed" Grid.Row="2" Grid.Column="0" ></customcontrol:MyScriptTextEditor>
-        -->
+                    <StackPanel Spacing="2" Background="White" Name="pageIndexPanel"  Margin="0 0 0 0" RelativePanel.Above="CandidateGrid" Orientation="Horizontal"  RelativePanel.AlignHorizontalCenterWithPanel="True" Padding="0 0 0 0">
+                        
+                    <Button Height="30" Width="30" Padding="0 0 0 0" Background="WhiteSmoke"  Click="AddPageButton_Click">
+                        <SymbolIcon Symbol="Add" Foreground="{StaticResource Button_Background}" />
+                    </Button>
+                </StackPanel>
+                    <Border CornerRadius="10" x:Name="StatusBorder" Margin="0,20,0,0" RelativePanel.AlignTopWithPanel="True" RelativePanel.AlignHorizontalCenterWithPanel="True" MinWidth="500" Height="40">
 
-        <Grid  Padding="0 0 0 0" Grid.Row="2" >
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="40"></ColumnDefinition>
-                <ColumnDefinition Width="Auto"></ColumnDefinition>
-            </Grid.ColumnDefinitions>
+                        <TextBlock x:Name="StatusBlock" FontWeight="Bold" Foreground="White" TextAlignment="Center"
+                                   MaxWidth="{Binding ElementName=Splitter, Path=ActualWidth}" Margin="10,10,10,10" TextWrapping="Wrap"  />
+                    </Border>
 
-            <Grid Name="OpenCandidatePanelButtonGrid" Grid.Column="0">
-                <ToggleButton HorizontalAlignment="Stretch"  IsChecked="False" VerticalAlignment="Stretch" Style="{StaticResource MyToggleButtonStyle}" Name="OpenCandidatePanelButton" Click="OpenCandidate_Click" >
-                    <FontIcon Name="OpenCandidatePanelButtonIcon" Foreground="Gray" FontFamily="Segoe MDL2 Assets" Glyph="&#xE82F;"/>
-                </ToggleButton>
-            </Grid>
-            <StackPanel Padding="5 5 0 5" Orientation="Horizontal" Grid.Column="1" Name="CandidatePanelStackPanel" Visibility="Collapsed">
-                <TextBlock Name="CandidatePanelTextBlock" FontSize="16" Foreground="Gray" VerticalAlignment="Center">Are you looking for:</TextBlock>
 
-                <ListView Grid.Column="2" Padding="0 0 0 0" Width="800"
+                    <!-- pheotypes user are looking for -->
+                    <Grid  Padding="0 0 0 0" Name="CandidateGrid" HorizontalAlignment="Stretch" RelativePanel.AlignLeftWithPanel="True" RelativePanel.LeftOf="modeTextBlock" RelativePanel.AlignBottomWithPanel="True" Height="40">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="40"></ColumnDefinition>
+                            <ColumnDefinition Width="*"></ColumnDefinition>
+                        </Grid.ColumnDefinitions>
+
+                        <Grid Name="OpenCandidatePanelButtonGrid" Grid.Column="0">
+
+                            <ToggleButton HorizontalAlignment="Stretch"  Background="White" IsChecked="False" VerticalAlignment="Stretch" Style="{StaticResource MyToggleButtonStyle}" Name="OpenCandidatePanelButton" Click="OpenCandidate_Click" >
+                                <FontIcon Name="OpenCandidatePanelButtonIcon" Foreground="Gold" FontWeight="ExtraBlack"  FontFamily="Segoe MDL2 Assets" Glyph="&#xE82F;"/>
+                            </ToggleButton>
+
+                        </Grid>
+                        <StackPanel Padding="5 5 0 5" Orientation="Vertical" Grid.Column="1" Name="CandidatePanelStackPanel" Background="White"  Visibility="Collapsed">
+                           <!--
+                            <TextBlock Name="CandidatePanelTextBlock" FontSize="16" Foreground="Gray" VerticalAlignment="Center">Are you looking for:</TextBlock>
+-->
+                            <ListView Grid.Column="2" Padding="0 0 0 0" 
                           ScrollViewer.HorizontalScrollMode="Enabled"
                           ScrollViewer.VerticalScrollMode="Disabled"
                           ScrollViewer.HorizontalScrollBarVisibility="Hidden"
                           ScrollViewer.IsHorizontalRailEnabled="True"
                           x:Name="candidatePhenoListView" ItemsSource="{x:Bind PhenoMana.phenotypesCandidates, Mode=OneWay}">
-                    <ListView.ItemsPanel>
-                        <ItemsPanelTemplate>
-                            <VirtualizingStackPanel  Orientation="Horizontal"/>
-                        </ItemsPanelTemplate>
-                    </ListView.ItemsPanel>
-                    <ListView.ItemTemplate>
-                        <DataTemplate x:DataType="phenotypeservice:Phenotype">
-                            <customcontrol:PhenotypeBriefControl phenotypeName="{x:Bind name}" phenotypeId="{x:Bind hpId}" phenotypeState="{x:Bind state}" sourceType="{x:Bind sourceType}"></customcontrol:PhenotypeBriefControl>
-                        </DataTemplate>
-                    </ListView.ItemTemplate>
-                    <ListView.ItemContainerStyle>
-                        <Style TargetType="ListViewItem">
-                            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
-                            <Setter Property="VerticalContentAlignment" Value="Stretch" />
-                            <Setter Property="Margin" Value="5,0,5,0" />
-                            <Setter Property="Padding" Value="0,0,0,0" />
-                            <Setter Property="MinHeight" Value="20" />
-                            <Setter Property="MinWidth" Value="20" />
-                        </Style>
-                    </ListView.ItemContainerStyle>
-                </ListView>
+                                <ListView.ItemsPanel>
+                                    <ItemsPanelTemplate>
+                                        <VirtualizingStackPanel  Orientation="Horizontal"/>
+                                    </ItemsPanelTemplate>
+                                </ListView.ItemsPanel>
+                                <ListView.ItemTemplate>
+                                    <DataTemplate x:DataType="phenotypeservice:Phenotype">
+                                        <customcontrol:PhenotypeBriefControl phenotypeName="{x:Bind name}" phenotypeId="{x:Bind hpId}" phenotypeState="{x:Bind state}" sourceType="{x:Bind sourceType}"></customcontrol:PhenotypeBriefControl>
+                                    </DataTemplate>
+                                </ListView.ItemTemplate>
+                                <ListView.ItemContainerStyle>
+                                    <Style TargetType="ListViewItem">
+                                        <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                                        <Setter Property="VerticalContentAlignment" Value="Stretch" />
+                                        <Setter Property="Margin" Value="5,0,5,0" />
+                                        <Setter Property="Padding" Value="0,0,0,0" />
+                                        <Setter Property="MinHeight" Value="20" />
+                                        <Setter Property="MinWidth" Value="20" />
+                                    </Style>
+                                </ListView.ItemContainerStyle>
+                            </ListView>
 
-            </StackPanel>
+                        </StackPanel>
 
-        </Grid>
+                    </Grid>
 
-
-
-
-        <RelativePanel Name="CmdRelativePanel" Grid.Row="1" Grid.RowSpan="2">
-
-
-            <Border x:Name="StatusBorder" Margin="0,0,0,0" RelativePanel.AlignTopWithPanel="True" RelativePanel.AlignHorizontalCenterWithPanel="True" MinWidth="500" Height="40">
-
-                <TextBlock x:Name="StatusBlock" FontWeight="Bold" Foreground="White" TextAlignment="Center"
-                                   MaxWidth="{Binding ElementName=Splitter, Path=ActualWidth}" Margin="10,10,10,10" TextWrapping="Wrap"  />
-            </Border>
-
-
-
-            <!-- Photo service -->
-            <!--
-            <Grid Background="WhiteSmoke" Name="CameraCanvas" Height="300" Width="530" RelativePanel.Above="pageIndexTextBlock" RelativePanel.AlignRightWithPanel="True" Visibility="Collapsed">
-                <photovideoservice:PhotoVideoCaptureControl x:Name="captureControl"></photovideoservice:PhotoVideoCaptureControl>
-
-                <StackPanel Height="30" VerticalAlignment="Top" Background="WhiteSmoke" Orientation="Horizontal">
-                    <Button  Height="30" Width="40" Click="CameraClose_Click" Background="WhiteSmoke" Foreground="Gray">
-                        <SymbolIcon Symbol="Clear" ></SymbolIcon>
-                    </Button>
-                    <TextBlock VerticalAlignment="Center" FontSize="16" Margin="20 0 0 0" Text="Camera"/>
-                </StackPanel>
-                <StackPanel Height="30" VerticalAlignment="Top" HorizontalAlignment="Right" Orientation="Horizontal" >
-
-                    <Button Height="30" Width="40" Name="VideoButton" Click="VideoButton_Click" IsEnabled="False" Background="WhiteSmoke">
-                        <Grid>
-                            <Ellipse x:Name="StartRecordingIcon" Fill="Red" Width="10" Height="10"/>
-                            <Rectangle x:Name="StopRecordingIcon" Fill="White" Width="20" Height="20" Visibility="Collapsed"/>
-                        </Grid>
-                    </Button>
-                    <Button Height="30" Width="40" Name="PhotoButton" Click="PhotoButton_Click" Foreground="Black" Background="WhiteSmoke">
-                        <SymbolIcon Symbol="Camera" />
-                    </Button>
-                </StackPanel>
+                </RelativePanel>
             </Grid>
-            -->
-            <!-- END Photo service -->
+        </SplitView>
 
-            <Grid   Name="ControlView"
-                    RelativePanel.Above="controlCmdBar" RelativePanel.AlignRightWithPanel="True"
-                  Height="260"  Width="560"
-                  Background="{StaticResource TITLE_BAR_WHITE}">
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="*"/>
-                </Grid.RowDefinitions>
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="Auto"/>
-                    <ColumnDefinition Width="150"/>
-                    <ColumnDefinition Width="*"/>
-                </Grid.ColumnDefinitions>
-
-                <TextBlock Text="Audio" Grid.Row="1" Grid.Column="0"
-                           VerticalAlignment="Center" HorizontalAlignment="Center"/>
-                <ToggleSwitch   Name="audioSwitch"
-                                Margin="5" Width="100" FlowDirection="LeftToRight"
-                                IsOn="{x:Bind AudioOn, Mode=TwoWay}"
-                              OffContent="Record" OnContent="Disconnect"
-                              Grid.Row="1" Grid.Column="1" RequestedTheme="Default"
-                              Toggled="AudioToggleSwitch_Toggled" IsEnabled="False"/>
-
-                <TextBlock Text="Video" Grid.Row="2" Grid.Column="0"
-                           VerticalAlignment="Center" HorizontalAlignment="Center"/>
-                <ToggleSwitch   Name="videoSwitch"
-                                Margin="5" Width="100" FlowDirection="LeftToRight"
-                                IsOn="{x:Bind VideoOn, Mode=TwoWay}"
-                              OffContent="Record" OnContent="Stop"
-                              Grid.Row="2" Grid.Column="1" RequestedTheme="Default"
-                              Toggled="VideoToggleSwitch_Toggled" IsEnabled="False"/>
-
-                <TextBlock Text="Camera" Grid.Row="3" Grid.Column="0"
-                           VerticalAlignment="Center" HorizontalAlignment="Center"/>
-                <Button Name="cameraButton"
-                        Margin="19.8,0,20.6,0.2" FlowDirection="LeftToRight"
-                        Content="Snap a photo"
-                        Grid.Row="3" Grid.Column="1" RequestedTheme="Default"
-                        VerticalAlignment="Bottom" HorizontalAlignment="Center"
-                              Click="CameraButton_Click" IsEnabled="False"/>
-
-                <!--
-                We have made Bluetooth connection automatic
-                <TextBlock Text="Bluetooh" Grid.Row="3" Grid.Column="0"
-                           VerticalAlignment="Center" HorizontalAlignment="Center"/>
-                <Button Name="bluetoothButton"
-                        Margin="1" FlowDirection="LeftToRight"
-                        Content="Connect"
-                        Grid.Row="3" Grid.Column="1" RequestedTheme="Default"
-                        VerticalAlignment="Center" HorizontalAlignment="Center"
-                              Click="BluetoothButton_Click"  IsEnabled="True"/>
-                -->
-
-                <WebView Name="StreamView" Width="360" Height="280"
-                         Grid.Row="0" Grid.Column="2" Grid.RowSpan="5"
-                         HorizontalAlignment="Center" VerticalAlignment="Center"
-                         Visibility="Visible" Canvas.ZIndex="999"
-                     Source="http://192.168.137.8:8000" />
-            </Grid>
-
-            <CommandBar Padding="0 0 0 0" Visibility="Visible"
-                        Width="Auto" Height="Auto"
-                        RelativePanel.AlignRightWithPanel="True" RelativePanel.AlignBottomWithPanel="True"
-                        OverflowButtonVisibility="Collapsed" Background="{StaticResource TITLE_BAR_WHITE}"
-                        Canvas.ZIndex="999"
-                        x:Name="controlCmdBar"
-                        >
-
-                <AppBarToggleButton Name="testButton" Icon="Microphone" Label="Speech Recognition" Click="AudioStreamButton_Clicked"
-                                    IsChecked="{x:Bind AudioOn, Mode=TwoWay}" IsEnabled="True">
-                    <ToolTipService.ToolTip>
-                        <TextBlock Text="Enable/Disable audio recording"/>
-                    </ToolTipService.ToolTip>
-                </AppBarToggleButton>
-
-                <AppBarButton Name="shutterButton" Icon="WebCam" Label="Camera Shutter" 
-                              Click="CameraButton_Click" IsEnabled="False">
-                    <ToolTipService.ToolTip>
-                        <TextBlock Text="Take a picture"/>
-                    </ToolTipService.ToolTip>
-                </AppBarButton>
-
-                <AppBarToggleButton  Name="StreamButton" Icon="Video" Label="Video"  Click="StreamButton_Click"
-                                     IsChecked="{x:Bind VideoOn, Mode=TwoWay}"  IsEnabled="False"
-                                     Style="{StaticResource MyAppBarToggleButtonStyle}"/>
-
-                <AppBarToggleButton Icon="More" Label="Stream Preview" Name="PreviewButton" Click="PreviewButton_Click">
-                    <ToolTipService.ToolTip>
-                        <TextBlock Text="Preview of streaming content"/>
-                    </ToolTipService.ToolTip>
-                </AppBarToggleButton>
-            </CommandBar>
-
-            <!--
-            <Grid Height="40" Width="90" Padding="0 0 0 0" Background="WhiteSmoke" Name="showTextGrid" RelativePanel.AlignBottomWithPanel="True" RelativePanel.AlignRightWithPanel="True">
-                <Image  Visibility="Collapsed" Name="printImage" Width="70" Source="Assets/abc_print.png" VerticalAlignment="Center" HorizontalAlignment="Center" Opacity="0.3"/>
-                <Image  Name="writeImage" Width="70" Source="Assets/abc_write.png" VerticalAlignment="Center" HorizontalAlignment="Center" Opacity="0.3"/>
-            </Grid>
--->
-
-            <TextBlock x:Name="modeTextBlock" Width="240" HorizontalTextAlignment="Right" Margin="0 0 10 0" RelativePanel.AlignTopWithPanel="True" RelativePanel.AlignRightWithPanel="True" Padding=" 0 0 10 0" FontSize="25" FontFamily="Segoe UI" FontWeight="ExtraBold" Foreground="LightGray" Opacity="0.5">Handwriting Mode</TextBlock>
-
-            <StackPanel  Name="pageIndexPanel"  Margin="0 0 0 40" Orientation="Horizontal" RelativePanel.AlignBottomWithPanel="True" RelativePanel.AlignHorizontalCenterWithPanel="True" Padding="0 5 22 0">
-                <Button Height="30" Width="30" Padding="0 0 0 0" Background="WhiteSmoke"  Click="AddPageButton_Click">
-                    <SymbolIcon Symbol="Add" Foreground="{StaticResource Button_Background}" />
-                </Button>
-            </StackPanel>
-            <TextBlock Name="cmdBarTextBlock" Margin="12,14" RelativePanel.AlignRightWithPanel="True" RelativePanel.Above="controlCmdBar"
-                               Text=""
-                               Visibility="Visible"/>
-            <CommandBar RelativePanel.AlignBottomWithPanel="True"
-                        RelativePanel.AlignRightWithPanel="True"
-                        Visibility="Collapsed"
-                        Name="cmdBar">
-                <!--
-                <AppBarToggleButton Name="testButton" Icon="Microphone" Label="Speech Recognition" Click="TestWS_Click">
-                    <ToolTipService.ToolTip>
-                        <TextBlock Text="Enable audio recording"/>
-                    </ToolTipService.ToolTip>
-                </AppBarToggleButton>
-
-                
-                    This is for Microsoft speech recognition engine
-                    <AppBarToggleButton Name="micButton" Icon="Microphone" Label="Speech recognition" Click="MicButton_Click" />
-                -->
-
-
-                <!--<AppBarButton  Icon="WebCam" Label="Photo/Video"  Click="TakePhoto_Click" >
-                    <AppBarButton.Flyout>
-                        <MenuFlyout>
-                            <MenuFlyoutItem Text="Select a photo" Click="MenuFlyoutItem_Click" Tag="rating" Icon="BrowsePhotos"/>
-                            <MenuFlyoutItem Text="Take a photo" Click="TakePhoto_Click" Tag="Take a photo" Icon="Camera"/>
-                            <MenuFlyoutItem Text="Record a video" Click="MenuFlyoutItem_Click" Tag="distance" Icon="Video"/>
-                        </MenuFlyout>
-                    </AppBarButton.Flyout>
-                    <ToolTipService.ToolTip>
-                        <TextBlock Text="Enable video recording"/>
-                    </ToolTipService.ToolTip>
-                </AppBarButton>
-                -->
-
-                <AppBarSeparator/>
-
-                <AppBarButton Icon="Page2" Label="Notes" Click="NotesButton_Click">
-                    <ToolTipService.ToolTip>
-                        <TextBlock Text="Write notes"/>
-                    </ToolTipService.ToolTip>
-                </AppBarButton>
-
-                <AppBarToggleButton Icon="PreviewLink" Label="Collected Phenotypes" Name="OverviewButton" Click="OverviewButton_Click">
-                    <ToolTipService.ToolTip>
-                        <TextBlock Text="View collected phenotypes"/>
-                    </ToolTipService.ToolTip>
-                </AppBarToggleButton>
-
-                <AppBarToggleButton Icon="Message" Label="Conversation" Name="SpeechButton" Click="SpeechButton_Click">
-                    <ToolTipService.ToolTip>
-                        <TextBlock Text="View conversation"/>
-                    </ToolTipService.ToolTip>
-                </AppBarToggleButton>
-
-                <AppBarSeparator/>
-                <!--
-                <AppBarButton Icon="Message" Label="Speech" Click="PageOverviewButton_Click"/>
-                -->
-                <AppBarButton Icon="Back" Label="Back" Click="PreviousPageButton_Click"/>
-                <AppBarButton Icon="Forward" Label="Forward" Click="NextPageButton_Click"/>
-                <AppBarButton Icon="Add" Label=""  Click="AddPageButton_Click"/>
-
-
-                <CommandBar.SecondaryCommands>
-                    <AppBarButton Icon="Save" Label="Save notes" Click="SaveNote_Click"/>
-                    <AppBarButton Icon="OpenFile" Label="Open notes" Click="LoadNote_Click"/>
-                </CommandBar.SecondaryCommands>
-
-            </CommandBar>
-
-
-
-            <Grid Background="White"
-                  RelativePanel.Above="cmdBar"
-                  RelativePanel.AlignLeftWithPanel="True"
-                  RelativePanel.AlignRightWithPanel="True"
-                  Name="addedPhenoGrid"
-                  Visibility="Collapsed">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="*"/>
-                </Grid.ColumnDefinitions>
-
-            </Grid>
-
-            <Grid Background="White"
-                  RelativePanel.Above="cmdBar"
-                  RelativePanel.AlignLeftWithPanel="True"
-                  RelativePanel.AlignRightWithPanel="True"
-                  Name="searchPhenoGrid"
-                  Visibility="Collapsed">
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="40"/>
-                    <RowDefinition Height="*"/>
-                </Grid.RowDefinitions>
-                <StackPanel Orientation="Horizontal">
-                    <TextBox></TextBox>
-                    <Button Width="40" Height="40">
-                        <SymbolIcon Symbol="Find"></SymbolIcon>
-                    </Button>
-                </StackPanel>
-            </Grid>
-        </RelativePanel>
-
-        <Popup x:Name="OverviewPopUp" HorizontalOffset="0" VerticalOffset="0">
+        <!--
+        <customcontrol:MyScriptTextEditor x:Name="myScriptEditor" Visibility="Collapsed" Grid.Row="1"></customcontrol:MyScriptTextEditor>
+     -->
+        
+        <Popup x:Name="OverviewPopUp">
             <local:OverviewPage x:Name="OverivePopUpPage"/>
         </Popup>
-        <Popup x:Name="SpeechPopUp" HorizontalOffset="0" VerticalOffset="0">
+        <Popup x:Name="SpeechPopUp" >
             <local:SpeechPage x:Name="SpeechPopUpPage"/>
         </Popup>
+        
     </Grid>
 </Page>

@@ -192,7 +192,7 @@ namespace PhenoPad
         public static readonly string ViewMode = "View Mode";
         private string currentMode = WritingMode;
 
-        public string RPI_ADDRESS { get; } = "http://192.168.137.112:8000";
+        public string RPI_ADDRESS { get; } = "http://192.168.0.19:8000";
         public BluetoothService.BluetoothService bluetoothService = null;
         public UIWebSocketClient uiClinet = null;
 
@@ -232,14 +232,13 @@ namespace PhenoPad
             modeTextBlock.PointerEntered += new PointerEventHandler(modeTextBlock_PointerEntered);
             modeTextBlock.PointerExited += new PointerEventHandler(modeTextBlock_PointerExited);
 
-            ControlView.Visibility = Visibility.Collapsed;
-
             chatView.ItemsSource = SpeechManager.getSharedSpeechManager().conversation;
             chatView.ContainerContentChanging += OnChatViewContainerContentChanging;
             realtimeChatView.ItemsSource = SpeechManager.getSharedSpeechManager().realtimeConversation;
-            this.StreamView.Navigate(new Uri(RPI_ADDRESS));
+            
 
-            this.saveNotesTimer(15);
+            // save to disk every 15 seconds
+            // this.saveNotesTimer(15);
         }
 
         private async void InitializeNotebook()
@@ -338,11 +337,13 @@ namespace PhenoPad
             ThreadPoolTimer PeriodicTimer = ThreadPoolTimer.CreatePeriodicTimer((source) =>
             {
                 this.saveNoteToDisk();
+                /**
                 Dispatcher.RunAsync(CoreDispatcherPriority.High,
                     () =>
                     {
                         NotifyUser("Note " + this.noteNameTextBox.Text + " has been saved", NotifyType.StatusMessage, 1);
                     });
+                **/
 
             }, period);
         }
@@ -605,7 +606,7 @@ namespace PhenoPad
                     isListening = false;
                 }
 
-                cmdBarTextBlock.Text = "";
+                //cmdBarTextBlock.Text = "";
 
                 speechRecognizer.ContinuousRecognitionSession.Completed -= ContinuousRecognitionSession_Completed;
                 speechRecognizer.ContinuousRecognitionSession.ResultGenerated -= ContinuousRecognitionSession_ResultGenerated;
@@ -763,6 +764,7 @@ namespace PhenoPad
 
         private void NotesButton_Click(object sender, RoutedEventArgs e)
         {
+            NotesButton.IsChecked = true;
             if (OverviewPopUp.IsOpen)
             {
                 OverviewButton.IsChecked = false;
@@ -789,11 +791,12 @@ namespace PhenoPad
 
         private void OverviewButton_Click(object sender, RoutedEventArgs e)
         {
+            NotesButton.IsChecked = false;
             if (!OverviewPopUp.IsOpen)
             {
                 OverivePopUpPage.Width = Window.Current.Bounds.Width;
-                OverivePopUpPage.Height = Window.Current.Bounds.Height - topCmdBar.ActualHeight - 40;
-                OverivePopUpPage.Margin = new Thickness(0, topCmdBar.ActualHeight, 0, 40);
+                OverivePopUpPage.Height = Window.Current.Bounds.Height - topCmdBar.ActualHeight;
+                OverivePopUpPage.Margin = new Thickness(0, topCmdBar.ActualHeight, 0, 0);
                 OverviewPopUp.IsOpen = true;
 
             }
@@ -802,13 +805,11 @@ namespace PhenoPad
                 OverviewPopUp.IsOpen = false;
                 
             }
-            
-            /**
-            Frame rootFrame = Window.Current.Content as Frame;
-            rootFrame.Navigate(typeof(OverviewPage));
-
-            
-            **/
+            if (SpeechPopUp.IsOpen)
+            {
+                SpeechPopUp.IsOpen = false;
+                SpeechButton.IsChecked = false;
+            }
         }
 
         private void MenuFlyoutItem_Click(object sender, RoutedEventArgs e)
@@ -818,16 +819,23 @@ namespace PhenoPad
 
         private void SpeechButton_Click(object sender, RoutedEventArgs e)
         {
+            NotesButton.IsChecked = false;
             if (!SpeechPopUp.IsOpen)
             {
                 SpeechPopUpPage.Width = Window.Current.Bounds.Width;
-                SpeechPopUpPage.Height = Window.Current.Bounds.Height - topCmdBar.ActualHeight- 40;
-                SpeechPopUpPage.Margin = new Thickness(0, topCmdBar.ActualHeight, 0, 40);
+                SpeechPopUpPage.Height = Window.Current.Bounds.Height - topCmdBar.ActualHeight;
+                SpeechPopUpPage.Margin = new Thickness(0, topCmdBar.ActualHeight, 0, 0);
                 SpeechPopUp.IsOpen = true;
             }
             else
             {
                 SpeechPopUp.IsOpen = false;  
+            }
+
+            if (OverviewPopUp.IsOpen)
+            {
+                OverviewPopUp.IsOpen = false;
+                OverviewButton.IsChecked = false;
             }
         }
 
@@ -899,7 +907,7 @@ namespace PhenoPad
                     {
                         //rootPage.NotifyUser("Automatic Time Out of Dictation", NotifyType.StatusMessage);
                         Console.WriteLine("Automatic Time Out of Dictation");
-                        cmdBarTextBlock.Text = dictatedTextBuilder.ToString();
+                        //cmdBarTextBlock.Text = dictatedTextBuilder.ToString();
                         isListening = false;
                     });
                 }
@@ -931,7 +939,7 @@ namespace PhenoPad
             await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () =>
             {
                 //cmdBarTextBlock.Text = textboxContent;
-                cmdBarTextBlock.Text = hypothesis;
+                //cmdBarTextBlock.Text = hypothesis;
             });
                        
         }
@@ -956,12 +964,12 @@ namespace PhenoPad
                 {
 
                     //cmdBarTextBlock.Text = dictatedTextBuilder.ToString();
-                    cmdBarTextBlock.Text = args.Result.Text;
+                    //cmdBarTextBlock.Text = args.Result.Text;
                     //SpeechManager.getSharedSpeechManager().AddNewMessage(args.Result.Text);
-                    List<Phenotype> annoResults = await PhenotypeManager.getSharedPhenotypeManager().annotateByNCRAsync(cmdBarTextBlock.Text);
-                    if (annoResults != null)
+                    //List<Phenotype> annoResults = await PhenotypeManager.getSharedPhenotypeManager().annotateByNCRAsync("");
+                    //if (annoResults != null)
                     {
-                        PhenotypeManager.getSharedPhenotypeManager().addPhenotypeInSpeech(annoResults);
+                        //PhenotypeManager.getSharedPhenotypeManager().addPhenotypeInSpeech(annoResults);
 
                         /**
                         AnnoPhenoStackPanel.Children.Clear();
@@ -1067,9 +1075,9 @@ namespace PhenoPad
             if (speechEngineRunning == false)
             {
                 speechManagerTask = SpeechManager.getSharedSpeechManager().StartAudio();
-                this.cmdBarTextBlock.Visibility = Visibility.Visible;
+           
                 speechEngineRunning = !speechEngineRunning;
-
+                
                 await speechManagerTask;
 
                 //await BluetoothService.BluetoothService.getBluetoothService().sendBluetoothMessage("audio start");
@@ -1077,9 +1085,9 @@ namespace PhenoPad
             else
             {
                 speechManagerTask = SpeechManager.getSharedSpeechManager().EndAudio();
-                this.cmdBarTextBlock.Visibility = Visibility.Collapsed;
+                //this.cmdBarTextBlock.Visibility = Visibility.Collapsed;
                 speechEngineRunning = !speechEngineRunning;
-                cmdBarTextBlock.Text = "";
+                //cmdBarTextBlock.Text = "";
 
                 //await BluetoothService.BluetoothService.getBluetoothService().sendBluetoothMessage("audio end");
             }
@@ -1325,18 +1333,21 @@ namespace PhenoPad
             StatusBlock.Text = strMessage;
 
             // Collapse the StatusBlock if it has no text to conserve real estate.
-            StatusBorder.Visibility = (StatusBlock.Text != String.Empty) ? Visibility.Visible : Visibility.Collapsed;
+           // StatusBorder.Visibility = (StatusBlock.Text != String.Empty) ? Visibility.Visible : Visibility.Collapsed;
             if (StatusBlock.Text != String.Empty)
             {
-                StatusBorder.Visibility = Visibility.Visible;
+                //StatusBorder.Visibility = Visibility.Visible;
+                StatusBorderEnterStoryboard.Begin();
             }
             else
             {
-                StatusBorder.Visibility = Visibility.Collapsed;
+                //StatusBorder.Visibility = Visibility.Collapsed;
+                StatusBorderExitStoryboard.Begin();
             }
 
             await Task.Delay(1000 * seconds);
-            StatusBorder.Visibility = Visibility.Collapsed;
+            //StatusBorder.Visibility = Visibility.Collapsed;
+            StatusBorderExitStoryboard.Begin();
         }
 
         
@@ -1585,7 +1596,7 @@ namespace PhenoPad
                 //SpeechManager.getSharedSpeechManager().setServerAddress("speechengine.ccm.sickkids.ca");
                 //SpeechManager.getSharedSpeechManager().setServerPort("8888");
 
-                ipResult = "speechengine.ccm.sickkids.ca";
+                ipResult = "phenopad.ccm.sickkids.ca";
                 portResult = "8888";
             } else
             {
@@ -1706,10 +1717,12 @@ namespace PhenoPad
             {
                 CandidatePanelStackPanel.Visibility = Visibility.Visible;
                 OpenCandidatePanelButtonIcon.Glyph = "\uE8BB";
+                OpenCandidatePanelButtonIcon.Foreground = new SolidColorBrush(Colors.DarkGray);
             }
             else {
                 CandidatePanelStackPanel.Visibility = Visibility.Collapsed;
                  OpenCandidatePanelButtonIcon.Glyph = "\uE82F";
+                OpenCandidatePanelButtonIcon.Foreground = new SolidColorBrush(Colors.Gold);
             }
             
         }
@@ -1781,12 +1794,12 @@ namespace PhenoPad
             }
         }
         
-        private void BackButton_Click(object sender, RoutedEventArgs e)
+        private async void BackButton_Click(object sender, RoutedEventArgs e)
         {
             //On_BackRequested();
             this.Frame.Navigate(typeof(PageOverview));
             UIWebSocketClient.getSharedUIWebSocketClient().disconnect();
-            this.saveNoteToDisk();
+            await this.saveNoteToDisk();
         }
         // Handles system-level BackRequested events and page-level back button Click events
         private bool On_BackRequested()
@@ -1801,14 +1814,9 @@ namespace PhenoPad
 
         private void PreviewButton_Click(object sender, RoutedEventArgs e)
         {
-            if (PreviewButton.IsChecked == true)
-            {
-                ControlView.Visibility = Visibility.Visible;
-            }
-            else
-            {
-                ControlView.Visibility = Visibility.Collapsed;
-            }
+            var mediaFlyout = (Flyout)this.Resources["MultimediaPreviewFlyout"];
+            mediaFlyout.ShowAt((FrameworkElement)sender);
+           
         }
 
         private async void SaveButton_Click(object sender, RoutedEventArgs e)
@@ -1862,14 +1870,14 @@ namespace PhenoPad
             //changeSpeechEngineState(!this.AudioOn);
         }
 
-        private void VideoToggleSwitch_Toggled(object sender, RoutedEventArgs e)
+        private async void VideoToggleSwitch_Toggled(object sender, RoutedEventArgs e)
         {
-            videoStreamStatusUpdateAsync(this._videoOn);
+            await videoStreamStatusUpdateAsync(this._videoOn);
         }
 
-        private void StreamButton_Click(object sender, RoutedEventArgs e)
+        private async void StreamButton_Click(object sender, RoutedEventArgs e)
         {
-            videoStreamStatusUpdateAsync(!this._videoOn);
+            await videoStreamStatusUpdateAsync(!this._videoOn);
         }
 
         private async Task videoStreamStatusUpdateAsync(bool desiredStatus)
@@ -1880,7 +1888,7 @@ namespace PhenoPad
                                    NotifyType.ErrorMessage, 2);
                 this.VideoOn = false;
 
-                this.bluetoothInitialized(false);
+                //this.bluetoothInitialized(false);
                 this.StreamButton.IsChecked = false;
                 this.videoSwitch.IsOn = false;
                 return;
@@ -1888,7 +1896,7 @@ namespace PhenoPad
 
             Debug.WriteLine("Sending message");
             
-            if (!desiredStatus)
+            if (desiredStatus)
             {
                 await this.bluetoothService.sendBluetoothMessage("camera start");
             }
@@ -1900,7 +1908,7 @@ namespace PhenoPad
             //this.StreamButton.IsChecked = desiredStatus;
 
             Debug.WriteLine("Setting status value to " + (this.bluetoothService.initialized && desiredStatus).ToString());
-            //this.VideoOn = this.bluetoothService.initialized && desiredStatus;
+            this.VideoOn = this.bluetoothService.initialized && desiredStatus;
         }
 
         private async void CameraButton_Click(object sender, RoutedEventArgs e)
@@ -1909,7 +1917,7 @@ namespace PhenoPad
             {
                 NotifyUser("Could not reach Bluetooth device, try to connect again",
                                    NotifyType.ErrorMessage, 2);
-                this.bluetoothInitialized(false);
+                //this.bluetoothInitialized(false);
                 return;
             }
 
@@ -1921,7 +1929,6 @@ namespace PhenoPad
             this.StreamButton.IsEnabled = val;
             this.videoSwitch.IsEnabled = val;
             this.shutterButton.IsEnabled = val;
-            this.cameraButton.IsEnabled = val;
             this.cameraButton.IsEnabled = val;
 
             if (val)
@@ -1935,20 +1942,14 @@ namespace PhenoPad
             this.bluetoothService = BluetoothService.BluetoothService.getBluetoothService();
             this.bluetoothService.Initialize();
         }*/
-
-        private bool serverConnectButtonPressed = false;
-        private void ServerConnectButton_Click(object sender, RoutedEventArgs e)
+        
+        private async void ServerConnectButton_Click(object sender, RoutedEventArgs e)
         {
-            if (!serverConnectButtonPressed)
-            {
-                uiClinet = UIWebSocketClient.getSharedUIWebSocketClient();
-                uiClinet.ConnectToServer();
+            uiClinet = UIWebSocketClient.getSharedUIWebSocketClient();
+            await uiClinet.ConnectToServer();
 
-                this.bluetoothService = BluetoothService.BluetoothService.getBluetoothService();
-                this.bluetoothService.Initialize();
-
-                this.serverConnectButtonPressed = true;
-            }
+            this.bluetoothService = BluetoothService.BluetoothService.getBluetoothService();
+            await this.bluetoothService.Initialize();
         }
 
         public void setStatus(string item)
@@ -1970,7 +1971,7 @@ namespace PhenoPad
             }
             else if (item == "ready")
             {
-                this.testButton.IsEnabled = true;
+                this.audioButton.IsEnabled = true;
                 //this.audioSwitch.IsEnabled = true;
             }
         }
@@ -2008,6 +2009,22 @@ namespace PhenoPad
             }*/
         }
 
+        
+
+        private void MultimediaPreviewFlyout_Opened(object sender, object e)
+        {
+            this.StreamView.Navigate(new Uri(RPI_ADDRESS));
+        }
+
+        private void FullscreenBtn_Click(object sender, RoutedEventArgs e)
+        {
+
+        }
+
+        private void MyscriptBtn_Click(object sender, RoutedEventArgs e)
+        {
+           // myScriptEditor.Visibility = MyscriptBtn.IsChecked != null && (bool)MyscriptBtn.IsChecked ? Visibility.Visible : Visibility.Collapsed;
+        }
     }
 
     public enum NotifyType

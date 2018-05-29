@@ -6,10 +6,15 @@
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:phenotypeservice="using:PhenoPad.PhenotypeService"
-    mc:Ignorable="d"
-    d:DesignHeight="300"
-    d:DesignWidth="400">
-
+    mc:Ignorable="d">
+    
+    <Grid>
+        <WebView Name="webView" Width="666" Height="777" />
+        <Grid Name="ProgressRingGrid" Background="WhiteSmoke">
+            <ProgressRing VerticalAlignment="Center" HorizontalAlignment="Center" Height="100" Width="100" x:Name="aProgressRing" IsActive="True"></ProgressRing>
+        </Grid>
+    </Grid>
+    <!--
     <Grid FlowDirection="LeftToRight">
         <Grid.Resources>
             <Style TargetType="TextBlock">
@@ -73,4 +78,5 @@
         
 
     </Grid>
+    -->
 </UserControl>

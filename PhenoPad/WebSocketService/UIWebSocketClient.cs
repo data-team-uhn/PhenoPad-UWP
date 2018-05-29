@@ -7,18 +7,11 @@ using System.Threading.Tasks;
 using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
-using System.Threading.Tasks;
 using System.Net.WebSockets;
 using System.Threading;
 
 using System.Diagnostics;
 
-using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using Windows.ApplicationModel.Core;
 using Windows.Foundation;
 using Windows.Networking;
@@ -70,7 +63,7 @@ namespace PhenoPad.WebSocketService
         }
 
         // !!WARNING !! server address changes every time
-        private static string serverAddress = "speechengine.ccm.sickkids.ca";
+        private static string serverAddress = "phenopad.ccm.sickkids.ca";
         private static string serverPort = "8888";
 
         public static string getUI_URI()
@@ -107,6 +100,8 @@ namespace PhenoPad.WebSocketService
             }
             catch (Exception ex)
             {
+                Debug.WriteLine(ex.Message);
+                Debug.WriteLine(ex.Message);
                 client.Dispose();
                 client = null;
                 return false;
@@ -146,6 +141,7 @@ namespace PhenoPad.WebSocketService
             }
             catch (Exception ex)
             {
+                Debug.WriteLine(ex.Message);
                 Debug.WriteLine("Send data error.");
                 MainPage.Current.NotifyUser("Error sending data to speech engine", NotifyType.ErrorMessage, 2);
 
@@ -236,6 +232,7 @@ namespace PhenoPad.WebSocketService
                 }
                 catch (Exception ex)
                 {
+                    Debug.WriteLine(ex.Message);
                     Debug.WriteLine("Message of length " + message.Length.ToString() + " cannot be parsed as ManagerIDRootObject");
                 }
             }
