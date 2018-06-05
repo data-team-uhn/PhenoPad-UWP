@@ -161,7 +161,7 @@ namespace PhenoPad
         // The speech recognizer used throughout this sample.
         private SpeechRecognizer speechRecognizer;
 
-        public PhenotypeManager PhenoMana => PhenotypeManager.getSharedPhenotypeManager();
+        private PhenotypeManager PhenoMana = PhenotypeManager.getSharedPhenotypeManager();
 
         // Keep track of whether the continuous recognizer is currently running, so it can be cleaned up appropriately.
         private bool isListening;
@@ -192,7 +192,7 @@ namespace PhenoPad
         public static readonly string ViewMode = "View Mode";
         private string currentMode = WritingMode;
 
-        public string RPI_ADDRESS { get; } = "http://192.168.0.19:8000";
+        public string RPI_ADDRESS { get; } = "http://192.168.137.32:8000";
         public BluetoothService.BluetoothService bluetoothService = null;
         public UIWebSocketClient uiClinet = null;
 
@@ -221,7 +221,7 @@ namespace PhenoPad
             
             
             // We want to react whenever speech engine has new results
-            this.speechManager.EngineHasResult += SpeechManager_EngineHasResult;
+            // this.speechManager.EngineHasResult += SpeechManager_EngineHasResult;
 
             //scrollViewer.RegisterPropertyChangedCallback(ScrollViewer.ZoomFactorProperty, OnPropertyChanged);
 
@@ -243,7 +243,8 @@ namespace PhenoPad
 
         private async void InitializeNotebook()
         {
-            PhenotypeManager.clearCache();
+            PhenoMana.clearCache();
+
             // create file structure
             notebookId = FileManager.getSharedFileManager().createNotebookId();
             bool result = await FileManager.getSharedFileManager().CreateNotebook(notebookId);
@@ -280,7 +281,8 @@ namespace PhenoPad
 
         private async void InitializeNotebookFromDisk()
         {
-            PhenotypeManager.clearCache();
+            PhenoMana.clearCache();
+
             List<string> pageIds = await FileService.FileManager.getSharedFileManager().GetPageIdsByNotebook(notebookId);
             notebookObject = await FileManager.getSharedFileManager().GetNotebookObjectFromXML(notebookId);
 
@@ -327,9 +329,21 @@ namespace PhenoPad
             PageHost.Content = curPage;
             setNotePageIndex(curPageIndex);
 
-            
+            curPage.initialAnalyze();
         }
 
+        #region Initialize UI
+        private void clearPageIndexPanel()
+        {
+            if (pageIndexPanel.Children.Count() > 1) {
+                while(pageIndexPanel.Children.Count() > 1)
+                    pageIndexPanel.Children.RemoveAt(0);
+            }
+        }
+        #endregion
+
+
+        #region save notes
         private void saveNotesTimer(int seconds)
         {
             TimeSpan period = TimeSpan.FromSeconds(seconds);
@@ -379,6 +393,7 @@ namespace PhenoPad
              
             return isSuccessful;
         }
+        #endregion
 
         /**
         * Load everything from disk, include: 
@@ -586,12 +601,19 @@ namespace PhenoPad
                 this.loadFromDisk = true;
                 this.notebookId = nid;
             }
+
+            // clear page index panel
+            clearPageIndexPanel();
+
             if (loadFromDisk) // Load notes from file
             {
+                Debug.WriteLine("Loading from disk...");
                 this.InitializeNotebookFromDisk();
+                
             }
             else // Create new notebook
             {
+                Debug.WriteLine("Creating new note...");
                 this.InitializeNotebook();
             }
         }
@@ -1074,6 +1096,13 @@ namespace PhenoPad
             Task speechManagerTask;
             if (speechEngineRunning == false)
             {
+                // 
+                
+                //await Task.Delay(10000);
+                // 
+                //await BluetoothService.BluetoothService.getBluetoothService().sendBluetoothMessage("odas start");
+
+
                 speechManagerTask = SpeechManager.getSharedSpeechManager().StartAudio();
            
                 speechEngineRunning = !speechEngineRunning;
@@ -1085,16 +1114,15 @@ namespace PhenoPad
             else
             {
                 speechManagerTask = SpeechManager.getSharedSpeechManager().EndAudio();
-                //this.cmdBarTextBlock.Visibility = Visibility.Collapsed;
-                speechEngineRunning = !speechEngineRunning;
-                //cmdBarTextBlock.Text = "";
 
-                //await BluetoothService.BluetoothService.getBluetoothService().sendBluetoothMessage("audio end");
+                speechEngineRunning = !speechEngineRunning;
+                
+                await BluetoothService.BluetoothService.getBluetoothService().sendBluetoothMessage("audio end");
             }
 
             // Note that we have a giant loop in speech manager so that after it is done
             // there won't be any audio processing going on
-            speechEngineRunning = false;
+            //speechEngineRunning = false;
             //this.AudioOn = false;
             //testButton.IsChecked = false;
         }
@@ -1296,6 +1324,8 @@ namespace PhenoPad
 
             setPageIndexText();
             setNotePageIndex(curPageIndex);
+
+            curPage.initialAnalyze();
         }
 
         /// <summary>
@@ -1320,34 +1350,42 @@ namespace PhenoPad
 
         private async void UpdateStatusAsync(string strMessage, NotifyType type, int seconds)
         {
-            switch (type)
+            try
             {
-                case NotifyType.StatusMessage:
-                    StatusBorder.Background = new SolidColorBrush(Windows.UI.Colors.Turquoise);
-                    break;
-                case NotifyType.ErrorMessage:
-                    StatusBorder.Background = new SolidColorBrush(Windows.UI.Colors.Tomato);
-                    break;
-            }
+                switch (type)
+                {
+                    case NotifyType.StatusMessage:
+                        StatusBorder.Background = new SolidColorBrush(Windows.UI.Colors.Turquoise);
+                        break;
+                    case NotifyType.ErrorMessage:
+                        StatusBorder.Background = new SolidColorBrush(Windows.UI.Colors.Tomato);
+                        break;
+                }
 
-            StatusBlock.Text = strMessage;
+                StatusBlock.Text = strMessage;
 
-            // Collapse the StatusBlock if it has no text to conserve real estate.
-           // StatusBorder.Visibility = (StatusBlock.Text != String.Empty) ? Visibility.Visible : Visibility.Collapsed;
-            if (StatusBlock.Text != String.Empty)
-            {
-                //StatusBorder.Visibility = Visibility.Visible;
-                StatusBorderEnterStoryboard.Begin();
-            }
-            else
-            {
+                // Collapse the StatusBlock if it has no text to conserve real estate.
+                // StatusBorder.Visibility = (StatusBlock.Text != String.Empty) ? Visibility.Visible : Visibility.Collapsed;
+                if (StatusBlock.Text != String.Empty)
+                {
+                    //StatusBorder.Visibility = Visibility.Visible;
+                    StatusBorderEnterStoryboard.Begin();
+                }
+                else
+                {
+                    //StatusBorder.Visibility = Visibility.Collapsed;
+                    StatusBorderExitStoryboard.Begin();
+                }
+
+                await Task.Delay(1000 * seconds);
                 //StatusBorder.Visibility = Visibility.Collapsed;
                 StatusBorderExitStoryboard.Begin();
             }
-
-            await Task.Delay(1000 * seconds);
-            //StatusBorder.Visibility = Visibility.Collapsed;
-            StatusBorderExitStoryboard.Begin();
+            catch (Exception e)
+            {
+                Debug.WriteLine(e.Message);
+            }
+          
         }
 
         
@@ -1706,9 +1744,10 @@ namespace PhenoPad
         {
             OpenCandidatePanelButton.IsChecked = true;
             CandidatePanelStackPanel.Visibility = Visibility.Visible;
+            OpenCandidatePanelButtonIcon.Foreground = new SolidColorBrush(Colors.DarkGray);
             OpenCandidatePanelButtonIcon.Glyph = "\uE8BB";
-
-            candidatePhenoListView.ScrollIntoView(candidatePhenoListView.Items.ElementAt(0));
+            if(candidatePhenoListView.Items.Count() > 0)
+                candidatePhenoListView.ScrollIntoView(candidatePhenoListView.Items.ElementAt(0));
         }
 
         private void OpenCandidate_Click(object sender, RoutedEventArgs e)
@@ -1913,6 +1952,10 @@ namespace PhenoPad
 
         private async void CameraButton_Click(object sender, RoutedEventArgs e)
         {
+            // 
+           
+
+            /***
             if (this.bluetoothService == null)
             {
                 NotifyUser("Could not reach Bluetooth device, try to connect again",
@@ -1922,14 +1965,15 @@ namespace PhenoPad
             }
 
             await this.bluetoothService.sendBluetoothMessage("camera picture");
+            ****/
         }
 
         public void bluetoothInitialized(bool val)
         {
             this.StreamButton.IsEnabled = val;
-            this.videoSwitch.IsEnabled = val;
+            //this.videoSwitch.IsEnabled = val;
             this.shutterButton.IsEnabled = val;
-            this.cameraButton.IsEnabled = val;
+           // this.cameraButton.IsEnabled = val;
 
             if (val)
             {

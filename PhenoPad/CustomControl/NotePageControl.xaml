@@ -124,16 +124,18 @@
             </Flyout>
         </ResourceDictionary>
     </UserControl.Resources>
-    <Grid>
+    <Grid >
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="15"></ColumnDefinition>
             <ColumnDefinition Width="*"></ColumnDefinition>
         </Grid.ColumnDefinitions>
         <ScrollViewer Name="sideScrollView" ViewChanged="ScrollView_ViewChanged" VerticalScrollBarVisibility="Hidden" >
-            <Canvas Height="{x:Bind PAGE_HEIGHT}" Name="sideCanvas">
+            <Grid Padding="0 100 0 0">
+            <Canvas  Height="{x:Bind PAGE_HEIGHT}" Name="sideCanvas">
 
                 
             </Canvas>
+            </Grid>
         </ScrollViewer>
         
         <ScrollViewer Grid.Column="1"  x:Name="scrollViewer" 
@@ -147,13 +149,14 @@
                           VerticalScrollBarVisibility="Auto" 
                           HorizontalScrollMode="Enabled" 
                           HorizontalScrollBarVisibility="Auto"
+                      
                    ViewChanged="ScrollView_ViewChanged" 
                      
                       >
             <!--
             <Grid x:Name="outputGrid" Background="{ThemeResource SystemControlBackgroundChromeWhiteBrush}" Height="{Binding Path=ViewportHeight, ElementName=scrollViewer}" Width="{Binding Path=ViewportWidth, ElementName=scrollViewer}">
             -->
-            <Grid x:Name="outputGrid" Background="{ThemeResource SystemControlBackgroundChromeWhiteBrush}" Height="{x:Bind PAGE_HEIGHT}" Width="{x:Bind PAGE_WIDTH}">
+            <Grid x:Name="outputGrid" Padding="0 100 0 0" Background="{ThemeResource SystemControlBackgroundChromeWhiteBrush}" Height="{x:Bind PAGE_HEIGHT}" Width="{x:Bind PAGE_WIDTH}">
                 <!-- Inking area -->
 
                 <Canvas x:Name="backgroundCanvas">

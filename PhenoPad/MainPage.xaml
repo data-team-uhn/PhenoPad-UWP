@@ -25,7 +25,7 @@
     xmlns:Uc="using:MyScript.IInk.UIReferenceImplementation.UserControls"
     mc:Ignorable="d"
     Loaded="Page_Loaded"
-    NavigationCacheMode="Disabled">
+    NavigationCacheMode="Required">
 
     <Page.Resources>
         <!-- Don't need to convert toggle status
@@ -240,7 +240,7 @@
            
         </Grid>
 
-        <SplitView   Name="MainSplitView" Grid.Row="1" DisplayMode="CompactInline"  IsPaneOpen="True" OpenPaneLength="400"  CompactPaneLength="40" PanePlacement="Left">
+        <SplitView   Name="MainSplitView" Grid.Row="1" DisplayMode="CompactInline"  IsPaneOpen="False" OpenPaneLength="400"  CompactPaneLength="40" PanePlacement="Left">
             <SplitView.Style>
                 <Style TargetType="SplitView">
                     <Setter Property="PaneBackground" Value="{StaticResource Left_Panel_Title_BG}"/>
@@ -251,8 +251,8 @@
                 <Grid Name="QuickViewGrid" BorderThickness="0 0 0 0" Background="Transparent">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="*"/>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="300"/>
+                        <RowDefinition Height="300"/>
                     </Grid.RowDefinitions>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="40"/>
@@ -263,7 +263,7 @@
                         <Button Visibility="Collapsed" BorderThickness="0" Foreground="Gray" Background="WhiteSmoke" Width="40" Height="30" Name="QuickViewButton" Click="QuickViewButton_Click">
                             <SymbolIcon Name="QuickViewButtonSymbol" Symbol="Clear"></SymbolIcon>
                         </Button>
-                        <ToggleButton IsChecked="True" Style="{StaticResource MyToggleButtonStyle}" Background="{StaticResource Left_Panel_Title_BG}" Width="40" Height="80" Name="OverViewToggleButton" Click="OverViewToggleButton_Click">
+                        <ToggleButton IsChecked="False" Style="{StaticResource MyToggleButtonStyle}" Background="{StaticResource Left_Panel_Title_BG}" Width="40" Height="80" Name="OverViewToggleButton" Click="OverViewToggleButton_Click">
                             <Grid>
                                 <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xF0E3;"/>
                             </Grid>
@@ -328,7 +328,7 @@
                         </ToggleButton>
 
                         <ToggleButton HorizontalAlignment="Stretch" Name="shutterButton"  Style="{StaticResource MyToggleButtonStyle}" Background="{StaticResource Left_Panel_Title_BG}"
-                              Click="CameraButton_Click" IsEnabled="False">
+                              Click="CameraButton_Click">
                             
                             <SymbolIcon Symbol="WebCam"></SymbolIcon>
                         </ToggleButton>
@@ -607,7 +607,7 @@
             </SplitView.Pane>
 
             <Grid>
-            <ContentControl x:Name="PageHost" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch">
+            <ContentControl x:Name="PageHost"  HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch">
                 <ContentControl.ContentTransitions>
                     <TransitionCollection>
                         <ContentThemeTransition x:Name="PageHostContentTrans"/>
@@ -625,7 +625,7 @@
                         </Storyboard>
                     </RelativePanel.Resources>
 
-                <TextBlock Visibility="Visible" x:Name="modeTextBlock" Width="240" HorizontalTextAlignment="Right" Margin="0 0 10 0" RelativePanel.AlignBottomWithPanel="True" RelativePanel.AlignRightWithPanel="True" Padding=" 0 0 10 0" FontSize="25" FontFamily="Segoe UI" FontWeight="ExtraBold" Foreground="LightGray" Opacity="0.5">Handwriting Mode</TextBlock>
+                <TextBlock Visibility="Visible" x:Name="modeTextBlock" Width="240" HorizontalTextAlignment="Right" Margin="0 0 10 0" RelativePanel.AlignTopWithPanel="True" RelativePanel.AlignRightWithPanel="True" Padding=" 0 0 10 0" FontSize="25" FontFamily="Segoe UI" FontWeight="ExtraBold" Foreground="LightGray" Opacity="0.5">Handwriting Mode</TextBlock>
 
                     <StackPanel Spacing="2" Background="White" Name="pageIndexPanel"  Margin="0 0 0 0" RelativePanel.Above="CandidateGrid" Orientation="Horizontal"  RelativePanel.AlignHorizontalCenterWithPanel="True" Padding="0 0 0 0">
                         
@@ -641,7 +641,7 @@
 
 
                     <!-- pheotypes user are looking for -->
-                    <Grid  Padding="0 0 0 0" Name="CandidateGrid" HorizontalAlignment="Stretch" RelativePanel.AlignLeftWithPanel="True" RelativePanel.LeftOf="modeTextBlock" RelativePanel.AlignBottomWithPanel="True" Height="40">
+                    <Grid  Padding="0 0 0 0" Name="CandidateGrid" HorizontalAlignment="Stretch" RelativePanel.AlignRightWithPanel="True" RelativePanel.AlignLeftWithPanel="True"  RelativePanel.AlignBottomWithPanel="True" Height="40">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="40"></ColumnDefinition>
                             <ColumnDefinition Width="*"></ColumnDefinition>

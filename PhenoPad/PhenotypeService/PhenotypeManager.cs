@@ -18,8 +18,8 @@ namespace PhenoPad.PhenotypeService
     {
         public static PhenotypeManager sharedPhenotypeManager;
 
-        public ObservableCollection<Phenotype> savedPhenotypes { get; }
-        public ObservableCollection<Phenotype> suggestedPhenotypes { get; }
+        public ObservableCollection<Phenotype> savedPhenotypes;
+        public ObservableCollection<Phenotype> suggestedPhenotypes;
         public ObservableCollection<Disease> predictedDiseases;
         public ObservableCollection<Phenotype> phenotypesInNote;
         
@@ -52,9 +52,16 @@ namespace PhenoPad.PhenotypeService
             }
         }
 
-        public static void clearCache()
+        public void clearCache()
         {
-            sharedPhenotypeManager = new PhenotypeManager();
+            // sharedPhenotypeManager = new PhenotypeManager();
+            savedPhenotypes.Clear();
+            suggestedPhenotypes.Clear();
+            predictedDiseases.Clear();
+            phenotypesInNote.Clear();
+            phenotypesInSpeech.Clear();
+            phenotypesCandidates.Clear();
+            rootPage = MainPage.Current;
         }
 
         // return # of added phenotypes
@@ -206,7 +213,8 @@ namespace PhenoPad.PhenotypeService
                    
                 }
             }
-            rootPage.NotifyUser("Saved phenotypes are loaded.", NotifyType.StatusMessage, 2);
+            if(rootPage != null)
+                rootPage.NotifyUser("Saved phenotypes are loaded.", NotifyType.StatusMessage, 2);
             updateSuggestionAndDifferential();
         }
 

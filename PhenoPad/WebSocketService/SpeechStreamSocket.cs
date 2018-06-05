@@ -150,12 +150,12 @@ namespace PhenoPad.WebSocketService
             string returnMessage = String.Empty;
             try
             {   
-                uint length = 32768;     // Leave a large buffer
+                uint length = 1000;     // Leave a large buffer
 
                 var readBuf = new Windows.Storage.Streams.Buffer((uint)length);
-                var readOp = streamSocket.InputStream.ReadAsync(readBuf, (uint)length, InputStreamOptions.Partial);
+                var readOp = await streamSocket.InputStream.ReadAsync(readBuf, (uint)length, InputStreamOptions.Partial);
 
-                await readOp;   // Don't move on until we have finished reading from server
+                //await readOp;   // Don't move on until we have finished reading from server
 
                 DataReader readPacket = DataReader.FromBuffer(readBuf);
                 uint buffLen = readPacket.UnconsumedBufferLength;

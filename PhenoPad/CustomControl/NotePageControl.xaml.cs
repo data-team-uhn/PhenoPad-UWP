@@ -226,7 +226,6 @@ namespace PhenoPad.CustomControl
             //selectionRectangle.ManipulationStarted += SelectionRectangle_ManipulationStarted;
             //selectionRectangle.ManipulationDelta += SelectionRectangle_ManipulationDelta;
             //selectionRectangle.ManipulationCompleted += SelectionRectangle_ManipulationCompleted;
-
             
 
 
@@ -255,14 +254,20 @@ namespace PhenoPad.CustomControl
         {
             DrawBackgroundLines();
         }
-        private async void Page_Loaded(object sender, RoutedEventArgs e)
+        private void Page_Loaded(object sender, RoutedEventArgs e)
         {
             // Draw background lines
             DrawBackgroundLines();
+            scrollViewer.ChangeView(null, 100, null, true);
+            sideScrollView.ChangeView(null, 100, null, true);
 
+        }
+
+        public async void initialAnalyze()
+        {
             inkAnalyzer.AddDataForStrokes(inkCanvas.InkPresenter.StrokeContainer.GetStrokes());
             // dispatcherTimer.Start();
-            
+
             await analyzeInk();
         }
 
@@ -1183,6 +1188,7 @@ namespace PhenoPad.CustomControl
             //}
         }
 
+        private Dictionary<int, Rectangle> lineToRect = new Dictionary<int, Rectangle>();
         /// <summary>
         ///  Analyze ink strokes
         /// </summary>
@@ -1236,12 +1242,20 @@ namespace PhenoPad.CustomControl
                                     Rectangle rect = new Rectangle
                                     {
                                         Fill = Application.Current.Resources["Button_Background"] as SolidColorBrush,
-                                        Width = 6,
+                                        Width = 5,
                                         Height = LINE_HEIGHT - 20
                                     };
                                     sideCanvas.Children.Add(rect);
                                     Canvas.SetTop(rect, lineNum * LINE_HEIGHT + 10);
                                     Canvas.SetLeft(rect, 5);
+                                    if (!lineToRect.ContainsKey(lineNum))
+                                        lineToRect.Add(lineNum, rect);
+                                }
+
+                                foreach(var pp in annoResult.Values)
+                                {
+                                    pp.sourceType = SourceType.Notes;
+                                    PhenoMana.addPhenotypeCandidate(pp, SourceType.Notes);
                                 }
                             }
                         }
@@ -1579,7 +1593,8 @@ namespace PhenoPad.CustomControl
                 }
                 **/
 
-                if (curLineCandidatePheno.Count == 0)
+                if (curLineCandidatePheno.Count == 0 
+                    || curWordPhenoControlGrid.Margin.Top == 0)
                 {
                     curWordPhenoControlGrid.Margin = new Thickness(0, -100, 0, 0);
                     curWordPhenoAnimation.Begin();
@@ -1609,20 +1624,39 @@ namespace PhenoPad.CustomControl
                     if (!annotatedLines.Contains(lineNum))
                     {
                         annotatedLines.Add(lineNum);
-                        Rectangle rect = new Rectangle
+                        if (!lineToRect.ContainsKey(lineNum))
                         {
-                            Fill = Application.Current.Resources["Button_Background"] as SolidColorBrush,
-                            Width = sideScrollView.ActualWidth / 2,
-                            Height = LINE_HEIGHT - 20
-                        };
-                        sideCanvas.Children.Add(rect);
-                        Canvas.SetTop(rect, lineNum * LINE_HEIGHT+10);
-                        Canvas.SetLeft(rect, sideScrollView.ActualWidth / 2);
+                            
+                            Rectangle rect = new Rectangle
+                            {
+                                Fill = Application.Current.Resources["Button_Background"] as SolidColorBrush,
+                                Width = 5,
+                                Height = LINE_HEIGHT - 20
+                            };
+                            sideCanvas.Children.Add(rect);
+                            Canvas.SetTop(rect, lineNum * LINE_HEIGHT + 10);
+                            Canvas.SetLeft(rect, sideScrollView.ActualWidth / 2);
+                            lineToRect.Add(lineNum, rect);
+                        }
+                        
                     }
                 }
             }
             else {
                 curWordPhenoControlGrid.Margin = new Thickness(0, 0, 0, 0);
+                int lineNum = getLineNumByRect(line.BoundingRect);
+                if (lineToRect.ContainsKey(lineNum)) {
+                    try
+                    {
+                        sideCanvas.Children.Remove(lineToRect[lineNum]);
+                        lineToRect.Remove(lineNum);
+                    }
+                    catch (Exception E)
+                    {
+                        Debug.WriteLine(E.Message);
+                    }
+                    
+                }
                 //curWordPhenoHideAnimation.Begin();
             }
             
@@ -2673,13 +2707,13 @@ namespace PhenoPad.CustomControl
         {
             if (sender == sideScrollView)
             {
-                scrollViewer.ScrollToVerticalOffset(sideScrollView.VerticalOffset);
-                //scrollViewer.ChangeView(null, sideScrollView.VerticalOffset, null, false);
+                //scrollViewer.ScrollToVerticalOffset(sideScrollView.VerticalOffset);
+                scrollViewer.ChangeView(null, sideScrollView.VerticalOffset, sideScrollView.ZoomFactor, true);
             }
             else
             {
-                sideScrollView.ScrollToVerticalOffset(scrollViewer.VerticalOffset);
-                //sideScrollView.ChangeView(null, scrollViewer.VerticalOffset, null, false);
+                //sideScrollView.ScrollToVerticalOffset(scrollViewer.VerticalOffset);
+                sideScrollView.ChangeView(null, scrollViewer.VerticalOffset, scrollViewer.ZoomFactor, true);
             }
         }
 

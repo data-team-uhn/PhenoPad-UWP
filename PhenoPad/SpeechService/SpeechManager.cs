@@ -187,15 +187,21 @@ namespace PhenoPad.SpeechService
                 }
             }
 
-            await CreateAudioGraph();
+
+           await CreateAudioGraph();
+           await BluetoothService.BluetoothService.getBluetoothService().sendBluetoothMessage("audio start");
+
+
 
             // Wait 10 seconds so that the server has time to create a worker
             // else you'll see lots of audio delays
-            await Task.Delay(3000);
+            await Task.Delay(10000);
             MainPage.Current.NotifyUser("Connection established", NotifyType.StatusMessage, 2);
             SpeechPage.Current.setSpeakerButtonEnabled(true);
             SpeechPage.Current.adjustSpeakerCount(2);
 
+
+            startGraph();
             if (useFile)
             {
                 fileInputNode.Start();
@@ -203,9 +209,11 @@ namespace PhenoPad.SpeechService
             else
             {
                 deviceInputNode.Start();
+                await BluetoothService.BluetoothService.getBluetoothService().sendBluetoothMessage("odas start");
             }
 
 
+            // save this to file
             this.byte_accumulator = new List<byte>();
 
             // Start a task to continuously read for incoming data
@@ -227,7 +235,7 @@ namespace PhenoPad.SpeechService
                      // don't run again for 
                      await Task.Delay(500);
                      // do the work in the loop
-                     string serverResult = speechStreamSocket.ReceiveMessageUsingStreamWebSocket().Result;
+                     string serverResult = await speechStreamSocket.ReceiveMessageUsingStreamWebSocket();
 
                     // Debug.WriteLine("Got server message");
 
@@ -247,17 +255,33 @@ namespace PhenoPad.SpeechService
                          // Only process if we have valid JSON
                          if (json.Length != 0)
                          {
+                             // first try to decode as dirization result
                              try
                              {
+                                 var diaResult = JsonConvert.DeserializeObject<DiarizationJSON>(json);
+                                 continue;
+                             }
+                             catch (Exception)
+                             {
+                                 Debug.WriteLine("This is not diarization result, try speech next.");
+                             }
+                             try
+                             {
+                                 Debug.WriteLine("Result from speech: " + json);
                                  var parsedSpeech = JsonConvert.DeserializeObject<SpeechEngineJSON>(json);
                                  parsedSpeech.original = json;
+
+                                 //{'diarization': [{'start': 7.328, 'speaker': 0, 'end': 9.168000000000001, 'angle': 152.97781134625265}], 'diarization_incremental': True} 
+                                 
+
                                  //Debug.WriteLine(json);
                                  //Debug.WriteLine(parsedSpeech.ToString());
 
                                  speechInterpreter.processJSON(parsedSpeech);
 
                                  // TODO Find a more legitimate way to fire an UI change?
-                                 Windows.ApplicationModel.Core.CoreApplication.MainView.CoreWindow.Dispatcher.RunAsync(CoreDispatcherPriority.Normal,
+                                 
+                                 await Windows.ApplicationModel.Core.CoreApplication.MainView.CoreWindow.Dispatcher.RunAsync(CoreDispatcherPriority.Normal,
                                     () =>
                                     {
                                         EngineHasResult.Invoke(this, speechInterpreter);
@@ -309,6 +333,7 @@ namespace PhenoPad.SpeechService
                     
                     graph.Stop();
                     speechStreamSocket.CloseConnnction();
+                    await BluetoothService.BluetoothService.getBluetoothService().sendBluetoothMessage("audio end");
                     /**
 
                     TranscodeFailureReason finalizeResult = await fileOutputNode.FinalizeAsync();
@@ -499,7 +524,19 @@ namespace PhenoPad.SpeechService
             }
 
             // Start the graph since we will only start/stop the frame input node
-            graph.Start();
+            //graph.Start();
+        }
+        
+        private void startGraph()
+        {
+            try
+            {
+                graph.Start();
+            }
+            catch (Exception e)
+            {
+                Debug.WriteLine("Failed to start the graph: " + e.Message);
+            }
         }
 
         
