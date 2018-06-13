@@ -11,6 +11,9 @@ using System.IO;
 using PhenoPad.PhenotypeService;
 using System.Xml.Serialization;
 using Windows.Storage.Search;
+using Windows.Graphics.Imaging;
+using System.Runtime.InteropServices.WindowsRuntime;
+using Windows.Graphics.Display;
 
 namespace PhenoPad.FileService
 {
@@ -461,6 +464,49 @@ namespace PhenoPad.FileService
                 return null;
             }
             return notefile;
+        }
+
+        /// <summary>
+        /// Save BitmapImage
+        /// </summary>
+        /// <param name="notebookId"></param>
+        /// <param name="pageId"></param>
+        /// <param name="name"></param>
+        /// <returns></returns>
+        public async Task<bool> SaveImageForNotepage(string notebookId, string pageId, string name, WriteableBitmap wb)
+        {
+            bool isSuccess = true;
+            try
+            {
+                Guid bitmapEncoderGuid = BitmapEncoder.JpegEncoderId;
+                var imageFile = await FileService.FileManager.getSharedFileManager().CreateImageFileForPage(notebookId, pageId, name);
+
+                using (IRandomAccessStream stream = await imageFile.OpenAsync(FileAccessMode.ReadWrite))
+                {
+                    BitmapEncoder encoder = await BitmapEncoder.CreateAsync(bitmapEncoderGuid, stream);
+                    Stream pixelStream = wb.PixelBuffer.AsStream();
+                    byte[] pixels = new byte[pixelStream.Length];
+                    await pixelStream.ReadAsync(pixels, 0, pixels.Length);
+
+                    encoder.SetPixelData(BitmapPixelFormat.Bgra8, BitmapAlphaMode.Ignore,
+                              (uint)wb.PixelWidth,
+                              (uint)wb.PixelHeight,
+                              96.0,
+                              96.0,
+                              pixels);
+                    //Windows.Graphics.Imaging.BitmapDecoder decoder = await Windows.Graphics.Imaging.BitmapDecoder.CreateAsync(imgstream);
+                    //Windows.Graphics.Imaging.PixelDataProvider pxprd = await decoder.GetPixelDataAsync(Windows.Graphics.Imaging.BitmapPixelFormat.Bgra8, Windows.Graphics.Imaging.BitmapAlphaMode.Straight, new Windows.Graphics.Imaging.BitmapTransform(), Windows.Graphics.Imaging.ExifOrientationMode.RespectExifOrientation, Windows.Graphics.Imaging.ColorManagementMode.DoNotColorManage);
+
+                    await encoder.FlushAsync();
+                }
+            }
+            catch (Exception)
+            {
+                isSuccess = false;
+                Debug.WriteLine("Failed to save image");
+            }
+            return isSuccess;
+
         }
 
         public async Task<StorageFile> GetNoteFileNotCreate(string notebookId, string notePageId, NoteFileType fileType, string name = "")

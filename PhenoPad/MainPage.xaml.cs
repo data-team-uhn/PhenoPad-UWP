@@ -43,6 +43,10 @@ using System.Threading;
 
 using PhenoPad.BluetoothService;
 using Windows.System.Threading;
+using System.IO;
+using Windows.Storage;
+using Windows.Media.Editing;
+using System.Runtime.InteropServices.WindowsRuntime;
 
 namespace PhenoPad
 {
@@ -192,7 +196,7 @@ namespace PhenoPad
         public static readonly string ViewMode = "View Mode";
         private string currentMode = WritingMode;
 
-        public string RPI_ADDRESS { get; } = "http://192.168.137.32:8000";
+        public string RPI_ADDRESS = "http://192.168.137.32:8000";
         public BluetoothService.BluetoothService bluetoothService = null;
         public UIWebSocketClient uiClinet = null;
 
@@ -362,11 +366,13 @@ namespace PhenoPad
             }, period);
         }
 
-        /**
-         * Save everything to disk, include: 
-         * handwritten strokes, typing words, photos and annotations, drawing, collected phenotypes
-         * 
-         */
+    
+         
+        /// <summary>
+        /// Save everything to disk, include: 
+        /// handwritten strokes, typing words, photos and annotations, drawing, collected phenotypes
+        /// </summary>
+        /// <returns></returns>
         private async Task<bool> saveNoteToDisk()
         {
             bool isSuccessful = true;
@@ -1053,40 +1059,29 @@ namespace PhenoPad
         }
 
         bool speechEngineRunning = false;
-        private async void AudioStreamButton_Clicked(object sender, RoutedEventArgs e) {
-            changeSpeechEngineState(this.AudioOn);
+        private void AudioStreamButton_Clicked(object sender, RoutedEventArgs e) {
+            if(audioButton.IsChecked == true)
+            {
+                changeSpeechEngineState_BT(true);
+            }
+            else
+            {
+                changeSpeechEngineState_BT(false);
+            }
         }
 
         private async void changeSpeechEngineState_BT(bool state)
         {
-            //SpeechStreamSocket sss = new SpeechStreamSocket();
-            //sss.connect();
-            Task speechManagerTask;
             if (state == true)
             {
-                //speechManagerTask = SpeechManager.getSharedSpeechManager().StartAudio();
-                //this.cmdBarTextBlock.Visibility = Visibility.Visible;
-                speechEngineRunning = !speechEngineRunning;
-
-                //await speechManagerTask;
-
+                SpeechManager.getSharedSpeechManager().ReceiveASRResults();
                 await BluetoothService.BluetoothService.getBluetoothService().sendBluetoothMessage("audio start");
             }
             else
             {
-                //speechManagerTask = SpeechManager.getSharedSpeechManager().EndAudio();
-                //this.cmdBarTextBlock.Visibility = Visibility.Collapsed;
-                speechEngineRunning = !speechEngineRunning;
-                //cmdBarTextBlock.Text = "";
-
+                SpeechManager.getSharedSpeechManager().StopASRResults();
                 await BluetoothService.BluetoothService.getBluetoothService().sendBluetoothMessage("audio end");
             }
-
-            // Note that we have a giant loop in speech manager so that after it is done
-            // there won't be any audio processing going on
-            //speechEngineRunning = false;
-            //this.AudioOn = false;
-            //testButton.IsChecked = false;
         }
 
         private async void changeSpeechEngineState(bool state)
@@ -1348,8 +1343,10 @@ namespace PhenoPad
             }
         }
 
+        private SemaphoreSlim notifySemaphoreSlim = new SemaphoreSlim(1);
         private async void UpdateStatusAsync(string strMessage, NotifyType type, int seconds)
         {
+            await notifySemaphoreSlim.WaitAsync();
             try
             {
                 switch (type)
@@ -1384,6 +1381,10 @@ namespace PhenoPad
             catch (Exception e)
             {
                 Debug.WriteLine(e.Message);
+            }
+            finally
+            {
+                notifySemaphoreSlim.Release();
             }
           
         }
@@ -1864,6 +1865,7 @@ namespace PhenoPad
             if (result)
             {
                 Debug.WriteLine("Successfully saved to disk.");
+                NotifyUser("Successfully saved to disk.", NotifyType.StatusMessage, 2);
             }
             else
             {
@@ -1952,9 +1954,9 @@ namespace PhenoPad
 
         private async void CameraButton_Click(object sender, RoutedEventArgs e)
         {
-            // 
-           
 
+            // add image
+            curPage.addImageAndAnnotationControlFromBitmapImage(latestImageString);
             /***
             if (this.bluetoothService == null)
             {
@@ -1992,8 +1994,9 @@ namespace PhenoPad
             uiClinet = UIWebSocketClient.getSharedUIWebSocketClient();
             await uiClinet.ConnectToServer();
 
+           
             this.bluetoothService = BluetoothService.BluetoothService.getBluetoothService();
-            await this.bluetoothService.Initialize();
+           await this.bluetoothService.Initialize();
         }
 
         public void setStatus(string item)
@@ -2002,6 +2005,9 @@ namespace PhenoPad
             {
                 this.BluetoothProgress.IsActive = false;
                 this.BluetoothComplete.Visibility = Visibility.Visible;
+                // show ip address of 
+                if (this.bluetoothService.rpi_ipaddr != null)
+                    PiIPAddress.Text = BluetoothService.BluetoothService.getBluetoothService().GetPiIP();
             }
             else if (item == "diarization")
             {
@@ -2053,12 +2059,166 @@ namespace PhenoPad
             }*/
         }
 
-        
-
-        private void MultimediaPreviewFlyout_Opened(object sender, object e)
+        private Windows.Networking.Sockets.MessageWebSocket videoStreamWebSocket;
+        CancellationTokenSource videoCancellationSource = new CancellationTokenSource();
+        CancellationToken videoStreamCancellationToken;
+        private List<Image> videoFrameImages = new List<Image>();
+        private StorageFile videoFile;
+        private async void MultimediaPreviewFlyout_Opened(object sender, object e)
         {
-            this.StreamView.Navigate(new Uri(RPI_ADDRESS));
+            string RPI_IP_ADDRESS = BluetoothService.BluetoothService.getBluetoothService().GetPiIP();
+            RPI_ADDRESS = "http://" + RPI_IP_ADDRESS + ":8000";
+            // this.StreamView.Navigate(new Uri(RPI_ADDRESS));
+
+            this.videoStreamWebSocket = new Windows.Networking.Sockets.MessageWebSocket();
+            // In this example, we send/receive a string, so we need to set the MessageType to Utf8.
+            this.videoStreamWebSocket.Control.MessageType = Windows.Networking.Sockets.SocketMessageType.Utf8;
+            this.videoStreamWebSocket.Closed += WebSocket_Closed;
+            this.videoStreamWebSocket.MessageReceived += WebSocket_MessageReceived;
+
+          
+
+            try
+            {
+                videoStreamCancellationToken = videoCancellationSource.Token;
+                Task connectTask = this.videoStreamWebSocket.ConnectAsync(new Uri("ws://"+ RPI_IP_ADDRESS + ":8000/websocket")).AsTask();
+                await connectTask.ContinueWith(_ => this.SendMessageUsingMessageWebSocketAsync("read_camera"));
+                //Task.Run(() => this.WebSocket_MessageReceived());
+                //Task.Run(() => this.SendMessageUsingStreamWebSocket(Encoding.UTF8.GetBytes("read_camera")));
+
+            }
+            catch (Exception ex)
+            {
+                Windows.Web.WebErrorStatus webErrorStatus = Windows.Networking.Sockets.WebSocketError.GetStatus(ex.GetBaseException().HResult);
+                // Add additional code here to handle exceptions.
+            }
         }
+        public async Task<BitmapImage> Base64ToBitmapAsync(string source)
+        {
+            var byteArray = Convert.FromBase64String(source);
+            BitmapImage bitmap = new BitmapImage();
+            using (MemoryStream stream = new MemoryStream(byteArray))
+            {
+                await bitmap.SetSourceAsync(stream.AsRandomAccessStream());
+            }
+            return bitmap;
+        }
+        private BitmapImage latestImageFromStream = new BitmapImage();
+        private string latestImageString = "";
+        private async void WebSocket_MessageReceived(Windows.Networking.Sockets.MessageWebSocket sender, Windows.Networking.Sockets.MessageWebSocketMessageReceivedEventArgs args)
+        {
+            try
+            {
+               // while (true && !videoStreamCancellationToken.IsCancellationRequested)
+                {
+                    using (DataReader dataReader = args.GetDataReader())
+                    {
+                        dataReader.UnicodeEncoding = Windows.Storage.Streams.UnicodeEncoding.Utf8;
+                        string message = dataReader.ReadString(dataReader.UnconsumedBufferLength);
+
+                        await Windows.ApplicationModel.Core.CoreApplication.MainView.CoreWindow.Dispatcher.RunAsync(CoreDispatcherPriority.High,
+                        async () =>
+                        {
+                            latestImageString = message;
+                            latestImageFromStream = await Base64ToBitmapAsync(message);
+                            StreamImageView.Source = latestImageFromStream;
+
+                            /// save image to video here 
+                            //Image image = new Image();
+                            //image.Source = bi;
+                            //videoFrameImages.Add(image);
+                        }
+                        );
+                       
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Windows.Web.WebErrorStatus webErrorStatus = Windows.Networking.Sockets.WebSocketError.GetStatus(ex.GetBaseException().HResult);
+                // Add additional code here to handle exceptions.
+            }
+        }
+
+        private async Task SendMessageUsingMessageWebSocketAsync(string message)
+        {
+            using (var dataWriter = new DataWriter(this.videoStreamWebSocket.OutputStream))
+            {
+                dataWriter.WriteString(message);
+                await dataWriter.StoreAsync();
+                dataWriter.DetachStream();
+            }
+            Debug.WriteLine("Sending message using MessageWebSocket: " + message);
+        }
+
+        /**
+        private async void ReceiveMessageUsingStreamWebSocket()
+        {
+            try
+            {
+                while (true && !videoStreamCancellationToken.IsCancellationRequested)
+                {
+                    using (var dataReader = new DataReader(this.videoStreamWebSocket.InputStream))
+                    {
+                        dataReader.InputStreamOptions = InputStreamOptions.Partial;
+                        await dataReader.LoadAsync(10000);
+                        byte[] message = new byte[dataReader.UnconsumedBufferLength];
+                        dataReader.ReadBytes(message);
+                        Debug.WriteLine("Data received from StreamWebSocket: " + message.Length + " bytes");
+                        await Windows.ApplicationModel.Core.CoreApplication.MainView.CoreWindow.Dispatcher.RunAsync(CoreDispatcherPriority.High,
+                        async () =>
+                        {
+                            BitmapImage bitmap = new BitmapImage();
+                            using (MemoryStream stream = new MemoryStream(message))
+                            {
+                                await bitmap.SetSourceAsync(stream.AsRandomAccessStream());
+                            }
+                            StreamImageView.Source = bitmap;
+                        }
+                        );
+                        
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Windows.Web.WebErrorStatus webErrorStatus = Windows.Networking.Sockets.WebSocketError.GetStatus(ex.GetBaseException().HResult);
+                // Add code here to handle exceptions.
+            }
+        }
+    ***/
+
+        private async void SendMessageUsingStreamWebSocket(byte[] message)
+        {
+            try
+            {
+                using (var dataWriter = new DataWriter(this.videoStreamWebSocket.OutputStream))
+                {
+                    dataWriter.WriteBytes(message);
+                    await dataWriter.StoreAsync();
+                    dataWriter.DetachStream();
+                }
+                Debug.WriteLine("Sending data using StreamWebSocket: " + message.Length.ToString() + " bytes");
+            }
+            catch (Exception ex)
+            {
+                Windows.Web.WebErrorStatus webErrorStatus = Windows.Networking.Sockets.WebSocketError.GetStatus(ex.GetBaseException().HResult);
+                // Add code here to handle exceptions.
+            }
+        }
+
+        private void WebSocket_Closed(Windows.Networking.Sockets.IWebSocket sender, Windows.Networking.Sockets.WebSocketClosedEventArgs args)
+        {
+            Debug.WriteLine("WebSocket_Closed; Code: " + args.Code + ", Reason: \"" + args.Reason + "\"");
+            // Add additional code here to handle the WebSocket being closed.
+        }
+
+        private void MultimediaPreviewFlyout_Closed(object sender, object e)
+        {
+            // this.StreamView = new WebView();
+            videoStreamWebSocket.Close(1000, "no reason:)");
+        }
+
 
         private void FullscreenBtn_Click(object sender, RoutedEventArgs e)
         {
@@ -2068,6 +2228,18 @@ namespace PhenoPad
         private void MyscriptBtn_Click(object sender, RoutedEventArgs e)
         {
            // myScriptEditor.Visibility = MyscriptBtn.IsChecked != null && (bool)MyscriptBtn.IsChecked ? Visibility.Visible : Visibility.Collapsed;
+        }
+
+        private void PrintButton_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                curPage.printPage();
+            }
+            catch (Exception ee)
+            {
+                Debug.WriteLine(ee.Message);
+            }
         }
     }
 

@@ -245,6 +245,20 @@ namespace PhenoPad.CustomControl
             InitiateInkCanvas();
 
         }
+        public async void InitializeFromImage(WriteableBitmap wb, bool onlyView = false)
+        {
+            this.categoryGrid.Visibility = Visibility.Collapsed;
+           
+            Image imageControl = new Image();
+            imageControl.Source = wb;
+            contentGrid.Children.Add(imageControl);
+            categoryGrid.Visibility = Visibility.Collapsed;
+            
+            InitiateInkCanvas(onlyView);
+
+            // save bitmapimage to disk
+            var result = await FileManager.getSharedFileManager().SaveImageForNotepage(notebookId, pageId, name, wb);
+        }
 
         public async void InitializeFromDisk(bool onlyView = false)
         {

@@ -39,6 +39,7 @@ using Windows.UI.Text;
 using PhenoPad.FileService;
 using System.Numerics;
 using Windows.UI.Xaml.Hosting;
+using Windows.Graphics.Display;
 
 namespace PhenoPad.CustomControl
 {
@@ -69,7 +70,7 @@ namespace PhenoPad.CustomControl
         private int UNPROCESSED_RESOLUTION = 5;
         private Color DEFAULT_STROKE_COLOR = Colors.Black;
         private Color SELECTED_STROKE_COLOR = (Color) Application.Current.Resources["WORD_DARK_COLOR"];
-        public float PAGE_HEIGHT = 2000;
+        public float PAGE_HEIGHT = 1980;
         public float PAGE_WIDTH = 1400;
 
         private DoubleCollection UNPROCESSED_DASH = new DoubleCollection() { 5, 2 };
@@ -885,8 +886,29 @@ namespace PhenoPad.CustomControl
             }
             return cons;
         }
-
-        public void addImageAndAnnotationControl(string name, double left, double top, bool loadFromDisk)
+        public async void addImageAndAnnotationControlFromBitmapImage(string imageString)
+        {
+            try
+            {
+                var byteArray = Convert.FromBase64String(imageString);
+                using (MemoryStream stream = new MemoryStream(byteArray))
+                {
+                    var ras = stream.AsRandomAccessStream();
+                    BitmapDecoder decoder = await BitmapDecoder.CreateAsync(BitmapDecoder.JpegDecoderId, ras);
+                    var provider = await decoder.GetPixelDataAsync();
+                    byte[] buffer = provider.DetachPixelData();
+                    WriteableBitmap bitmap = new WriteableBitmap((int)decoder.PixelWidth, (int)decoder.PixelHeight);
+                    await bitmap.PixelBuffer.AsStream().WriteAsync(buffer, 0, buffer.Length);
+                    addImageAndAnnotationControl(FileManager.getSharedFileManager().CreateUniqueName(), 50, 50, false, bitmap);
+                }
+            }
+            catch (Exception e)
+            {
+                Debug.WriteLine(e.Message);
+            }
+           
+        }
+        public void addImageAndAnnotationControl(string name, double left, double top, bool loadFromDisk, WriteableBitmap wb = null)
         {
             AddInControl canvasAddIn = new AddInControl(name, notebookId, pageId);
             //canvasAddIn.Width = 400; //stroke.BoundingRect.Width;
@@ -899,6 +921,9 @@ namespace PhenoPad.CustomControl
 
             if (loadFromDisk)
                 canvasAddIn.InitializeFromDisk();
+
+            if (wb != null)
+                canvasAddIn.InitializeFromImage(wb);
         }
 
         private async Task<int> RecognizeInkOperation()
@@ -2541,6 +2566,48 @@ namespace PhenoPad.CustomControl
                 await FileManager.getSharedFileManager().saveStrokes(file, this.inkCan);
         }
 
+        public async void printPage()
+        {
+            var bitmap = new RenderTargetBitmap();
+
+            StorageFile file = await KnownFolders.PicturesLibrary.CreateFileAsync("note page.jpg",
+
+            CreationCollisionOption.GenerateUniqueName);
+
+            await bitmap.RenderAsync(outputGrid);
+
+            var buffer = await bitmap.GetPixelsAsync();
+
+            using (IRandomAccessStream stream = await file.OpenAsync(FileAccessMode.ReadWrite))
+
+            {
+
+                var encod = await BitmapEncoder.CreateAsync(
+
+                    BitmapEncoder.JpegEncoderId, stream);
+
+                encod.SetPixelData(BitmapPixelFormat.Bgra8,
+
+                    BitmapAlphaMode.Ignore,
+
+                    (uint)bitmap.PixelWidth,
+
+                    (uint)bitmap.PixelHeight,
+                    500,500,
+                    //DisplayInformation.GetForCurrentView().LogicalDpi,
+
+                    //DisplayInformation.GetForCurrentView().LogicalDpi,
+
+                    buffer.ToArray()
+
+                   );
+
+                await encod.FlushAsync();
+
+            }
+
+            await Windows.System.Launcher.LaunchFileAsync(file);
+        }
 
 
 

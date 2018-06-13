@@ -56,7 +56,7 @@ namespace PhenoPad.SpeechService
     public class DiarizationJSON
     {
         public double start { get; set; }
-        public double speaker { get; set; }
+        public int speaker { get; set; }
         public double end { get; set; }
         public double angle { get; set; }
         
@@ -88,10 +88,12 @@ namespace PhenoPad.SpeechService
                 output += "Temp\t";
             }
             output += "(" + segment_start.ToString() + " -> " + (segment_start + segment_length).ToString() + ") \n";
+            /**
             if (result.diarization != null && result.diarization.Count > 0)
             {
                 output += "Diarizations: " + (result.diarization.Count).ToString() + " \n";
             }
+            **/
             
             output += result.hypotheses[0].transcript;
             

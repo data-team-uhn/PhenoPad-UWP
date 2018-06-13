@@ -191,83 +191,51 @@ namespace PhenoPad.SpeechService
             // We take for granted that diarizatio will always be a lot slower than 
             // speech recognition
 
-            if (json.worker_pid != 0)
+            if (json != null)
             {
-                this.worker_pid = json.worker_pid;
-                Debug.WriteLine("Worker PID upon processing " + this.worker_pid.ToString());
-            }
-
-            // First check if speech is final (remember that diarization is always slower)
-            if (json.result.final)
-            {
-                this.queryPhenoService(json.result.hypotheses[0].transcript);
-
-                Debug.WriteLine(json.result.hypotheses[0].transcript);
-
-                // Then we should have a bunch of words to look at
-                double latest = 0;
-                double OFFSET = 0.5;          // not too sure if word alignment data is actually correct from aspire???
-                foreach (WordAlignment wa in json.result.hypotheses[0].word_alignment)
+                if (json.worker_pid != 0)
                 {
-                    // Remove <laughter> <unk> etc.
-                    //if (wa.word.IndexOf('[') == -1 && wa.word.IndexOf('<') == -1)
+                    this.worker_pid = json.worker_pid;
+                    Debug.WriteLine("Worker PID upon processing " + this.worker_pid.ToString());
+                }
+
+                // First check if speech is final (remember that diarization is always slower)
+                if (json.result.final)
+                {
+                    this.queryPhenoService(json.result.hypotheses[0].transcript);
+
+                    Debug.WriteLine(json.result.hypotheses[0].transcript);
+
+                    // Then we should have a bunch of words to look at
+                    double latest = 0;
+                    double OFFSET = 0;          // not too sure if word alignment data is actually correct from aspire???
+                    foreach (WordAlignment wa in json.result.hypotheses[0].word_alignment)
                     {
-                        // Make sure word does not start before 0
-                        double word_start = Math.Max(wa.start + json.segment_start + OFFSET, 0);
-                        double word_end = Math.Max(wa.start + wa.length + json.segment_start + OFFSET, 0);
-                        var w = new WordSpoken(wa.word, -1, new TimeInterval(word_start, word_end));
-                        words.Add(w);
-                        latest = wa.start + wa.length + json.segment_start;
+                        // Remove <laughter> <unk> etc.
+                        //if (wa.word.IndexOf('[') == -1 && wa.word.IndexOf('<') == -1)
+                        {
+                            // Make sure word does not start before 0
+                            double word_start = Math.Max(wa.start + json.segment_start + OFFSET, 0);
+                            double word_end = Math.Max(wa.start + wa.length + json.segment_start + OFFSET, 0);
+                            var w = new WordSpoken(wa.word, -1, new TimeInterval(word_start, word_end));
+                            words.Add(w);
+                            latest = wa.start + wa.length + json.segment_start;
+                        }
                     }
-                }
 
-                if (latest == 0)
-                {
-                    latest = words[words.Count - 1].interval.end;
-                }
-                //Debug.WriteLine("Latest final sentence up to " + latest.ToString());
+                    if (latest == 0)
+                    {
+                        latest = words[words.Count - 1].interval.end;
+                    }
+                    //Debug.WriteLine("Latest final sentence up to " + latest.ToString());
 
-                /*if (json.result.hypotheses[0].word_alignment.Count > 0)
-                {
-                    words.Add(new WordSpoken(".", -1, new TimeInterval(latest, latest)));
-                }*/
+                    /*if (json.result.hypotheses[0].word_alignment.Count > 0)
+                    {
+                        words.Add(new WordSpoken(".", -1, new TimeInterval(latest, latest)));
+                    }*/
+                }
             }
-
-            // Then check if we have results from diarization
-            if (json.result.diarization != null && json.result.diarization.Count > 0)
-            {
-                bool full = false;
-                if (!json.result.diarization_incremental)
-                {
-                    //Debug.WriteLine("Received new diarization. Removing previous results.");
-                    this.diarization.Clear();
-                    this.diarizationSmallSeg.Clear();
-                    this.diarizationWordIndex = 0;
-                    this.constructDiarizedSentenceIndex = 0;
-                    full = true;
-                }
-                foreach (var d in json.result.diarization)
-                {
-                    int speaker = d.speaker;
-                    //Debug.WriteLine("Identified speaker is " + speaker.ToString());
-                    double start = d.start;
-                    double end = d.end;
-
-                    var interval = new TimeInterval(start, end);
-                    this.insertToDiarization(interval, speaker);
-                }
-
-                this.assignSpeakerToWords();
-                //Debug.WriteLine("Diarized to word count" + diarizationWordIndex.ToString());
-                //Debug.WriteLine("Total word count" + words.Count.ToString());
-                //Debug.WriteLine(json.original);
-                this.formConversation(full);
-
-                // so that we don't have an overflow of words
-                this.constructTempSentence();
-                //this.printDiarizationResult();
-            }
-
+            
             this.realtimeSentences = this.constructTempSentence();
 
             if (!json.result.final)
@@ -300,8 +268,49 @@ namespace PhenoPad.SpeechService
             //this.constructLatestSentence();
         }
 
-        // Show all words that have not been diarized
-        private List<string> constructTempSentence()
+        public void processDiaJson(DiarizationJSON diaJson)
+        {
+            // Then check if we have results from diarization
+            //if (json.result.diarization != null && json.result.diarization.Count > 0)
+            if (diaJson != null && diaJson.end != -1)
+            {
+                bool full = false;
+                /*** received retrained results, not need for microphone array
+                if (!json.result.diarization_incremental)
+                {
+                    //Debug.WriteLine("Received new diarization. Removing previous results.");
+                    this.diarization.Clear();
+                    this.diarizationSmallSeg.Clear();
+                    this.diarizationWordIndex = 0;
+                    this.constructDiarizedSentenceIndex = 0;
+                    full = true;
+                }
+                ***/
+                //foreach (var d in json.result.diarization)
+                //{
+                int speaker = diaJson.speaker;
+                //Debug.WriteLine("Identified speaker is " + speaker.ToString());
+                double start = diaJson.start;
+                double end = diaJson.end;
+
+                var interval = new TimeInterval(start, end);
+                this.insertToDiarization(interval, speaker);
+                //}
+
+                this.assignSpeakerToWords();
+                //Debug.WriteLine("Diarized to word count" + diarizationWordIndex.ToString());
+                //Debug.WriteLine("Total word count" + words.Count.ToString());
+                //Debug.WriteLine(json.original);
+                this.formConversation(full);
+
+                // so that we don't have an overflow of words
+                this.constructTempSentence();
+                //this.printDiarizationResult();
+            }
+        }
+
+    // Show all words that have not been diarized
+    private List<string> constructTempSentence()
         {
             List<string> sentences = new List<string>();
             string result = String.Empty;

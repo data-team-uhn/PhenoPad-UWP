@@ -65,6 +65,7 @@ namespace PhenoPad.SpeechService
         private AudioFileInputNode fileInputNode;
         public double theta = 0;
         public SpeechStreamSocket speechStreamSocket;
+        public SpeechResultsSocket speechResultsSocket;
         public SpeechRESTAPI speechAPI;
         private AudioFileOutputNode fileOutputNode;
 
@@ -137,6 +138,161 @@ namespace PhenoPad.SpeechService
                 });
             }
         }
+
+        /// <summary>
+        /// connect to client/speech/results
+        /// only receive results without sending audio signals
+        /// </summary>
+        public async void ReceiveASRResults()
+        {
+            speechResultsSocket = new SpeechResultsSocket(this.serverAddress, this.serverPort);
+            //speechAPI.setupClient(this.serverAddress);
+            //speechAPI.setupClient(this.serverAddress);
+            bool succeed = await speechResultsSocket.ConnectToServer();
+
+            if (!succeed)
+            {
+                MainPage.Current.NotifyUser("Connection to speech results server failed.", NotifyType.ErrorMessage, 3);
+                return;
+            }
+
+            MainPage.Current.NotifyUser("Connection established", NotifyType.StatusMessage, 2);
+            SpeechPage.Current.setSpeakerButtonEnabled(true);
+            SpeechPage.Current.adjustSpeakerCount(2);
+
+            cancellationSource = new CancellationTokenSource();
+            CancellationToken cancellationToken = cancellationSource.Token;                 // need this to actually cancel reading from websocketS
+
+            this.speechInterpreter.newConversation();
+
+            await Task.Run(async () =>
+            {
+                // Weird issue but seems to be some buffer issue
+                string accumulator = String.Empty;
+
+                // Stop running if cancellation requested
+                while (true && !cancellationToken.IsCancellationRequested)
+                {
+                    // don't run again for 
+                    await Task.Delay(500);
+                    // do the work in the loop
+                    string serverResult = await speechResultsSocket.ReceiveMessageUsingStreamWebSocket();
+
+                    // Debug.WriteLine("Got server message");
+
+                    serverResult = serverResult.Replace('-', '_');     // So that we can parse objects
+
+                    accumulator += serverResult;
+
+
+                    // Seems like if we don't do this we won't get all the packages
+                    bool doParsing = true;
+                    while (doParsing && !cancellationToken.IsCancellationRequested)
+                    {
+                        string outAccumulator = String.Empty;
+                        string json = SpeechEngineInterpreter.getFirstJSON(accumulator, out outAccumulator);
+                        accumulator = outAccumulator;
+
+                        // Only process if we have valid JSON
+                        if (json.Length != 0)
+                        {
+                            try
+                            {
+                                // need - not _ here... =. =
+                               
+                                Debug.WriteLine("Result from speech: " + json);
+                                var parsedSpeech = JsonConvert.DeserializeObject<SpeechEngineJSON>(json);
+                                parsedSpeech.original = json;
+
+                                //{'diarization': [{'start': 7.328, 'speaker': 0, 'end': 9.168000000000001, 'angle': 152.97781134625265}], 'diarization_incremental': True} 
+
+
+                                //Debug.WriteLine(json);
+                                //Debug.WriteLine(parsedSpeech.ToString());
+
+                                speechInterpreter.processJSON(parsedSpeech);
+
+                                // TODO Find a more legitimate way to fire an UI change?
+
+                                await Windows.ApplicationModel.Core.CoreApplication.MainView.CoreWindow.Dispatcher.RunAsync(CoreDispatcherPriority.Normal,
+                                   () =>
+                                   {
+                                       EngineHasResult.Invoke(this, speechInterpreter);
+                                   }
+                                   );
+
+                                continue;
+
+                            }
+                            catch (Exception e)
+                            {
+                                StackTrace st = new StackTrace(e, true);
+                                StackFrame frame = st.GetFrames()[0];
+                                Debug.WriteLine(e.ToString());
+                                Debug.WriteLine(frame.ToString());
+                                Debug.WriteLine(frame.GetFileName().ToString());
+                                Debug.WriteLine(frame.GetFileLineNumber().ToString());
+                                //Debug.WriteLine(accumulator);
+                                Debug.WriteLine("===SERIOUS PROBLEM!====");
+                            }
+
+                            //  try to decode as dirization result
+                            try
+                            {
+                                json = json.Replace('_', '-');
+                                var diaResult = JsonConvert.DeserializeObject<DiarizationJSON>(json);
+                                speechInterpreter.processDiaJson(diaResult);
+                                await Windows.ApplicationModel.Core.CoreApplication.MainView.CoreWindow.Dispatcher.RunAsync(CoreDispatcherPriority.Normal,
+                                  () =>
+                                  {
+                                      EngineHasResult.Invoke(this, speechInterpreter);
+                                  }
+                                  );
+                            }
+                            catch (Exception)
+                            {
+                                Debug.WriteLine("This is not diarization result.");
+                            }
+                           
+                        }
+                        else
+                        {
+                            // didn't get a valid JSON, wait for more packages
+                            doParsing = false;
+                        }
+                    }
+
+                }
+            }, cancellationToken);
+            //Task.Run(() => speechStreamSocket.ReceiveMessageUsingStreamWebSocket(), TaskCreationOptions.LongRunning);
+
+            return;
+        }
+
+        public void StopASRResults()
+        {
+            //await endSemaphoreSlim.WaitAsync();
+            try
+            {
+                MainPage.Current.NotifyUser("Disconnecting from speech engine", NotifyType.StatusMessage, 2);
+                //deviceInputNode.Stop();
+                cancellationSource.Cancel();
+                speechResultsSocket.CloseConnnction();
+
+                SpeechPage.Current.setSpeakerButtonEnabled(false);
+            }
+            catch (Exception e)
+            {
+                Debug.WriteLine(e.Message);
+            }
+            finally
+            {
+                //endSemaphoreSlim.Release();
+            }
+        }
+
+
+
         public async Task StartAudio()
         {
             bool attemptConnection = true;
@@ -258,7 +414,16 @@ namespace PhenoPad.SpeechService
                              // first try to decode as dirization result
                              try
                              {
+                                 // need - not _ here... =. =
+                                 json = json.Replace('_', '-');
                                  var diaResult = JsonConvert.DeserializeObject<DiarizationJSON>(json);
+                                 speechInterpreter.processDiaJson(diaResult);
+                                 await Windows.ApplicationModel.Core.CoreApplication.MainView.CoreWindow.Dispatcher.RunAsync(CoreDispatcherPriority.Normal,
+                                   () =>
+                                   {
+                                       EngineHasResult.Invoke(this, speechInterpreter);
+                                   }
+                                   );
                                  continue;
                              }
                              catch (Exception)

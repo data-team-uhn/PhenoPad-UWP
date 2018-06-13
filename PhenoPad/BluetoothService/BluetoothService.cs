@@ -13,6 +13,7 @@ using Windows.UI.Core;
 using System.Diagnostics;
 using Windows.Devices.SerialCommunication;
 using Windows.Networking.Connectivity;
+using System.Threading;
 
 namespace PhenoPad.BluetoothService
 {
@@ -25,6 +26,9 @@ namespace PhenoPad.BluetoothService
         StreamSocket _socket;
         private DeviceWatcher deviceWatcher = null;
         private DataWriter dataWriter = null;
+        public string rpi_ipaddr = null;
+        //private DataReader readPacket = null;
+        private CancellationTokenSource cancellationSource;
         private RfcommDeviceService blueService = null;
         private BluetoothDevice bluetoothDevice = null;
 
@@ -47,19 +51,29 @@ namespace PhenoPad.BluetoothService
         public async Task Initialize()
         {
             rootPage = MainPage.Current;
-            if (this.initialized == false)
+            bool blueConnected = await this.checkConnection();
+            if (!blueConnected)
             {
-                await InitiateConnection();
-            } else
-            {
-                Debug.WriteLine("Bluetooth has been initialized from another page");
-                await rootPage.Dispatcher.RunAsync(CoreDispatcherPriority.High, async () =>
+                await rootPage.Dispatcher.RunAsync(CoreDispatcherPriority.High, () =>
                 {
-                    // rootPage.bluetoothInitialized(true);
+                    rootPage.NotifyUser("Trying to connect Raspberry Pi through bluetooth.", NotifyType.StatusMessage, 3);
+                });
+                await InitiateConnection();
+            }
+            else
+            {
+                await rootPage.Dispatcher.RunAsync(CoreDispatcherPriority.High, () =>
+                {
+                    rootPage.NotifyUser("Bluetooth connection is connected.", NotifyType.StatusMessage, 3);
                 });
             }
         }
         
+
+        /// <summary>
+        /// Initiate bluetooth connection with Raspberry Pi
+        /// </summary>
+        /// <returns></returns>
         private async Task InitiateConnection()
         {
             var serviceInfoCollection = await DeviceInformation.FindAllAsync(RfcommDeviceService.GetDeviceSelector(RfcommServiceId.SerialPort), new string[] { "System.Devices.AepService.AepId" });
@@ -91,10 +105,7 @@ namespace PhenoPad.BluetoothService
                     // Make sure device name isn't blank
                     if (deviceInfo.Name == "raspberrypi")
                     {
-                        rootPage.NotifyUser(
-                           "Found Raspberry Pi",
-                           NotifyType.StatusMessage,
-                           3);
+                        
 
                         DeviceAccessStatus accessStatus = DeviceAccessInformation.CreateFromId(deviceInfo.Id).CurrentStatus;
                         if (accessStatus == DeviceAccessStatus.DeniedByUser)
@@ -114,18 +125,31 @@ namespace PhenoPad.BluetoothService
 
                             var rfcommServices = await bluetoothDevice.GetRfcommServicesForIdAsync(
                   RfcommServiceId.FromUuid(Constants.RfcommChatServiceUuid), BluetoothCacheMode.Uncached);
-
-                            if (rfcommServices.Services.Count > 0)
+                            var attempNum = 1;
+                            for (; attempNum <= 5; attempNum++)
                             {
-                                blueService = rfcommServices.Services[0];
+                                if (rfcommServices.Services.Count > 0)
+                                {
+                                    blueService = rfcommServices.Services[0];
+                                    break;
+                                }
+                                else
+                                {
+                                    rootPage.NotifyUser(
+                                       "Could not discover Bluetooh server on the remote device, trying again...",
+                                       NotifyType.StatusMessage, 1);
+                                    await Task.Delay(1000);
+                                }
                             }
-                            else
+                            if (attempNum == 6)
                             {
                                 rootPage.NotifyUser(
-                                   "Could not discover Bluetooh server on the remote device",
-                                   NotifyType.StatusMessage, 3);
+                                       "Could not discover Bluetooh server on the remote device",
+                                       NotifyType.ErrorMessage, 2);
                                 return;
                             }
+
+                            
 
                             StopWatcher();
 
@@ -136,13 +160,15 @@ namespace PhenoPad.BluetoothService
                             try
                             {
                                 await _socket.ConnectAsync(blueService.ConnectionHostName, blueService.ConnectionServiceName);
-
+                               
                                 //SetChatUI(attributeReader.ReadString(serviceNameLength), bluetoothDevice.Name);
                                 dataWriter = new DataWriter(_socket.OutputStream);
+                                //readPacket = new DataReader(_socket.InputStream);
                             }
                             catch (Exception ex) when ((uint)ex.HResult == 0x80070490) // ERROR_ELEMENT_NOT_FOUND
                             {
                             }
+                            // send hand shake
                             try
                             {
                                 string temp = "HAND_SHAKE";
@@ -155,7 +181,7 @@ namespace PhenoPad.BluetoothService
                                 this.initialized = true;
 
                                 rootPage.NotifyUser(
-                                   "Bluetooth connection has been established",
+                                   "Connected to Raspberry Pi",
                                    NotifyType.StatusMessage, 2);
                                 rootPage.bluetoothInitialized(true);
                             }
@@ -164,6 +190,34 @@ namespace PhenoPad.BluetoothService
                                 // The remote device has disconnected the connection
                                 return;
                             }
+
+                            // keep receiving data 
+                            if(cancellationSource != null)
+                                cancellationSource.Cancel();
+                            cancellationSource = new CancellationTokenSource();
+                            CancellationToken cancellationToken = cancellationSource.Token;
+                           
+                            await Task.Run(async () =>
+                            {
+                                while (true && !cancellationToken.IsCancellationRequested)
+                                {
+                                    // don't run again for 
+                                    await Task.Delay(500);
+
+                                    string result = await ReceiveMessageUsingStreamWebSocket();
+                                    if (!string.IsNullOrEmpty(result))
+                                    {
+                                        rootPage.NotifyUser(result, NotifyType.StatusMessage, 3);
+                                        string[] temp = result.Split(' ');
+                                        if (temp[0] == "ip")
+                                        {
+                                            rpi_ipaddr = temp[1];
+                                        }
+                                    }
+
+                                }
+                            }, cancellationToken);
+                            
                         }
                         catch (Exception e)
                         {
@@ -243,6 +297,56 @@ namespace PhenoPad.BluetoothService
             deviceWatcher.Start();
         }
 
+        public string GetPiIP()
+        {
+            return this.rpi_ipaddr;
+        }
+        public async Task<bool> checkConnection()
+        {
+            try
+            {
+                string temp = "are you alive?";
+                //dataWriter.WriteUInt32((uint)temp.Length);
+                dataWriter.WriteString(temp);
+                Debug.WriteLine("Checking whether the connection is still alive");
+                await dataWriter.StoreAsync();
+                return true;
+            }
+            catch (Exception)
+            {
+                // The remote device has disconnected the connection
+                this.CloseConnection();
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// receive data from stream socket
+        /// </summary>
+        public async Task<String> ReceiveMessageUsingStreamWebSocket()
+        {
+            string returnMessage = String.Empty;
+            try
+            {
+                uint length = 100;     // Leave a large buffer
+
+                var readBuf = new Windows.Storage.Streams.Buffer((uint)length);
+                var readOp = await this._socket.InputStream.ReadAsync(readBuf, (uint)length, InputStreamOptions.Partial);
+
+                //await readOp;   // Don't move on until we have finished reading from server
+
+                DataReader readPacket = DataReader.FromBuffer(readBuf);
+                uint buffLen = readPacket.UnconsumedBufferLength;
+                returnMessage = readPacket.ReadString(buffLen);
+            }
+            catch (Exception exp)
+            {
+                Debug.WriteLine("failed to post a read failed with error:  " + exp.Message);
+            }
+
+            return returnMessage;
+        }
+
         private void StopWatcher()
         {
             if (null != deviceWatcher)
@@ -253,6 +357,19 @@ namespace PhenoPad.BluetoothService
                     deviceWatcher.Stop();
                 }
                 deviceWatcher = null;
+            }
+        }
+
+        public async void CloseConnection()
+        {
+            try
+            {
+                await this._socket.CancelIOAsync();
+                this.cancellationSource.Cancel();
+            }
+            catch (Exception)
+            {
+
             }
         }
 

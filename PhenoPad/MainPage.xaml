@@ -33,12 +33,12 @@
         -->
         <local:BackgroundColorConverter x:Key="bcConverter" />
         <local:IntervalDisplayConverter x:Key="intervalConverter" />
-        
-        <Flyout x:Key="MultimediaPreviewFlyout" Opened="MultimediaPreviewFlyout_Opened" Placement="Full">
+
+        <Flyout x:Key="MultimediaPreviewFlyout" Opened="MultimediaPreviewFlyout_Opened" Closed="MultimediaPreviewFlyout_Closed" Placement="Full">
             <Flyout.FlyoutPresenterStyle>
                 <Style TargetType="FlyoutPresenter">
-                    <Setter Property="MaxWidth" Value="1000"/>
-                    <Setter Property="MaxHeight" Value="1000"/>
+                    <Setter Property="MaxWidth" Value="800"/>
+                    <Setter Property="MaxHeight" Value="600"/>
                 </Style>
             </Flyout.FlyoutPresenterStyle>
             <Grid Name="ControlView"
@@ -81,7 +81,7 @@
                         Content="Snap a photo"
                         Grid.Row="3" Grid.Column="1" RequestedTheme="Default"
                         VerticalAlignment="Bottom" HorizontalAlignment="Center"
-                              Click="CameraButton_Click" IsEnabled="False"/>
+                              Click="CameraButton_Click" IsEnabled="True"/>
 
                 <!--
                 We have made Bluetooth connection automatic
@@ -94,12 +94,13 @@
                         VerticalAlignment="Center" HorizontalAlignment="Center"
                               Click="BluetoothButton_Click"  IsEnabled="True"/>
                 -->
-
-                <WebView Name="StreamView" Width="360" Height="280"
+                <Image Name="StreamImageView" Width="550" Height="300" 
+                         Grid.Row="0" Grid.Column="2" Grid.RowSpan="5" HorizontalAlignment="Center" VerticalAlignment="Center"
+                         Visibility="Visible" />
+                <WebView Name="StreamView" Width="400" Height="300" 
                          Grid.Row="0" Grid.Column="2" Grid.RowSpan="5"
                          HorizontalAlignment="Center" VerticalAlignment="Center"
-                         Visibility="Visible" 
-                     Source="http://192.168.137.8:8000" />
+                         Visibility="Collapsed"  />
             </Grid>
         </Flyout>
     </Page.Resources>
@@ -156,6 +157,11 @@
                 <AppBarButton  Name="SaveButton" Icon="Save" Label="Save notes" Click="SaveButton_Click">
                     <ToolTipService.ToolTip>
                         <TextBlock Text="Save notes."/>
+                    </ToolTipService.ToolTip>
+                </AppBarButton>
+                <AppBarButton  Name="PrintBtn" Icon="Print" Label="Print note." Click="PrintButton_Click">
+                    <ToolTipService.ToolTip>
+                        <TextBlock Text="Print current page."/>
                     </ToolTipService.ToolTip>
                 </AppBarButton>
                 <AppBarButton  Name="FullscreenBtn" Icon="FullScreen" Label="Fullscreen Mode" Click="FullscreenButton_Click">
@@ -283,8 +289,9 @@
                                 <Flyout Placement="Right">
                                     <Grid>
                                         <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="3*"/>
+                                            <ColumnDefinition Width="30"/>
                                             <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="Auto"/>
                                         </Grid.ColumnDefinitions>
 
                                         <Grid.RowDefinitions>
@@ -310,6 +317,10 @@
                                         <BitmapIcon Grid.Row="2" Grid.Column="1"  Width="32" Height="32"
                                                 UriSource="ms-appx:///Assets/checkmark.png" 
                                                 Name="DiarizationComplete" Visibility="Collapsed"/>
+
+                                        <TextBlock Grid.Row="0" Grid.Column="2" Text="" Name="PiIPAddress" Margin="5"/>
+                                        <TextBlock Grid.Row="1" Grid.Column="2" Text="" Margin="5"/>
+                                        <TextBlock Grid.Row="2" Grid.Column="2" Text="" Margin="5"/>
                                     </Grid>
                                 </Flyout>
                             </Button.Flyout>
