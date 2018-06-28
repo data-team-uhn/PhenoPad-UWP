@@ -38,7 +38,7 @@ namespace PhenoPad
             this.InitializeComponent();
             Windows.ApplicationModel.Core.CoreApplication.GetCurrentView().TitleBar.ExtendViewIntoTitleBar = false;
 
-            loadAllNotes();
+            LoadAllNotes();
 
             //draw into the title bar
             CoreApplication.GetCurrentView().TitleBar.ExtendViewIntoTitleBar = true;
@@ -54,11 +54,9 @@ namespace PhenoPad
         }
 
         private List<Notebook> notebooks;
-        private async void loadAllNotes()
+        private void LoadAllNotes()
         {
-            notebooks = await FileManager.getSharedFileManager().GetAllNotebookObjects();
-            if(notebooks != null)
-                notebookList.ItemsSource = notebooks;
+            reloadNotebookList();
             
    
         }
@@ -127,7 +125,7 @@ namespace PhenoPad
                 Debug.WriteLine("Unable to upload to server due to " + ex.Message);
             }
 
-            loadAllNotes();
+            LoadAllNotes();
         }
 
         private async void DownloadServerButton_Click(object sender, RoutedEventArgs e)
@@ -143,9 +141,20 @@ namespace PhenoPad
                 Debug.WriteLine("Unable to load from server due to " + ex.Message);
             }
 
-            loadAllNotes();
+            LoadAllNotes();
         }
 
+        private async void reloadNotebookList()
+        {
+            notebooks = await FileManager.getSharedFileManager().GetAllNotebookObjects();
+            if (notebooks != null)
+                notebookList.ItemsSource = notebooks;
+        }
+
+        protected override async void OnNavigatedTo(NavigationEventArgs e)
+        {
+            reloadNotebookList();
+        }
         protected override void OnNavigatedFrom(NavigationEventArgs e)
         {
             this.Frame.BackStack.Clear();
@@ -167,6 +176,16 @@ namespace PhenoPad
         private void autosuggestquerysubmitted(AutoSuggestBox sender, AutoSuggestBoxQuerySubmittedEventArgs args)
         {
 
+        }
+
+        private async void Delete_ItemInvoked(SwipeItem sender, SwipeItemInvokedEventArgs args)
+        {
+            var id = (string) args.SwipeControl.Tag;
+            bool isSuccess = await FileManager.getSharedFileManager().DeleteNotebookById(id);
+            if (isSuccess)
+            {
+                reloadNotebookList();
+            }
         }
     }
     

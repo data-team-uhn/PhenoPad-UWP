@@ -30,7 +30,7 @@ namespace PhenoPad.CustomControl
     {
         private double DEFAULT_WIDTH = 400;
         private double DEFAULT_HEIGHT = 400;
-        public string type;
+        public string type; // photo, drawing
         InkAnalyzer inkAnalyzer = new InkAnalyzer();
         IReadOnlyList<InkStroke> inkStrokes = null;
         InkAnalysisResult inkAnalysisResults = null;
@@ -44,12 +44,38 @@ namespace PhenoPad.CustomControl
         public double canvasLeft;
         public double canvasTop;
 
-        public InkCanvas inkCan;
+       
 
         private bool isInitialized = false;
         private ScaleTransform scaleTransform;
         private TranslateTransform dragTransform;
-
+        public InkCanvas inkCan
+        {
+            get {
+                return inkCanvas;
+            }
+        }
+        public double transX
+        {
+            get
+            {
+                return dragTransform.X;
+            }
+        }
+        public double transY
+        {
+            get
+            {
+                return dragTransform.Y;
+            }
+        }
+        public double transScale
+        {
+            get
+            {
+                return scaleTransform.ScaleX;
+            }
+        }
 
         public String name
         {
@@ -208,9 +234,8 @@ namespace PhenoPad.CustomControl
         {
             isInitialized = true;
             //this.ControlStackPanel.Visibility = Visibility.Visible;
-            InkCanvas inkCanvas = new InkCanvas();
-            this.inkCan = inkCanvas;
-            contentGrid.Children.Add(inkCanvas);
+            //contentGrid.Children.Add(inkCanvas);
+            inkCanvas.Visibility = Visibility.Visible;
             if (!onlyView) // added from note page, need editing
             {
                 // Set supported inking device types.
@@ -230,7 +255,8 @@ namespace PhenoPad.CustomControl
             }
             else // only for viewing on page overview page
             {
-                
+                inkCanvas.InkPresenter.InputDeviceTypes =
+                    Windows.UI.Core.CoreInputDeviceTypes.None;
             }
 
         }
@@ -260,7 +286,7 @@ namespace PhenoPad.CustomControl
             var result = await FileManager.getSharedFileManager().SaveImageForNotepage(notebookId, pageId, name, wb);
         }
 
-        public async void InitializeFromDisk(bool onlyView = false)
+        public async void InitializeFromDisk(bool onlyView = false, double transX = 0, double transY = 0, double transScale = 0)
         {
             this.categoryGrid.Visibility = Visibility.Collapsed;
             // photo file
@@ -292,7 +318,7 @@ namespace PhenoPad.CustomControl
 
             var annofile = await FileService.FileManager.getSharedFileManager().GetNoteFileNotCreate(notebookId, pageId, FileService.NoteFileType.ImageAnnotation, name);
             if (annofile != null)
-                await FileService.FileManager.getSharedFileManager().loadStrokes(annofile, this.inkCan);
+                await FileService.FileManager.getSharedFileManager().loadStrokes(annofile, inkCanvas);
 
             /**
                 string strokeUri = "ms-appdata:///local/" + FileManager.getSharedFileManager().GetNoteFilePath(notebookId, pageId, NoteFileType.ImageAnnotation, name);
@@ -300,9 +326,13 @@ namespace PhenoPad.CustomControl
                 anno.UriSource = new Uri(strokeUri);
                 contentGrid.Children.Add(anno);
     **/
-            
-
-            
+            if (!onlyView)
+            {
+                dragTransform.X = transX;
+                dragTransform.Y = transY;
+                scaleTransform.ScaleX = transScale;
+                scaleTransform.ScaleY = transScale;
+            }
 
         }
 
@@ -387,7 +417,7 @@ namespace PhenoPad.CustomControl
         private void UserControl_Loaded(object sender, RoutedEventArgs e)
         {
             if (viewOnly)
-            {
+            { 
                 this.Width = DEFAULT_WIDTH;
                 this.Height = DEFAULT_HEIGHT;
                 TitleRelativePanel.Visibility = Visibility.Collapsed;
@@ -418,6 +448,21 @@ namespace PhenoPad.CustomControl
         {
             CameraCanvas.Visibility = Visibility.Collapsed;
             captureControl.unSetUp();
+        }
+
+
+        public void hideControlUI()
+        {
+            OutlineGrid.Background = new SolidColorBrush(Colors.Transparent);
+            this.TitleRelativePanel.Visibility = Visibility.Collapsed;
+            this.inkToolbar.Visibility = Visibility.Collapsed;
+
+        }
+        public void showControlUI()
+        {
+            OutlineGrid.Background = new SolidColorBrush(Colors.WhiteSmoke);
+            this.TitleRelativePanel.Visibility = Visibility.Visible;
+            this.inkToolbar.Visibility = Visibility.Visible;
         }
     }
 }

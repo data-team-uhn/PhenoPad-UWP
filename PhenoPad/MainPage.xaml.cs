@@ -322,7 +322,7 @@ namespace PhenoPad
                 if(imageAndAnno != null)
                     foreach (var ia in imageAndAnno)
                     {
-                        aPage.addImageAndAnnotationControl(ia.name, ia.canvasLeft, ia.canvasTop, true);
+                        aPage.addImageAndAnnotationControl(ia.name, ia.canvasLeft, ia.canvasTop, true, null, ia.transX, ia.transY, ia.transScale);
                     }
             }
 

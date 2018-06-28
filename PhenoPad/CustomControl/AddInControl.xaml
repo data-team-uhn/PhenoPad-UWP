@@ -19,7 +19,7 @@
             <x:Double x:Key="categoryButtonFontSize">27</x:Double>
         </ResourceDictionary>
     </UserControl.Resources>
-    <Grid Background="WhiteSmoke" BorderBrush="LightGray">
+    <Grid Background="WhiteSmoke" BorderBrush="LightGray" Name="OutlineGrid">
         <Grid.RowDefinitions>
             <RowDefinition Height="48"></RowDefinition>
             <RowDefinition Height="*"></RowDefinition>
@@ -73,7 +73,7 @@
         </StackPanel>
         -->
        
-        <InkToolbar x:Name="inkToolbar"  Visibility="Collapsed"  Grid.Row="0" Margin="0 0 0 0" 
+        <InkToolbar x:Name="inkToolbar"  Visibility="Collapsed"  Grid.Row="0" Margin="0 0 0 0"
         VerticalAlignment="Top" 
         HorizontalAlignment="Right" 
         Orientation="Horizontal"   />
@@ -111,6 +111,7 @@
 
         <local:AddInImageControl Grid.Row="1" Visibility="Collapsed" x:Name="imageControl"/>
 
+        <InkCanvas Grid.Row="1" Visibility="Collapsed" x:Name="inkCanvas"/>
 
         <Grid Grid.Row="0" Grid.RowSpan="2" Background="White" Opacity="0.5" Name="MovingGrid" Visibility="Collapsed">
             

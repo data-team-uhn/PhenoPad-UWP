@@ -244,7 +244,8 @@ namespace PhenoPad.FileService
                 List<ImageAndAnnotation> imageList = new List<ImageAndAnnotation>();
                 foreach (AddInControl con in notePage.GetAllAddInControls())
                 {
-                    ImageAndAnnotation temp = new ImageAndAnnotation(con.name, notebookId, pageId, con.canvasLeft, con.canvasTop);
+                    ImageAndAnnotation temp = new ImageAndAnnotation(con.name, notebookId, pageId, con.canvasLeft, con.canvasTop,
+                                                                    con.transX, con.transY, con.transScale);
                     imageList.Add(temp);
                     // image
                     if (con.type == "photo")
@@ -261,6 +262,8 @@ namespace PhenoPad.FileService
                     isSuccessful = await saveStrokes(strokesFile, con.inkCan);
                     
                 }
+
+                // meta data
                 string metapath = GetNoteFilePath(notebookId, pageId, NoteFileType.ImageAnnotationMeta);
                 isSuccessful = await SaveObjectSerilization(metapath, imageList, typeof(List<ImageAndAnnotation>));
             }
@@ -690,6 +693,19 @@ namespace PhenoPad.FileService
             return result;
         }
 
+        public async Task<bool> DeleteNotebookById(string id)
+        {
+            try
+            {
+                var notebook = await ROOT_FOLDER.GetFolderAsync(id);
+                await notebook.DeleteAsync();
+            }
+            catch (Exception e)
+            {
+                Debug.WriteLine(e.Message);
+            }
+            return true;
+        }
 
     }
 }

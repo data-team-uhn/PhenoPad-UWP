@@ -908,7 +908,8 @@ namespace PhenoPad.CustomControl
             }
            
         }
-        public void addImageAndAnnotationControl(string name, double left, double top, bool loadFromDisk, WriteableBitmap wb = null)
+        public void addImageAndAnnotationControl(string name, double left, double top, bool loadFromDisk, WriteableBitmap wb = null, 
+                                                    double transX = 0, double transY = 0, double transScale = 0)
         {
             AddInControl canvasAddIn = new AddInControl(name, notebookId, pageId);
             //canvasAddIn.Width = 400; //stroke.BoundingRect.Width;
@@ -920,7 +921,7 @@ namespace PhenoPad.CustomControl
             userControlCanvas.Children.Add(canvasAddIn);
 
             if (loadFromDisk)
-                canvasAddIn.InitializeFromDisk();
+                canvasAddIn.InitializeFromDisk(false, transX, transY, transScale);
 
             if (wb != null)
                 canvasAddIn.InitializeFromImage(wb);
@@ -2568,6 +2569,15 @@ namespace PhenoPad.CustomControl
 
         public async void printPage()
         {
+            await Dispatcher.RunAsync(Windows.UI.Core.CoreDispatcherPriority.High, () => {
+                // hide control UI of all addincontrols
+                foreach (var addin in GetAllAddInControls())
+                {
+                    addin.hideControlUI();
+                }
+            });
+           
+            
             var bitmap = new RenderTargetBitmap();
 
             StorageFile file = await KnownFolders.PicturesLibrary.CreateFileAsync("note page.jpg",
@@ -2607,6 +2617,16 @@ namespace PhenoPad.CustomControl
             }
 
             await Windows.System.Launcher.LaunchFileAsync(file);
+
+            await Dispatcher.RunAsync(Windows.UI.Core.CoreDispatcherPriority.High, () =>
+            {
+                // show control UI of all addincontrols
+                foreach (var addin in GetAllAddInControls())
+                {
+                    addin.showControlUI();
+                }
+            });
+            
         }
 
 

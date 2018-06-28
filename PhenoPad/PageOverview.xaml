@@ -69,9 +69,19 @@
                 <AutoSuggestBox QueryIcon="Find" HorizontalAlignment="Stretch" Margin="5 0 5 0" RelativePanel.AlignVerticalCenterWithPanel="True" Name="autoSuggestBox" PlaceholderText="Search" TextChanged="autosuggesttextchanged" QuerySubmitted="autosuggestquerysubmitted" ></AutoSuggestBox>
             </StackPanel>
             <ListView  Margin="5"  x:Name="notebookList" ItemClick="notebookList_ItemClick" IsItemClickEnabled="True" Grid.Row="2">
+                <ListView.Resources>
+                    <SwipeItems x:Key="left" Mode="Reveal">
+                        <SwipeItem Text="Delete" Background="PaleVioletRed" Invoked="Delete_ItemInvoked">
+                            <SwipeItem.IconSource>
+                                <SymbolIconSource Symbol="Delete"/>
+                            </SwipeItem.IconSource>
+                        </SwipeItem>
+                    </SwipeItems>
+                </ListView.Resources>
                 <ListView.ItemTemplate>
                     <DataTemplate x:DataType="fileservice:Notebook">
-                        <Grid >
+                        <SwipeControl LeftItems="{StaticResource left}" Tag="{x:Bind id }">
+                        <Grid>
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="80"/>
                                 <ColumnDefinition Width="*"/>
@@ -93,6 +103,7 @@
                                 <TextBlock Foreground="{StaticResource WORD_DARK}">Open</TextBlock>
                             </Button>
                         </Grid>
+                        </SwipeControl>
                     </DataTemplate>
                 </ListView.ItemTemplate>
                 <ListView.ItemContainerStyle>
@@ -164,7 +175,7 @@
                 <Border Background="{StaticResource Title_Background}" Height="40">
                     <TextBlock VerticalAlignment="Center" Grid.Row="0" FontSize="20" Foreground="Black" Margin="10 0 0 0">Note pages</TextBlock>
                 </Border>
-                <GridView Name="NoteGridView" ItemClick="GridView_ItemClick" Padding="10 10 10 10" Height="345"
+                <GridView Name="NoteGridView" ItemClick="GridView_ItemClick" Padding="10 10 10 10" Height="450"
                            ScrollViewer.HorizontalScrollBarVisibility="Auto"
     ScrollViewer.HorizontalScrollMode="Enabled"
     ScrollViewer.VerticalScrollMode="Disabled">
@@ -191,7 +202,7 @@
                                     <TextBlock Text="{x:Bind date}" 
                                FontSize="18" Foreground="Gray"/>
                                 </Border>
-                                <Border Height="240" Width="200" Grid.Row="2">
+                                <Border Height="400" Width="283" Grid.Row="2">
                                     <BitmapIcon UriSource="{x:Bind strokeUri}"/>
                                     <!-- 
                             <Image Source="{x:Bind strokeUri}"/>
@@ -212,7 +223,7 @@
                 </Border>
 
                 <GridView Name="ImageAnnotationGridView"  Padding="10 10 10 10" Height="400"
-                           ScrollViewer.HorizontalScrollBarVisibility="Auto"
+                           ScrollViewer.HorizontalScrollBarVisibility="Auto"  AllowFocusOnInteraction="False" SelectionMode="None"
     ScrollViewer.HorizontalScrollMode="Enabled"
     ScrollViewer.VerticalScrollMode="Disabled">
 
@@ -227,11 +238,7 @@
                             <customcontrol:AddInControl name="{x:Bind name}" notebookId="{x:Bind notebookId}" viewOnly="True" pageId="{x:Bind pageId}"></customcontrol:AddInControl>
                         </DataTemplate>
                     </GridView.ItemTemplate>
-                    <GridView.Items>
-                        <GridViewItem BorderThickness="1" BorderBrush="Black">
-                            <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE710;" Foreground="{StaticResource WORD_DARK}" FontSize="72" FontWeight="ExtraBold"/>
-                        </GridViewItem>
-                    </GridView.Items>
+                    
                 </GridView>
 
                 <Border Name="ImageAnnotationPlaceHoder" Visibility="Visible" Height="60" Padding="10">
