@@ -44,7 +44,12 @@ namespace PhenoPad.CustomControl
 
         public AddInImageControl()
         {
-            this.InitializeComponent();
+            try
+            {
+                this.InitializeComponent();
+            }
+            catch (Exception)
+            { }
         }
         
         public AddInImageControl(string notebookId, string pageId, string name)

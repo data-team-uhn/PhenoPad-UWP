@@ -18,6 +18,8 @@ namespace PhenoPad.FileService
         public double transY { get; set; }
         public double transScale { get; set; }
         public string date { get; set; }
+        public double width { get; set; }
+        public double height { get; set; }
 
 
     
@@ -28,7 +30,7 @@ namespace PhenoPad.FileService
 
         public ImageAndAnnotation(string name, string notebookId, string pageId, 
                                     double canvasLeft, double canvasTop,
-                                    double transX, double transY, double transScale)
+                                    double transX, double transY, double transScale, double width, double height)
         {
             this.name = name;
             this.notebookId = notebookId;
@@ -37,6 +39,8 @@ namespace PhenoPad.FileService
             this.canvasTop = canvasTop;
             this.transX = transX;
             this.transY = transY;
+            this.height = height;
+            this.width = width;
             this.transScale = transScale;
             date = DateTime.Now.ToString("MM/dd/yyyy HH:mm:ss");
         }

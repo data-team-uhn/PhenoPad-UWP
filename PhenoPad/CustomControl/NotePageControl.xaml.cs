@@ -112,6 +112,7 @@ namespace PhenoPad.CustomControl
         int lastStrokeLine = -1;
         List<string> curLineWords = new List<string>();
 
+        private MetroLog.ILogger logger = LogService.MetroLogger.getSharedLogger();
 
         public InkCanvas inkCan
         {
@@ -140,7 +141,7 @@ namespace PhenoPad.CustomControl
          * Initial method
          **/
         public NotePageControl()
-        {
+        {  
             rootPage = MainPage.Current;
             this.InitializeComponent();
             this.DrawBackgroundLines();
@@ -188,9 +189,7 @@ namespace PhenoPad.CustomControl
             textNoteDispatcherTimer.Interval = TimeSpan.FromSeconds(0.1);
             operationDispathcerTimer.Interval = TimeSpan.FromMilliseconds(500);
             unprocessedDispatcherTimer.Interval = TimeSpan.FromMilliseconds(100);
-
-           
-
+            
             linesToUpdate = new Queue<int>();
             lineAnalysisDispatcherTimer = new DispatcherTimer();
             lineAnalysisDispatcherTimer.Tick += LineAnalysisDispatcherTimer_Tick;
@@ -269,7 +268,12 @@ namespace PhenoPad.CustomControl
             inkAnalyzer.AddDataForStrokes(inkCanvas.InkPresenter.StrokeContainer.GetStrokes());
             // dispatcherTimer.Start();
 
-            await analyzeInk();
+            bool result = false;
+            while (!result)
+            {
+                result = await analyzeInk();
+                await Task.Delay(1000);
+            }
         }
 
         // draw background lines for notes
@@ -429,11 +433,7 @@ namespace PhenoPad.CustomControl
             backgroundCanvas.Background = new SolidColorBrush(Colors.White);
         }
         /******************** END of View mode ********************/
-
-        private void App_PointerMoved(CoreWindow sender, PointerEventArgs args)
-        {
-            Debug.WriteLine(123);
-        }
+        
 
         // analyze the currently hovering line
         private void LineAnalysisDispatcherTimer_Tick(object sender, object e)
@@ -523,7 +523,7 @@ namespace PhenoPad.CustomControl
             }
         }
 
-        private void InkPresenter_StrokesErased(InkPresenter sender, InkStrokesErasedEventArgs args)
+        private async void InkPresenter_StrokesErased(InkPresenter sender, InkStrokesErasedEventArgs args)
         {
             ClearSelection();
             
@@ -536,7 +536,7 @@ namespace PhenoPad.CustomControl
                 inkAnalyzer.RemoveDataForStroke(stroke.Id);
             }
             //operationDispathcerTimer.Start();
-            dispatcherTimer.Start();
+            await analyzeInk();
         }
         private IReadOnlyList<InkStroke> leftLossoStroke;
         private async void InkPresenter_StrokesCollectedAsync(InkPresenter sender, InkStrokesCollectedEventArgs args)
@@ -563,8 +563,6 @@ namespace PhenoPad.CustomControl
                         inkAnalyzer.AddDataForStroke(s);
                         inkAnalyzer.SetStrokeDataKind(s.Id, InkAnalysisStrokeKind.Writing);
                         await analyzeInk(s);
-                        // make sure analyze strokes after user stops
-                        dispatcherTimer.Start();
                     }
                 }
                 // recognize by line
@@ -578,12 +576,10 @@ namespace PhenoPad.CustomControl
                         lastStrokeLine = lineIndex;
                     }
                 }
-            **/
-
-
+                **/
 
                 // start to analyze ink anaylsis on collected strokes.
-                dispatcherTimer.Start();
+                // dispatcherTimer.Start();
 
                 //inkAnalyzer.AddDataForStrokes(args.Strokes);
                 
@@ -874,18 +870,38 @@ namespace PhenoPad.CustomControl
         }
 
         // recognize ink as operation
-        public List<AddInControl> GetAllAddInControls()
+        public async Task<List<AddInControl>> GetAllAddInControls()
         {
             List<AddInControl> cons = new List<AddInControl>();
-            foreach (var c in this.userControlCanvas.Children)
+            await Windows.ApplicationModel.Core.CoreApplication.MainView.CoreWindow.Dispatcher.RunAsync(CoreDispatcherPriority.Normal,
+            () =>
             {
-                if (c.GetType() == typeof(AddInControl))
+                foreach (var c in this.userControlCanvas.Children)
                 {
-                    cons.Add(c as AddInControl);
+                    if (c.GetType() == typeof(AddInControl))
+                    {
+                        cons.Add(c as AddInControl);
+                    }
                 }
             }
+            );
             return cons;
         }
+
+        public async Task<List<ImageAndAnnotation>> GetAllAddInObjects()
+        {
+            List<ImageAndAnnotation> olist = new List<ImageAndAnnotation>();
+            List<AddInControl> addinlist = await GetAllAddInControls();
+            foreach(var con in addinlist)
+            {
+                ImageAndAnnotation temp = new ImageAndAnnotation(con.name, notebookId, pageId, con.canvasLeft, con.canvasTop,
+                                                                      con.transX, con.transY, con.transScale, con.ActualWidth, con.ActualHeight);
+                olist.Add(temp);
+            }
+
+            return olist;
+        }
+
         public async void addImageAndAnnotationControlFromBitmapImage(string imageString)
         {
             try
@@ -904,14 +920,15 @@ namespace PhenoPad.CustomControl
             }
             catch (Exception e)
             {
+                logger.Error("Failed to add image control from BitmapImage: " + e.Message);
                 Debug.WriteLine(e.Message);
             }
            
         }
         public void addImageAndAnnotationControl(string name, double left, double top, bool loadFromDisk, WriteableBitmap wb = null, 
-                                                    double transX = 0, double transY = 0, double transScale = 0)
+                                                    double transX = 0, double transY = 0, double transScale = 0, double width = -1, double height = -1)
         {
-            AddInControl canvasAddIn = new AddInControl(name, notebookId, pageId);
+            AddInControl canvasAddIn = new AddInControl(name, notebookId, pageId, width, height);
             //canvasAddIn.Width = 400; //stroke.BoundingRect.Width;
             //canvasAddIn.Height = 400;  //stroke.BoundingRect.Height;
             canvasAddIn.canvasLeft = left;
@@ -925,7 +942,37 @@ namespace PhenoPad.CustomControl
 
             if (wb != null)
                 canvasAddIn.InitializeFromImage(wb);
+            
+            canvasAddIn.ManipulationMode = ManipulationModes.TranslateX | ManipulationModes.TranslateY | ManipulationModes.Scale;
+            canvasAddIn.ManipulationStarted += ((object sender, ManipulationStartedRoutedEventArgs e)  =>{
+                canvasAddIn.showMovingGrid();
+            });
+
+
+            canvasAddIn.ManipulationDelta += ((object sender, ManipulationDeltaRoutedEventArgs e) => {
+                canvasAddIn.dragTransform.X += e.Delta.Translation.X;
+                canvasAddIn.dragTransform.Y += e.Delta.Translation.Y;
+
+
+                var scale = canvasAddIn.scaleTransform.ScaleX * e.Delta.Scale;
+                scale = scale > 2.0 ? 2.0 : scale;
+                scale = scale < 0.5 ? 0.5 : scale;
+                canvasAddIn.scaleTransform.ScaleX = scale;
+
+                scale = canvasAddIn.scaleTransform.ScaleY * e.Delta.Scale;
+                scale = scale > 2.0 ? 2.0 : scale;
+                scale = scale < 0.5 ? 0.5 : scale;
+                canvasAddIn.scaleTransform.ScaleY = scale;
+
+            });
+            canvasAddIn.ManipulationCompleted += ((object sender, ManipulationCompletedRoutedEventArgs e) => {
+                canvasAddIn.hideMovingGrid();
+            });
+
+           
         }
+
+     
 
         private async Task<int> RecognizeInkOperation()
         {
@@ -941,7 +988,9 @@ namespace PhenoPad.CustomControl
                         foreach (var dstroke in drawNode.GetStrokeIds())
                         {
                             var stroke = inkCanvas.InkPresenter.StrokeContainer.GetStrokeById(dstroke);
-                            addImageAndAnnotationControl(FileManager.getSharedFileManager().CreateUniqueName(), stroke.BoundingRect.X, stroke.BoundingRect.Y, false);
+                            addImageAndAnnotationControl(FileManager.getSharedFileManager().CreateUniqueName(), 
+                                stroke.BoundingRect.X, stroke.BoundingRect.Y, false,
+                                width: stroke.BoundingRect.Width, height: stroke.BoundingRect.Height);
                             /**
                             canvasAddIn.PointerEntered += delegate (object sender, PointerRoutedEventArgs e)
                             {
@@ -1198,16 +1247,8 @@ namespace PhenoPad.CustomControl
             //{
                 
                 dispatcherTimer.Stop();
-                if (!inkAnalyzer.IsAnalyzing)
-                {
-                    await analyzeInk();
-                }
-                else
-                {
-                    // Ink analyzer is busy. Wait a while and try again.
-                    dispatcherTimer.Start();
-                }
-            //}
+                await analyzeInk();
+                //}
             // finally
             // {
             //   deleteSemaphoreSlim.Release();
@@ -1222,9 +1263,14 @@ namespace PhenoPad.CustomControl
         /// <returns></returns>
         private async Task<bool> analyzeInk(InkStroke lastStroke = null)
         {
-            // inkAnalyzer is being used
+            logger.Info("Trying to analyze ink strokes of current page...");
             if (inkAnalyzer.IsAnalyzing)
+            {
+                // inkAnalyzer is being used 
+                // try again after some time by dispatcherTimer 
+                dispatcherTimer.Start();
                 return false;
+            }
 
             // analyze 
             var result = await inkAnalyzer.AnalyzeAsync();
@@ -1257,7 +1303,6 @@ namespace PhenoPad.CustomControl
                             var hwrresult = await RecognizeLine(line.Id);
                             nl.HwrResult = hwrresult;
                             idToNoteLine[line.Id] = nl;
-                            Debug.WriteLine("NCR annotation ##" + idToNoteLine.GetValueOrDefault(line.Id).Text + "##");
                             Dictionary<string, Phenotype> annoResult = await PhenoMana.annotateByNCRAsync(idToNoteLine.GetValueOrDefault(line.Id).Text);
                             if (annoResult != null && annoResult.Count != 0)
                             {
@@ -1590,7 +1635,6 @@ namespace PhenoPad.CustomControl
         private async void annotateCurrentLineAndUpdateUI(InkAnalysisLine line)
         {
             // after get annotation, recognized text has also changed
-            Debug.WriteLine("NCR annotation ##"+ idToNoteLine.GetValueOrDefault(line.Id).Text + "##");
             Dictionary<string, Phenotype> annoResult = await PhenoMana.annotateByNCRAsync(idToNoteLine.GetValueOrDefault(line.Id).Text);
             if (annoResult != null && annoResult.Count != 0)
             {
@@ -1601,7 +1645,7 @@ namespace PhenoPad.CustomControl
                         cachedAnnotation[anno.Key] = anno.Value;
                     else
                         cachedAnnotation.Add(anno.Key, anno.Value);
-                    // add to global list
+                    // add to global candidate list
                     anno.Value.sourceType = SourceType.Notes;
                     PhenoMana.addPhenotypeCandidate(anno.Value, SourceType.Notes);
                 }
@@ -1639,8 +1683,10 @@ namespace PhenoPad.CustomControl
                     {
                         if (temp.state != pheno.state)
                         {
-                            curLineCandidatePheno.Insert(curLineCandidatePheno.IndexOf(temp), pheno);
+                            var ind = curLineCandidatePheno.IndexOf(temp);
                             curLineCandidatePheno.Remove(temp);
+                            curLineCandidatePheno.Insert(ind, pheno);
+                            
                         }
                     }
                 }
@@ -1679,7 +1725,7 @@ namespace PhenoPad.CustomControl
                     }
                     catch (Exception E)
                     {
-                        Debug.WriteLine(E.Message);
+                        logger.Error(E.Message);
                     }
                     
                 }
@@ -2111,7 +2157,6 @@ namespace PhenoPad.CustomControl
         private async Task<List<HWRRecognizedText>> RecognizeLine(uint lineid)
         {
             // only one thread is allowed to use select and recognize
-            Debug.WriteLine("Recognizing line: " + lineid);
             await selectAndRecognizeSemaphoreSlim.WaitAsync();
             try
             {
@@ -2137,10 +2182,15 @@ namespace PhenoPad.CustomControl
                 List<HWRRecognizedText> recognitionResults = await HWRService.HWRManager.getSharedHWRManager().OnRecognizeAsync(inkCanvas.InkPresenter.StrokeContainer, InkRecognitionTarget.Selected);
                 return recognitionResults;
             }
+            catch (Exception ex)
+            {
+                logger.Error($"Failed to recognize line ({lineid}): {ex.Message}");
+            }
             finally
             {
                 selectAndRecognizeSemaphoreSlim.Release();
             }
+            return null;
         }
 
         // handwrting recognition on selected strokes
@@ -2560,18 +2610,48 @@ namespace PhenoPad.CustomControl
         }
 
         // Saving notes to disk
-        private async void SaveToDisk()
+        public async Task<bool> SaveToDisk()
         {
-            StorageFile file = await FileManager.getSharedFileManager().GetNoteFile(notebookId, pageId, NoteFileType.Strokes);
-            if(file != null)
-                await FileManager.getSharedFileManager().saveStrokes(file, this.inkCan);
+            try
+            {
+                bool result1 = false;
+                // save handwritings
+                StorageFile file = await FileManager.getSharedFileManager().GetNoteFile(notebookId, pageId, NoteFileType.Strokes);
+                if (file != null)
+                    result1 = await FileManager.getSharedFileManager().saveStrokes(file, this.inkCan);
+
+                // save add in controls
+                var result2 = false;
+                List<AddInControl> addinlist = await GetAllAddInControls();
+                foreach (var addin in addinlist)
+                {
+                    var strokesFile = await FileManager.getSharedFileManager().GetNoteFile(notebookId, pageId, NoteFileType.ImageAnnotation, addin.name);
+                    result2 = await FileManager.getSharedFileManager().saveStrokes(strokesFile, addin.inkCan);
+                }
+
+                // add in meta data
+                var result3 = false;
+                List<ImageAndAnnotation> imageList = await GetAllAddInObjects();
+                string metapath = FileManager.getSharedFileManager().GetNoteFilePath(notebookId, pageId, NoteFileType.ImageAnnotationMeta);
+                result3 = await FileManager.getSharedFileManager().SaveObjectSerilization(metapath, imageList, typeof(List<ImageAndAnnotation>));
+
+                return result1 && result2 && result3;
+            }
+            catch (Exception e)
+            {
+                logger.Error($"Failed to save page {pageId} of notebook {notebookId}: {e.Message}");
+                Debug.WriteLine(e.Message);
+                return false;
+            }
         }
 
         public async void printPage()
         {
+            List<AddInControl> addinlist = await GetAllAddInControls();
             await Dispatcher.RunAsync(Windows.UI.Core.CoreDispatcherPriority.High, () => {
                 // hide control UI of all addincontrols
-                foreach (var addin in GetAllAddInControls())
+                
+                foreach (var addin in addinlist)
                 {
                     addin.hideControlUI();
                 }
@@ -2617,11 +2697,11 @@ namespace PhenoPad.CustomControl
             }
 
             await Windows.System.Launcher.LaunchFileAsync(file);
-
+            
             await Dispatcher.RunAsync(Windows.UI.Core.CoreDispatcherPriority.High, () =>
             {
                 // show control UI of all addincontrols
-                foreach (var addin in GetAllAddInControls())
+                foreach (var addin in addinlist)
                 {
                     addin.showControlUI();
                 }

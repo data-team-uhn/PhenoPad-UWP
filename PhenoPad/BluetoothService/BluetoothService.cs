@@ -78,13 +78,13 @@ namespace PhenoPad.BluetoothService
         {
             var serviceInfoCollection = await DeviceInformation.FindAllAsync(RfcommDeviceService.GetDeviceSelector(RfcommServiceId.SerialPort), new string[] { "System.Devices.AepService.AepId" });
 
-            Debug.WriteLine(DeviceInformation.FindAllAsync(RfcommDeviceService.GetDeviceSelector(RfcommServiceId.SerialPort)));
+            //Debug.WriteLine(DeviceInformation.FindAllAsync(RfcommDeviceService.GetDeviceSelector(RfcommServiceId.SerialPort)));
 
             foreach (var serviceInfo in serviceInfoCollection)
             {
                 var deviceInfo = await DeviceInformation.CreateFromIdAsync((string)serviceInfo.Properties["System.Devices.AepService.AepId"]);
 
-                System.Diagnostics.Debug.WriteLine($"Device name is: '{deviceInfo.Name}' and Id is: '{deviceInfo.Id}'");
+                //System.Diagnostics.Debug.WriteLine($"Device name is: '{deviceInfo.Name}' and Id is: '{deviceInfo.Id}'");
             }
 
 
@@ -100,13 +100,9 @@ namespace PhenoPad.BluetoothService
             {
                 await rootPage.Dispatcher.RunAsync(CoreDispatcherPriority.High, async() =>
                 {
-                    Debug.WriteLine(deviceInfo.Name);
-
                     // Make sure device name isn't blank
                     if (deviceInfo.Name == "raspberrypi")
                     {
-                        
-
                         DeviceAccessStatus accessStatus = DeviceAccessInformation.CreateFromId(deviceInfo.Id).CurrentStatus;
                         if (accessStatus == DeviceAccessStatus.DeniedByUser)
                         {
@@ -308,7 +304,10 @@ namespace PhenoPad.BluetoothService
                 string temp = "are you alive?";
                 //dataWriter.WriteUInt32((uint)temp.Length);
                 dataWriter.WriteString(temp);
-                Debug.WriteLine("Checking whether the connection is still alive");
+                Debug.WriteLine("");
+
+                LogService.MetroLogger.getSharedLogger().Info("Checking whether the connection is still alive");
+
                 await dataWriter.StoreAsync();
                 return true;
             }

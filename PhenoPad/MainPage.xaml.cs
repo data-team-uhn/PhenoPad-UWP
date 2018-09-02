@@ -239,20 +239,31 @@ namespace PhenoPad
             chatView.ItemsSource = SpeechManager.getSharedSpeechManager().conversation;
             chatView.ContainerContentChanging += OnChatViewContainerContentChanging;
             realtimeChatView.ItemsSource = SpeechManager.getSharedSpeechManager().realtimeConversation;
-            
 
-            // save to disk every 15 seconds
-            // this.saveNotesTimer(15);
+            PropertyChanged += MainPage_PropertyChanged;
+            // save to disk every 10 seconds
+            // this.saveNotesTimer(30);
+        }
+        /// <summary>
+        /// Handle property changed event, including status flag of mic and camera
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void MainPage_PropertyChanged(object sender, PropertyChangedEventArgs e)
+        {
+            Debug.WriteLine("Property " + e.PropertyName + " changed.");
         }
 
         private async void InitializeNotebook()
         {
+            LogService.MetroLogger.getSharedLogger().Info("Initialize a new notebook.");
             PhenoMana.clearCache();
 
             // create file structure
             notebookId = FileManager.getSharedFileManager().createNotebookId();
+            FileManager.getSharedFileManager().currentNoteboookId = notebookId;
             bool result = await FileManager.getSharedFileManager().CreateNotebook(notebookId);
-
+            SpeechManager.getSharedSpeechManager().setAudioIndex(0);
             if (!result)
                 NotifyUser("Failed to create file structure, notes may not be saved.", NotifyType.ErrorMessage, 2);
             else
@@ -285,6 +296,7 @@ namespace PhenoPad
 
         private async void InitializeNotebookFromDisk()
         {
+            LogService.MetroLogger.getSharedLogger().Info("Open notebook from disk.");
             PhenoMana.clearCache();
 
             List<string> pageIds = await FileService.FileManager.getSharedFileManager().GetPageIdsByNotebook(notebookId);
@@ -293,6 +305,7 @@ namespace PhenoPad
             if (notebookObject != null)
                 noteNameTextBox.Text = notebookObject.name;
 
+            SpeechManager.getSharedSpeechManager().setAudioIndex(notebookObject.audioCount);
             List<Phenotype> phenos = await FileManager.getSharedFileManager().GetSavedPhenotypeObjectsFromXML(notebookId);
             if (phenos != null && phenos.Count > 0)
             {
@@ -322,7 +335,7 @@ namespace PhenoPad
                 if(imageAndAnno != null)
                     foreach (var ia in imageAndAnno)
                     {
-                        aPage.addImageAndAnnotationControl(ia.name, ia.canvasLeft, ia.canvasTop, true, null, ia.transX, ia.transY, ia.transScale);
+                        aPage.addImageAndAnnotationControl(ia.name, ia.canvasLeft, ia.canvasTop, true, null, ia.transX, ia.transY, ia.transScale, width: ia.width, height: ia.height);
                     }
             }
 
@@ -352,9 +365,17 @@ namespace PhenoPad
         {
             TimeSpan period = TimeSpan.FromSeconds(seconds);
 
-            ThreadPoolTimer PeriodicTimer = ThreadPoolTimer.CreatePeriodicTimer((source) =>
+            ThreadPoolTimer PeriodicTimer = ThreadPoolTimer.CreatePeriodicTimer(async (source) =>
             {
-                this.saveNoteToDisk();
+                try
+                {
+                    await this.saveNoteToDisk();
+                }
+                catch (Exception e)
+                {
+                    Debug.WriteLine(e.Message);
+                }
+                
                 /**
                 Dispatcher.RunAsync(CoreDispatcherPriority.High,
                     () =>
@@ -366,38 +387,62 @@ namespace PhenoPad
             }, period);
         }
 
-    
-         
+        private SemaphoreSlim savingSemaphoreSlim = new SemaphoreSlim(1);
         /// <summary>
         /// Save everything to disk, include: 
         /// handwritten strokes, typing words, photos and annotations, drawing, collected phenotypes
         /// </summary>
         /// <returns></returns>
-        private async Task<bool> saveNoteToDisk()
+        public async Task<bool> saveNoteToDisk()
         {
-            bool isSuccessful = true;
-            bool result;
-
-            for (int i = 0; i < notePages.Count; ++i)
+            await savingSemaphoreSlim.WaitAsync();
+            try
             {
-                // handwritten strokes
-                result = await FileManager.getSharedFileManager().SaveNotePageStrokes(notebookId, i.ToString(), notePages[i]);
+                LogService.MetroLogger.getSharedLogger().Info($"Saving notebook {notebookId} to disk...");
+                bool result = false;
 
-                // save photos and annotations to disk
-                result = await FileManager.getSharedFileManager().SaveNotePageDrawingAndPhotos(notebookId, i.ToString(), notePages[i]);
+                LogService.MetroLogger.getSharedLogger().Info($"Saving audio");
+                // save audio count
+                if (notebookObject != null)
+                {
+                    notebookObject.audioCount = SpeechManager.getSharedSpeechManager().getAudioCount();
+                    await FileManager.getSharedFileManager().SaveToMetaFile(notebookObject);
+                }
+
+                // save audio transcriptions
+                await SpeechManager.getSharedSpeechManager().SaveTranscriptions();
+
+
+                // save note pages one by one
+                foreach (var page in notePages)
+                {
+                    await Windows.ApplicationModel.Core.CoreApplication.MainView.CoreWindow.Dispatcher.RunAsync(
+                        CoreDispatcherPriority.Normal,
+                        async () =>
+                        {
+                            LogService.MetroLogger.getSharedLogger().Info($"Saving page {page.pageId}");
+                            result = await page.SaveToDisk();
+                        }
+                    );
+                }
+
+
+                LogService.MetroLogger.getSharedLogger().Info($"Saving phenotypes");
+                // collected phenotypes
+                bool result2 = await FileManager.getSharedFileManager().saveCollectedPhenotypesToFile(notebookId);
+
+                LogService.MetroLogger.getSharedLogger().Info($"Successfully saved notebook {notebookId} to disk.");
+                return result && result2;
             }
-
-            // collected phenotypes
-            result = await FileManager.getSharedFileManager().saveCollectedPhenotypesToFile(notebookId);
-            if (result)
-                Debug.WriteLine("Successfully save collected phenotypes.");
-            else
+            catch (Exception ex)
             {
-                Debug.WriteLine("Failed to save collected phenotypes.");
-                isSuccessful = false;
+                LogService.MetroLogger.getSharedLogger().Error("Failed to save notebook: " + ex.Message);
             }
-             
-            return isSuccessful;
+            finally
+            {
+                savingSemaphoreSlim.Release();
+            }
+            return false;
         }
         #endregion
 
@@ -431,7 +476,7 @@ namespace PhenoPad
         }
 
 
-
+        #region Switching between Handwriting/View Mode
         private void modeTextBlock_PointerExited(object sender, PointerRoutedEventArgs e)
         {
             if (!ifViewMode)
@@ -467,6 +512,7 @@ namespace PhenoPad
                 modeTextBlock.Text = currentMode;
             }
         }
+        #endregion
 
         private void showTextGrid_PointerPressed(object sender, PointerRoutedEventArgs e)
         {
@@ -548,6 +594,13 @@ namespace PhenoPad
 
         private async void Page_Loaded(object sender, RoutedEventArgs e)
         {
+
+            // for figures of PhenoPad paper
+            // SpeechManager.getSharedSpeechManager().AddFakeSpeechResults();
+            // PhenotypeManager.getSharedPhenotypeManager().AddFakePhenotypesInSpeech();
+
+
+
             var displayInformation = DisplayInformation.GetForCurrentView();
             switch (displayInformation.CurrentOrientation)
             {
@@ -590,11 +643,11 @@ namespace PhenoPad
         }
         protected override void OnNavigatedFrom(NavigationEventArgs e)
         {
-            this.Frame.BackStack.Clear();
-            PhenotypeManager.getSharedPhenotypeManager().phenotypesCandidates.Clear();
+            
         }
         protected override void OnNavigatedTo(NavigationEventArgs e)
         {
+            LogService.MetroLogger.getSharedLogger().Info($"Naviaged to MainPage");
             //BackButton.IsEnabled = this.Frame.CanGoBack;
 
             var nid = e.Parameter as string;
@@ -606,26 +659,32 @@ namespace PhenoPad
             {
                 this.loadFromDisk = true;
                 this.notebookId = nid;
+                FileManager.getSharedFileManager().currentNoteboookId = nid;
             }
-
-            // clear page index panel
-            clearPageIndexPanel();
-
+            
             if (loadFromDisk) // Load notes from file
             {
-                Debug.WriteLine("Loading from disk...");
                 this.InitializeNotebookFromDisk();
-                
             }
             else // Create new notebook
             {
-                Debug.WriteLine("Creating new note...");
                 this.InitializeNotebook();
             }
         }
         protected async override void OnNavigatingFrom(NavigatingCancelEventArgs e)
         {
+            LogService.MetroLogger.getSharedLogger().Info($"Leaving MainPage");
+            // this.Frame.BackStack.Clear();
+            notePages = null;
+            // clear page index panel
+            clearPageIndexPanel();
+            inkCanvas = null;
+            curPage = null;
+            PhenotypeManager.getSharedPhenotypeManager().phenotypesCandidates.Clear();
+            SpeechManager.getSharedSpeechManager().cleanUp();
+
             //dispatcherTimer.Stop();
+            // Microsoft ASR, not used for now
             if (this.speechRecognizer != null)
             {
                 if (isListening)
@@ -648,7 +707,7 @@ namespace PhenoPad
             
             if (speechEngineRunning)
             {
-                this.speechManager.EndAudio();
+                await this.speechManager.EndAudio(notebookId);
                 speechEngineRunning = false;
             }
 
@@ -716,15 +775,9 @@ namespace PhenoPad
                     EraserButton.IsEnabled = true;
                 }
             }
-           
-            
         }
 
        
-
-       
-
-
         private void CurrentToolChanged(InkToolbar sender, object args)
         {
             /**
@@ -867,9 +920,9 @@ namespace PhenoPad
             }
         }
 
-        
 
-        ////////Speech recognition
+
+        #region Microsoft ASR
 
         /// <summary>
         /// Initialize Speech Recognizer and compile constraints.
@@ -1057,62 +1110,107 @@ namespace PhenoPad
                 Console.WriteLine(args.State.ToString());
             });
         }
+        #endregion
 
-        bool speechEngineRunning = false;
+
         private void AudioStreamButton_Clicked(object sender, RoutedEventArgs e) {
-            if(audioButton.IsChecked == true)
+            // use external microphone
+            if (ConfigService.ConfigService.getConfigService().IfUseExternalMicrophone())
             {
-                changeSpeechEngineState_BT(true);
+                if (audioButton.IsChecked == true)
+                {
+                    changeSpeechEngineState_BT(true);
+                    audioStatusText.Text = "ON";
+                }
+                else
+                {
+                    changeSpeechEngineState_BT(false);
+                    audioStatusText.Text = "OFF";
+                }
             }
+            // use internal microphone
             else
             {
-                changeSpeechEngineState_BT(false);
+                if (audioButton.IsChecked == true)
+                {
+                    changeSpeechEngineState(true);
+                    audioStatusText.Text = "ON";
+                }
+                else
+                {
+                    changeSpeechEngineState(false);
+                    audioStatusText.Text = "OFF";
+                }
             }
+
+            
         }
 
         private async void changeSpeechEngineState_BT(bool state)
         {
-            if (state == true)
+            try
             {
-                SpeechManager.getSharedSpeechManager().ReceiveASRResults();
-                await BluetoothService.BluetoothService.getBluetoothService().sendBluetoothMessage("audio start");
+                if (state == true)
+                {
+                    SpeechManager.getSharedSpeechManager().ReceiveASRResults();
+                    await BluetoothService.BluetoothService.getBluetoothService().sendBluetoothMessage("audio start");
+                    LogService.MetroLogger.getSharedLogger().Info("Bluetooth audio streaming started.");
+                }
+                else
+                {
+                    SpeechManager.getSharedSpeechManager().StopASRResults();
+                    await BluetoothService.BluetoothService.getBluetoothService().sendBluetoothMessage("audio stop");
+                    LogService.MetroLogger.getSharedLogger().Info("Bluetooth audio streaming stopped.");
+                }
             }
-            else
+            catch(Exception e)
             {
-                SpeechManager.getSharedSpeechManager().StopASRResults();
-                await BluetoothService.BluetoothService.getBluetoothService().sendBluetoothMessage("audio end");
+                //Debug.WriteLine(e.Message);
+                LogService.MetroLogger.getSharedLogger().Error("Failed to start/stop bluetooth audio: " + e.Message);
             }
+                
         }
 
+        bool speechEngineRunning = false;
         private async void changeSpeechEngineState(bool state)
         {
             //SpeechStreamSocket sss = new SpeechStreamSocket();
             //sss.connect();
-            Task speechManagerTask;
-            if (speechEngineRunning == false)
+            try
             {
-                // 
-                
-                //await Task.Delay(10000);
-                // 
-                //await BluetoothService.BluetoothService.getBluetoothService().sendBluetoothMessage("odas start");
+                Task speechManagerTask;
+                if (speechEngineRunning == false)
+                {
+                    // 
+
+                    //await Task.Delay(10000);
+                    // 
+                    //await BluetoothService.BluetoothService.getBluetoothService().sendBluetoothMessage("odas start");
 
 
-                speechManagerTask = SpeechManager.getSharedSpeechManager().StartAudio();
-           
-                speechEngineRunning = !speechEngineRunning;
-                
-                await speechManagerTask;
+                    speechManagerTask = SpeechManager.getSharedSpeechManager().StartAudio();
 
-                //await BluetoothService.BluetoothService.getBluetoothService().sendBluetoothMessage("audio start");
+                    speechEngineRunning = !speechEngineRunning;
+
+                    await speechManagerTask;
+
+                    LogService.MetroLogger.getSharedLogger().Info("Audio started.");
+                    //await BluetoothService.BluetoothService.getBluetoothService().sendBluetoothMessage("audio start");
+                }
+                else
+                {
+                    speechManagerTask = SpeechManager.getSharedSpeechManager().EndAudio(notebookId);
+
+                    speechEngineRunning = !speechEngineRunning;
+
+
+                    LogService.MetroLogger.getSharedLogger().Info("Audio stopped.");
+                    //await BluetoothService.BluetoothService.getBluetoothService().sendBluetoothMessage("audio end");
+                }
             }
-            else
+            catch (Exception ex)
             {
-                speechManagerTask = SpeechManager.getSharedSpeechManager().EndAudio();
-
-                speechEngineRunning = !speechEngineRunning;
-                
-                await BluetoothService.BluetoothService.getBluetoothService().sendBluetoothMessage("audio end");
+                LogService.MetroLogger.getSharedLogger().Error("Failed to start/stop audio: " + ex.Message);
             }
 
             // Note that we have a giant loop in speech manager so that after it is done
@@ -1140,6 +1238,9 @@ namespace PhenoPad
                     }
                     catch (Exception ex)
                     {
+                        var messageDialog = new Windows.UI.Popups.MessageDialog(ex.Message, "Exception");
+                        await messageDialog.ShowAsync();
+
                         if ((uint)ex.HResult == HResultPrivacyStatementDeclined)
                         {
                             //Show a UI link to the privacy settings.
@@ -1147,8 +1248,8 @@ namespace PhenoPad
                         }
                         else
                         {
-                            var messageDialog = new Windows.UI.Popups.MessageDialog(ex.Message, "Exception");
-                            await messageDialog.ShowAsync();
+                            // var messageDialog = new Windows.UI.Popups.MessageDialog(ex.Message, "Exception");
+                            // await messageDialog.ShowAsync();
                         }
 
                         isListening = false;
@@ -1625,6 +1726,9 @@ namespace PhenoPad
             
             string serverPath = SpeechManager.getSharedSpeechManager().getServerAddress() + ":" + SpeechManager.getSharedSpeechManager().getServerPort();
 
+            if (serverPath == "")
+                serverPath = "speechengine.ccm.sickkids.ca";
+
             string text = await InputTextDialogAsync("Change a server. Server Address (or sickkids): ", serverPath);
 
             string ipResult = "";
@@ -1634,9 +1738,17 @@ namespace PhenoPad
             {
                 //SpeechManager.getSharedSpeechManager().setServerAddress("speechengine.ccm.sickkids.ca");
                 //SpeechManager.getSharedSpeechManager().setServerPort("8888");
-
-                ipResult = "phenopad.ccm.sickkids.ca";
-                portResult = "8888";
+                if (text.ToLower().IndexOf("speechengine") != -1)
+                {
+                    ipResult = "speechengine.ccm.sickkids.ca";
+                    portResult = "8888";
+                }
+                else
+                {
+                    ipResult = "phenopad.ccm.sickkids.ca";
+                    portResult = "8888";
+                }
+                
             } else
             {
                 if (text != "" && text != string.Empty)
@@ -1743,12 +1855,17 @@ namespace PhenoPad
         }
         public void OpenCandidate()
         {
-            OpenCandidatePanelButton.IsChecked = true;
-            CandidatePanelStackPanel.Visibility = Visibility.Visible;
-            OpenCandidatePanelButtonIcon.Foreground = new SolidColorBrush(Colors.DarkGray);
-            OpenCandidatePanelButtonIcon.Glyph = "\uE8BB";
-            if(candidatePhenoListView.Items.Count() > 0)
+            if (candidatePhenoListView.Items.Count() > 0)
+            {
+                OpenCandidatePanelButton.IsChecked = true;
+                CandidatePanelStackPanel.Visibility = Visibility.Visible;
+                OpenCandidateIcon.Visibility = Visibility.Collapsed;
+                CloseCandidateIcon.Visibility = Visibility.Visible;
+                // OpenCandidatePanelButtonIcon.Foreground = new SolidColorBrush(Colors.DarkGray);
+                // OpenCandidatePanelButtonIcon.Glyph = "\uE8BB";
                 candidatePhenoListView.ScrollIntoView(candidatePhenoListView.Items.ElementAt(0));
+            }
+                
         }
 
         private void OpenCandidate_Click(object sender, RoutedEventArgs e)
@@ -1756,13 +1873,17 @@ namespace PhenoPad
             if (OpenCandidatePanelButton.IsChecked == true)
             {
                 CandidatePanelStackPanel.Visibility = Visibility.Visible;
-                OpenCandidatePanelButtonIcon.Glyph = "\uE8BB";
-                OpenCandidatePanelButtonIcon.Foreground = new SolidColorBrush(Colors.DarkGray);
+                OpenCandidateIcon.Visibility = Visibility.Collapsed;
+                CloseCandidateIcon.Visibility = Visibility.Visible;
+                // OpenCandidatePanelButtonIcon.Glyph = "\uE8BB";
+                // OpenCandidatePanelButtonIcon.Foreground = new SolidColorBrush(Colors.DarkGray);
             }
             else {
                 CandidatePanelStackPanel.Visibility = Visibility.Collapsed;
-                 OpenCandidatePanelButtonIcon.Glyph = "\uE82F";
-                OpenCandidatePanelButtonIcon.Foreground = new SolidColorBrush(Colors.Gold);
+                // OpenCandidatePanelButtonIcon.Glyph = "\uE82F";
+                // OpenCandidatePanelButtonIcon.Foreground = new SolidColorBrush(Colors.Gold);
+                OpenCandidateIcon.Visibility = Visibility.Visible;
+                CloseCandidateIcon.Visibility = Visibility.Collapsed;
             }
             
         }
@@ -1836,10 +1957,12 @@ namespace PhenoPad
         
         private async void BackButton_Click(object sender, RoutedEventArgs e)
         {
+            // save note
+            await this.saveNoteToDisk();
             //On_BackRequested();
             this.Frame.Navigate(typeof(PageOverview));
             UIWebSocketClient.getSharedUIWebSocketClient().disconnect();
-            await this.saveNoteToDisk();
+           
         }
         // Handles system-level BackRequested events and page-level back button Click events
         private bool On_BackRequested()
@@ -1852,16 +1975,59 @@ namespace PhenoPad
             return false;
         }
 
-        private void PreviewButton_Click(object sender, RoutedEventArgs e)
+        private async void PreviewButton_Click(object sender, RoutedEventArgs e)
         {
-            var mediaFlyout = (Flyout)this.Resources["MultimediaPreviewFlyout"];
-            mediaFlyout.ShowAt((FrameworkElement)sender);
-           
+            // var mediaFlyout = (Flyout)this.Resources["MultimediaPreviewFlyout"];
+            // mediaFlyout.ShowAt((FrameworkElement)sender);
+            if (MultimediaPreviewGrid.Visibility == Visibility.Collapsed)
+            {
+                // initialize microphone choice
+                if (ConfigService.ConfigService.getConfigService().IfUseExternalMicrophone())
+                    ExternalMicRadioBtn.IsChecked = true;
+                else
+                    SurfaceMicRadioBtn.IsChecked = true;
+
+                // steaming video
+                string RPI_IP_ADDRESS = BluetoothService.BluetoothService.getBluetoothService().GetPiIP();
+                RPI_ADDRESS = "http://" + RPI_IP_ADDRESS + ":8000";
+                // this.StreamView.Navigate(new Uri(RPI_ADDRESS));
+
+                this.videoStreamWebSocket = new Windows.Networking.Sockets.MessageWebSocket();
+                // In this example, we send/receive a string, so we need to set the MessageType to Utf8.
+                this.videoStreamWebSocket.Control.MessageType = Windows.Networking.Sockets.SocketMessageType.Utf8;
+                this.videoStreamWebSocket.Closed += WebSocket_Closed;
+                this.videoStreamWebSocket.MessageReceived += WebSocket_MessageReceived;
+
+                try
+                {
+                    videoStreamCancellationToken = videoCancellationSource.Token;
+                    Task connectTask = this.videoStreamWebSocket.ConnectAsync(new Uri("ws://" + RPI_IP_ADDRESS + ":8000/websocket")).AsTask();
+                    await connectTask.ContinueWith(_ => this.SendMessageUsingMessageWebSocketAsync("read_camera"));
+                    //Task.Run(() => this.WebSocket_MessageReceived());
+                    //Task.Run(() => this.SendMessageUsingStreamWebSocket(Encoding.UTF8.GetBytes("read_camera")));
+
+                }
+                catch (Exception ex)
+                {
+                    Windows.Web.WebErrorStatus webErrorStatus = Windows.Networking.Sockets.WebSocketError.GetStatus(ex.GetBaseException().HResult);
+                    // Add additional code here to handle exceptions.
+                }
+            }
+            MultimediaPreviewGrid.Visibility = Visibility.Visible;
+
+            
+        }
+        private void MultimediaClose_Click(object sender, RoutedEventArgs e)
+        {
+            MultimediaPreviewGrid.Visibility = Visibility.Collapsed;
+            videoStreamWebSocket.Close(1000, "no reason:)");
         }
 
         private async void SaveButton_Click(object sender, RoutedEventArgs e)
         {
             bool result = await saveNoteToDisk();
+            NotifyUser("Successfully saved to disk.", NotifyType.StatusMessage, 2);
+            /**
             if (result)
             {
                 Debug.WriteLine("Successfully saved to disk.");
@@ -1872,6 +2038,7 @@ namespace PhenoPad
                 Debug.WriteLine("Failed to save to disk.");
                 NotifyUser("Failed to save to disk.", NotifyType.ErrorMessage, 2);
             }
+            **/
         }
 
         private async void noteNameTextBox_KeyDown(object sender, KeyRoutedEventArgs e)
@@ -1917,8 +2084,17 @@ namespace PhenoPad
         }
 
         private async void StreamButton_Click(object sender, RoutedEventArgs e)
-        {
-            await videoStreamStatusUpdateAsync(!this._videoOn);
+        { 
+            if (StreamButton.IsChecked == true)
+            {
+                await videoStreamStatusUpdateAsync(true);
+                cameraStatusText.Text = "ON";
+            }
+            else
+            {
+                await videoStreamStatusUpdateAsync(false);
+                cameraStatusText.Text = "OFF";
+            }
         }
 
         private async Task videoStreamStatusUpdateAsync(bool desiredStatus)
@@ -1931,7 +2107,6 @@ namespace PhenoPad
 
                 //this.bluetoothInitialized(false);
                 this.StreamButton.IsChecked = false;
-                this.videoSwitch.IsOn = false;
                 return;
             }
 
@@ -2005,10 +2180,12 @@ namespace PhenoPad
             {
                 this.BluetoothProgress.IsActive = false;
                 this.BluetoothComplete.Visibility = Visibility.Visible;
+                this.bluetoothStatusText.Text = "ON";
                 // show ip address of 
                 if (this.bluetoothService.rpi_ipaddr != null)
                     PiIPAddress.Text = BluetoothService.BluetoothService.getBluetoothService().GetPiIP();
             }
+            /***
             else if (item == "diarization")
             {
                 this.DiarizationProgress.IsActive = false;
@@ -2019,6 +2196,7 @@ namespace PhenoPad
                 this.RecognitionProgress.IsActive = false;
                 this.RecognitionComplete.Visibility = Visibility.Visible;
             }
+            **/
             else if (item == "ready")
             {
                 this.audioButton.IsEnabled = true;
@@ -2064,34 +2242,16 @@ namespace PhenoPad
         CancellationToken videoStreamCancellationToken;
         private List<Image> videoFrameImages = new List<Image>();
         private StorageFile videoFile;
+
+        private void MultimediaPreviewFlyout_Closed(object sender, object e)
+        {
+            // this.StreamView = new WebView();
+            //videoStreamWebSocket.Close(1000, "no reason:)");
+        }
+
         private async void MultimediaPreviewFlyout_Opened(object sender, object e)
         {
-            string RPI_IP_ADDRESS = BluetoothService.BluetoothService.getBluetoothService().GetPiIP();
-            RPI_ADDRESS = "http://" + RPI_IP_ADDRESS + ":8000";
-            // this.StreamView.Navigate(new Uri(RPI_ADDRESS));
-
-            this.videoStreamWebSocket = new Windows.Networking.Sockets.MessageWebSocket();
-            // In this example, we send/receive a string, so we need to set the MessageType to Utf8.
-            this.videoStreamWebSocket.Control.MessageType = Windows.Networking.Sockets.SocketMessageType.Utf8;
-            this.videoStreamWebSocket.Closed += WebSocket_Closed;
-            this.videoStreamWebSocket.MessageReceived += WebSocket_MessageReceived;
-
-          
-
-            try
-            {
-                videoStreamCancellationToken = videoCancellationSource.Token;
-                Task connectTask = this.videoStreamWebSocket.ConnectAsync(new Uri("ws://"+ RPI_IP_ADDRESS + ":8000/websocket")).AsTask();
-                await connectTask.ContinueWith(_ => this.SendMessageUsingMessageWebSocketAsync("read_camera"));
-                //Task.Run(() => this.WebSocket_MessageReceived());
-                //Task.Run(() => this.SendMessageUsingStreamWebSocket(Encoding.UTF8.GetBytes("read_camera")));
-
-            }
-            catch (Exception ex)
-            {
-                Windows.Web.WebErrorStatus webErrorStatus = Windows.Networking.Sockets.WebSocketError.GetStatus(ex.GetBaseException().HResult);
-                // Add additional code here to handle exceptions.
-            }
+            
         }
         public async Task<BitmapImage> Base64ToBitmapAsync(string source)
         {
@@ -2211,13 +2371,10 @@ namespace PhenoPad
         {
             Debug.WriteLine("WebSocket_Closed; Code: " + args.Code + ", Reason: \"" + args.Reason + "\"");
             // Add additional code here to handle the WebSocket being closed.
+           
         }
 
-        private void MultimediaPreviewFlyout_Closed(object sender, object e)
-        {
-            // this.StreamView = new WebView();
-            videoStreamWebSocket.Close(1000, "no reason:)");
-        }
+       
 
 
         private void FullscreenBtn_Click(object sender, RoutedEventArgs e)
@@ -2240,6 +2397,24 @@ namespace PhenoPad
             {
                 Debug.WriteLine(ee.Message);
             }
+        }
+        
+
+        private void SurfaceMicRadioButton_Checked(object sender, RoutedEventArgs e)
+        {
+            ConfigService.ConfigService.getConfigService().UseInternalMic();
+            NotifyUser("Using Surface microphone", NotifyType.StatusMessage, 2);
+        }
+
+        private void ExterMicRadioButton_Checked(object sender, RoutedEventArgs e)
+        {
+            ConfigService.ConfigService.getConfigService().UseExternalMic();
+            NotifyUser("Using external microphone", NotifyType.StatusMessage, 2);
+        }
+
+        private async void OpenFileFolder_Click(object sender, RoutedEventArgs e)
+        {
+            await Windows.System.Launcher.LaunchFolderAsync(await StorageFolder.GetFolderFromPathAsync(ApplicationData.Current.LocalFolder.Path));
         }
     }
 

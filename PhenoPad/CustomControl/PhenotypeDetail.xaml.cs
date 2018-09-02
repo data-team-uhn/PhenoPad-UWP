@@ -43,7 +43,7 @@ namespace PhenoPad.CustomControl
 
         public void navigateTo(String hpid)
         {
-            this.webView.Navigate(new Uri("http://compbio.charite.de/hpoweb/showterm?id=HP:0000118#id=" + hpid));
+            this.webView.Navigate(new Uri("http://compbio.charite.de/hpoweb/showterm?id=" + hpid));
             ProgressRingGrid.Visibility = Visibility.Collapsed;
         }
     }

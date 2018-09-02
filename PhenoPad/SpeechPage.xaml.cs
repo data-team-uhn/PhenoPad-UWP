@@ -32,6 +32,7 @@ using System.Collections.Specialized;
 using System.Runtime.CompilerServices;
 using Windows.Media.Core;
 using Windows.UI.Core;
+using System.Xml.Serialization;
 
 namespace PhenoPad
 {
@@ -82,13 +83,27 @@ namespace PhenoPad
                 //phenosTask.Start();*/
             }
         }
-        
-        public TimeInterval Interval { get; set; }
+        public double start;
+        public double end;
+        [XmlIgnore]
+        private TimeInterval _interval;
+        [XmlIgnore]
+        public TimeInterval Interval {
+            get {
+                return _interval;
+            }
+            set {
+                _interval = value;
+                start = value.start;
+                end = value.end;
+            }
+        }
         public int ConversationIndex { get; set; }
 
         //public string DisplayTime { get; set; }
 
         // Bind to phenotype display in conversation
+        [XmlIgnore]
         public ObservableCollection<Phenotype> phenotypesInText { get; set; }
 
         // Now that we support more than 2 users, we need to have speaker index
@@ -131,7 +146,7 @@ namespace PhenoPad
                 }
             }
         }
-
+        
         public event PropertyChangedEventHandler PropertyChanged = delegate { };
 
         // This method is called by the Set accessor of each property.
@@ -242,14 +257,14 @@ namespace PhenoPad
                 }).AsAsyncOperation();
         }
 
-        private void CreateMessages(uint count)
+        public void CreateMessages(uint count)
         {
             for (uint i = 0; i < count; i++)
             {
                 this.Insert(0, new TextMessage()
                 {
                     Body = $"{messageCount}: {CreateRandomMessage()}",
-                    Speaker = (messageCount++) % 3,
+                    Speaker = (messageCount++) % 2,
                     //DisplayTime = DateTime.Now.ToString(),
                     IsFinal = true
                 });
@@ -622,11 +637,12 @@ namespace PhenoPad
                 Debug.WriteLine(m.Body);
 
                 // check for current source
-                Windows.Storage.StorageFolder storageFolder =
-                    Windows.Storage.ApplicationData.Current.LocalFolder;
-                var savedFile =
-                    await storageFolder.GetFileAsync("sample_" + m.ConversationIndex + ".wav");
-
+                var savedFile = await FileService.FileManager.getSharedFileManager().GetNoteFile(
+                        FileService.FileManager.getSharedFileManager().currentNoteboookId,
+                        "", 
+                        FileService.NoteFileType.Audio, 
+                        "audio_" + m.ConversationIndex);
+                    
                 if (savedFile.Name != this.loadedMedia)
                 {
                     this._mediaPlayerElement.Source = MediaSource.CreateFromStorageFile(savedFile);

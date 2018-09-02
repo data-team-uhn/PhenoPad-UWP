@@ -51,7 +51,7 @@
             </StackPanel>
         </Grid>
         <RelativePanel Name="TitleRelativePanel" Background="WhiteSmoke">
-            <Button Style="{StaticResource MyButtonStyle}" Background="Transparent" Foreground="LightCoral" Height="35" VerticalAlignment="Top" Width="35" Padding="0" Name="deleteButton" Click="Delete_Click">
+            <Button Style="{StaticResource MyButtonStyle}" Background="Transparent" Foreground="Gray" Height="35" VerticalAlignment="Top" Width="35" Padding="0" Name="deleteButton" Click="Delete_Click">
                 <SymbolIcon Symbol="Clear" Height="35" Width="35"></SymbolIcon>
             </Button>
         </RelativePanel>

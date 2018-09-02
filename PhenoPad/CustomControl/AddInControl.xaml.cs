@@ -47,8 +47,9 @@ namespace PhenoPad.CustomControl
        
 
         private bool isInitialized = false;
-        private ScaleTransform scaleTransform;
-        private TranslateTransform dragTransform;
+        public ScaleTransform scaleTransform;
+        public TranslateTransform dragTransform;
+        public double scale;
         public InkCanvas inkCan
         {
             get {
@@ -137,32 +138,41 @@ namespace PhenoPad.CustomControl
 
         public AddInControl()
         {
-            this.InitializeComponent();
+            try
+            {
+                this.InitializeComponent();
+            }
+            catch (Exception e)
+            {
+                Debug.WriteLine(e.Message);
+            }
         }
 
-        public AddInControl(string name, string notebookId, string pageId)
+        public AddInControl(string name, string notebookId, string pageId, double width = -1, double height = -1)
         {
             this.InitializeComponent();
-            this.Height = DEFAULT_HEIGHT;
-            this.Width = DEFAULT_WIDTH;
+            this.Height = height < DEFAULT_HEIGHT ? DEFAULT_HEIGHT : height;
+            this.Width = width < DEFAULT_WIDTH ? DEFAULT_WIDTH : width;
 
             this.name = name;
             this.notebookId = notebookId;
             this.pageId = pageId;
 
-            this.CanDrag = true;
-            this.ManipulationMode = ManipulationModes.TranslateX | ManipulationModes.TranslateY | ManipulationModes.Scale;
-            this.ManipulationStarted += TitleRelativePanel_ManipulationStarted;
-            this.ManipulationDelta += TitleRelativePanel_ManipulationDelta;
-            this.ManipulationCompleted += TitleRelativePanel_ManipulationCompleted;
-
-      
             scaleTransform = new ScaleTransform();
             dragTransform = new TranslateTransform();
             TransformGroup tg = new TransformGroup();
             tg.Children.Add(scaleTransform);
             tg.Children.Add(dragTransform);
             this.RenderTransform = tg;
+
+            /**
+            this.CanDrag = true;
+            this.ManipulationMode = ManipulationModes.TranslateX | ManipulationModes.TranslateY | ManipulationModes.Scale;
+            this.ManipulationStarted += TitleRelativePanel_ManipulationStarted;
+            this.ManipulationDelta += TitleRelativePanel_ManipulationDelta;
+            this.ManipulationCompleted += TitleRelativePanel_ManipulationCompleted;
+            **/
+
             //translateTransform = new TranslateTransform();
             //this.RenderTransform.translateTransform;
 
@@ -183,7 +193,16 @@ namespace PhenoPad.CustomControl
     **/
         }
 
-      
+        public void showMovingGrid()
+        {
+            MovingGrid.Visibility = Visibility.Visible;
+        }
+
+        public void hideMovingGrid()
+        {
+            MovingGrid.Visibility = Visibility.Collapsed;
+        }
+
         private void TitleRelativePanel_ManipulationCompleted(object sender, ManipulationCompletedRoutedEventArgs e)
         {
             // this.Opacity = 1;
@@ -198,7 +217,6 @@ namespace PhenoPad.CustomControl
             Debug.WriteLine("Add-in control manipulation started");
         }
 
-        double scale;
         private void TitleRelativePanel_ManipulationDelta(object sender, ManipulationDeltaRoutedEventArgs e)
         {
             /**
@@ -428,19 +446,26 @@ namespace PhenoPad.CustomControl
 
         private async void PhotoButton_Click(object sender, RoutedEventArgs e)
         {
-            var imageSource = await captureControl.TakePhotoAsync(notebookId, 
-               pageId, name);
-            if(imageSource != null)
+            try
             {
-                //MainPage.Current.curPage.AddImageControl(imagename, imageSource);
-                Image imageControl = new Image();
-                imageControl.Source = imageSource;
-                contentGrid.Children.Add(imageControl);
-                categoryGrid.Visibility = Visibility.Collapsed;
-                InitiateInkCanvas();
-                this.PhotoButton.Visibility = Visibility.Collapsed;
-                this.CameraCanvas.Visibility = Visibility.Collapsed;
-                captureControl.unSetUp();
+                var imageSource = await captureControl.TakePhotoAsync(notebookId,
+                   pageId, name);
+                if (imageSource != null)
+                {
+                    //MainPage.Current.curPage.AddImageControl(imagename, imageSource);
+                    Image imageControl = new Image();
+                    imageControl.Source = imageSource;
+                    contentGrid.Children.Add(imageControl);
+                    categoryGrid.Visibility = Visibility.Collapsed;
+                    InitiateInkCanvas();
+                    this.PhotoButton.Visibility = Visibility.Collapsed;
+                    this.CameraCanvas.Visibility = Visibility.Collapsed;
+                    captureControl.unSetUp();
+                }
+            }
+            catch (Exception ex)
+            {
+                MainPage.Current.NotifyUser("Failed to take a photo: " + ex.Message, NotifyType.ErrorMessage, 2);
             }
         }
 

@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using System.Diagnostics;
 using Windows.UI.Core;
 using PhenoPad.PhenotypeService;
+using PhenoPad.FileService;
 
 namespace PhenoPad.SpeechService
 {
@@ -234,8 +235,44 @@ namespace PhenoPad.SpeechService
                         words.Add(new WordSpoken(".", -1, new TimeInterval(latest, latest)));
                     }*/
                 }
+
+                // Then check if we have results from diarization
+                if (json.result.diarization != null && json.result.diarization.Count > 0)
+                {
+                    bool full = false;
+                    if (!json.result.diarization_incremental)
+                    {
+                        //Debug.WriteLine("Received new diarization. Removing previous results.");
+                        this.diarization.Clear();
+                        this.diarizationSmallSeg.Clear();
+                        this.diarizationWordIndex = 0;
+                        this.constructDiarizedSentenceIndex = 0;
+                        full = true;
+                    }
+                    foreach (var d in json.result.diarization)
+                    {
+                        int speaker = d.speaker;
+                        //Debug.WriteLine("Identified speaker is " + speaker.ToString());
+                        double start = d.start;
+                        double end = d.end;
+
+                        var interval = new TimeInterval(start, end);
+                        this.insertToDiarization(interval, speaker);
+                    }
+
+                    this.assignSpeakerToWords();
+                    //Debug.WriteLine("Diarized to word count" + diarizationWordIndex.ToString());
+                    //Debug.WriteLine("Total word count" + words.Count.ToString());
+                    //Debug.WriteLine(json.original);
+                    this.formConversation(full);
+
+                    // so that we don't have an overflow of words
+                    this.constructTempSentence();
+                    //this.printDiarizationResult();
+                }
+
             }
-            
+
             this.realtimeSentences = this.constructTempSentence();
 
             if (!json.result.final)
@@ -268,6 +305,10 @@ namespace PhenoPad.SpeechService
             //this.constructLatestSentence();
         }
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="diaJson"></param>
         public void processDiaJson(DiarizationJSON diaJson)
         {
             // Then check if we have results from diarization
@@ -630,5 +671,30 @@ namespace PhenoPad.SpeechService
                 return string.Empty;
             }
         }
+
+
+        // save transcriptions
+        public async Task SaveCurrentConversationsToDisk()
+        {
+            if (currentConversation.Count > 0)
+            {
+
+                try
+                {
+                    string fpath = FileManager.getSharedFileManager().GetNoteFilePath(
+                      FileManager.getSharedFileManager().currentNoteboookId,
+                      "",
+                      NoteFileType.Transcriptions,
+                      "transcriptions_" + conversationIndex);
+                    var result = await FileManager.getSharedFileManager().SaveObjectSerilization(fpath, currentConversation, typeof(List<TextMessage>));
+                }
+                catch (Exception e)
+                {
+                    Debug.WriteLine(e.Message);
+                    LogService.MetroLogger.getSharedLogger().Error("Failed to save current conversations transcriptions into disk: " + e.Message);
+                }
+            }
+           }
+
     }
 }

@@ -1,5 +1,4 @@
-﻿using MyScript.IInk;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -9,6 +8,8 @@ using Windows.ApplicationModel;
 using Windows.ApplicationModel.Activation;
 using Windows.Foundation;
 using Windows.Foundation.Collections;
+using Windows.Storage;
+using Windows.UI.Core;
 using Windows.UI.Popups;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
@@ -25,8 +26,7 @@ namespace PhenoPad
     /// </summary>
     sealed partial class App : Application
     {
-        //MyScript 
-        public static Engine Engine { get; private set; }
+      
 
         /// <summary>
         /// Initializes the singleton application object.  This is the first line of authored code
@@ -36,28 +36,34 @@ namespace PhenoPad
         {
             this.InitializeComponent();
             this.Suspending += OnSuspending;
-
-            // MyScript
+            
             UnhandledException += OnUnhandledException;
         }
-        //Mysript 
-        
+
         private static async void OnUnhandledException(object sender, Windows.UI.Xaml.UnhandledExceptionEventArgs e)
         {
+            
             e.Handled = true;
-            await ShowErrorDialog(e.Message);
+            await Windows.ApplicationModel.Core.CoreApplication.MainView.CoreWindow.Dispatcher.RunAsync(CoreDispatcherPriority.Normal,
+                async () =>
+                {
+                    await ShowErrorDialog(e.Message);
+                    LogService.MetroLogger.getSharedLogger().Error("Unhandled exception occured: " + e.Message);
+                });
            
         }
+
 
         private static async System.Threading.Tasks.Task<bool> ShowErrorDialog(string message)
         {
             var dialog = new MessageDialog("Error: " + message);
 
+            /**
             dialog.Commands.Add(new UICommand("Abort", delegate
             {
                 Current.Exit();
             }));
-
+            **/
             await dialog.ShowAsync();
             return false;
         }
@@ -67,23 +73,10 @@ namespace PhenoPad
         /// will be used such as when the application is launched to open a specific file.
         /// </summary>
         /// <param name="e">Details about the launch request and process.</param>
-        protected override async void OnLaunched(LaunchActivatedEventArgs e)
+        protected override void OnLaunched(LaunchActivatedEventArgs e)
         {
             Frame rootFrame = Window.Current.Content as Frame;
-
-            // MyScript 
             
-            try
-            {
-                // Initialize Interactive Ink runtime environment
-                Engine = Engine.Create((byte[])(Array)MyScript.Certificate.MyCertificate.Bytes);
-            }
-            catch (Exception err)
-            {
-                await ShowErrorDialog(err.Message);
-            }
-            
-
             // Do not repeat app initialization when the Window already has content,
             // just ensure that the window is active
             if (rootFrame == null)
@@ -135,11 +128,29 @@ namespace PhenoPad
         /// </summary>
         /// <param name="sender">The source of the suspend request.</param>
         /// <param name="e">Details about the suspend request.</param>
-        private void OnSuspending(object sender, SuspendingEventArgs e)
+        private async void OnSuspending(object sender, SuspendingEventArgs e)
         {
+            
+            LogService.MetroLogger.getSharedLogger().Info("App is suspended.");
+
             var deferral = e.SuspendingOperation.GetDeferral();
             //TODO: Save application state and stop any background activity
+            LogService.MetroLogger.getSharedLogger().Info("Save data before suspending.");
+            if (MainPage.Current != null)
+                await MainPage.Current.saveNoteToDisk();
             deferral.Complete();
         }
+
+
+        private void SaveAppData()
+        {
+            StorageFolder folder = Windows.Storage.ApplicationData.Current.LocalFolder;
+            Task<StorageFile> tFile = folder.CreateFileAsync("AppData.txt").AsTask<StorageFile>();
+            tFile.Wait();
+            StorageFile file = tFile.Result;
+            Task t = Windows.Storage.FileIO.WriteTextAsync(file, "This Is Application data").AsTask();
+            t.Wait();
+        }
+        
     }
 }

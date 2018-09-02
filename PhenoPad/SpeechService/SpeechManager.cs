@@ -97,6 +97,13 @@ namespace PhenoPad.SpeechService
             this.speechAPI = new SpeechRESTAPI();
         }
 
+        public void cleanUp()
+        {
+            this.conversation.Clear();
+            this.realtimeConversation.Clear();
+            this.speechInterpreter = new SpeechEngineInterpreter(this.conversation, this.realtimeConversation);
+        }
+
         public static SpeechManager getSharedSpeechManager()
         {
             if (sharedSpeechManager == null)
@@ -125,7 +132,7 @@ namespace PhenoPad.SpeechService
         {
             return this.serverPort;
         }
-        public void AddNewMessage(string text)
+        public void AddNewMessage(string text, double start, double duration, uint speaker)
         {
             if (text.Length > 0)
             {
@@ -133,8 +140,10 @@ namespace PhenoPad.SpeechService
                 {
                     Body = text,
                     //DisplayTime = DateTime.Now.ToString(),
-                    IsFinal = text.Length % 2 == 0? true:false,
-                    Speaker = (uint)(text.Length % 3)
+                    IsFinal =  true,
+                    Speaker = speaker,
+                    Interval = new TimeInterval(start, start + duration)
+                    
                 });
             }
         }
@@ -345,13 +354,13 @@ namespace PhenoPad.SpeechService
 
 
            await CreateAudioGraph();
-           await BluetoothService.BluetoothService.getBluetoothService().sendBluetoothMessage("audio start");
+           // await BluetoothService.BluetoothService.getBluetoothService().sendBluetoothMessage("audio start");
 
 
 
             // Wait 10 seconds so that the server has time to create a worker
             // else you'll see lots of audio delays
-            await Task.Delay(10000);
+            await Task.Delay(5000);
             MainPage.Current.NotifyUser("Connection established", NotifyType.StatusMessage, 2);
             SpeechPage.Current.setSpeakerButtonEnabled(true);
             SpeechPage.Current.adjustSpeakerCount(2);
@@ -365,7 +374,7 @@ namespace PhenoPad.SpeechService
             else
             {
                 deviceInputNode.Start();
-                await BluetoothService.BluetoothService.getBluetoothService().sendBluetoothMessage("odas start");
+                // await BluetoothService.BluetoothService.getBluetoothService().sendBluetoothMessage("odas start");
             }
 
 
@@ -409,35 +418,19 @@ namespace PhenoPad.SpeechService
                          accumulator = outAccumulator;
 
                          // Only process if we have valid JSON
+                         // Only process if we have valid JSON
                          if (json.Length != 0)
                          {
-                             // first try to decode as dirization result
                              try
                              {
                                  // need - not _ here... =. =
-                                 json = json.Replace('_', '-');
-                                 var diaResult = JsonConvert.DeserializeObject<DiarizationJSON>(json);
-                                 speechInterpreter.processDiaJson(diaResult);
-                                 await Windows.ApplicationModel.Core.CoreApplication.MainView.CoreWindow.Dispatcher.RunAsync(CoreDispatcherPriority.Normal,
-                                   () =>
-                                   {
-                                       EngineHasResult.Invoke(this, speechInterpreter);
-                                   }
-                                   );
-                                 continue;
-                             }
-                             catch (Exception)
-                             {
-                                 Debug.WriteLine("This is not diarization result, try speech next.");
-                             }
-                             try
-                             {
+
                                  Debug.WriteLine("Result from speech: " + json);
                                  var parsedSpeech = JsonConvert.DeserializeObject<SpeechEngineJSON>(json);
                                  parsedSpeech.original = json;
 
                                  //{'diarization': [{'start': 7.328, 'speaker': 0, 'end': 9.168000000000001, 'angle': 152.97781134625265}], 'diarization_incremental': True} 
-                                 
+
 
                                  //Debug.WriteLine(json);
                                  //Debug.WriteLine(parsedSpeech.ToString());
@@ -445,14 +438,16 @@ namespace PhenoPad.SpeechService
                                  speechInterpreter.processJSON(parsedSpeech);
 
                                  // TODO Find a more legitimate way to fire an UI change?
-                                 
+
                                  await Windows.ApplicationModel.Core.CoreApplication.MainView.CoreWindow.Dispatcher.RunAsync(CoreDispatcherPriority.Normal,
                                     () =>
                                     {
                                         EngineHasResult.Invoke(this, speechInterpreter);
                                     }
                                     );
-                                 
+
+                                 continue;
+
                              }
                              catch (Exception e)
                              {
@@ -465,6 +460,25 @@ namespace PhenoPad.SpeechService
                                  //Debug.WriteLine(accumulator);
                                  Debug.WriteLine("===SERIOUS PROBLEM!====");
                              }
+
+                             //  try to decode as dirization result
+                             try
+                             {
+                                 json = json.Replace('_', '-');
+                                 var diaResult = JsonConvert.DeserializeObject<DiarizationJSON>(json);
+                                 speechInterpreter.processDiaJson(diaResult);
+                                 await Windows.ApplicationModel.Core.CoreApplication.MainView.CoreWindow.Dispatcher.RunAsync(CoreDispatcherPriority.Normal,
+                                   () =>
+                                   {
+                                       EngineHasResult.Invoke(this, speechInterpreter);
+                                   }
+                                   );
+                             }
+                             catch (Exception)
+                             {
+                                 Debug.WriteLine("This is not diarization result.");
+                             }
+
                          }
                          else
                          {
@@ -481,7 +495,7 @@ namespace PhenoPad.SpeechService
         }
 
         private SemaphoreSlim endSemaphoreSlim = new SemaphoreSlim(1);
-        public async Task EndAudio()
+        public async Task EndAudio(string notebookid)
         {
             //await endSemaphoreSlim.WaitAsync();
             try {
@@ -498,7 +512,7 @@ namespace PhenoPad.SpeechService
                     
                     graph.Stop();
                     speechStreamSocket.CloseConnnction();
-                    await BluetoothService.BluetoothService.getBluetoothService().sendBluetoothMessage("audio end");
+                    // await BluetoothService.BluetoothService.getBluetoothService().sendBluetoothMessage("audio end");
                     /**
 
                     TranscodeFailureReason finalizeResult = await fileOutputNode.FinalizeAsync();
@@ -512,13 +526,18 @@ namespace PhenoPad.SpeechService
 
                     //recordStopButton.Content = "Record";
                     rootPage.NotifyUser("Recording to file completed successfully!", NotifyType.StatusMessage, 1);
-            **/
+                    **/
                     if (graph != null)
                     {
                         graph.Dispose();
                     }
 
-                    this.writeToFile();
+                    if (notebookid != "")
+                    {
+                        this.writeToFile(notebookid);
+                        this.SaveTranscriptions();
+                    }
+                        
                     SpeechPage.Current.setSpeakerButtonEnabled(false);
                 }
             }
@@ -528,15 +547,29 @@ namespace PhenoPad.SpeechService
             }
         }
 
-        public Windows.Storage.StorageFile savedFile;
+        public void setAudioIndex(int count)
+        {
+            this.speechInterpreter.conversationIndex = count;
+        }
+        public int getAudioCount()
+        {
+            return this.speechInterpreter.conversationIndex;
+        }
 
-        private async void writeToFile()
+        public async Task SaveTranscriptions()
+        {
+            Debug.WriteLine("Saving transriptions for audio_" + getAudioCount());
+            await this.speechInterpreter.SaveCurrentConversationsToDisk();
+        }
+
+        public Windows.Storage.StorageFile savedFile;
+        public async void writeToFile(string notebookid)
         {
             MainPage.Current.NotifyUser("Saving conversation audio", NotifyType.StatusMessage, 2);
-            Windows.Storage.StorageFolder storageFolder =
-                Windows.Storage.ApplicationData.Current.LocalFolder;
-            savedFile =
-                await storageFolder.CreateFileAsync("sample_" + this.speechInterpreter.conversationIndex + ".wav", Windows.Storage.CreationCollisionOption.ReplaceExisting);
+
+            //string datestring = System.DateTime.Now.ToString("dd-MM-yyyy-HH-mm-ss");
+            savedFile = await FileService.FileManager.getSharedFileManager().GetNoteFile(notebookid, "", FileService.NoteFileType.Audio, "audio_" + this.speechInterpreter.conversationIndex);
+                // await storageFolder.CreateFileAsync("sample_" + this.speechInterpreter.conversationIndex + ".wav", Windows.Storage.CreationCollisionOption.ReplaceExisting);
 
             Debug.WriteLine("Output file to " + savedFile.Path.ToString());
 
@@ -820,7 +853,7 @@ namespace PhenoPad.SpeechService
             {
                 try
                 {
-                    await this.EndAudio();
+                    await this.EndAudio("");
                 } catch (Exception e)
                 {
                     Debug.WriteLine(e.Message);
@@ -885,6 +918,41 @@ namespace PhenoPad.SpeechService
             }
         }
 
+
+
+        public void AddFakeSpeechResults()
+        {
+            double start = 0;
+            uint speaker = 0;
+            string[] example = {
+           "Good morning, Dr. Sharma!",
+           "Good morning!What’s wrong with you?",
+           "I have been suffering from fever since yesterday.",
+           "Do you have any other symptoms?",
+           "I also feel headache and shivering.",
+           "Let me take your temperature.At this time the fever is 102 degree.Don’t worry, there is nothing serious. I am giving you the medicine, and you will be all right in couple of days.",
+           "Thank you, doctor.",
+           "But get your blood tested for malaria, and come with the report tomorrow.",
+           "OK doctor.",
+           "I shall recommend at least two days rest for you.",
+           "Would you prepare a medical certificate for me to submit it in my office ?",
+           "Oh sure…………. This is your medical certificate.",
+           "Thank you very much.Please tell me how shall I take this medicine ?"
+                        };
+            foreach (string sen in example)
+            {
+                AddNewMessage(sen, start, 0.1 * sen.Count(), speaker);
+                start = 0.1 * sen.Count() + 0.5;
+                speaker = 1 - speaker;
+            }
+            realtimeConversation.Add(new TextMessage
+            {
+                    Body = "This medicine is for one day only. Take this dose as soon as you reach your home and...",
+                    //DisplayTime = DateTime.Now.ToString(),
+                    IsFinal =  false,
+
+            });
+        }
 
     }
     

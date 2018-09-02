@@ -57,6 +57,13 @@ namespace PhenoPad.PhenotypeService
             sourceType = SourceType.None;
         }
 
+        [System.Xml.Serialization.XmlIgnore]
+        public Action<Phenotype> OnRemoveCallback { get; set; }
+        public void OnRemove()
+        {
+            OnRemoveCallback(this);
+        }
+        
         public event PropertyChangedEventHandler PropertyChanged;
         protected void RaisePropertyChanged(string name)
         {

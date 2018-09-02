@@ -35,10 +35,13 @@ namespace PhenoPad
     {
         public PageOverview()
         {
+            LogService.MetroLogger.getSharedLogger().Info("Initilize PageOverview");
             this.InitializeComponent();
             Windows.ApplicationModel.Core.CoreApplication.GetCurrentView().TitleBar.ExtendViewIntoTitleBar = false;
 
             LoadAllNotes();
+            LogService.MetroLogger.getSharedLogger().Info("Note list loaded.");
+
 
             //draw into the title bar
             CoreApplication.GetCurrentView().TitleBar.ExtendViewIntoTitleBar = true;
@@ -57,8 +60,6 @@ namespace PhenoPad
         private void LoadAllNotes()
         {
             reloadNotebookList();
-            
-   
         }
 
         private void GridView_ItemClick(object sender, ItemClickEventArgs e)
@@ -70,12 +71,13 @@ namespace PhenoPad
   
         private void CreateButton_Click(object sender, RoutedEventArgs e)
         {
-            
+            LogService.MetroLogger.getSharedLogger().Info("Creating a new note...");
             this.Frame.Navigate(typeof(MainPage), "__new__");
         }
 
         private async void notebookList_ItemClick(object sender, ItemClickEventArgs e)
         {
+            LogService.MetroLogger.getSharedLogger().Info("Selecting a notebook for quick view");
             NoteGridView.ItemsSource = new List<NotePage>();
             var clickNotebook = e.ClickedItem as Notebook;
             List<NotePage> pages = await FileManager.getSharedFileManager().GetAllNotePageObjects(clickNotebook.id);
@@ -109,12 +111,15 @@ namespace PhenoPad
         private void OpenButton_Click(object sender, RoutedEventArgs e)
         {
             var notebookId = (sender as Button).Tag;
-            if(notebookId != null)
+            LogService.MetroLogger.getSharedLogger().Info($"Opening notebook ID { notebookId }");
+            if (notebookId != null)
                 this.Frame.Navigate(typeof(MainPage), notebookId);
         }
 
         private async void UploadServerButton_Click(object sender, RoutedEventArgs e)
         {
+
+            LogService.MetroLogger.getSharedLogger().Info($"Uploading notes to server...");
             Debug.WriteLine("Upload to server");
 
             try
@@ -122,6 +127,7 @@ namespace PhenoPad
                 await FileServerClient.HTTPPut();
             } catch (Exception ex)
             {
+                LogService.MetroLogger.getSharedLogger().Error("Unable to upload to server due to " + ex.Message);
                 Debug.WriteLine("Unable to upload to server due to " + ex.Message);
             }
 
@@ -130,6 +136,7 @@ namespace PhenoPad
 
         private async void DownloadServerButton_Click(object sender, RoutedEventArgs e)
         {
+            LogService.MetroLogger.getSharedLogger().Info("Dowloading from server...");
             Debug.WriteLine("Download from server");
 
             try
@@ -139,6 +146,7 @@ namespace PhenoPad
             catch (Exception ex)
             {
                 Debug.WriteLine("Unable to load from server due to " + ex.Message);
+                LogService.MetroLogger.getSharedLogger().Error("Unable to download from server due to " + ex.Message);
             }
 
             LoadAllNotes();
@@ -153,6 +161,7 @@ namespace PhenoPad
 
         protected override async void OnNavigatedTo(NavigationEventArgs e)
         {
+            LogService.MetroLogger.getSharedLogger().Info("Navigated to PageOverview");
             reloadNotebookList();
         }
         protected override void OnNavigatedFrom(NavigationEventArgs e)
@@ -168,8 +177,6 @@ namespace PhenoPad
                 //if(filtered != null && filtered.Count() != 0)
                 notebookList.ItemsSource = filtered;
               
-
-
             }
         }
 

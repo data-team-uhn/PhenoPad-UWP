@@ -129,7 +129,7 @@
             <ColumnDefinition Width="15"></ColumnDefinition>
             <ColumnDefinition Width="*"></ColumnDefinition>
         </Grid.ColumnDefinitions>
-        <ScrollViewer Name="sideScrollView" ViewChanged="ScrollView_ViewChanged" VerticalScrollBarVisibility="Hidden" >
+        <ScrollViewer Name="sideScrollView" Visibility="Collapsed" ViewChanged="ScrollView_ViewChanged" VerticalScrollBarVisibility="Hidden" >
             <Grid Padding="0 100 0 0">
             <Canvas  Height="{x:Bind PAGE_HEIGHT}" Name="sideCanvas">
 
@@ -265,7 +265,7 @@
                                 </ListView.ItemsPanel>
                                 <ListView.ItemTemplate>
                                     <DataTemplate x:DataType="phenotypeservice:Phenotype">
-                                        <customcontrol:PhenotypeBriefControl phenotypeName="{x:Bind name}" phenotypeId="{x:Bind hpId}" phenotypeState="{x:Bind state}" sourceType="{x:Bind sourceType}"></customcontrol:PhenotypeBriefControl>
+                                        <customcontrol:PhenotypeBriefControl phenotypeName="{x:Bind name}" phenotypeId="{x:Bind hpId}" phenotypeState="{x:Bind state}" sourceType="{x:Bind sourceType}" presentPosition="Inline" ></customcontrol:PhenotypeBriefControl>
                                     </DataTemplate>
                                 </ListView.ItemTemplate>
                                 <ListView.ItemContainerStyle>

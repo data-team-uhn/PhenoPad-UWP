@@ -58,6 +58,15 @@ namespace PhenoPad.CustomControl
             }
         }
 
+        public PresentPosition presentPosition
+        {
+            get { return (PresentPosition)GetValue(presentPositionProperty); }
+            set
+            {
+                SetValue(presentPositionProperty, value);
+            }
+        }
+
         public static readonly DependencyProperty phenotypeNameProperty = DependencyProperty.Register(
           "phenotypeName",
           typeof(String),
@@ -83,6 +92,12 @@ namespace PhenoPad.CustomControl
           typeof(TextBlock),
           new PropertyMetadata(null)
         );
+        public static readonly DependencyProperty presentPositionProperty = DependencyProperty.Register(
+         "presentPosition",
+         typeof(PresentPosition),
+         typeof(TextBlock),
+         new PropertyMetadata(null)
+       );
 
         private int localState;
 
@@ -120,9 +135,16 @@ namespace PhenoPad.CustomControl
             //else
             //    PhenotypeManager.getSharedPhenotypeManager().updatePhenoStateById(phenotypeId, -1, sourceType);
             localState = -1;
-                PhenotypeManager.getSharedPhenotypeManager().removeById(phenotypeId, SourceType.Suggested);
+            PhenotypeManager.getSharedPhenotypeManager().removeById(phenotypeId, SourceType.Suggested);
+
+            if (presentPosition == PresentPosition.Inline)
+            {
+                this.Visibility = Visibility.Collapsed;
+            }
+
         }
         
+
         private void YSwitchBtn_Click(object sender, RoutedEventArgs e)
         {
             setPhenotypeState(1);
@@ -171,19 +193,23 @@ namespace PhenoPad.CustomControl
             {
                 case -1:
                     localState = 1;
-                    setPhenotypeState(1);
+                    // we only update UI for phenotype control that appears in notes
+                    if(presentPosition == PresentPosition.Inline)
+                        setPhenotypeState(1);
                     PhenotypeManager.getSharedPhenotypeManager().addPhenotype(new Phenotype(phenotypeId, phenotypeName, 1), sourceType);
                     break;
                 case 0:
                     //PhenotypeManager.getSharedPhenotypeManager().removeById(phenotypeId, SourceType.Saved);
                     // PhenotypeManager.getSharedPhenotypeManager().removeById(phenotypeId, sourceType);
                     localState = 1;
-                    setPhenotypeState(1);
+                    if (presentPosition == PresentPosition.Inline)
+                        setPhenotypeState(1);
                     PhenotypeManager.getSharedPhenotypeManager().updatePhenoStateById(phenotypeId, 1, sourceType);
                     break;
                 case 1:
                     localState = 0;
-                    setPhenotypeState(0);
+                    if (presentPosition == PresentPosition.Inline)
+                        setPhenotypeState(0);
                     PhenotypeManager.getSharedPhenotypeManager().updatePhenoStateById(phenotypeId, 0, sourceType);
                     break;
             }

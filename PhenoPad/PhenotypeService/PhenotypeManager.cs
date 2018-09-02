@@ -13,7 +13,8 @@ using Windows.Web.Http;
 namespace PhenoPad.PhenotypeService
 {
     public enum SourceType { Notes, Speech, Suggested, Search, Saved, None};
-
+    // position of phenotype control, whether inside notes or inside ListView
+    public enum PresentPosition { Inline, List }; 
     public class PhenotypeManager
     {
         public static PhenotypeManager sharedPhenotypeManager;
@@ -514,6 +515,7 @@ namespace PhenoPad.PhenotypeService
             {
                 httpResponseBody = "Error: " + ex.HResult.ToString("X") + " Message: " + ex.Message;
                 rootPage.NotifyUser("Error: failed to parse results from PhenoTips", NotifyType.ErrorMessage, 2);
+                LogService.MetroLogger.getSharedLogger().Error("Failed to search phenotypes by PhenoTips, " + httpResponseBody);
             }
             return null;
         }
@@ -561,7 +563,7 @@ namespace PhenoPad.PhenotypeService
                     if (!returnResult.ContainsKey(keystr))
                     {
                     returnResult.Add(keystr, new Phenotype(res));
-                    Debug.WriteLine("Annotation:\t" + str.Substring(res.start, res.end - res.start) + "\t" + res.names[0]);
+                    // Debug.WriteLine("Annotation:\t" + str.Substring(res.start, res.end - res.start) + "\t" + res.names[0]);
                     }
                 }
               
@@ -571,6 +573,7 @@ namespace PhenoPad.PhenotypeService
             {
                 httpResponseBody = "Error: " + ex.HResult.ToString("X") + " Message: " + ex.Message;
                 rootPage.NotifyUser(httpResponseBody, NotifyType.ErrorMessage, 3);
+                LogService.MetroLogger.getSharedLogger().Error("Failed to annotate by NCR, " + httpResponseBody);
             }
             return null;
         }
@@ -637,6 +640,7 @@ namespace PhenoPad.PhenotypeService
             catch (Exception ex)
             {
                 httpResponseBody = "Error: " + ex.HResult.ToString("X") + " Message: " + ex.Message;
+                LogService.MetroLogger.getSharedLogger().Error("Failed to give suggestion, " + httpResponseBody);
             }
             return null;
         }
@@ -697,6 +701,7 @@ namespace PhenoPad.PhenotypeService
             catch (Exception ex)
             {
                 httpResponseBody = "Error: " + ex.HResult.ToString("X") + " Message: " + ex.Message;
+                LogService.MetroLogger.getSharedLogger().Error("Failed to give differential diagnosis, " + httpResponseBody);
             }
             return null;
         }
@@ -741,6 +746,7 @@ namespace PhenoPad.PhenotypeService
             catch (Exception ex)
             {
                 httpResponseBody = "Error: " + ex.HResult.ToString("X") + " Message: " + ex.Message;
+                LogService.MetroLogger.getSharedLogger().Error("Failed to fetch phenotype information, " + httpResponseBody);
             }
             return null;
         }
@@ -751,7 +757,13 @@ namespace PhenoPad.PhenotypeService
             //FileService.FileManager.getSharedFileManager().SaveObjectSerilization(filename, this, typeof(PhenotypeManager));
         }
 
-
+        public void AddFakePhenotypesInSpeech()
+        {
+            foreach (var pheno in savedPhenotypes)
+            {
+                phenotypesInSpeech.Add(pheno);
+            }
+        }
        
     }
 }
