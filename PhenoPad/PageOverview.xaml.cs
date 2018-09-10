@@ -13,6 +13,7 @@ using Windows.Foundation.Collections;
 using Windows.Storage;
 using Windows.UI;
 using Windows.UI.Composition;
+using Windows.UI.Core;
 using Windows.UI.ViewManagement;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
@@ -33,6 +34,8 @@ namespace PhenoPad
     /// </summary>
     public sealed partial class PageOverview : Page
     {
+        private List<Notebook> notebooks;
+
         public PageOverview()
         {
             LogService.MetroLogger.getSharedLogger().Info("Initilize PageOverview");
@@ -42,7 +45,14 @@ namespace PhenoPad
             LoadAllNotes();
             LogService.MetroLogger.getSharedLogger().Info("Note list loaded.");
 
+            hide_titlebar();
 
+            // https://stackoverflow.com/questions/43699256/how-to-use-acrylic-accent-in-windows-10-creators-update/43711413#43711413
+
+
+        }
+
+        private void hide_titlebar() {
             //draw into the title bar
             CoreApplication.GetCurrentView().TitleBar.ExtendViewIntoTitleBar = true;
 
@@ -50,18 +60,23 @@ namespace PhenoPad
             ApplicationViewTitleBar titleBar = ApplicationView.GetForCurrentView().TitleBar;
             titleBar.ButtonBackgroundColor = Colors.Transparent;
             titleBar.ButtonInactiveBackgroundColor = Colors.Transparent;
-
-            // https://stackoverflow.com/questions/43699256/how-to-use-acrylic-accent-in-windows-10-creators-update/43711413#43711413
-
-
         }
 
-        private List<Notebook> notebooks;
+        #region note loading
+
         private void LoadAllNotes()
         {
             reloadNotebookList();
         }
+        private async void reloadNotebookList()
+        {
+            notebooks = await FileManager.getSharedFileManager().GetAllNotebookObjects();
+            if (notebooks != null)
+                notebookList.ItemsSource = notebooks;
+        }
+        #endregion
 
+        #region button click handlers
         private void GridView_ItemClick(object sender, ItemClickEventArgs e)
         {
             //Frame rootFrame = Window.Current.Content as Frame;
@@ -151,43 +166,9 @@ namespace PhenoPad
 
             LoadAllNotes();
         }
-
-        private async void reloadNotebookList()
-        {
-            notebooks = await FileManager.getSharedFileManager().GetAllNotebookObjects();
-            if (notebooks != null)
-                notebookList.ItemsSource = notebooks;
-        }
-
-        protected override async void OnNavigatedTo(NavigationEventArgs e)
-        {
-            LogService.MetroLogger.getSharedLogger().Info("Navigated to PageOverview");
-            reloadNotebookList();
-        }
-        protected override void OnNavigatedFrom(NavigationEventArgs e)
-        {
-            this.Frame.BackStack.Clear();
-        }
-
-        private void autosuggesttextchanged(AutoSuggestBox sender, AutoSuggestBoxTextChangedEventArgs args)
-        {
-            if (args.Reason == AutoSuggestionBoxTextChangeReason.UserInput)
-            {
-                var filtered = notebooks.Where(i => i.name.Contains(this.autoSuggestBox.Text)).ToList();
-                //if(filtered != null && filtered.Count() != 0)
-                notebookList.ItemsSource = filtered;
-              
-            }
-        }
-
-        private void autosuggestquerysubmitted(AutoSuggestBox sender, AutoSuggestBoxQuerySubmittedEventArgs args)
-        {
-
-        }
-
         private async void Delete_ItemInvoked(SwipeItem sender, SwipeItemInvokedEventArgs args)
         {
-            var id = (string) args.SwipeControl.Tag;
+            var id = (string)args.SwipeControl.Tag;
             bool isSuccess = await FileManager.getSharedFileManager().DeleteNotebookById(id);
             if (isSuccess)
             {
@@ -195,6 +176,48 @@ namespace PhenoPad
                 MessageGrid.Visibility = Visibility.Visible;
             }
         }
+        #endregion
+
+        #region navigation handlers
+        protected override async void OnNavigatedTo(NavigationEventArgs e)
+        {
+            await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, hide_titlebar);
+            LogService.MetroLogger.getSharedLogger().Info("Navigated to PageOverview");          
+            reloadNotebookList();
+            
+        }
+        protected override async void OnNavigatedFrom(NavigationEventArgs e)
+        {
+            this.Frame.BackStack.Clear();
+            //using await annoynous functions to reduce the delay in titlebar showing
+            await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () =>
+            {
+                CoreApplication.GetCurrentView().TitleBar.ExtendViewIntoTitleBar = false;
+                //Changes the background color of title bar back to default
+                ApplicationViewTitleBar titleBar = ApplicationView.GetForCurrentView().TitleBar;
+                titleBar.ButtonBackgroundColor = Colors.Black;
+                titleBar.ButtonInactiveBackgroundColor = Colors.Black;
+            });
+
+        }
+        #endregion
+
+        #region search function
+        private void autosuggesttextchanged(AutoSuggestBox sender, AutoSuggestBoxTextChangedEventArgs args)
+        {
+            if (args.Reason == AutoSuggestionBoxTextChangeReason.UserInput)
+            {
+                var filtered = notebooks.Where(i => i.name.Contains(this.autoSuggestBox.Text)).ToList();
+                //if(filtered != null && filtered.Count() != 0)
+                notebookList.ItemsSource = filtered;
+
+            }
+        }
+        private void autosuggestquerysubmitted(AutoSuggestBox sender, AutoSuggestBoxQuerySubmittedEventArgs args)
+        {
+
+        }
+        #endregion
     }
-    
+
 }
