@@ -50,61 +50,6 @@ using System.Runtime.InteropServices.WindowsRuntime;
 
 namespace PhenoPad
 {
-    // MyScript 
-    public class FlyoutCommand : System.Windows.Input.ICommand
-    {
-        public delegate void InvokedHandler(FlyoutCommand command);
-
-        public string Id { get; set; }
-        private InvokedHandler _handler = null;
-
-        public FlyoutCommand(string id, InvokedHandler handler)
-        {
-            Id = id;
-            _handler = handler;
-        }
-
-        public bool CanExecute(object parameter)
-        {
-            return _handler != null;
-        }
-
-        public void Execute(object parameter)
-        {
-            _handler(this);
-        }
-
-        public event EventHandler CanExecuteChanged;
-    }
-
-    public class CalligraphicPen : InkToolbarCustomPen
-    {
-        public CalligraphicPen()
-        {
-        }
-
-        protected override InkDrawingAttributes CreateInkDrawingAttributesCore(Brush brush, double strokeWidth)
-        {
-
-            InkDrawingAttributes inkDrawingAttributes = new InkDrawingAttributes();
-            inkDrawingAttributes.PenTip = PenTipShape.Circle;
-            inkDrawingAttributes.IgnorePressure = false;
-            SolidColorBrush solidColorBrush = (SolidColorBrush)brush;
-
-            if (solidColorBrush != null)
-            {
-                inkDrawingAttributes.Color = solidColorBrush.Color;
-            }
-
-            inkDrawingAttributes.Size = new Size(strokeWidth, 2.0f * strokeWidth);
-            //inkDrawingAttributes.Size = new Size(strokeWidth, strokeWidth);
-            inkDrawingAttributes.PenTipTransform = System.Numerics.Matrix3x2.CreateRotation((float)(Math.PI * 45 / 180));
-
-            return inkDrawingAttributes;
-        }
-        
-    }
-
     // private MainPage rootPage = MainPage.Current;
 
     /// <summary>
@@ -203,6 +148,8 @@ namespace PhenoPad
         public SpeechManager speechManager = SpeechManager.getSharedSpeechManager();
 
         private bool loadFromDisk = false;
+
+        // ========================End of properties===================================//
 
         public MainPage()
         {
@@ -2041,6 +1988,9 @@ namespace PhenoPad
             **/
         }
 
+        /// <summary>
+        /// Invoked when user presses enter key in note name text box
+        /// </summary>
         private async void noteNameTextBox_KeyDown(object sender, KeyRoutedEventArgs e)
         {
             if (e.Key == Windows.System.VirtualKey.Enter)
@@ -2051,6 +2001,16 @@ namespace PhenoPad
                     await FileManager.getSharedFileManager().SaveToMetaFile(notebookObject);
                     LoseFocus(sender);
                 }
+            }
+        }
+        /// <summary>
+        /// Handles event when user finish typing note name and did not press enter key to save
+        /// </summary>
+        private async void noteNameTextBox_LostFocus(object sender, RoutedEventArgs e) {
+            if (notebookObject != null && !string.IsNullOrEmpty(noteNameTextBox.Text))
+            {
+                notebookObject.name = noteNameTextBox.Text;
+                await FileManager.getSharedFileManager().SaveToMetaFile(notebookObject);
             }
         }
 
@@ -2423,5 +2383,60 @@ namespace PhenoPad
         StatusMessage,
         ErrorMessage
     };
+
+    // MyScript 
+    public class FlyoutCommand : System.Windows.Input.ICommand
+    {
+        public delegate void InvokedHandler(FlyoutCommand command);
+
+        public string Id { get; set; }
+        private InvokedHandler _handler = null;
+
+        public FlyoutCommand(string id, InvokedHandler handler)
+        {
+            Id = id;
+            _handler = handler;
+        }
+
+        public bool CanExecute(object parameter)
+        {
+            return _handler != null;
+        }
+
+        public void Execute(object parameter)
+        {
+            _handler(this);
+        }
+
+        public event EventHandler CanExecuteChanged;
+    }
+
+    public class CalligraphicPen : InkToolbarCustomPen
+    {
+        public CalligraphicPen()
+        {
+        }
+
+        protected override InkDrawingAttributes CreateInkDrawingAttributesCore(Brush brush, double strokeWidth)
+        {
+
+            InkDrawingAttributes inkDrawingAttributes = new InkDrawingAttributes();
+            inkDrawingAttributes.PenTip = PenTipShape.Circle;
+            inkDrawingAttributes.IgnorePressure = false;
+            SolidColorBrush solidColorBrush = (SolidColorBrush)brush;
+
+            if (solidColorBrush != null)
+            {
+                inkDrawingAttributes.Color = solidColorBrush.Color;
+            }
+
+            inkDrawingAttributes.Size = new Size(strokeWidth, 2.0f * strokeWidth);
+            //inkDrawingAttributes.Size = new Size(strokeWidth, strokeWidth);
+            inkDrawingAttributes.PenTipTransform = System.Numerics.Matrix3x2.CreateRotation((float)(Math.PI * 45 / 180));
+
+            return inkDrawingAttributes;
+        }
+
+    }
 
 }

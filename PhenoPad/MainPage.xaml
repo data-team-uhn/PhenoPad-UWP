@@ -51,7 +51,7 @@
                 <Button Name="BackButton" Click="BackButton_Click" Width="40"  Background="{StaticResource Button_Background}" BorderThickness="0" VerticalAlignment="Stretch">
                     <SymbolIcon Symbol="Back"></SymbolIcon>
                 </Button>
-                <TextBox Name="noteNameTextBox" KeyDown="noteNameTextBox_KeyDown"  BorderThickness="0" Background="{StaticResource TITLE_BAR_WHITE}" FontSize="18" Text="" Margin="5 0 0 0" VerticalAlignment="Center"></TextBox>
+                <TextBox Name="noteNameTextBox" KeyDown="noteNameTextBox_KeyDown"  LostFocus="noteNameTextBox_LostFocus" BorderThickness="0" Background="{StaticResource TITLE_BAR_WHITE}" FontSize="18" Text="" Margin="5 0 0 0" VerticalAlignment="Center"></TextBox>
             </StackPanel>
 
             <CommandBar Grid.Column="1" HorizontalAlignment="Right" Margin="0 0 30 0"  Name="topCmdBar" OverflowButtonVisibility="Collapsed" Background="{StaticResource TITLE_BAR_WHITE}">

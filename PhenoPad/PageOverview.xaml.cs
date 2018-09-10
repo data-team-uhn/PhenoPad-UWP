@@ -192,6 +192,7 @@ namespace PhenoPad
             if (isSuccess)
             {
                 reloadNotebookList();
+                MessageGrid.Visibility = Visibility.Visible;
             }
         }
     }
