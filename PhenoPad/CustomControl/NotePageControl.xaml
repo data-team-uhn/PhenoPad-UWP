@@ -159,7 +159,7 @@
             <Grid x:Name="outputGrid" Padding="0 100 0 0" Background="{ThemeResource SystemControlBackgroundChromeWhiteBrush}" Height="{x:Bind PAGE_HEIGHT}" Width="{x:Bind PAGE_WIDTH}">
                 <!-- Inking area -->
 
-                <Canvas x:Name="backgroundCanvas">
+                <Canvas x:Name="backgroundCanvas" >
                     
                 </Canvas>
                 
@@ -175,7 +175,7 @@
                 </Grid>
 
                 <!-- Note taking ink canvas -->
-                <InkCanvas x:Name="inkCanvas"/>
+                <InkCanvas  x:Name="inkCanvas"/>
                 
                 <!-- pop up after selection-->
                 <Canvas x:Name="selectionCanvas">

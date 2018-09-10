@@ -55,7 +55,7 @@
             </StackPanel>
 
             <CommandBar Grid.Column="1" HorizontalAlignment="Right" Margin="0 0 30 0"  Name="topCmdBar" OverflowButtonVisibility="Collapsed" Background="{StaticResource TITLE_BAR_WHITE}">
-                <AppBarButton>
+                <AppBarButton Icon="GlobalNavigationButton">
                     <AppBarButton.Flyout>
                         <MenuFlyout>
                             <MenuFlyoutItem Text="Open file folder" Click="OpenFileFolder_Click"/>
@@ -563,7 +563,7 @@
 
             </SplitView.Pane>
 
-            <Grid>
+            <Grid Background="LightGray">
                 
                 <ContentControl x:Name="PageHost"  HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch">
                     <ContentControl.ContentTransitions>
@@ -583,7 +583,7 @@
                         </Storyboard>
                     </RelativePanel.Resources>
 
-                    <TextBlock Visibility="Visible" x:Name="modeTextBlock" Width="240" HorizontalTextAlignment="Right" Margin="0 0 10 0" RelativePanel.AlignTopWithPanel="True" RelativePanel.AlignRightWithPanel="True" Padding=" 0 0 10 0" FontSize="25" FontFamily="Segoe UI" FontWeight="ExtraBold" Foreground="LightGray" Opacity="0.5">Handwriting Mode</TextBlock>
+                    <TextBlock Visibility="Visible" x:Name="modeTextBlock" Width="240" HorizontalTextAlignment="Right" Margin="0 0 10 0" RelativePanel.AlignTopWithPanel="True" RelativePanel.AlignRightWithPanel="True" Padding=" 0 0 10 0" FontSize="25" FontFamily="Segoe UI" FontWeight="ExtraBold" Foreground="Black" Opacity="0.3">Handwriting Mode</TextBlock>
 
                     <StackPanel Spacing="2" Background="White" Name="pageIndexPanel"  Margin="0 0 0 0" RelativePanel.Above="CandidateGrid" Orientation="Horizontal"  RelativePanel.AlignHorizontalCenterWithPanel="True" Padding="0 0 0 0">
 
