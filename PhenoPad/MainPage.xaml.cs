@@ -1444,8 +1444,44 @@ namespace PhenoPad
 
     }
 
+    /// <summary>
+    /// Configurates pen tool including size, shape, color, etc.
+    /// </summary>
+    public class CalligraphicPen : InkToolbarCustomPen
+    {
+        /// <summary>
+        /// Creates a new ClligraphicPen instance.
+        /// </summary>
+        public CalligraphicPen()
+        {
+        }
 
+        /// <summary>
+        /// Create and returns new ink attributes and sets defult shape,color and size.
+        /// </summary>
+        protected override InkDrawingAttributes CreateInkDrawingAttributesCore(Brush brush, double strokeWidth)
+        {
 
+            InkDrawingAttributes inkDrawingAttributes = new InkDrawingAttributes();
+            inkDrawingAttributes.PenTip = PenTipShape.Circle;
+            inkDrawingAttributes.IgnorePressure = false;
+            SolidColorBrush solidColorBrush = (SolidColorBrush)brush;
+
+            if (solidColorBrush != null)
+            {
+                inkDrawingAttributes.Color = solidColorBrush.Color;
+            }
+
+            inkDrawingAttributes.Size = new Size(strokeWidth, 2.0f * strokeWidth);
+            //inkDrawingAttributes.Size = new Size(strokeWidth, strokeWidth);
+            inkDrawingAttributes.PenTipTransform = System.Numerics.Matrix3x2.CreateRotation((float)(Math.PI * 45 / 180));
+
+            return inkDrawingAttributes;
+        }
+
+        
+
+}
 
     // MyScript 
     public class FlyoutCommand : System.Windows.Input.ICommand
@@ -1473,81 +1509,4 @@ namespace PhenoPad
 
         public event EventHandler CanExecuteChanged;
     }
-
-    public class CalligraphicPen : InkToolbarCustomPen
-    {
-        public CalligraphicPen()
-        {
-        }
-
-        protected override InkDrawingAttributes CreateInkDrawingAttributesCore(Brush brush, double strokeWidth)
-        {
-
-            InkDrawingAttributes inkDrawingAttributes = new InkDrawingAttributes();
-            inkDrawingAttributes.PenTip = PenTipShape.Circle;
-            inkDrawingAttributes.IgnorePressure = false;
-            SolidColorBrush solidColorBrush = (SolidColorBrush)brush;
-
-            if (solidColorBrush != null)
-            {
-                inkDrawingAttributes.Color = solidColorBrush.Color;
-            }
-
-            inkDrawingAttributes.Size = new Size(strokeWidth, 2.0f * strokeWidth);
-            //inkDrawingAttributes.Size = new Size(strokeWidth, strokeWidth);
-            inkDrawingAttributes.PenTipTransform = System.Numerics.Matrix3x2.CreateRotation((float)(Math.PI * 45 / 180));
-
-            return inkDrawingAttributes;
-        }
-
-    }
-
-    //static class
-    //HelperFunctions
-    //{
-    //    public static void UpdateCanvasSize(FrameworkElement root, FrameworkElement output, FrameworkElement inkCanvas)
-    //    {
-    //        output.Width = root.ActualWidth;
-    //        output.Height = root.ActualHeight / 2;
-    //        inkCanvas.Width = root.ActualWidth;
-    //        inkCanvas.Height = root.ActualHeight / 2;
-    //    }
-
-    //    public static Size GetCurrentDisplaySize()
-    //    {
-    //        var displayInformation = DisplayInformation.GetForCurrentView();
-    //        TypeInfo t = typeof(DisplayInformation).GetTypeInfo();
-    //        var props = t.DeclaredProperties.Where(x => x.Name.StartsWith("Screen") && x.Name.EndsWith("InRawPixels")).ToArray();
-    //        var w = props.Where(x => x.Name.Contains("Width")).First().GetValue(displayInformation);
-    //        var h = props.Where(x => x.Name.Contains("Height")).First().GetValue(displayInformation);
-    //        var size = new Size(System.Convert.ToDouble(w), System.Convert.ToDouble(h));
-    //        switch (displayInformation.CurrentOrientation)
-    //        {
-    //            case DisplayOrientations.Landscape:
-    //            case DisplayOrientations.LandscapeFlipped:
-    //                size = new Size(Math.Max(size.Width, size.Height), Math.Min(size.Width, size.Height));
-    //                break;
-    //            case DisplayOrientations.Portrait:
-    //            case DisplayOrientations.PortraitFlipped:
-    //                size = new Size(Math.Min(size.Width, size.Height), Math.Max(size.Width, size.Height));
-    //                break;
-    //        }
-    //        return size;
-    //    }
-
-    //    /// <summary>
-    //    /// Decodes Base 64 string source to bitmap image
-    //    /// </summary>
-    //    public static async Task<BitmapImage> Base64ToBitmapAsync(string source)
-    //    {
-    //        var byteArray = Convert.FromBase64String(source);
-    //        BitmapImage bitmap = new BitmapImage();
-    //        using (MemoryStream stream = new MemoryStream(byteArray))
-    //        {
-    //            await bitmap.SetSourceAsync(stream.AsRandomAccessStream());
-    //        }
-    //        return bitmap;
-    //    }
-    //}
-
 }
