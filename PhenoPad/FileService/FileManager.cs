@@ -765,12 +765,18 @@ namespace PhenoPad.FileService
         {
             try
             {
+
                 Stream stream = await metaFile.OpenStreamForReadAsync();
+                if (stream.Length == 0) {
+                    LogService.MetroLogger.getSharedLogger().Info($"Fetched Serilization is an empty file: {metaFile.Path}");
+                    return null;
+                }
                 //tosave = new Class1("ididid", "namename");
                 var serializer = new XmlSerializer(type);
                 using (stream)
                 {
                     object obj = serializer.Deserialize(stream);
+                    Debug.WriteLine(obj.ToString());
                     return obj;
                 }
             }
@@ -799,7 +805,6 @@ namespace PhenoPad.FileService
                     {
                         await inkcancas.InkPresenter.StrokeContainer.LoadAsync(inputStream);
                         Debug.WriteLine($"{strokesFile.Path} has been loaded.");
-                        LogService.MetroLogger.getSharedLogger().Info($"{strokesFile.Path} has been loaded.");
                     }
                     stream.Dispose();
                 }
