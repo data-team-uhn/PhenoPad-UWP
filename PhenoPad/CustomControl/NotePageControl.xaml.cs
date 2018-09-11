@@ -2615,16 +2615,10 @@ namespace PhenoPad.CustomControl
             try
             {
                 bool result1 = false;
-                
-                StorageFile file = await FileManager.getSharedFileManager().GetNoteFile(notebookId, pageId, NoteFileType.Strokes);
-                if (file == null)
-                {
-                    logger.Error($"SaveToDisk():Failed to get note file.");
-                    return false;
-                }
                 // save handwritings
-                result1 = await FileManager.getSharedFileManager().saveStrokes(file, this.inkCan);
-
+                StorageFile file = await FileManager.getSharedFileManager().GetNoteFile(notebookId, pageId, NoteFileType.Strokes);
+                if (file != null)
+                    result1 = await FileManager.getSharedFileManager().saveStrokes(file, this.inkCan);
 
                 // save add in controls
                 var result2 = false;

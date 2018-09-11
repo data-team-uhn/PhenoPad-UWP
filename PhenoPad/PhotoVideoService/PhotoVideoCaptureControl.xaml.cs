@@ -295,10 +295,8 @@ namespace PhenoPad.PhotoVideoService
         /// Takes a photo to a StorageFile and adds rotation metadata to it
         /// </summary>
         /// <returns></returns>
-        public async Task<String> TakePhotoAsync(string notebookId, string pageId, string name)
+        public async Task<SoftwareBitmapSource> TakePhotoAsync(string notebookId, string pageId, string name)
         {
-
-          try { 
             // While taking a photo, keep the video button enabled only if the camera supports simultaneously taking pictures and recording video
             VideoButton.IsEnabled = _mediaCapture.MediaCaptureSettings.ConcurrentRecordAndPhotoSupported;
 
@@ -306,7 +304,8 @@ namespace PhenoPad.PhotoVideoService
             VideoButton.Opacity = VideoButton.IsEnabled ? 1 : 0;
 
             var stream = new InMemoryRandomAccessStream();
-            Debug.WriteLine("Taking a photo...");
+
+            Debug.WriteLine("Taking photo...");
             await _mediaCapture.CapturePhotoToStreamAsync(ImageEncodingProperties.CreateJpeg(), stream);
 
             BitmapDecoder decoder = await BitmapDecoder.CreateAsync(stream);
@@ -318,26 +317,20 @@ namespace PhenoPad.PhotoVideoService
             await bitmapSource.SetBitmapAsync(softwareBitmapBGR8);
             //imageControl.Source = bitmapSource;
 
-            
+            try
+            {
                 //var file = await _captureFolder.CreateFileAsync("SimplePhoto.jpg", CreationCollisionOption.GenerateUniqueName);
                 var file = await PhenoPad.FileService.FileManager.getSharedFileManager().CreateImageFileForPage(notebookId, pageId, name);
-                if (file == null) {
-                    LogService.MetroLogger.getSharedLogger().Info("Failed to create file for saving photo: file is null.");
+                if (file == null)
                     return null;
-                }
-
-                LogService.MetroLogger.getSharedLogger().Info($"Photo saving to {file.Path}");
+                Debug.WriteLine("Photo taken! Saving to " + file.Path);
 
                 var photoOrientation = CameraRotationHelper.ConvertSimpleOrientationToPhotoOrientation(_rotationHelper.GetCameraCaptureOrientation());
 
                 await ReencodeAndSavePhotoAsync(stream, file, photoOrientation);
                 Debug.WriteLine("Photo saved!");
-                // Done taking a photo, so re-enable the button
-                VideoButton.IsEnabled = true;
-                VideoButton.Opacity = 1;
 
-                return file.Path;
-
+               
             }
             catch (Exception ex)
             {
@@ -346,7 +339,11 @@ namespace PhenoPad.PhotoVideoService
                 return null;
             }
 
+            // Done taking a photo, so re-enable the button
+            VideoButton.IsEnabled = true;
+            VideoButton.Opacity = 1;
 
+            return bitmapSource;
         }
 
         /// <summary>
@@ -585,30 +582,15 @@ namespace PhenoPad.PhotoVideoService
                 {
                     var encoder = await BitmapEncoder.CreateForTranscodingAsync(outputStream, decoder);
 
-                    var properties = new BitmapPropertySet { { "System.Photo.Orientation", new BitmapTypedValue(photoOrientation, PropertyType.UInt16) } };
-                    Debug.WriteLine($"Taken in orientation:{photoOrientation}");
+                    //var properties = new BitmapPropertySet { { "System.Photo.Orientation", new BitmapTypedValue(photoOrientation, PropertyType.UInt16) } };
+                    var properties = new BitmapPropertySet { { "System.Photo.Orientation", new BitmapTypedValue(PhotoOrientation.Normal, PropertyType.UInt16) } };
+
                     await encoder.BitmapProperties.SetPropertiesAsync(properties);
-                    //encoder.BitmapTransform.Rotation = AdjustImageRotation(photoOrientation);
                     await encoder.FlushAsync();
                 }
             }
         }
-        /// <summary>
-        /// Used to deal with case when application reads image without using meta data, will manually save the photo in its taken orientation to file
-        /// https://stackoverflow.com/questions/39306215/image-rotated-when-saved
-        /// </summary>
-        private static BitmapRotation AdjustImageRotation(PhotoOrientation photoOrientation) {
-            switch (photoOrientation) {
-                case PhotoOrientation.Rotate90:
-                    return BitmapRotation.Clockwise270Degrees;
-                case PhotoOrientation.Rotate180:
-                    return BitmapRotation.Clockwise180Degrees;
-                case PhotoOrientation.Rotate270:
-                    return BitmapRotation.Clockwise90Degrees;
-                default:
-                    return BitmapRotation.None;
-            }
-        }
+
         #endregion Helper functions
 
     }
