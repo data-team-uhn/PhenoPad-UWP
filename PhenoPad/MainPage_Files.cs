@@ -83,7 +83,7 @@ namespace PhenoPad
 
             notePages = new List<NotePageControl>();
             pageIndexButtons = new List<Button>();
-            NotePageControl aPage = new NotePageControl();
+            NotePageControl aPage = new NotePageControl(notebookId,"0");
             notePages.Add(aPage);
             inkCanvas = aPage.inkCan;
             MainPageInkBar.TargetInkCanvas = inkCanvas;
@@ -136,7 +136,7 @@ namespace PhenoPad
 
                 for (int i = 0; i < pageIds.Count; ++i)
                 {
-                    NotePageControl aPage = new NotePageControl();
+                    NotePageControl aPage = new NotePageControl(notebookObject.name,i.ToString());
                     notePages.Add(aPage);
                     aPage.pageId = pageIds[i];
                     aPage.notebookId = notebookId;

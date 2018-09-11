@@ -728,7 +728,8 @@ namespace PhenoPad
 
         private async void AddPageButton_Click(object sender, RoutedEventArgs e)
         {
-            NotePageControl aPage = new NotePageControl();
+            string newPageName = (notePages.Count - 1).ToString();
+            NotePageControl aPage = new NotePageControl(this.notebookId, newPageName);
             notePages.Add(aPage);
             inkCanvas = aPage.inkCan;
             curPage = aPage;

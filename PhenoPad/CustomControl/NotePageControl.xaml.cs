@@ -140,11 +140,14 @@ namespace PhenoPad.CustomControl
         /**
          * Initial method
          **/
-        public NotePageControl()
+        public NotePageControl(string notebookid,string pageid)
         {  
             rootPage = MainPage.Current;
             this.InitializeComponent();
             this.DrawBackgroundLines();
+
+            this.notebookId = notebookid;
+            this.pageId = pageid;
             
 
             UNPROCESSED_COLOR = new SolidColorBrush(UNPROCESSED_COLOR.Color);
@@ -2615,7 +2618,7 @@ namespace PhenoPad.CustomControl
             try
             {
                 bool result1 = false;
-                
+                Debug.WriteLine($"SaveToDisk():{notebookId},{pageId}");
                 StorageFile file = await FileManager.getSharedFileManager().GetNoteFile(notebookId, pageId, NoteFileType.Strokes);
                 if (file == null)
                 {
