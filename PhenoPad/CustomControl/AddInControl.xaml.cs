@@ -26,8 +26,13 @@ using Windows.UI.Xaml.Shapes;
 
 namespace PhenoPad.CustomControl
 {
+    /// <summary>
+    /// Control class for canvas add-ins after drawing a rectangle on note page, shows options of operations.
+    /// </summary>
     public sealed partial class AddInControl : UserControl
     {
+        #region attribute definition
+
         private double DEFAULT_WIDTH = 400;
         private double DEFAULT_HEIGHT = 400;
         public string type; // photo, drawing
@@ -44,7 +49,7 @@ namespace PhenoPad.CustomControl
         public double canvasLeft;
         public double canvasTop;
 
-       
+
 
         private bool isInitialized = false;
         public ScaleTransform scaleTransform;
@@ -52,7 +57,8 @@ namespace PhenoPad.CustomControl
         public double scale;
         public InkCanvas inkCan
         {
-            get {
+            get
+            {
                 return inkCanvas;
             }
         }
@@ -86,6 +92,7 @@ namespace PhenoPad.CustomControl
                 SetValue(nameProperty, value);
             }
         }
+
         public static readonly DependencyProperty nameProperty = DependencyProperty.Register(
          "name",
          typeof(String),
@@ -129,13 +136,19 @@ namespace PhenoPad.CustomControl
                 SetValue(viewOnlyProperty, value);
             }
         }
+
         public static readonly DependencyProperty viewOnlyProperty = DependencyProperty.Register(
          "viewOnly",
          typeof(bool),
          typeof(TextBlock),
          new PropertyMetadata(null)
        );
+        #endregion
 
+        #region constructors
+        /// <summary>
+        /// Creates a new add-in control with no parameters.
+        /// </summary>
         public AddInControl()
         {
             try
@@ -148,6 +161,9 @@ namespace PhenoPad.CustomControl
             }
         }
 
+        /// <summary>
+        /// Creates and initializes a new add-in control with given parameters
+        /// </summary>
         public AddInControl(string name, string notebookId, string pageId, double width = -1, double height = -1)
         {
             this.InitializeComponent();
@@ -164,7 +180,7 @@ namespace PhenoPad.CustomControl
             tg.Children.Add(scaleTransform);
             tg.Children.Add(dragTransform);
             this.RenderTransform = tg;
-
+            Debug.WriteLine("added new image component");
             /**
             this.CanDrag = true;
             this.ManipulationMode = ManipulationModes.TranslateX | ManipulationModes.TranslateY | ManipulationModes.Scale;
@@ -192,17 +208,9 @@ namespace PhenoPad.CustomControl
             };
     **/
         }
+        #endregion
 
-        public void showMovingGrid()
-        {
-            MovingGrid.Visibility = Visibility.Visible;
-        }
-
-        public void hideMovingGrid()
-        {
-            MovingGrid.Visibility = Visibility.Collapsed;
-        }
-
+        #region title relative panel
         private void TitleRelativePanel_ManipulationCompleted(object sender, ManipulationCompletedRoutedEventArgs e)
         {
             // this.Opacity = 1;
@@ -239,44 +247,16 @@ namespace PhenoPad.CustomControl
             scale = scale < 0.5 ? 0.5 : scale;
             scaleTransform.ScaleY = scale;
 
-            
+
 
         }
+        #endregion
+
+        #region button click event handlers
 
         private void Delete_Click(object sender, RoutedEventArgs e)
         {
             ((Panel)this.Parent).Children.Remove(this);
-        }
-
-        private void InitiateInkCanvas(bool onlyView = false)
-        {
-            isInitialized = true;
-            //this.ControlStackPanel.Visibility = Visibility.Visible;
-            //contentGrid.Children.Add(inkCanvas);
-            inkCanvas.Visibility = Visibility.Visible;
-            if (!onlyView) // added from note page, need editing
-            {
-                // Set supported inking device types.
-                inkCanvas.InkPresenter.InputDeviceTypes =
-                    Windows.UI.Core.CoreInputDeviceTypes.Mouse |
-                    Windows.UI.Core.CoreInputDeviceTypes.Pen;
-
-                // Set initial ink stroke attributes.
-                InkDrawingAttributes drawingAttributes = new InkDrawingAttributes();
-                drawingAttributes.Color = Windows.UI.Colors.Black;
-                drawingAttributes.IgnorePressure = false;
-                drawingAttributes.FitToCurve = true;
-                inkCanvas.InkPresenter.UpdateDefaultDrawingAttributes(drawingAttributes);
-            
-                inkToolbar.TargetInkCanvas = inkCanvas;
-                inkToolbar.Visibility = Visibility.Visible;
-            }
-            else // only for viewing on page overview page
-            {
-                inkCanvas.InkPresenter.InputDeviceTypes =
-                    Windows.UI.Core.CoreInputDeviceTypes.None;
-            }
-
         }
 
         private void DrawingButton_Click(object sender, RoutedEventArgs e)
@@ -289,69 +269,18 @@ namespace PhenoPad.CustomControl
             InitiateInkCanvas();
 
         }
-        public async void InitializeFromImage(WriteableBitmap wb, bool onlyView = false)
-        {
-            this.categoryGrid.Visibility = Visibility.Collapsed;
-           
-            Image imageControl = new Image();
-            imageControl.Source = wb;
-            contentGrid.Children.Add(imageControl);
-            categoryGrid.Visibility = Visibility.Collapsed;
-            
-            InitiateInkCanvas(onlyView);
 
-            // save bitmapimage to disk
-            var result = await FileManager.getSharedFileManager().SaveImageForNotepage(notebookId, pageId, name, wb);
+        private void TakePhotoButton_Click(object sender, RoutedEventArgs e)
+        {
+            this.CameraCanvas.Visibility = Visibility.Visible;
+            captureControl.setUp();
+            this.imageControl.deleteAsHide();
+            PhotoButton.Visibility = Visibility.Visible;
         }
 
-        public async void InitializeFromDisk(bool onlyView = false, double transX = 0, double transY = 0, double transScale = 0)
+        private void EditButton_Click(object sender, RoutedEventArgs e)
         {
-            this.categoryGrid.Visibility = Visibility.Collapsed;
-            // photo file
-            var file = await FileService.FileManager.getSharedFileManager().GetNoteFileNotCreate(notebookId, pageId, FileService.NoteFileType.Image, name);
-            if (file != null)
-            {
-                // Open a file stream for reading.
-                IRandomAccessStream stream = await file.OpenAsync(Windows.Storage.FileAccessMode.Read);
-                // Read from file.
-                using (var inputStream = stream.GetInputStreamAt(0))
-                {
-                    BitmapDecoder decoder = await BitmapDecoder.CreateAsync(stream);
-                    SoftwareBitmap softwareBitmap = await decoder.GetSoftwareBitmapAsync();
-                    SoftwareBitmap softwareBitmapBGR8 = SoftwareBitmap.Convert(softwareBitmap,
-                    BitmapPixelFormat.Bgra8,
-                    BitmapAlphaMode.Premultiplied);
-                    SoftwareBitmapSource bitmapSource = new SoftwareBitmapSource();
-                    await bitmapSource.SetBitmapAsync(softwareBitmapBGR8);
-                    Image imageControl = new Image();
-                    imageControl.Source = bitmapSource;
-                    contentGrid.Children.Add(imageControl);
-                    categoryGrid.Visibility = Visibility.Collapsed;
-                   
-                }
-                stream.Dispose();
-            }
-
-            InitiateInkCanvas(onlyView);
-
-            var annofile = await FileService.FileManager.getSharedFileManager().GetNoteFileNotCreate(notebookId, pageId, FileService.NoteFileType.ImageAnnotation, name);
-            if (annofile != null)
-                await FileService.FileManager.getSharedFileManager().loadStrokes(annofile, inkCanvas);
-
-            /**
-                string strokeUri = "ms-appdata:///local/" + FileManager.getSharedFileManager().GetNoteFilePath(notebookId, pageId, NoteFileType.ImageAnnotation, name);
-                BitmapIcon anno = new BitmapIcon();
-                anno.UriSource = new Uri(strokeUri);
-                contentGrid.Children.Add(anno);
-    **/
-            if (!onlyView)
-            {
-                dragTransform.X = transX;
-                dragTransform.Y = transY;
-                scaleTransform.ScaleX = transScale;
-                scaleTransform.ScaleY = transScale;
-            }
-
+            throw new NotImplementedException("editbutton_click not implemented");
         }
 
         private async void InsertPhotoButton_Click(object sender, RoutedEventArgs e)
@@ -403,47 +332,6 @@ namespace PhenoPad.CustomControl
             }
         }
 
-        private void TakePhotoButton_Click(object sender, RoutedEventArgs e)
-        {
-            this.CameraCanvas.Visibility = Visibility.Visible;
-            captureControl.setUp();
-            this.imageControl.deleteAsHide();
-            PhotoButton.Visibility = Visibility.Visible;
-        }
-
-        public void showControlPanel()
-        {
-            if (isInitialized) ;
-                //this.ControlStackPanel.Visibility = Visibility.Visible;
-
-        }
-        public void hideControlPanel()
-        {
-            if (isInitialized) ;
-                //this.ControlStackPanel.Visibility = Visibility.Collapsed;
-        }
-
-       
-
-        private void EditButton_Click(object sender, RoutedEventArgs e)
-        {
-
-        }
-
-        
-        
-        private void UserControl_Loaded(object sender, RoutedEventArgs e)
-        {
-            if (viewOnly)
-            { 
-                this.Width = DEFAULT_WIDTH;
-                this.Height = DEFAULT_HEIGHT;
-                TitleRelativePanel.Visibility = Visibility.Collapsed;
-                InitializeFromDisk(true);
-            }
-        }
-
-
         private async void PhotoButton_Click(object sender, RoutedEventArgs e)
         {
             try
@@ -474,8 +362,151 @@ namespace PhenoPad.CustomControl
             CameraCanvas.Visibility = Visibility.Collapsed;
             captureControl.unSetUp();
         }
+        #endregion
+
+        #region initializations
+
+        /// <summary>
+        /// Initializes inkcanvas attributes for the add-in panel based on  whether item will be editable or not.
+        /// </summary>
+        private void InitiateInkCanvas(bool onlyView = false)
+        {
+            isInitialized = true;
+            //this.ControlStackPanel.Visibility = Visibility.Visible;
+            //contentGrid.Children.Add(inkCanvas);
+            inkCanvas.Visibility = Visibility.Visible;
+            if (!onlyView) // added from note page, need editing
+            {
+                // Set supported input type to default using both moush and pen
+                inkCanvas.InkPresenter.InputDeviceTypes =
+                    Windows.UI.Core.CoreInputDeviceTypes.Mouse |
+                    Windows.UI.Core.CoreInputDeviceTypes.Pen;
+
+                // Set initial ink stroke attributes and updates
+                InkDrawingAttributes drawingAttributes = new InkDrawingAttributes();
+                drawingAttributes.Color = Windows.UI.Colors.Black;
+                drawingAttributes.IgnorePressure = false;
+                drawingAttributes.FitToCurve = true;
+                inkCanvas.InkPresenter.UpdateDefaultDrawingAttributes(drawingAttributes);
+                //setting current active canvas to 
+                inkToolbar.TargetInkCanvas = inkCanvas;
+                inkToolbar.Visibility = Visibility.Visible;
+
+            }
+            else // only for viewing on page overview page
+            {
+                inkCanvas.InkPresenter.InputDeviceTypes =
+                    Windows.UI.Core.CoreInputDeviceTypes.None;
+            }
+
+        }
 
 
+        /// <summary>
+        /// //Initialize a bitmap image to add-in canvas and calls InitiateInkCanvas
+        /// </summary>
+        public async void InitializeFromImage(WriteableBitmap wb, bool onlyView = false)
+        {
+            this.categoryGrid.Visibility = Visibility.Collapsed;
+
+            Image imageControl = new Image();
+            imageControl.Source = wb;
+            contentGrid.Children.Add(imageControl);
+            categoryGrid.Visibility = Visibility.Collapsed;
+
+            InitiateInkCanvas(onlyView);
+
+            // save bitmapimage to disk
+            var result = await FileManager.getSharedFileManager().SaveImageForNotepage(notebookId, pageId, name, wb);
+        }
+
+        /// <summary>
+        /// Initializing a photo to add-in through disk and calls InitiateInkCanvas
+        /// </summary>
+        public async void InitializeFromDisk(bool onlyView = false, double transX = 0, double transY = 0, double transScale = 0)
+        {
+            this.categoryGrid.Visibility = Visibility.Collapsed;
+            // photo file
+            var file = await FileService.FileManager.getSharedFileManager().GetNoteFileNotCreate(notebookId, pageId, FileService.NoteFileType.Image, name);
+            if (file != null)
+            {
+                // Open a file stream for reading.
+                IRandomAccessStream stream = await file.OpenAsync(Windows.Storage.FileAccessMode.Read);
+                // Read from file.
+                using (var inputStream = stream.GetInputStreamAt(0))
+                {
+                    BitmapDecoder decoder = await BitmapDecoder.CreateAsync(stream);
+                    SoftwareBitmap softwareBitmap = await decoder.GetSoftwareBitmapAsync();
+                    SoftwareBitmap softwareBitmapBGR8 = SoftwareBitmap.Convert(softwareBitmap,
+                    BitmapPixelFormat.Bgra8,
+                    BitmapAlphaMode.Premultiplied);
+                    SoftwareBitmapSource bitmapSource = new SoftwareBitmapSource();
+                    await bitmapSource.SetBitmapAsync(softwareBitmapBGR8);
+                    Image imageControl = new Image();
+                    imageControl.Source = bitmapSource;
+                    contentGrid.Children.Add(imageControl);
+                    categoryGrid.Visibility = Visibility.Collapsed;
+
+                }
+                stream.Dispose();
+            }
+
+            InitiateInkCanvas(onlyView);
+
+            var annofile = await FileService.FileManager.getSharedFileManager().GetNoteFileNotCreate(notebookId, pageId, FileService.NoteFileType.ImageAnnotation, name);
+            if (annofile != null)
+                await FileService.FileManager.getSharedFileManager().loadStrokes(annofile, inkCanvas);
+
+            /**
+                string strokeUri = "ms-appdata:///local/" + FileManager.getSharedFileManager().GetNoteFilePath(notebookId, pageId, NoteFileType.ImageAnnotation, name);
+                BitmapIcon anno = new BitmapIcon();
+                anno.UriSource = new Uri(strokeUri);
+                contentGrid.Children.Add(anno);
+    **/
+            if (!onlyView)
+            {
+                dragTransform.X = transX;
+                dragTransform.Y = transY;
+                scaleTransform.ScaleX = transScale;
+                scaleTransform.ScaleY = transScale;
+            }
+
+        }
+        /// <summary>
+        /// When user control is loaded, sets the default size and initialize from disk.
+        /// </summary>
+        private void UserControl_Loaded(object sender, RoutedEventArgs e)
+        {
+            if (viewOnly)
+            {
+                this.Width = DEFAULT_WIDTH;
+                this.Height = DEFAULT_HEIGHT;
+                TitleRelativePanel.Visibility = Visibility.Collapsed;
+                InitializeFromDisk(true);
+            }
+        }
+        #endregion
+
+        #region panel show / hide
+        public void showControlPanel()
+        {
+            if (isInitialized) ;
+            //this.ControlStackPanel.Visibility = Visibility.Visible;
+
+        }
+        public void hideControlPanel()
+        {
+            if (isInitialized) ;
+            //this.ControlStackPanel.Visibility = Visibility.Collapsed;
+        }
+        public void showMovingGrid()
+        {
+            MovingGrid.Visibility = Visibility.Visible;
+        }
+        public void hideMovingGrid()
+        {
+            MovingGrid.Visibility = Visibility.Collapsed;
+        }
         public void hideControlUI()
         {
             OutlineGrid.Background = new SolidColorBrush(Colors.Transparent);
@@ -489,5 +520,7 @@ namespace PhenoPad.CustomControl
             this.TitleRelativePanel.Visibility = Visibility.Visible;
             this.inkToolbar.Visibility = Visibility.Visible;
         }
+        #endregion
+
     }
 }
