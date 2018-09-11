@@ -292,31 +292,30 @@ namespace PhenoPad.PhotoVideoService
         }
 
         /// <summary>
-        /// Takes a photo to a StorageFile and adds rotation metadata to it
+        /// Takes a photo to a StorageFile and adds rotation metadata to it,returns the photo file path after encoding.
         /// </summary>
-        /// <returns></returns>
         public async Task<String> TakePhotoAsync(string notebookId, string pageId, string name)
         {
 
           try { 
-            // While taking a photo, keep the video button enabled only if the camera supports simultaneously taking pictures and recording video
-            VideoButton.IsEnabled = _mediaCapture.MediaCaptureSettings.ConcurrentRecordAndPhotoSupported;
+                // While taking a photo, keep the video button enabled only if the camera supports simultaneously taking pictures and recording video
+                VideoButton.IsEnabled = _mediaCapture.MediaCaptureSettings.ConcurrentRecordAndPhotoSupported;
 
-            // Make the button invisible if it's disabled, so it's obvious it cannot be interacted with
-            VideoButton.Opacity = VideoButton.IsEnabled ? 1 : 0;
+                // Make the button invisible if it's disabled, so it's obvious it cannot be interacted with
+                VideoButton.Opacity = VideoButton.IsEnabled ? 1 : 0;
 
-            var stream = new InMemoryRandomAccessStream();
-            Debug.WriteLine("Taking a photo...");
-            await _mediaCapture.CapturePhotoToStreamAsync(ImageEncodingProperties.CreateJpeg(), stream);
+                var stream = new InMemoryRandomAccessStream();
+                Debug.WriteLine("Taking a photo...");
+                await _mediaCapture.CapturePhotoToStreamAsync(ImageEncodingProperties.CreateJpeg(), stream);
 
-            BitmapDecoder decoder = await BitmapDecoder.CreateAsync(stream);
-            SoftwareBitmap softwareBitmap = await decoder.GetSoftwareBitmapAsync();
-            SoftwareBitmap softwareBitmapBGR8 = SoftwareBitmap.Convert(softwareBitmap,
-            BitmapPixelFormat.Bgra8,
-            BitmapAlphaMode.Premultiplied);
-            SoftwareBitmapSource bitmapSource = new SoftwareBitmapSource();
-            await bitmapSource.SetBitmapAsync(softwareBitmapBGR8);
-            //imageControl.Source = bitmapSource;
+                BitmapDecoder decoder = await BitmapDecoder.CreateAsync(stream);
+                SoftwareBitmap softwareBitmap = await decoder.GetSoftwareBitmapAsync();
+                SoftwareBitmap softwareBitmapBGR8 = SoftwareBitmap.Convert(softwareBitmap,
+                BitmapPixelFormat.Bgra8,
+                BitmapAlphaMode.Premultiplied);
+                SoftwareBitmapSource bitmapSource = new SoftwareBitmapSource();
+                await bitmapSource.SetBitmapAsync(softwareBitmapBGR8);
+                //imageControl.Source = bitmapSource;
 
             
                 //var file = await _captureFolder.CreateFileAsync("SimplePhoto.jpg", CreationCollisionOption.GenerateUniqueName);

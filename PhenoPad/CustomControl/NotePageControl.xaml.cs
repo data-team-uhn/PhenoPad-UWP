@@ -137,9 +137,9 @@ namespace PhenoPad.CustomControl
 
         /******************************************************************/
 
-        /**
-         * Initial method
-         **/
+        /// <summary>
+        /// Initializes a new note page controller instance given notebook id and notepage id.
+        /// </summary>
         public NotePageControl(string notebookid,string pageid)
         {  
             rootPage = MainPage.Current;
@@ -2612,13 +2612,15 @@ namespace PhenoPad.CustomControl
             textNoteDispatcherTimer.Start();
         }
 
-        // Saving notes to disk
+
+        /// <summary>
+        /// Saves all strokes and add-ins of current notepage to local files, return false if failed.
+        /// </summary>
         public async Task<bool> SaveToDisk()
         {
             try
             {
                 bool result1 = false;
-                Debug.WriteLine($"SaveToDisk():{notebookId},{pageId}");
                 StorageFile file = await FileManager.getSharedFileManager().GetNoteFile(notebookId, pageId, NoteFileType.Strokes);
                 if (file == null)
                 {
@@ -2630,12 +2632,17 @@ namespace PhenoPad.CustomControl
 
 
                 // save add in controls
-                var result2 = false;
+                var flag = false;
+                var result2 = true;
                 List<AddInControl> addinlist = await GetAllAddInControls();
                 foreach (var addin in addinlist)
                 {
                     var strokesFile = await FileManager.getSharedFileManager().GetNoteFile(notebookId, pageId, NoteFileType.ImageAnnotation, addin.name);
-                    result2 = await FileManager.getSharedFileManager().saveStrokes(strokesFile, addin.inkCan);
+                    flag = await FileManager.getSharedFileManager().saveStrokes(strokesFile, addin.inkCan);
+                    if (!flag) {
+                        logger.Error($"note-{notebookId} at page {pageId}, {addin.name} failed to save.");
+                        result2 = false;
+                    }
                 }
 
                 // add in meta data

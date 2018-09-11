@@ -728,6 +728,7 @@ namespace PhenoPad
 
         private async void AddPageButton_Click(object sender, RoutedEventArgs e)
         {
+            //defining a new string name for the page and creates a new page controller to bind
             string newPageName = (notePages.Count - 1).ToString();
             NotePageControl aPage = new NotePageControl(this.notebookId, newPageName);
             notePages.Add(aPage);
@@ -744,7 +745,7 @@ namespace PhenoPad
             setPageIndexText();
             addNoteIndex(curPageIndex);
 
-            await FileService.FileManager.getSharedFileManager().CreateNotePage(notebookObject, curPageIndex.ToString());
+            await FileManager.getSharedFileManager().CreateNotePage(notebookObject, curPageIndex.ToString());
 
         }
 
@@ -1124,9 +1125,9 @@ namespace PhenoPad
         {
             // save note
             await this.saveNoteToDisk();
+            UIWebSocketClient.getSharedUIWebSocketClient().disconnect();
             //On_BackRequested();
             this.Frame.Navigate(typeof(PageOverview));
-            UIWebSocketClient.getSharedUIWebSocketClient().disconnect();
 
         }
         // Handles system-level BackRequested events and page-level back button Click events

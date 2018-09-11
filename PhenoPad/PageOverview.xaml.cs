@@ -68,7 +68,7 @@ namespace PhenoPad
         {
             reloadNotebookList();
         }
-        private async void reloadNotebookList()
+        public async void reloadNotebookList()
         {
             notebooks = await FileManager.getSharedFileManager().GetAllNotebookObjects();
             if (notebooks != null)

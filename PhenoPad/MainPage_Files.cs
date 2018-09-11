@@ -206,10 +206,8 @@ namespace PhenoPad
             await savingSemaphoreSlim.WaitAsync();
             try
             {
-                Debug.WriteLine(notebookId);
                 LogService.MetroLogger.getSharedLogger().Info($"Saving notebook {notebookId} to disk...");
-                bool result = false;
-
+                
                 LogService.MetroLogger.getSharedLogger().Info($"Saving audio");
                 // save audio count
                 {
@@ -225,14 +223,20 @@ namespace PhenoPad
 
 
                 // save note pages one by one
+                bool pgResult = true;
+                bool flag = false;
                 foreach (var page in notePages)
                 {
-                    await Windows.ApplicationModel.Core.CoreApplication.MainView.CoreWindow.Dispatcher.RunAsync(
+                    await CoreApplication.MainView.CoreWindow.Dispatcher.RunAsync(
                         CoreDispatcherPriority.Normal,
                         async () =>
                         {
                             LogService.MetroLogger.getSharedLogger().Info($"Saving page {page.pageId}");
-                            result = await page.SaveToDisk();
+                            flag = await page.SaveToDisk();
+                            if (!flag) {
+                                LogService.MetroLogger.getSharedLogger().Error($"Page {page.pageId} failed to save.");
+                                pgResult = false;
+                            }
 
                         }
                     );
@@ -244,7 +248,7 @@ namespace PhenoPad
                 bool result2 = await FileManager.getSharedFileManager().saveCollectedPhenotypesToFile(notebookId);
 
                 LogService.MetroLogger.getSharedLogger().Info($"Successfully saved notebook {notebookId} to disk.");
-                return result && result2;
+                return pgResult && result2;
             }
             catch (Exception ex)
             {
