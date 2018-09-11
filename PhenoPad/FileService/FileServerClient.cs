@@ -8,25 +8,41 @@ using System.IO.Compression;
 
 using Windows.Storage;
 using Windows.Storage.Streams;
+using PhenoPad.LogService;
 
 namespace PhenoPad.FileService
 {
+    /// <summary>
+    /// Represents the File Server used for note upload/download
+    /// </summary>
     public class FileServerClient
     {
 
         static string serverAddress = "54.166.237.238";
         static string serverPort = "8888";
-        static string fileManagerAddress = "http://" + 
-                                FileServerClient.serverAddress + 
-                                ":" + 
-                                FileServerClient.serverPort + 
+        static string fileManagerAddress = "http://" +
+                                FileServerClient.serverAddress +
+                                ":" +
+                                FileServerClient.serverPort +
                                 "/file_manager";
         private static StorageFolder localFolder = ApplicationData.Current.LocalFolder;
+        private static Random random = new Random();
 
-        /*
-         * Use parameter path when you know exactly the path to visit
-         * Use parameter user-id when there is a known user id
-         */
+        /// <summary>
+        /// Generates a new array of random characters in given length and returns as string.
+        /// </summary>
+        public static string RandomString(int length)
+        {
+            const string chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+            return new string(Enumerable.Repeat(chars, length)
+              .Select(s => s[random.Next(s.Length)]).ToArray());
+        }
+
+        /// <summary>
+        /// Performs HTTP GET request and tries to download/unzip note directories.
+        /// Use parameter path when you know exactly the path to visit
+        /// Use parameter user-id when there is a known user id
+        /// </summary>
         public static async Task HTTPGet(string path = "1", string user_id = "12345")
         {
             using (HttpClient client = new HttpClient())
@@ -49,27 +65,25 @@ namespace PhenoPad.FileService
                     try
                     {
                         ZipFile.ExtractToDirectory(fileToWriteTo, extractPath, true);
-                    } catch (Exception e)
+                    }
+                    catch (Exception e)
                     {
                         Debug.WriteLine("Unable to unzip file " + extractPath + " because " + e.Message);
                     }
-                    
+
                 }
             }
         }
 
-        private static Random random = new Random();
-        public static string RandomString(int length)
-        {
-            const string chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-            return new string(Enumerable.Repeat(chars, length)
-              .Select(s => s[random.Next(s.Length)]).ToArray());
-        }
 
+
+        /// <summary>
+        /// Performs HTTP PUT request to zip/upload note folders to server.
+        /// </summary>
         public static async Task HTTPPut(string path = "1", string user_id = "12345")
         {
             Debug.WriteLine("Zip all files first");
-
+            MetroLogger.getSharedLogger().Info("Zipping all files before uploading.");
             string fileToWriteTo = Path.GetTempPath() + RandomString(10);
 
             /*using (ZipArchive archive = ZipFile.Open(fileToWriteTo, ZipArchiveMode.Create))
@@ -84,6 +98,7 @@ namespace PhenoPad.FileService
             catch (Exception e)
             {
                 Debug.WriteLine("Unable to create zip file because " + e.Message);
+                MetroLogger.getSharedLogger().Info("Unable to create zip file because " + e.Message);
             }
 
             // int SIZE_GB = 1024 * 1024 * 1024;
@@ -110,6 +125,7 @@ namespace PhenoPad.FileService
 
                         string sd = response.Content.ReadAsStringAsync().Result;
                         Debug.WriteLine("Upload response is " + sd);
+                        MetroLogger.getSharedLogger().Info("Upload response is " + sd);
                     }
                 }
             }

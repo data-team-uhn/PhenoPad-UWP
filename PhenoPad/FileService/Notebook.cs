@@ -3,6 +3,9 @@ using System.Collections.Generic;
 
 namespace PhenoPad.FileService
 {
+    /// <summary>
+    /// A class that represents a single Notebook item.
+    /// </summary>
     public class Notebook
     {
         public string id { get; set; }
@@ -11,13 +14,18 @@ namespace PhenoPad.FileService
         public string patientName { get; set; }
         public List<NotePage> notePages { get; set; }
         public string firstPageUri { get; set; }
-        public int audioCount { get; set;  }
-        // this is a must if for serilization
+        public int audioCount { get; set; }
+
+        /// <summary>
+        /// Creates a new empty Notebook instance for serilization.
+        /// </summary>
         public Notebook()
         {
 
         }
-
+        /// <summary>
+        /// Creates and initializes default info of a new Notebook instance given its ID.
+        /// </summary>
         public Notebook(string id)
         {
             this.id = id;

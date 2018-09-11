@@ -7,11 +7,14 @@ using Windows.UI.Xaml;
 
 namespace PhenoPad.FileService
 {
+    /// <summary>
+    /// Represents any image / ink annotations within an add-in panel.
+    /// </summary>
     public class ImageAndAnnotation
     {
         public string name { get; set; }
         public string notebookId { get; set; }
-        public string pageId { get; set;  }
+        public string pageId { get; set; }
         public double canvasLeft { get; set; }
         public double canvasTop { get; set; }
         public double transX { get; set; }
@@ -22,13 +25,17 @@ namespace PhenoPad.FileService
         public double height { get; set; }
 
 
-    
+        /// <summary>
+        /// Empty construtor for serialization.
+        /// </summary>
         public ImageAndAnnotation()
         {
-            
-        }
 
-        public ImageAndAnnotation(string name, string notebookId, string pageId, 
+        }
+        /// <summary>
+        /// Creates and initializes a new Image and Annotation instance with given parameters.
+        /// </summary>
+        public ImageAndAnnotation(string name, string notebookId, string pageId,
                                     double canvasLeft, double canvasTop,
                                     double transX, double transY, double transScale, double width, double height)
         {

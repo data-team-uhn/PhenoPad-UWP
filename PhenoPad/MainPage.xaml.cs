@@ -200,7 +200,8 @@ namespace PhenoPad
         {
             Debug.WriteLine("Property " + e.PropertyName + " changed.");
         }
-
+        
+        #region Initializations
         private async void InitializeNotebook()
         {
             LogService.MetroLogger.getSharedLogger().Info("Initialize a new notebook.");
@@ -296,7 +297,7 @@ namespace PhenoPad
             curPage.initialAnalyze();
         }
 
-        #region Initialize UI
+        
         private void clearPageIndexPanel()
         {
             if (pageIndexPanel.Children.Count() > 1) {
@@ -754,39 +755,7 @@ namespace PhenoPad
             
         }
 
-        static class
-        HelperFunctions
-        {
-            public static void UpdateCanvasSize(FrameworkElement root, FrameworkElement output, FrameworkElement inkCanvas)
-            {
-                output.Width = root.ActualWidth;
-                output.Height = root.ActualHeight / 2;
-                inkCanvas.Width = root.ActualWidth;
-                inkCanvas.Height = root.ActualHeight / 2;
-            }
 
-            public static Size GetCurrentDisplaySize()
-            {
-                var displayInformation = DisplayInformation.GetForCurrentView();
-                TypeInfo t = typeof(DisplayInformation).GetTypeInfo();
-                var props = t.DeclaredProperties.Where(x => x.Name.StartsWith("Screen") && x.Name.EndsWith("InRawPixels")).ToArray();
-                var w = props.Where(x => x.Name.Contains("Width")).First().GetValue(displayInformation);
-                var h = props.Where(x => x.Name.Contains("Height")).First().GetValue(displayInformation);
-                var size = new Size(System.Convert.ToDouble(w), System.Convert.ToDouble(h));
-                switch (displayInformation.CurrentOrientation)
-                {
-                    case DisplayOrientations.Landscape:
-                    case DisplayOrientations.LandscapeFlipped:
-                        size = new Size(Math.Max(size.Width, size.Height), Math.Min(size.Width, size.Height));
-                        break;
-                    case DisplayOrientations.Portrait:
-                    case DisplayOrientations.PortraitFlipped:
-                        size = new Size(Math.Min(size.Width, size.Height), Math.Max(size.Width, size.Height));
-                        break;
-                }
-                return size;
-            }
-        }
 
         // Handwriting recognition
 
@@ -2437,6 +2406,40 @@ namespace PhenoPad
             return inkDrawingAttributes;
         }
 
+    }
+
+    static class
+    HelperFunctions
+    {
+        public static void UpdateCanvasSize(FrameworkElement root, FrameworkElement output, FrameworkElement inkCanvas)
+        {
+            output.Width = root.ActualWidth;
+            output.Height = root.ActualHeight / 2;
+            inkCanvas.Width = root.ActualWidth;
+            inkCanvas.Height = root.ActualHeight / 2;
+        }
+
+        public static Size GetCurrentDisplaySize()
+        {
+            var displayInformation = DisplayInformation.GetForCurrentView();
+            TypeInfo t = typeof(DisplayInformation).GetTypeInfo();
+            var props = t.DeclaredProperties.Where(x => x.Name.StartsWith("Screen") && x.Name.EndsWith("InRawPixels")).ToArray();
+            var w = props.Where(x => x.Name.Contains("Width")).First().GetValue(displayInformation);
+            var h = props.Where(x => x.Name.Contains("Height")).First().GetValue(displayInformation);
+            var size = new Size(System.Convert.ToDouble(w), System.Convert.ToDouble(h));
+            switch (displayInformation.CurrentOrientation)
+            {
+                case DisplayOrientations.Landscape:
+                case DisplayOrientations.LandscapeFlipped:
+                    size = new Size(Math.Max(size.Width, size.Height), Math.Min(size.Width, size.Height));
+                    break;
+                case DisplayOrientations.Portrait:
+                case DisplayOrientations.PortraitFlipped:
+                    size = new Size(Math.Min(size.Width, size.Height), Math.Max(size.Width, size.Height));
+                    break;
+            }
+            return size;
+        }
     }
 
 }
