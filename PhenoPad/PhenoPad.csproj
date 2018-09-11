@@ -141,10 +141,14 @@
     <Compile Include="FileService\Notebook.cs" />
     <Compile Include="FileService\ImageAndAnnotation.cs" />
     <Compile Include="FileService\NotePage.cs" />
+    <Compile Include="HelperFunctions.cs" />
     <Compile Include="HWRService\HWRManager.cs" />
     <Compile Include="LogService\FileLoggingSessionScenario.cs" />
     <Compile Include="LogService\MetroLogger.cs" />
     <Compile Include="LogService\LoggingScenarioEventArgs.cs" />
+    <Compile Include="MainPage_Files.cs" />
+    <Compile Include="MainPage_Media.cs" />
+    <Compile Include="MainPage_WebSocket.cs" />
     <Compile Include="PageOverview.xaml.cs">
       <DependentUpon>PageOverview.xaml</DependentUpon>
     </Compile>
