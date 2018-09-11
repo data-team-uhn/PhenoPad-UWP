@@ -110,55 +110,60 @@ namespace PhenoPad
         {
             LogService.MetroLogger.getSharedLogger().Info("Open notebook from disk.");
             PhenoMana.clearCache();
-
-            List<string> pageIds = await FileService.FileManager.getSharedFileManager().GetPageIdsByNotebook(notebookId);
-            notebookObject = await FileManager.getSharedFileManager().GetNotebookObjectFromXML(notebookId);
-
-            if (notebookObject != null)
-                noteNameTextBox.Text = notebookObject.name;
-
-            SpeechManager.getSharedSpeechManager().setAudioIndex(notebookObject.audioCount);
-            List<Phenotype> phenos = await FileManager.getSharedFileManager().GetSavedPhenotypeObjectsFromXML(notebookId);
-            if (phenos != null && phenos.Count > 0)
+            try
             {
-                PhenotypeManager.getSharedPhenotypeManager().addPhenotypesFromFile(phenos);
+                //Gets all stored pages from the notebook.
+                List<string> pageIds = await FileManager.getSharedFileManager().GetPageIdsByNotebook(notebookId);
+                notebookObject = await FileManager.getSharedFileManager().GetNotebookObjectFromXML(notebookId);
+
+                if (notebookObject != null)
+                    noteNameTextBox.Text = notebookObject.name;
+
+                SpeechManager.getSharedSpeechManager().setAudioIndex(notebookObject.audioCount);
+                List<Phenotype> phenos = await FileManager.getSharedFileManager().GetSavedPhenotypeObjectsFromXML(notebookId);
+                if (phenos != null && phenos.Count > 0)
+                {
+                    PhenotypeManager.getSharedPhenotypeManager().addPhenotypesFromFile(phenos);
+                }
+                if (pageIds == null || pageIds.Count == 0)
+                {
+                    NotifyUser("Did not find anything in this notebook, will create a new one.", NotifyType.ErrorMessage, 2);
+                    this.InitializeNotebook();
+                }
+
+                notePages = new List<NotePageControl>();
+                pageIndexButtons = new List<Button>();
+
+                for (int i = 0; i < pageIds.Count; ++i)
+                {
+                    NotePageControl aPage = new NotePageControl();
+                    notePages.Add(aPage);
+                    aPage.pageId = pageIds[i];
+                    aPage.notebookId = notebookId;
+                    await FileManager.getSharedFileManager().LoadNotePageStroke(notebookId, pageIds[i], aPage);
+                    addNoteIndex(i);
+
+                    List<ImageAndAnnotation> imageAndAnno = await FileManager.getSharedFileManager().GetImgageAndAnnotationObjectFromXML(notebookId, pageIds[i]);
+                    if (imageAndAnno != null)
+                        foreach (var ia in imageAndAnno)
+                        {
+                            aPage.addImageAndAnnotationControl(ia.name, ia.canvasLeft, ia.canvasTop, true, null, ia.transX, ia.transY, ia.transScale, width: ia.width, height: ia.height);
+                        }
+                }
+
+                inkCanvas = notePages[0].inkCan;
+                MainPageInkBar.TargetInkCanvas = inkCanvas;
+                curPage = notePages[0];
+                curPageIndex = 0;
+                PageHost.Content = curPage;
+                setNotePageIndex(curPageIndex);
+
+                curPage.initialAnalyze();
+            }
+            catch (Exception e) {
+                LogService.MetroLogger.getSharedLogger().Error("InitializeNotebookFromDisk():{0}",e);
             }
 
-
-            if (pageIds == null || pageIds.Count == 0)
-            {
-                NotifyUser("Did not find anything in this notebook, will create a new one.", NotifyType.ErrorMessage, 2);
-                this.InitializeNotebook();
-            }
-
-            notePages = new List<NotePageControl>();
-            pageIndexButtons = new List<Button>();
-
-            for (int i = 0; i < pageIds.Count; ++i)
-            {
-                NotePageControl aPage = new NotePageControl();
-                notePages.Add(aPage);
-                aPage.pageId = pageIds[i];
-                aPage.notebookId = notebookId;
-                await FileManager.getSharedFileManager().LoadNotePageStroke(notebookId, pageIds[i], aPage);
-                addNoteIndex(i);
-
-                List<ImageAndAnnotation> imageAndAnno = await FileManager.getSharedFileManager().GetImgageAndAnnotationObjectFromXML(notebookId, pageIds[i]);
-                if (imageAndAnno != null)
-                    foreach (var ia in imageAndAnno)
-                    {
-                        aPage.addImageAndAnnotationControl(ia.name, ia.canvasLeft, ia.canvasTop, true, null, ia.transX, ia.transY, ia.transScale, width: ia.width, height: ia.height);
-                    }
-            }
-
-            inkCanvas = notePages[0].inkCan;
-            MainPageInkBar.TargetInkCanvas = inkCanvas;
-            curPage = notePages[0];
-            curPageIndex = 0;
-            PageHost.Content = curPage;
-            setNotePageIndex(curPageIndex);
-
-            curPage.initialAnalyze();
         }
         /// <summary>
         /// Saves the Notebook to disk after a specified time in seconds.
@@ -201,6 +206,7 @@ namespace PhenoPad
             await savingSemaphoreSlim.WaitAsync();
             try
             {
+                Debug.WriteLine(notebookId);
                 LogService.MetroLogger.getSharedLogger().Info($"Saving notebook {notebookId} to disk...");
                 bool result = false;
 
@@ -227,6 +233,7 @@ namespace PhenoPad
                         {
                             LogService.MetroLogger.getSharedLogger().Info($"Saving page {page.pageId}");
                             result = await page.SaveToDisk();
+
                         }
                     );
                 }

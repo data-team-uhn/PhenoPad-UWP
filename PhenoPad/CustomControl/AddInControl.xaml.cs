@@ -342,7 +342,8 @@ namespace PhenoPad.CustomControl
                 {
                     //MainPage.Current.curPage.AddImageControl(imagename, imageSource);
                     Image imageControl = new Image();
-                    imageControl.Source = imageSource;
+                    //imageControl.Source = imageSource;
+                    imageControl.Source = new BitmapImage(new Uri(imageSource));
                     contentGrid.Children.Add(imageControl);
                     categoryGrid.Visibility = Visibility.Collapsed;
                     InitiateInkCanvas();
