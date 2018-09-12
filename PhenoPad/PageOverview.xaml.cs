@@ -1,4 +1,5 @@
-﻿using PhenoPad.FileService;
+﻿using MetroLog;
+using PhenoPad.FileService;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -24,6 +25,7 @@ using Windows.UI.Xaml.Input;
 using Windows.UI.Xaml.Media;
 using Windows.UI.Xaml.Media.Imaging;
 using Windows.UI.Xaml.Navigation;
+using PhenoPad.LogService;
 
 // The Blank Page item template is documented at https://go.microsoft.com/fwlink/?LinkId=234238
 
@@ -36,14 +38,16 @@ namespace PhenoPad
     {
         private List<Notebook> notebooks;
 
+
         public PageOverview()
         {
             LogService.MetroLogger.getSharedLogger().Info("Initilize PageOverview");
+
             this.InitializeComponent();
             Windows.ApplicationModel.Core.CoreApplication.GetCurrentView().TitleBar.ExtendViewIntoTitleBar = false;
 
             LoadAllNotes();
-            LogService.MetroLogger.getSharedLogger().Info("Note list loaded.");
+            LogService.MetroLogger.getSharedLogger(typeof(PageOverview)).Info("Note list loaded.");
 
             hide_titlebar();
 

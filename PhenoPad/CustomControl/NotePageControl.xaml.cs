@@ -40,6 +40,8 @@ using PhenoPad.FileService;
 using System.Numerics;
 using Windows.UI.Xaml.Hosting;
 using Windows.Graphics.Display;
+using PhenoPad.LogService;
+using MetroLog;
 
 namespace PhenoPad.CustomControl
 {
@@ -112,7 +114,7 @@ namespace PhenoPad.CustomControl
         int lastStrokeLine = -1;
         List<string> curLineWords = new List<string>();
 
-        private MetroLog.ILogger logger = LogService.MetroLogger.getSharedLogger();
+        private static ILogger logger =MetroLogger.getSharedLogger();
 
         public InkCanvas inkCan
         {
