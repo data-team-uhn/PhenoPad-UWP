@@ -165,10 +165,11 @@ namespace PhenoPad
             }
 
         }
+
         /// <summary>
         /// Saves the Notebook to disk after a specified time in seconds.
         /// </summary>
-        private void saveNotesTimer(int seconds)
+        private void saveNotesTimer(int seconds,string type)
         {
             TimeSpan period = TimeSpan.FromSeconds(seconds);
 
@@ -182,19 +183,56 @@ namespace PhenoPad
                 {
                     Debug.WriteLine(e.Message);
                 }
-
-                /**
-                Dispatcher.RunAsync(CoreDispatcherPriority.High,
-                    () =>
-                    {
-                        NotifyUser("Note " + this.noteNameTextBox.Text + " has been saved", NotifyType.StatusMessage, 1);
-                    });
-                **/
-
             }, period);
         }
 
+        /// <summary>
+        /// Performs auto-saving after user has made modificaiton to specific notepage.
+        /// </summary>
+        public async void AutoSave(string type) {
+            switch(type){
+                case "page":
+                    await SaveCurrentPage();
+                    break;
+                case "audio":
+                    //TODO: save audio independently
+                    break;
+                case "phenotype":
+                    //TODO: save phenotype independently
+                    break;
+                default: break;
+                
+            }
+        }
 
+        /// <summary>
+        /// Saving only strokes and add-ins of current notepage to local.
+        /// </summary>
+        public async Task<bool> SaveCurrentPage() {
+            //locks semaphore before accessing
+            await savingSemaphoreSlim.WaitAsync();
+            bool flag = false;
+            try
+            {
+                //Saving Page
+                await CoreApplication.MainView.CoreWindow.Dispatcher.RunAsync(
+                         CoreDispatcherPriority.Normal,
+                         async () =>
+                         {
+                             LogService.MetroLogger.getSharedLogger().Info($"Auto-saving page {this.curPageId}");
+                             flag = await this.curPage.SaveToDisk();
+                         }
+                    );
+            }
+            catch (Exception e){
+                LogService.MetroLogger.getSharedLogger().Error("Failed to auto-save current page: " + e.Message);
+            }
+            finally {
+                //unlcoks semaphore 
+                savingSemaphoreSlim.Release();
+            }
+            return flag;
+        }
 
         /// <summary>
         /// Save everything to disk, include: 

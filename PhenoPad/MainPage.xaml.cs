@@ -1162,19 +1162,14 @@ namespace PhenoPad
         private async void SaveButton_Click(object sender, RoutedEventArgs e)
         {
             bool result = await saveNoteToDisk();
-            NotifyUser("Successfully saved to disk.", NotifyType.StatusMessage, 2);
-            /**
             if (result)
-            {
-                Debug.WriteLine("Successfully saved to disk.");
+            {           
                 NotifyUser("Successfully saved to disk.", NotifyType.StatusMessage, 2);
             }
             else
             {
-                Debug.WriteLine("Failed to save to disk.");
                 NotifyUser("Failed to save to disk.", NotifyType.ErrorMessage, 2);
             }
-            **/
         }
 
         private void FullscreenBtn_Click(object sender, RoutedEventArgs e)

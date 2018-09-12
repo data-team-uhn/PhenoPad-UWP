@@ -92,6 +92,7 @@ namespace PhenoPad.CustomControl
         DispatcherTimer operationDispathcerTimer; //try to recognize last stroke as operation
         DispatcherTimer unprocessedDispatcherTimer;
         DispatcherTimer textNoteDispatcherTimer;
+        DispatcherTimer autosaveDispatcherTimer;
 
         DispatcherTimer lineAnalysisDispatcherTimer;
         Queue<int> linesToUpdate;
@@ -137,6 +138,8 @@ namespace PhenoPad.CustomControl
             }
         }
 
+        SemaphoreSlim autosaveSemaphore = new SemaphoreSlim(1);
+
         /******************************************************************/
 
         /// <summary>
@@ -154,11 +157,13 @@ namespace PhenoPad.CustomControl
 
             UNPROCESSED_COLOR = new SolidColorBrush(UNPROCESSED_COLOR.Color);
             UNPROCESSED_COLOR.Opacity = UNPROCESSED_OPACITY;
+
             // Initialize the InkCanvas
             inkCanvas.InkPresenter.InputDeviceTypes = CoreInputDeviceTypes.Mouse | CoreInputDeviceTypes.Pen;
 
             // Handlers to clear the selection when inking or erasing is detected
             inkCanvas.InkPresenter.StrokeInput.StrokeStarted += StrokeInput_StrokeStarted;
+            inkCanvas.InkPresenter.StrokeInput.StrokeEnded += StrokeInput_StrokeEnded;
             inkCanvas.InkPresenter.StrokesErased += InkPresenter_StrokesErased;
             inkCanvas.InkPresenter.StrokesCollected += InkPresenter_StrokesCollectedAsync;
     
@@ -181,12 +186,15 @@ namespace PhenoPad.CustomControl
             dispatcherTimer = new DispatcherTimer();
             operationDispathcerTimer = new DispatcherTimer();
             textNoteDispatcherTimer = new DispatcherTimer();
+            autosaveDispatcherTimer = new DispatcherTimer();
             dispatcherTimer.Tick += InkAnalysisDispatcherTimer_Tick;  // Ink Analysis time tick
+            autosaveDispatcherTimer.Tick += on_stroke_changed;
             operationDispathcerTimer.Tick += OperationDispatcherTimer_Tick;
             textNoteDispatcherTimer.Tick += TextNoteDispatcherTimer_Tick;
 
             unprocessedDispatcherTimer = new DispatcherTimer();
             unprocessedDispatcherTimer.Tick += UnprocessedDispathcerTimer_Tick;
+            
 
             // We perform analysis when there has been a change to the
             // ink presenter and the user has been idle for 1 second.
@@ -194,6 +202,7 @@ namespace PhenoPad.CustomControl
             textNoteDispatcherTimer.Interval = TimeSpan.FromSeconds(0.1);
             operationDispathcerTimer.Interval = TimeSpan.FromMilliseconds(500);
             unprocessedDispatcherTimer.Interval = TimeSpan.FromMilliseconds(100);
+            autosaveDispatcherTimer.Interval = TimeSpan.FromSeconds(1);
             
             linesToUpdate = new Queue<int>();
             lineAnalysisDispatcherTimer = new DispatcherTimer();
@@ -230,12 +239,29 @@ namespace PhenoPad.CustomControl
             //selectionRectangle.ManipulationMode = ManipulationModes.TranslateX | ManipulationModes.TranslateY;
             //selectionRectangle.ManipulationStarted += SelectionRectangle_ManipulationStarted;
             //selectionRectangle.ManipulationDelta += SelectionRectangle_ManipulationDelta;
-            //selectionRectangle.ManipulationCompleted += SelectionRectangle_ManipulationCompleted;
-            
-
+            //selectionRectangle.ManipulationCompleted += SelectionRectangle_ManipulationCompleted;      
 
         }
 
+        #region UI Display
+        // draw background lines for notes
+        public void DrawBackgroundLines()
+        {
+            for (int i = 1; i <= backgroundCanvas.RenderSize.Height / LINE_HEIGHT; ++i)
+            {
+                var line = new Line()
+                {
+                    Stroke = new SolidColorBrush(Windows.UI.Colors.LightGray),
+                    StrokeThickness = 1,
+                    StrokeDashArray = new DoubleCollection() { 5, 2 },
+                    X1 = 0,
+                    X2 = backgroundCanvas.RenderSize.Width,
+                    Y1 = i * LINE_HEIGHT,
+                    Y2 = i * LINE_HEIGHT
+                };
+                backgroundCanvas.Children.Add(line);
+            }
+        }
         private void DropShadowOf(StackPanel uie)
         {
             // Drop shadow of current line result panel
@@ -253,6 +279,8 @@ namespace PhenoPad.CustomControl
             shadow.Color = Colors.DarkGray;
             ElementCompositionPreview.SetElementChildVisual(uie, sprite);
         }
+
+        #endregion
 
         // page control size change event
         private void NotePageControl_SizeChanged(object sender, SizeChangedEventArgs e)
@@ -281,24 +309,9 @@ namespace PhenoPad.CustomControl
             }
         }
 
-        // draw background lines for notes
-        public void DrawBackgroundLines()
-        {
-            for (int i = 1; i <= backgroundCanvas.RenderSize.Height / LINE_HEIGHT; ++i)
-            {
-                var line = new Line()
-                {
-                    Stroke = new SolidColorBrush(Windows.UI.Colors.LightGray),
-                    StrokeThickness = 1,
-                    StrokeDashArray = new DoubleCollection() { 5, 2 },
-                    X1 = 0,
-                    X2 = backgroundCanvas.RenderSize.Width,
-                    Y1 = i * LINE_HEIGHT,
-                    Y2 = i * LINE_HEIGHT
-                };
-                backgroundCanvas.Children.Add(line);
-            }
-        }
+
+
+
         
         // Left button lasso control
         private InkDrawingAttributes drawingAttributesBackUp;
@@ -520,12 +533,18 @@ namespace PhenoPad.CustomControl
                 // dispatcherTimer.Stop();
                 //operationDispathcerTimer.Stop();
                 inkOperationAnalyzer.ClearDataForAllStrokes();
+                autosaveDispatcherTimer.Stop();
                 /***
                 core.PointerHovering -= Core_PointerHovering;
                 core.PointerExiting -= Core_PointerExiting;
                 core.PointerEntering -= Core_PointerHovering;
                 ***/
             }
+        }
+
+        private void StrokeInput_StrokeEnded(InkStrokeInput sender, PointerEventArgs args)
+        {
+            autosaveDispatcherTimer.Start();
         }
 
         private async void InkPresenter_StrokesErased(InkPresenter sender, InkStrokesErasedEventArgs args)
@@ -535,6 +554,7 @@ namespace PhenoPad.CustomControl
             curLineResultPanel.Visibility = Visibility.Collapsed;
 
             dispatcherTimer.Stop();
+            autosaveDispatcherTimer.Start();
             //operationDispathcerTimer.Stop();
             foreach (var stroke in args.Strokes)
             {
@@ -604,6 +624,7 @@ namespace PhenoPad.CustomControl
         private void StrokeInput_PointerPressed(InkStrokeInput sender, PointerEventArgs args)
         {
             UnprocessedInput_PointerPressed(null, args);
+            autosaveDispatcherTimer.Stop();
         }
         // stroke input handling: pointer moved
         private void StrokeInput_PointerMoved(InkStrokeInput sender, PointerEventArgs args)
@@ -614,6 +635,7 @@ namespace PhenoPad.CustomControl
         private void StrokeInput_PointerReleased(InkStrokeInput sender, PointerEventArgs args)
         {
             UnprocessedInput_PointerReleased(null, args);
+            autosaveDispatcherTimer.Start();
         }
 
         // select strokes by "marking" handling: pointer pressed
@@ -2727,6 +2749,7 @@ namespace PhenoPad.CustomControl
 
 
 
+
         // FOR TESTING ONLY
         private Dictionary<uint, Rectangle> addedBoundIds = new Dictionary<uint, Rectangle>();
         private async void DrawBoundingForTest()
@@ -2899,11 +2922,6 @@ namespace PhenoPad.CustomControl
                 sideScrollView.ChangeView(null, scrollViewer.VerticalOffset, scrollViewer.ZoomFactor, true);
             }
         }
-
-      
-        
-            
-
         private void alternativeListView_ItemClick(object sender, ItemClickEventArgs e)
         {
                 var citem = (string)e.ClickedItem;
@@ -2917,6 +2935,33 @@ namespace PhenoPad.CustomControl
                 // annotation and UI
                 annotateCurrentLineAndUpdateUI(curLineObject);
             }
+
+        //************************** AUTO SAVING EVENTS ******************************************//
+        private async void on_stroke_changed(object sender, object e) {
+            autosaveDispatcherTimer.Stop();
+            logger.Info("Auto-saving current strokes ...");
+            await autosaveSemaphore.WaitAsync();
+            try
+            {
+                StorageFile file = await FileManager.getSharedFileManager().GetNoteFile(notebookId, pageId, NoteFileType.Strokes);
+                if (file == null)
+                {
+                    MetroLogger.getSharedLogger().Error($"Failed to get note file.");
+                }
+                // save handwritings
+                await FileManager.getSharedFileManager().saveStrokes(file, this.inkCan);
+                logger.Info("Autosaved current strokes");
+
+            }
+            catch (Exception ex)
+            {
+                MetroLogger.getSharedLogger().Error($"Failed to auto-save strokes: {ex.Message}");
+            }
+            finally {
+                autosaveSemaphore.Release();
+            }
+        }
+
 
             //private void GetBestAlignment(List<string> _base, List<String> )
         }
