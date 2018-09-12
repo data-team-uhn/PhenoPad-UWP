@@ -1338,8 +1338,6 @@ namespace PhenoPad.CustomControl
                  
                 }
 
-                
-
                 // this.textLines[paraLine] = ((InkAnalysisLine)line).RecognizedText;
                 //this.setTextNoteEditBox();
 
