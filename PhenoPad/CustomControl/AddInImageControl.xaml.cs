@@ -27,6 +27,7 @@ namespace PhenoPad.CustomControl
         InkAnalyzer inkAnalyzer = new InkAnalyzer();
         IReadOnlyList<InkStroke> inkStrokes = null;
         InkAnalysisResult inkAnalysisResults = null;
+        DispatcherTimer autosaveDispatcherTimer = new DispatcherTimer();
 
         public string name { get; set; }
         public string notebookId { get; set; }
@@ -71,6 +72,7 @@ namespace PhenoPad.CustomControl
             drawingAttributes.IgnorePressure = false;
             drawingAttributes.FitToCurve = true;
             inkCanvas.InkPresenter.UpdateDefaultDrawingAttributes(drawingAttributes);
+
         }
 
         private bool hide = false;
@@ -94,6 +96,7 @@ namespace PhenoPad.CustomControl
                 ((Panel)this.Parent).Children.Remove(this);
             }
         }
+
 
         public async void SaveToDisk()
         {

@@ -158,6 +158,10 @@ namespace PhenoPad.CustomControl
         private SemaphoreSlim selectAndRecognizeSemaphoreSlim;
 
         private Dictionary<int, Rectangle> lineToRect = new Dictionary<int, Rectangle>();
+
+        private InkDrawingAttributes drawingAttributesBackUp;
+        Dictionary<string, List<Phenotype>> oldAnnotations = new Dictionary<string, List<Phenotype>>();
+        Dictionary<TextBox, List<string>> textBlockToAlternatives = new Dictionary<TextBox, List<string>>();
         /*************************END OF CLASS PROPERTIES*************************************/
         #endregion
 
@@ -334,7 +338,7 @@ namespace PhenoPad.CustomControl
 
         
         // Left button lasso control
-        private InkDrawingAttributes drawingAttributesBackUp;
+        
         public void enableLeftButtonLasso() {
             drawingAttributesBackUp = inkCanvas.InkPresenter.CopyDefaultDrawingAttributes();
             var temp = inkCanvas.InkPresenter.CopyDefaultDrawingAttributes();
@@ -369,67 +373,7 @@ namespace PhenoPad.CustomControl
             inkCanvas.InkPresenter.UnprocessedInput.PointerReleased += UnprocessedInput_PointerReleased;
         }
 
-        // Recognized from typing notes line by line
-        Dictionary<string, List<Phenotype>> oldAnnotations = new Dictionary<string, List<Phenotype>>();
-        private async void TextNoteDispatcherTimer_Tick(object sender, object e)
-        {
-            textNoteDispatcherTimer.Stop();
-            //int cursorPosi = textNoteEditBox.Document.Selection.StartPosition;
-            string text = String.Empty;
-            textNoteEditBox.Document.GetText(TextGetOptions.None, out text);
-            string[] lines = text.Split("\r\n".ToArray());
-            /**int ind = 0;
-            int i = 0;
-            for (; i < lines.Count(); ++i)
-            {
-                ind += lines[i].Length;
-                if (ind >= cursorPosi)
-                    break;
-            }**/
-            foreach (string str in lines)
-            {
-                if (str != "")
-                {
-                    // we already annotate this string: str
-                    // but it may come from another line
-                    if (oldAnnotations.Keys.Contains(str))
-                    {
-                        /**
-                        List<Phenotype> ps = oldAnnotations[str];
-                        foreach (Phenotype p in ps)
-                        {
-                            p.sourceType = SourceType.Notes;
-                            PhenoMana.addPhenotypeCandidate(p, SourceType.Notes);
-                        }
-                        **/
-                        continue;
-                    }
 
-                    string temp = oldAnnotations.Keys.Where(x => str.IndexOf(x) == 0).FirstOrDefault();
-
-                    if (temp != null)
-                    {
-                        oldAnnotations.Remove(temp);
-                    }
-
-                    var results = await PhenoMana.annotateByNCRAsync(str);
-                    if (results == null)
-                        return;
-
-                    List<Phenotype> phenos = new List<Phenotype>();
-                    foreach (var key in results.Keys)
-                    {
-                        Phenotype p = results[key];
-                        p.sourceType = SourceType.Notes;
-                        PhenoMana.addPhenotypeCandidate(p, SourceType.Notes);
-                        phenos.Add(p);
-                    }
-                    if (!oldAnnotations.Keys.Contains(str))
-                        oldAnnotations.Add(str, phenos);
-
-                }
-            }
-        }
 
 
         #region Typing mode
@@ -562,7 +506,7 @@ namespace PhenoPad.CustomControl
 
         private async void InkPresenter_StrokesErased(InkPresenter sender, InkStrokesErasedEventArgs args)
         {
-            ClearSelection();
+            ClearSelectionAsync();
             
             curLineResultPanel.Visibility = Visibility.Collapsed;
 
@@ -655,7 +599,7 @@ namespace PhenoPad.CustomControl
         // select strokes by "marking" handling: pointer pressed
         private void UnprocessedInput_PointerPressed(InkUnprocessedInput sender, PointerEventArgs args)
         {
-            ClearSelection();
+            ClearSelectionAsync();
             lasso = new Polyline()
             {
                 Stroke = UNPROCESSED_COLOR,
@@ -856,7 +800,7 @@ namespace PhenoPad.CustomControl
 
         public void PhenotypeSelectionFlyoutClosed(object sender, object o)
         {
-            ClearSelection();
+            ClearSelectionAsync();
             candidateListView.Visibility = Visibility.Collapsed;
             recognizedPhenoListView.Visibility = Visibility.Collapsed;
             recognizedResultTextBlock.SelectionChanged += recognizedResultTextBlock_SelectionChanged;
@@ -864,7 +808,7 @@ namespace PhenoPad.CustomControl
 
         }
         
-        private void ClearSelection()
+        private void ClearSelectionAsync()
         {
             var strokes = inkCanvas.InkPresenter.StrokeContainer.GetStrokes();
             foreach (var stroke in strokes)
@@ -874,6 +818,7 @@ namespace PhenoPad.CustomControl
             }
             
             ClearDrawnBoundingRect();
+            
         }
 
         private void ClearDrawnBoundingRect()
@@ -1157,6 +1102,68 @@ namespace PhenoPad.CustomControl
 
         #region Timer Event Handlers
         //==============================TIMER EVENT HANDLERS ========================================//
+        // Recognized from typing notes line by line  
+
+        private async void TextNoteDispatcherTimer_Tick(object sender, object e)
+        {
+            textNoteDispatcherTimer.Stop();
+            //int cursorPosi = textNoteEditBox.Document.Selection.StartPosition;
+            string text = String.Empty;
+            textNoteEditBox.Document.GetText(TextGetOptions.None, out text);
+            string[] lines = text.Split("\r\n".ToArray());
+            /**int ind = 0;
+            int i = 0;
+            for (; i < lines.Count(); ++i)
+            {
+                ind += lines[i].Length;
+                if (ind >= cursorPosi)
+                    break;
+            }**/
+            foreach (string str in lines)
+            {
+                if (str != "")
+                {
+                    // we already annotate this string: str
+                    // but it may come from another line
+                    if (oldAnnotations.Keys.Contains(str))
+                    {
+                        /**
+                        List<Phenotype> ps = oldAnnotations[str];
+                        foreach (Phenotype p in ps)
+                        {
+                            p.sourceType = SourceType.Notes;
+                            PhenoMana.addPhenotypeCandidate(p, SourceType.Notes);
+                        }
+                        **/
+                        continue;
+                    }
+
+                    string temp = oldAnnotations.Keys.Where(x => str.IndexOf(x) == 0).FirstOrDefault();
+
+                    if (temp != null)
+                    {
+                        oldAnnotations.Remove(temp);
+                    }
+
+                    var results = await PhenoMana.annotateByNCRAsync(str);
+                    if (results == null)
+                        return;
+
+                    List<Phenotype> phenos = new List<Phenotype>();
+                    foreach (var key in results.Keys)
+                    {
+                        Phenotype p = results[key];
+                        p.sourceType = SourceType.Notes;
+                        PhenoMana.addPhenotypeCandidate(p, SourceType.Notes);
+                        phenos.Add(p);
+                    }
+                    if (!oldAnnotations.Keys.Contains(str))
+                        oldAnnotations.Add(str, phenos);
+
+                }
+            }
+        }
+
         private void UnprocessedDispathcerTimer_Tick(object sender, object e)
         {
             unprocessedDispatcherTimer.Stop();
@@ -1319,7 +1326,7 @@ namespace PhenoPad.CustomControl
         /// <summary>
         /// Auto-saves current strokes on page after input with idle more than 1 second
         /// </summary>
-        private async void on_stroke_changed(object sender, object e)
+        public async void on_stroke_changed(object sender = null, object e = null)
         {
             autosaveDispatcherTimer.Stop();
             await autosaveSemaphore.WaitAsync();
@@ -1463,8 +1470,6 @@ namespace PhenoPad.CustomControl
 
         }
 
-
-
         public async Task<bool> AutoSaveAddin() {
             // save add in controls
             var flag = false;
@@ -1494,7 +1499,7 @@ namespace PhenoPad.CustomControl
         }
 
 
-        
+        // =============================== ANALYZE INKS ==============================================//
         /// <summary>
         ///  Analyze ink strokes
         /// </summary>
@@ -2224,7 +2229,7 @@ namespace PhenoPad.CustomControl
 
         private void TapAPosition(Point position)
         {
-            ClearSelection();
+            ClearSelectionAsync();
 
 
             var line = FindHitLine(position);
@@ -2538,10 +2543,10 @@ namespace PhenoPad.CustomControl
             }
         }
 
-        private void DeleteSymbolIcon_PointerReleased(object sender, PointerRoutedEventArgs e)
-        {
+        //private void DeleteSymbolIcon_PointerReleased(object sender, PointerRoutedEventArgs e)
+        //{
 
-        }
+        //}
 
         private void MoreSymbolIcon_Click(object sender, RoutedEventArgs e)
         {
@@ -2562,7 +2567,7 @@ namespace PhenoPad.CustomControl
             recogPhenoFlyout.ShowAt(rectangle);
         }
 
-        Dictionary<TextBox, List<string>> textBlockToAlternatives = new Dictionary<TextBox, List<string>>();
+        
         private TextBox AddBoundingRectAndLabel(int line, Rect bounding, string str, List<string> alters) {
             /**
             var rectangle = new Rectangle()

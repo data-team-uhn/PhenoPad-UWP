@@ -254,6 +254,9 @@ namespace PhenoPad
             return false;
         }
 
+        /// <summary>
+        /// Saves current added phenotypes to local file
+        /// </summary>
         public async Task<bool> AutoSavePhenotypes()
         {
 

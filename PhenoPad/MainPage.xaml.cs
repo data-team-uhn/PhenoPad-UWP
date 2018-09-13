@@ -138,6 +138,8 @@ namespace PhenoPad
             modeTextBlock.PointerCaptureLost += new PointerEventHandler(modeTextBlock_PointerExited);
             modeTextBlock.PointerEntered += new PointerEventHandler(modeTextBlock_PointerEntered);
             modeTextBlock.PointerExited += new PointerEventHandler(modeTextBlock_PointerExited);
+            //adding event handler to when erase all is clicked
+            MainPageInkBar.EraseAllClicked += InkToolbar_EraseAllClicked;
 
             chatView.ItemsSource = SpeechManager.getSharedSpeechManager().conversation;
             chatView.ContainerContentChanging += OnChatViewContainerContentChanging;
@@ -1163,7 +1165,7 @@ namespace PhenoPad
         {
             bool result = await saveNoteToDisk();
             if (result)
-            {           
+            {
                 NotifyUser("Successfully saved to disk.", NotifyType.StatusMessage, 2);
             }
             else
@@ -1254,6 +1256,15 @@ namespace PhenoPad
             }
         }
 
+        /// <summary>
+        /// Event Handler for when user click erase all ink button
+        /// </summary>
+        private void InkToolbar_EraseAllClicked(InkToolbar sender, object args)
+        {
+            //calling auto-saving handler to save erased result
+            LogService.MetroLogger.getSharedLogger().Info("Cleared all ink strokes of this note page.");
+            this.curPage.on_stroke_changed();
+        }
 
 
         #endregion

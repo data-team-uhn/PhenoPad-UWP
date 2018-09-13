@@ -40,6 +40,8 @@ namespace PhenoPad.CustomControl
         IReadOnlyList<InkStroke> inkStrokes = null;
         InkAnalysisResult inkAnalysisResults = null;
 
+        
+
         //public string name { get; }
         //public string notebookId { get; }
         //public string pageId { get; }
@@ -49,7 +51,7 @@ namespace PhenoPad.CustomControl
         public double canvasLeft;
         public double canvasTop;
 
-
+        private MainPage rootPage; 
 
         private bool isInitialized = false;
         public ScaleTransform scaleTransform;
@@ -170,9 +172,13 @@ namespace PhenoPad.CustomControl
             this.Height = height < DEFAULT_HEIGHT ? DEFAULT_HEIGHT : height;
             this.Width = width < DEFAULT_WIDTH ? DEFAULT_WIDTH : width;
 
+            
+
             this.name = name;
             this.notebookId = notebookId;
             this.pageId = pageId;
+            rootPage = MainPage.Current;
+
 
             scaleTransform = new ScaleTransform();
             dragTransform = new TranslateTransform();
@@ -324,6 +330,7 @@ namespace PhenoPad.CustomControl
                     InitiateInkCanvas();
                 }
                 stream.Dispose();
+
             }
             // User selects Cancel and picker returns null.
             else
@@ -351,6 +358,7 @@ namespace PhenoPad.CustomControl
                     this.CameraCanvas.Visibility = Visibility.Collapsed;
                     captureControl.unSetUp();
                 }
+                
             }
             catch (Exception ex)
             {
@@ -401,6 +409,8 @@ namespace PhenoPad.CustomControl
             }
 
         }
+
+
 
 
         /// <summary>
