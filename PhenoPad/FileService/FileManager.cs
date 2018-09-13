@@ -33,6 +33,7 @@ namespace PhenoPad.FileService
         Meta,
         ImageAnnotationMeta
     };
+
     /// <summary>
     /// Class for managing all note file components including all text and media forms.
     /// </summary>
@@ -626,13 +627,12 @@ namespace PhenoPad.FileService
         /// </summary>
         public async Task<bool> saveStrokes(StorageFile strokesFile, InkCanvas inkcancas)
         {
-            LogService.MetroLogger.getSharedLogger().Info($"Saving strokes of InkCanvas...");
 
             // Prevent updates to the file until updates are 
             // finalized with call to CompleteUpdatesAsync.
             //Windows.Storage.CachedFileManager.DeferUpdates(strokesFile);
             // Open a file stream for writing.
-            IRandomAccessStream stream = await strokesFile.OpenAsync(Windows.Storage.FileAccessMode.ReadWrite);
+            IRandomAccessStream stream = await strokesFile.OpenAsync(FileAccessMode.ReadWrite);
             // Write the ink strokes to the output stream.
             using (IOutputStream outputStream = stream.GetOutputStreamAt(0))
             {
@@ -644,11 +644,10 @@ namespace PhenoPad.FileService
 
             // Finalize write so other apps can update file.
             Windows.Storage.Provider.FileUpdateStatus status =
-                await Windows.Storage.CachedFileManager.CompleteUpdatesAsync(strokesFile);
+                await CachedFileManager.CompleteUpdatesAsync(strokesFile);
 
             if (status == Windows.Storage.Provider.FileUpdateStatus.Complete)
             {
-                LogService.MetroLogger.getSharedLogger().Info($"Successfully saved strokes of InkCanvas.");
                 return true;
             }
             else
@@ -667,7 +666,7 @@ namespace PhenoPad.FileService
             try
             {
                 Guid bitmapEncoderGuid = BitmapEncoder.JpegEncoderId;
-                var imageFile = await FileService.FileManager.getSharedFileManager().CreateImageFileForPage(notebookId, pageId, name);
+                var imageFile = await getSharedFileManager().CreateImageFileForPage(notebookId, pageId, name);
 
                 using (IRandomAccessStream stream = await imageFile.OpenAsync(FileAccessMode.ReadWrite))
                 {

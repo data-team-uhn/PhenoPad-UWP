@@ -54,6 +54,7 @@ namespace PhenoPad.CustomControl
     **/
     public sealed partial class NotePageControl : UserControl
     {
+        #region class properties
         public string pageId;
         public string notebookId;
 
@@ -88,13 +89,16 @@ namespace PhenoPad.CustomControl
         List<InkAnalysisInkWord> wordListSelected;
         object selectDeleteLock = new object();
 
+        //Semaphore used for auto-savings
+        SemaphoreSlim autosaveSemaphore = new SemaphoreSlim(1);
+
         DispatcherTimer dispatcherTimer;
         DispatcherTimer operationDispathcerTimer; //try to recognize last stroke as operation
         DispatcherTimer unprocessedDispatcherTimer;
         DispatcherTimer textNoteDispatcherTimer;
-        DispatcherTimer autosaveDispatcherTimer;
-
+        DispatcherTimer autosaveDispatcherTimer; //For stroke auto saves
         DispatcherTimer lineAnalysisDispatcherTimer;
+
         Queue<int> linesToUpdate;
         object lineUpdateLock = new object();
         Dictionary<int, string> stringsOfLines;
@@ -138,9 +142,9 @@ namespace PhenoPad.CustomControl
             }
         }
 
-        SemaphoreSlim autosaveSemaphore = new SemaphoreSlim(1);
+        #endregion class properties
 
-        /******************************************************************/
+        /*************************END OF CLASS PROPERTIES*************************************/
 
         /// <summary>
         /// Initializes a new note page controller instance given notebook id and notepage id.
@@ -188,7 +192,7 @@ namespace PhenoPad.CustomControl
             textNoteDispatcherTimer = new DispatcherTimer();
             autosaveDispatcherTimer = new DispatcherTimer();
             dispatcherTimer.Tick += InkAnalysisDispatcherTimer_Tick;  // Ink Analysis time tick
-            autosaveDispatcherTimer.Tick += on_stroke_changed;
+            autosaveDispatcherTimer.Tick += on_stroke_changed; // When timer ticks after user input, auto saves stroke
             operationDispathcerTimer.Tick += OperationDispatcherTimer_Tick;
             textNoteDispatcherTimer.Tick += TextNoteDispatcherTimer_Tick;
 
@@ -202,8 +206,8 @@ namespace PhenoPad.CustomControl
             textNoteDispatcherTimer.Interval = TimeSpan.FromSeconds(0.1);
             operationDispathcerTimer.Interval = TimeSpan.FromMilliseconds(500);
             unprocessedDispatcherTimer.Interval = TimeSpan.FromMilliseconds(100);
-            autosaveDispatcherTimer.Interval = TimeSpan.FromSeconds(1);
-            
+            autosaveDispatcherTimer.Interval = TimeSpan.FromSeconds(1); //setting stroke auto save interval to be 1 sec
+
             linesToUpdate = new Queue<int>();
             lineAnalysisDispatcherTimer = new DispatcherTimer();
             lineAnalysisDispatcherTimer.Tick += LineAnalysisDispatcherTimer_Tick;
@@ -242,6 +246,7 @@ namespace PhenoPad.CustomControl
             //selectionRectangle.ManipulationCompleted += SelectionRectangle_ManipulationCompleted;      
 
         }
+
 
         #region UI Display
         // draw background lines for notes
@@ -308,8 +313,6 @@ namespace PhenoPad.CustomControl
                 await Task.Delay(1000);
             }
         }
-
-
 
 
         
@@ -412,6 +415,7 @@ namespace PhenoPad.CustomControl
         }
 
         /******************** Typing mode ********************/
+        #region Typing Mode
         public void setTextNoteEditBox()
         {
 
@@ -434,6 +438,10 @@ namespace PhenoPad.CustomControl
             textNoteEditBox.IsReadOnly = true;
             textNoteEditBox.IsTapEnabled = false;
         }
+
+
+
+        #endregion 
         /******************** END of Typing mode ********************/
 
 
@@ -554,12 +562,13 @@ namespace PhenoPad.CustomControl
             curLineResultPanel.Visibility = Visibility.Collapsed;
 
             dispatcherTimer.Stop();
-            autosaveDispatcherTimer.Start();
+            
             //operationDispathcerTimer.Stop();
             foreach (var stroke in args.Strokes)
             {
                 inkAnalyzer.RemoveDataForStroke(stroke.Id);
             }
+            on_stroke_changed(this, args);
             //operationDispathcerTimer.Start();
             await analyzeInk();
         }
@@ -624,7 +633,7 @@ namespace PhenoPad.CustomControl
         private void StrokeInput_PointerPressed(InkStrokeInput sender, PointerEventArgs args)
         {
             UnprocessedInput_PointerPressed(null, args);
-            autosaveDispatcherTimer.Stop();
+            //autosaveDispatcherTimer.Stop();
         }
         // stroke input handling: pointer moved
         private void StrokeInput_PointerMoved(InkStrokeInput sender, PointerEventArgs args)
@@ -635,7 +644,7 @@ namespace PhenoPad.CustomControl
         private void StrokeInput_PointerReleased(InkStrokeInput sender, PointerEventArgs args)
         {
             UnprocessedInput_PointerReleased(null, args);
-            autosaveDispatcherTimer.Start();
+            //autosaveDispatcherTimer.Start();
         }
 
         // select strokes by "marking" handling: pointer pressed
