@@ -125,7 +125,7 @@ namespace PhenoPad.CustomControl
             //else
             //    PhenotypeManager.getSharedPhenotypeManager().updatePhenoStateById(phenotypeId, -1, sourceType);
             setPhenotypeState(-1);
-             PhenotypeManager.getSharedPhenotypeManager().removeById(phenotypeId, SourceType.Saved);
+             PhenotypeManager.getSharedPhenotypeManager().removeByIdAsync(phenotypeId, SourceType.Saved);
         }
         
         private void YSwitchBtn_Click(object sender, RoutedEventArgs e)

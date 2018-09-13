@@ -40,7 +40,7 @@ using PhenoPad.FileService;
 using Windows.UI.Xaml.Data;
 using System.ComponentModel;
 using System.Threading;
-
+using PhenoPad.LogService;
 using PhenoPad.BluetoothService;
 using Windows.System.Threading;
 using System.IO;
@@ -197,9 +197,9 @@ namespace PhenoPad
             await savingSemaphoreSlim.WaitAsync();
             try
             {
-                LogService.MetroLogger.getSharedLogger().Info($"Saving notebook {notebookId} to disk...");
-                
-                LogService.MetroLogger.getSharedLogger().Info($"Saving audio");
+                MetroLogger.getSharedLogger().Info($"Saving notebook {notebookId} to disk...");
+
+                MetroLogger.getSharedLogger().Info($"Saving audio");
                 // save audio count
                 {
                     if (notebookObject != null)
@@ -252,6 +252,20 @@ namespace PhenoPad
                 savingSemaphoreSlim.Release();
             }
             return false;
+        }
+
+        public async Task<bool> AutoSavePhenotypes()
+        {
+
+            bool complete = await FileManager.getSharedFileManager().saveCollectedPhenotypesToFile(notebookId);
+            if (!complete)
+            {
+                MetroLogger.getSharedLogger().Error("Failed to auto-save collected phenotypes.");
+            }
+            else
+                MetroLogger.getSharedLogger().Error("Auto-saving collected phenotypes done.");
+
+            return complete;
         }
 
         /// <summary>

@@ -135,7 +135,7 @@ namespace PhenoPad.CustomControl
             //else
             //    PhenotypeManager.getSharedPhenotypeManager().updatePhenoStateById(phenotypeId, -1, sourceType);
             localState = -1;
-            PhenotypeManager.getSharedPhenotypeManager().removeById(phenotypeId, SourceType.Suggested);
+            PhenotypeManager.getSharedPhenotypeManager().removeByIdAsync(phenotypeId, SourceType.Suggested);
 
             if (presentPosition == PresentPosition.Inline)
             {

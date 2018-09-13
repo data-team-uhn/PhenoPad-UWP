@@ -128,7 +128,7 @@ namespace PhenoPad.CustomControl
                 return inkCanvas;
             }
         }
-
+        private IReadOnlyList<InkStroke> leftLossoStroke;
         public List<AddInImageControl> imagesWithAnnotations
         {
             get
@@ -142,9 +142,26 @@ namespace PhenoPad.CustomControl
             }
         }
 
-        #endregion class properties
+        private Dictionary<int, List<TextBox>> recognizedTextBlocks = new Dictionary<int, List<TextBox>>();
+        private Dictionary<uint, NoteLine> idToNoteLine = new Dictionary<uint, NoteLine>();
+        private uint showingResultOfLine;
+        private InkAnalysisLine curLineObject;
 
+        private int showAlterOfWord = -1;
+
+        private Dictionary<string, Phenotype> cachedAnnotation = new Dictionary<string, Phenotype>();
+        private HashSet<int> annotatedLines = new HashSet<int>();
+        int hoveringLine = -1;
+
+        int iWordForCandidateSelection = 0;
+        private SemaphoreSlim deleteSemaphoreSlim;
+        private SemaphoreSlim selectAndRecognizeSemaphoreSlim;
+
+        private Dictionary<int, Rectangle> lineToRect = new Dictionary<int, Rectangle>();
         /*************************END OF CLASS PROPERTIES*************************************/
+        #endregion
+
+
 
         /// <summary>
         /// Initializes a new note page controller instance given notebook id and notepage id.
@@ -414,8 +431,9 @@ namespace PhenoPad.CustomControl
             }
         }
 
+
+        #region Typing mode
         /******************** Typing mode ********************/
-        #region Typing Mode
         public void setTextNoteEditBox()
         {
 
@@ -439,12 +457,10 @@ namespace PhenoPad.CustomControl
             textNoteEditBox.IsTapEnabled = false;
         }
 
-
-
-        #endregion 
         /******************** END of Typing mode ********************/
+        #endregion
 
-
+        #region View mode
         /******************** View mode ********************/
         public void showRecognizedTextCanvas()
         {
@@ -459,24 +475,9 @@ namespace PhenoPad.CustomControl
             backgroundCanvas.Background = new SolidColorBrush(Colors.White);
         }
         /******************** END of View mode ********************/
-        
+        #endregion
 
-        // analyze the currently hovering line
-        private void LineAnalysisDispatcherTimer_Tick(object sender, object e)
-        {
-            var pointerPosition = Windows.UI.Core.CoreWindow.GetForCurrentThread().PointerPosition;
-            var x = pointerPosition.X - Window.Current.Bounds.X;
-            var y = pointerPosition.Y - Window.Current.Bounds.Y;
-            int curLine = (int)y / (int)LINE_HEIGHT;
-            if (curLine != hoveringLine)
-            {
-                hoveringLine = curLine;
-                //await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () =>
-                //{
-                    recognizeLine(hoveringLine);
-                //});
-            }
-        }
+
         
         private async void Core_PointerExiting(CoreInkIndependentInputSource sender, PointerEventArgs args)
         {
@@ -502,7 +503,7 @@ namespace PhenoPad.CustomControl
             **/
         }
 
-        int hoveringLine = -1;
+        
         private async void Core_PointerHovering(CoreInkIndependentInputSource sender, PointerEventArgs args)
         {
             await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () =>
@@ -531,7 +532,11 @@ namespace PhenoPad.CustomControl
         }
 
 
-        /******************** Handwriting mode ********************/
+
+        #region Hand writting mode 
+        // ===================== Handwriting mode ===================================================/
+
+        //stroke input handling: a stroke input has started
         private void StrokeInput_StrokeStarted(InkStrokeInput sender, PointerEventArgs args)
         {
             if (!leftLasso)
@@ -549,7 +554,7 @@ namespace PhenoPad.CustomControl
                 ***/
             }
         }
-
+        //stroke input handling: a stroke input has stopped
         private void StrokeInput_StrokeEnded(InkStrokeInput sender, PointerEventArgs args)
         {
             autosaveDispatcherTimer.Start();
@@ -572,7 +577,7 @@ namespace PhenoPad.CustomControl
             //operationDispathcerTimer.Start();
             await analyzeInk();
         }
-        private IReadOnlyList<InkStroke> leftLossoStroke;
+        
         private async void InkPresenter_StrokesCollectedAsync(InkPresenter sender, InkStrokesCollectedEventArgs args)
         {
             if (!leftLasso)
@@ -629,18 +634,18 @@ namespace PhenoPad.CustomControl
 
         }
 
-        // stroke input handling: pointer pressed
+        // stroke input handling: mouse pointer pressed
         private void StrokeInput_PointerPressed(InkStrokeInput sender, PointerEventArgs args)
         {
             UnprocessedInput_PointerPressed(null, args);
             //autosaveDispatcherTimer.Stop();
         }
-        // stroke input handling: pointer moved
+        // stroke input handling: mouse pointer moved
         private void StrokeInput_PointerMoved(InkStrokeInput sender, PointerEventArgs args)
         {
             UnprocessedInput_PointerMoved(null, args);
         }
-        // stroke input handling: pointer released
+        // stroke input handling: mouse pointer released
         private void StrokeInput_PointerReleased(InkStrokeInput sender, PointerEventArgs args)
         {
             UnprocessedInput_PointerReleased(null, args);
@@ -711,9 +716,7 @@ namespace PhenoPad.CustomControl
             **/
         }
 
-
-        /******************** END of Handwriting mode ********************/
-
+        #endregion
 
         // get line number of a line node
         // it is given by line number of most strokes
@@ -905,11 +908,13 @@ namespace PhenoPad.CustomControl
             }
         }
 
-        // recognize ink as operation
+        #region add-in controls 
+        // ============================== ADD-INS ================================================//
+
         public async Task<List<AddInControl>> GetAllAddInControls()
         {
             List<AddInControl> cons = new List<AddInControl>();
-            await Windows.ApplicationModel.Core.CoreApplication.MainView.CoreWindow.Dispatcher.RunAsync(CoreDispatcherPriority.Normal,
+            await CoreApplication.MainView.CoreWindow.Dispatcher.RunAsync(CoreDispatcherPriority.Normal,
             () =>
             {
                 foreach (var c in this.userControlCanvas.Children)
@@ -961,6 +966,7 @@ namespace PhenoPad.CustomControl
             }
            
         }
+
         public void addImageAndAnnotationControl(string name, double left, double top, bool loadFromDisk, WriteableBitmap wb = null, 
                                                     double transX = 0, double transY = 0, double transScale = 0, double width = -1, double height = -1)
         {
@@ -1007,9 +1013,7 @@ namespace PhenoPad.CustomControl
 
            
         }
-
-     
-
+        
         private async Task<int> RecognizeInkOperation()
         {
             var result = await inkOperationAnalyzer.AnalyzeAsync();
@@ -1149,6 +1153,10 @@ namespace PhenoPad.CustomControl
             return ((x2 - x1) * (p.Y - y1) - (y2 - y1) * (p.X - x1)) > 0;
         }
 
+        #endregion
+
+        #region Timer Event Handlers
+        //==============================TIMER EVENT HANDLERS ========================================//
         private void UnprocessedDispathcerTimer_Tick(object sender, object e)
         {
             unprocessedDispatcherTimer.Stop();
@@ -1271,27 +1279,222 @@ namespace PhenoPad.CustomControl
             }
         }
 
-        // Call after strokes are collected to recoginze words and shapes
-        private Dictionary<int, List<TextBox>> recognizedTextBlocks = new Dictionary<int, List<TextBox>>();
-        private Dictionary<uint, NoteLine> idToNoteLine = new Dictionary<uint, NoteLine>();
-        private uint showingResultOfLine;
-        private InkAnalysisLine curLineObject;
+        /// <summary>
+        /// Called after strokes are collected to recoginze words and shapes
+        /// </summary>
         private async void InkAnalysisDispatcherTimer_Tick(object sender, object e)
         {
             //await deleteSemaphoreSlim.WaitAsync();
             //try
             //{
-                
-                dispatcherTimer.Stop();
-                await analyzeInk();
-                //}
+
+            dispatcherTimer.Stop();
+            await analyzeInk();
+            //}
             // finally
             // {
             //   deleteSemaphoreSlim.Release();
             //}
         }
 
-        private Dictionary<int, Rectangle> lineToRect = new Dictionary<int, Rectangle>();
+        /// <summary>
+        /// Analyze the currently hovering line
+        /// </summary>
+        private void LineAnalysisDispatcherTimer_Tick(object sender, object e)
+        {
+            var pointerPosition = Windows.UI.Core.CoreWindow.GetForCurrentThread().PointerPosition;
+            var x = pointerPosition.X - Window.Current.Bounds.X;
+            var y = pointerPosition.Y - Window.Current.Bounds.Y;
+            int curLine = (int)y / (int)LINE_HEIGHT;
+            if (curLine != hoveringLine)
+            {
+                hoveringLine = curLine;
+                //await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () =>
+                //{
+                recognizeLine(hoveringLine);
+                //});
+            }
+        }
+
+        /// <summary>
+        /// Auto-saves current strokes on page after input with idle more than 1 second
+        /// </summary>
+        private async void on_stroke_changed(object sender, object e)
+        {
+            autosaveDispatcherTimer.Stop();
+            await autosaveSemaphore.WaitAsync();
+            try
+            {
+                StorageFile file = await FileManager.getSharedFileManager().GetNoteFile(notebookId, pageId, NoteFileType.Strokes);
+                if (file == null)
+                {
+                    MetroLogger.getSharedLogger().Error($"Failed to get note file.");
+                }
+                // save handwritings
+                await FileManager.getSharedFileManager().SaveNotePageStrokes(notebookId, pageId, this);
+                logger.Info("Autosaved current strokes.");
+
+            }
+            catch (Exception ex)
+            {
+                MetroLogger.getSharedLogger().Error($"Failed to auto-save strokes: {ex.Message}");
+            }
+            finally
+            {
+                autosaveSemaphore.Release();
+            }
+        }
+
+        #endregion
+        //============================== SAVING EVENTS ================================================//
+
+        /// <summary>
+        /// Saves all strokes and add-ins of current notepage to local files, return false if failed.
+        /// </summary>
+        public async Task<bool> SaveToDisk()
+        {
+            try
+            {
+                bool result1 = false;
+                StorageFile file = await FileManager.getSharedFileManager().GetNoteFile(notebookId, pageId, NoteFileType.Strokes);
+                if (file == null)
+                {
+                    logger.Error($"SaveToDisk():Failed to get note file.");
+                    return false;
+                }
+                // save handwritings
+                //result1 = await FileManager.getSharedFileManager().saveStrokes(file, this.inkCan);
+                result1 = await FileManager.getSharedFileManager().SaveNotePageStrokes(notebookId, pageId, this);
+
+
+                // save add in controls
+                var flag = false;
+                var result2 = true;
+                List<AddInControl> addinlist = await GetAllAddInControls();
+                foreach (var addin in addinlist)
+                {
+                    var strokesFile = await FileManager.getSharedFileManager().GetNoteFile(notebookId, pageId, NoteFileType.ImageAnnotation, addin.name);
+                    flag = await FileManager.getSharedFileManager().saveStrokes(strokesFile, addin.inkCan);
+                    if (!flag)
+                    {
+                        logger.Error($"note-{notebookId} at page {pageId}, {addin.name} failed to save.");
+                        result2 = false;
+                    }
+                }
+
+                // add in meta data
+                var result3 = false;
+                List<ImageAndAnnotation> imageList = await GetAllAddInObjects();
+                string metapath = FileManager.getSharedFileManager().GetNoteFilePath(notebookId, pageId, NoteFileType.ImageAnnotationMeta);
+                result3 = await FileManager.getSharedFileManager().SaveObjectSerilization(metapath, imageList, typeof(List<ImageAndAnnotation>));
+
+                return result1 && result2 && result3;
+            }
+            catch (Exception e)
+            {
+                logger.Error($"Failed to save page {pageId} of notebook {notebookId}: {e.Message}");
+                Debug.WriteLine(e.Message);
+                return false;
+            }
+        }
+        /// <summary>
+        /// Saves current page view as .jpg file.
+        /// </summary>
+        public async void printPage()
+        {
+            List<AddInControl> addinlist = await GetAllAddInControls();
+            await Dispatcher.RunAsync(CoreDispatcherPriority.High, () => {
+                // hide control UI of all addincontrols
+                foreach (var addin in addinlist)
+                {
+                    addin.hideControlUI();
+                }
+            });
+
+
+            var bitmap = new RenderTargetBitmap();
+
+            StorageFile file = await KnownFolders.PicturesLibrary.CreateFileAsync("note page.jpg",
+
+            CreationCollisionOption.GenerateUniqueName);
+
+            await bitmap.RenderAsync(outputGrid);
+
+            var buffer = await bitmap.GetPixelsAsync();
+
+            using (IRandomAccessStream stream = await file.OpenAsync(FileAccessMode.ReadWrite))
+
+            {
+
+                var encod = await BitmapEncoder.CreateAsync(
+
+                    BitmapEncoder.JpegEncoderId, stream);
+
+                encod.SetPixelData(BitmapPixelFormat.Bgra8,
+
+                    BitmapAlphaMode.Ignore,
+
+                    (uint)bitmap.PixelWidth,
+
+                    (uint)bitmap.PixelHeight,
+                    500, 500,
+                    //DisplayInformation.GetForCurrentView().LogicalDpi,
+
+                    //DisplayInformation.GetForCurrentView().LogicalDpi,
+
+                    buffer.ToArray()
+
+                   );
+
+                await encod.FlushAsync();
+
+            }
+
+            await Windows.System.Launcher.LaunchFileAsync(file);
+
+            await Dispatcher.RunAsync(CoreDispatcherPriority.High, () =>
+            {
+                // show control UI of all addincontrols
+                foreach (var addin in addinlist)
+                {
+                    addin.showControlUI();
+                }
+            });
+
+        }
+
+
+
+        public async Task<bool> AutoSaveAddin() {
+            // save add in controls
+            var flag = false;
+            var result2 = true;
+            List<AddInControl> addinlist = await GetAllAddInControls();
+            foreach (var addin in addinlist)
+            {
+                var strokesFile = await FileManager.getSharedFileManager().GetNoteFile(notebookId, pageId, NoteFileType.ImageAnnotation, addin.name);
+                flag = await FileManager.getSharedFileManager().saveStrokes(strokesFile, addin.inkCan);
+                if (!flag)
+                {
+                    LogService.MetroLogger.getSharedLogger().Error($"Auto-save: note-{notebookId} at page {pageId}, {addin.name} failed to save.");
+                    result2 = false;
+                }
+            }
+
+            // add in meta data
+            var result3 = false;
+            List<ImageAndAnnotation> imageList = await GetAllAddInObjects();
+            string metapath = FileManager.getSharedFileManager().GetNoteFilePath(notebookId, pageId, NoteFileType.ImageAnnotationMeta);
+            result3 = await FileManager.getSharedFileManager().SaveObjectSerilization(metapath, imageList, typeof(List<ImageAndAnnotation>));
+
+            if (result2 && result3)
+                logger.Info("Auto-saving add-in completed.");
+
+            return result2 && result3;
+        }
+
+
+        
         /// <summary>
         ///  Analyze ink strokes
         /// </summary>
@@ -1585,55 +1788,55 @@ namespace PhenoPad.CustomControl
 
         }
 
-        private int showAlterOfWord = -1;
-        private async void setUpCurrentLineResultUI(InkAnalysisLine line) 
+        
+        private void setUpCurrentLineResultUI(InkAnalysisLine line) 
         {
             var wordlist = idToNoteLine.GetValueOrDefault(line.Id).WordStrings;
-
-            // align wordlist and textblocks in curLineResultPanel
-            /***
-            var oldWordList = new List<string>();
-            foreach (TextBlock tb in curLineWordsStackPanel.Children)
-                oldWordList.Add(tb.Text);
-
-            var alignResult = alignTwoStringList(wordlist, oldWordList);
-            var newIndex = alignResult.Item1;
-            var oldIndex = alignResult.Item2;
-
-            int insertIndex = oldWordList.Count();
-
-            for (int i = oldIndex.Count() - 1; i >= 0; --i)
             {
-                // gap
-                if (oldIndex[i] == -1)
-                {
-                    TextBlock tb = new TextBlock();
-                    tb.VerticalAlignment = VerticalAlignment.Center;
-                    tb.FontSize = 16;
-                    tb.Text = wordlist[newIndex[i]];
-                    if (insertIndex >= curLineWordsStackPanel.Children.Count())
-                        curLineWordsStackPanel.Children.Add(tb);
-                    else
-                        curLineWordsStackPanel.Children.Insert(insertIndex, tb);
-                }
-                // aligment
-                else if (newIndex[i] != -1) 
-                {
-                    insertIndex--;
-                    if (oldWordList[oldIndex[i]] != wordlist[newIndex[i]])
-                        (curLineWordsStackPanel.Children[oldIndex[i]] as TextBlock).Text = wordlist[newIndex[i]];
-                }
-            }
-            for (int i = oldIndex.Count() - 1; i >= 0; --i)
-            {
-                // delete
-                if (newIndex[i] == -1) 
-                {
-                    curLineWordsStackPanel.Children.RemoveAt(oldIndex[i]);
-                }
-            }
-            **/
+                // align wordlist and textblocks in curLineResultPanel
+                /***
+                var oldWordList = new List<string>();
+                foreach (TextBlock tb in curLineWordsStackPanel.Children)
+                    oldWordList.Add(tb.Text);
 
+                var alignResult = alignTwoStringList(wordlist, oldWordList);
+                var newIndex = alignResult.Item1;
+                var oldIndex = alignResult.Item2;
+
+                int insertIndex = oldWordList.Count();
+
+                for (int i = oldIndex.Count() - 1; i >= 0; --i)
+                {
+                    // gap
+                    if (oldIndex[i] == -1)
+                    {
+                        TextBlock tb = new TextBlock();
+                        tb.VerticalAlignment = VerticalAlignment.Center;
+                        tb.FontSize = 16;
+                        tb.Text = wordlist[newIndex[i]];
+                        if (insertIndex >= curLineWordsStackPanel.Children.Count())
+                            curLineWordsStackPanel.Children.Add(tb);
+                        else
+                            curLineWordsStackPanel.Children.Insert(insertIndex, tb);
+                    }
+                    // aligment
+                    else if (newIndex[i] != -1) 
+                    {
+                        insertIndex--;
+                        if (oldWordList[oldIndex[i]] != wordlist[newIndex[i]])
+                            (curLineWordsStackPanel.Children[oldIndex[i]] as TextBlock).Text = wordlist[newIndex[i]];
+                    }
+                }
+                for (int i = oldIndex.Count() - 1; i >= 0; --i)
+                {
+                    // delete
+                    if (newIndex[i] == -1) 
+                    {
+                        curLineWordsStackPanel.Children.RemoveAt(oldIndex[i]);
+                    }
+                }
+                **/
+            }
             curLineWordsStackPanel.Children.Clear();
             foreach (var word in wordlist)
             {
@@ -1664,8 +1867,7 @@ namespace PhenoPad.CustomControl
 
         }
 
-        private Dictionary<string, Phenotype> cachedAnnotation = new Dictionary<string, Phenotype>();
-        private HashSet<int> annotatedLines = new HashSet<int>();
+
         private async void annotateCurrentLineAndUpdateUI(InkAnalysisLine line)
         {
             // after get annotation, recognized text has also changed
@@ -1683,6 +1885,7 @@ namespace PhenoPad.CustomControl
                     anno.Value.sourceType = SourceType.Notes;
                     PhenoMana.addPhenotypeCandidate(anno.Value, SourceType.Notes);
                 }
+
                 // update current line annotation
                 idToNoteLine.GetValueOrDefault(line.Id).phenotypes = annoResult.Values.ToList();
 
@@ -1697,8 +1900,7 @@ namespace PhenoPad.CustomControl
                 }
                 **/
 
-                if (curLineCandidatePheno.Count == 0 
-                    || curWordPhenoControlGrid.Margin.Top == 0)
+                if (curLineCandidatePheno.Count == 0 || curWordPhenoControlGrid.Margin.Top == 0)
                 {
                     curWordPhenoControlGrid.Margin = new Thickness(0, -100, 0, 0);
                     curWordPhenoAnimation.Begin();
@@ -1724,6 +1926,7 @@ namespace PhenoPad.CustomControl
                         }
                     }
                 }
+
                 if(curLineCandidatePheno.Count != 0)
                 {
                     int lineNum = getLineNumByRect(line.BoundingRect);
@@ -1765,6 +1968,7 @@ namespace PhenoPad.CustomControl
                 }
                 //curWordPhenoHideAnimation.Begin();
             }
+            
             
         }
         
@@ -2186,8 +2390,6 @@ namespace PhenoPad.CustomControl
         /// <summary>
         /// select and recognize a line by its id
         /// </summary>
-        /// <param name="lineid"></param>
-        /// <returns></returns>
         private async Task<List<HWRRecognizedText>> RecognizeLine(uint lineid)
         {
             // only one thread is allowed to use select and recognize
@@ -2411,9 +2613,7 @@ namespace PhenoPad.CustomControl
             Console.WriteLine(tb.SelectionStart);
         }
 
-        int iWordForCandidateSelection = 0;
-        private SemaphoreSlim deleteSemaphoreSlim;
-        private SemaphoreSlim selectAndRecognizeSemaphoreSlim;
+
 
         private void recognizedResultTextBlock_SelectionChanged(object sender, RoutedEventArgs e)
         {
@@ -2644,122 +2844,13 @@ namespace PhenoPad.CustomControl
         }
 
 
-        /// <summary>
-        /// Saves all strokes and add-ins of current notepage to local files, return false if failed.
-        /// </summary>
-        public async Task<bool> SaveToDisk()
-        {
-            try
-            {
-                bool result1 = false;
-                StorageFile file = await FileManager.getSharedFileManager().GetNoteFile(notebookId, pageId, NoteFileType.Strokes);
-                if (file == null)
-                {
-                    logger.Error($"SaveToDisk():Failed to get note file.");
-                    return false;
-                }
-                // save handwritings
-                //result1 = await FileManager.getSharedFileManager().saveStrokes(file, this.inkCan);
-                result1 = await FileManager.getSharedFileManager().SaveNotePageStrokes(notebookId, pageId, this);
-
-
-                // save add in controls
-                var flag = false;
-                var result2 = true;
-                List<AddInControl> addinlist = await GetAllAddInControls();
-                foreach (var addin in addinlist)
-                {
-                    var strokesFile = await FileManager.getSharedFileManager().GetNoteFile(notebookId, pageId, NoteFileType.ImageAnnotation, addin.name);
-                    flag = await FileManager.getSharedFileManager().saveStrokes(strokesFile, addin.inkCan);
-                    if (!flag) {
-                        logger.Error($"note-{notebookId} at page {pageId}, {addin.name} failed to save.");
-                        result2 = false;
-                    }
-                }
-
-                // add in meta data
-                var result3 = false;
-                List<ImageAndAnnotation> imageList = await GetAllAddInObjects();
-                string metapath = FileManager.getSharedFileManager().GetNoteFilePath(notebookId, pageId, NoteFileType.ImageAnnotationMeta);
-                result3 = await FileManager.getSharedFileManager().SaveObjectSerilization(metapath, imageList, typeof(List<ImageAndAnnotation>));
-
-                return result1 && result2 && result3;
-            }
-            catch (Exception e)
-            {
-                logger.Error($"Failed to save page {pageId} of notebook {notebookId}: {e.Message}");
-                Debug.WriteLine(e.Message);
-                return false;
-            }
-        }
-
-        public async void printPage()
-        {
-            List<AddInControl> addinlist = await GetAllAddInControls();
-            await Dispatcher.RunAsync(Windows.UI.Core.CoreDispatcherPriority.High, () => {
-                // hide control UI of all addincontrols
-                
-                foreach (var addin in addinlist)
-                {
-                    addin.hideControlUI();
-                }
-            });
-           
-            
-            var bitmap = new RenderTargetBitmap();
-
-            StorageFile file = await KnownFolders.PicturesLibrary.CreateFileAsync("note page.jpg",
-
-            CreationCollisionOption.GenerateUniqueName);
-
-            await bitmap.RenderAsync(outputGrid);
-
-            var buffer = await bitmap.GetPixelsAsync();
-
-            using (IRandomAccessStream stream = await file.OpenAsync(FileAccessMode.ReadWrite))
-
-            {
-
-                var encod = await BitmapEncoder.CreateAsync(
-
-                    BitmapEncoder.JpegEncoderId, stream);
-
-                encod.SetPixelData(BitmapPixelFormat.Bgra8,
-
-                    BitmapAlphaMode.Ignore,
-
-                    (uint)bitmap.PixelWidth,
-
-                    (uint)bitmap.PixelHeight,
-                    500,500,
-                    //DisplayInformation.GetForCurrentView().LogicalDpi,
-
-                    //DisplayInformation.GetForCurrentView().LogicalDpi,
-
-                    buffer.ToArray()
-
-                   );
-
-                await encod.FlushAsync();
-
-            }
-
-            await Windows.System.Launcher.LaunchFileAsync(file);
-            
-            await Dispatcher.RunAsync(Windows.UI.Core.CoreDispatcherPriority.High, () =>
-            {
-                // show control UI of all addincontrols
-                foreach (var addin in addinlist)
-                {
-                    addin.showControlUI();
-                }
-            });
-            
-        }
 
 
 
 
+
+
+        #region for test only
         // FOR TESTING ONLY
         private Dictionary<uint, Rectangle> addedBoundIds = new Dictionary<uint, Rectangle>();
         private async void DrawBoundingForTest()
@@ -2865,11 +2956,8 @@ namespace PhenoPad.CustomControl
                         ****/
 
         }
+        #endregion
 
-        private void Button_Click(object sender, RoutedEventArgs e)
-        {
-
-        }
 
         private void curLineResultButtonClick(object sender, RoutedEventArgs e)
         {
@@ -2932,6 +3020,7 @@ namespace PhenoPad.CustomControl
                 sideScrollView.ChangeView(null, scrollViewer.VerticalOffset, scrollViewer.ZoomFactor, true);
             }
         }
+
         private void alternativeListView_ItemClick(object sender, ItemClickEventArgs e)
         {
                 var citem = (string)e.ClickedItem;
@@ -2946,36 +3035,9 @@ namespace PhenoPad.CustomControl
                 annotateCurrentLineAndUpdateUI(curLineObject);
             }
 
-        //************************** AUTO SAVING EVENTS ******************************************//
-        /// <summary>
-        /// Auto-saves current strokes on page after input with idle more than 1 second
-        /// </summary>
-        private async void on_stroke_changed(object sender, object e) {
-            autosaveDispatcherTimer.Stop();
-            await autosaveSemaphore.WaitAsync();
-            try
-            {
-                StorageFile file = await FileManager.getSharedFileManager().GetNoteFile(notebookId, pageId, NoteFileType.Strokes);
-                if (file == null)
-                {
-                    MetroLogger.getSharedLogger().Error($"Failed to get note file.");
-                }
-                // save handwritings
-                await FileManager.getSharedFileManager().SaveNotePageStrokes(notebookId,pageId,this);
-                logger.Info("Autosaved current strokes.");
-
-            }
-            catch (Exception ex)
-            {
-                MetroLogger.getSharedLogger().Error($"Failed to auto-save strokes: {ex.Message}");
-            }
-            finally {
-                autosaveSemaphore.Release();
-            }
-        }
 
 
-        }
+    }
 
 
 }

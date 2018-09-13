@@ -98,7 +98,8 @@ namespace PhenoPad.PhenotypeService
                 return false;
             return true;
         }
-        public void addPhenotypeInSpeech(List<Phenotype> phenos)
+
+        public async void addPhenotypeInSpeech(List<Phenotype> phenos)
         {
             foreach (var p in phenos)
             {
@@ -108,8 +109,9 @@ namespace PhenoPad.PhenotypeService
                 }
                 addPhenotypeCandidate(p, SourceType.Speech);
             }
+            await rootPage.AutoSavePhenotypes();
         }
-        public void addPhenotypeCandidate(Phenotype pheno, SourceType from)
+        public async void addPhenotypeCandidate(Phenotype pheno, SourceType from)
         {
             Phenotype temp = phenotypesCandidates.Where(x => x == pheno).FirstOrDefault();
             if(temp != null)
@@ -134,9 +136,10 @@ namespace PhenoPad.PhenotypeService
             }
             
             rootPage.OpenCandidate();
-      
+            await rootPage.AutoSavePhenotypes();   
             return;
         }
+
         public void addPhenotype(Phenotype pheno, SourceType from)
         {
             if (pheno == null || savedPhenotypes.Where(x => x == pheno).FirstOrDefault() != null)
@@ -241,16 +244,21 @@ namespace PhenoPad.PhenotypeService
                     predictedDiseases.Add(d);
                 }
             }
+            await rootPage.AutoSavePhenotypes();
+
         }
-        public bool deletePhenotypeByIndex(int idx)
+
+        public async Task<bool> deletePhenotypeByIndex(int idx)
         {
             if (savedPhenotypes == null || idx < 0 || idx >= savedPhenotypes.Count)
                 return false;
             
             savedPhenotypes.RemoveAt(idx);
+            await rootPage.AutoSavePhenotypes();
             return true;
         }
-        public bool deletePhenotype(Phenotype pheno)
+
+        public async Task<bool> deletePhenotype(Phenotype pheno)
         {
             Phenotype temp = suggestedPhenotypes.Where(x => x == pheno).FirstOrDefault();
             if (temp != null)
@@ -275,11 +283,12 @@ namespace PhenoPad.PhenotypeService
                 phenotypesCandidates.Remove(temp);
                 phenotypesCandidates.Insert(0, pp);
             }
+            await rootPage.AutoSavePhenotypes();
             return false;
         }
 
 
-        public void updatePhenotype(Phenotype pheno)
+        public async void updatePhenotypeAsync(Phenotype pheno)
         {
             Phenotype temp = savedPhenotypes.Where(x => x == pheno).FirstOrDefault();
             if (temp != null)
@@ -296,9 +305,10 @@ namespace PhenoPad.PhenotypeService
             temp = phenotypesCandidates.Where(x => x == pheno).FirstOrDefault();
             if (temp != null)
                 temp.state = pheno.state;
+            await rootPage.AutoSavePhenotypes();
         }
 
-        public void removeById(string pid, SourceType type)
+        public async void removeByIdAsync(string pid, SourceType type)
         {
             //if (type == SourceType.Saved)
             //{
@@ -337,8 +347,9 @@ namespace PhenoPad.PhenotypeService
                     phenotypesCandidates.Insert(ind, pp);
                 }
             }
-                
-           
+
+            await rootPage.AutoSavePhenotypes();
+
         }
 
         public void updatePhenoStateById(string pid, int state, SourceType type)
@@ -406,6 +417,7 @@ namespace PhenoPad.PhenotypeService
             }
 
             updateSuggestionAndDifferential();
+
         }
 
         public void updatePhenoStateByIdFromCandidate(string pid, int state, SourceType type)
@@ -749,12 +761,6 @@ namespace PhenoPad.PhenotypeService
                 LogService.MetroLogger.getSharedLogger().Error("Failed to fetch phenotype information, " + httpResponseBody);
             }
             return null;
-        }
-
-        public void SaveToDisk(string notebookId)
-        {
-            //StorageFile filename = FileService.FileManager.getSharedFileManager().GetNoteFile(notebookId, "", FileService.NoteFileType.Phenotypes);
-            //FileService.FileManager.getSharedFileManager().SaveObjectSerilization(filename, this, typeof(PhenotypeManager));
         }
 
         public void AddFakePhenotypesInSpeech()
