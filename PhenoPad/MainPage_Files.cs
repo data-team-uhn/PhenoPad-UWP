@@ -169,7 +169,7 @@ namespace PhenoPad
         /// <summary>
         /// Saves the Notebook to disk after a specified time in seconds.
         /// </summary>
-        private void saveNotesTimer(int seconds,string type)
+        private void saveNotesTimer(int seconds)
         {
             TimeSpan period = TimeSpan.FromSeconds(seconds);
 
@@ -177,6 +177,7 @@ namespace PhenoPad
             {
                 try
                 {
+                    LogService.MetroLogger.getSharedLogger().Info("Timer tick, auto-saving everything...");
                     await this.saveNoteToDisk();
                 }
                 catch (Exception e)
@@ -184,54 +185,6 @@ namespace PhenoPad
                     Debug.WriteLine(e.Message);
                 }
             }, period);
-        }
-
-        /// <summary>
-        /// Performs auto-saving after user has made modificaiton to specific notepage.
-        /// </summary>
-        public async void AutoSave(string type) {
-            switch(type){
-                case "page":
-                    await SaveCurrentPage();
-                    break;
-                case "audio":
-                    //TODO: save audio independently
-                    break;
-                case "phenotype":
-                    //TODO: save phenotype independently
-                    break;
-                default: break;
-                
-            }
-        }
-
-        /// <summary>
-        /// Saving only strokes and add-ins of current notepage to local.
-        /// </summary>
-        public async Task<bool> SaveCurrentPage() {
-            //locks semaphore before accessing
-            await savingSemaphoreSlim.WaitAsync();
-            bool flag = false;
-            try
-            {
-                //Saving Page
-                await CoreApplication.MainView.CoreWindow.Dispatcher.RunAsync(
-                         CoreDispatcherPriority.Normal,
-                         async () =>
-                         {
-                             LogService.MetroLogger.getSharedLogger().Info($"Auto-saving page {this.curPageId}");
-                             flag = await this.curPage.SaveToDisk();
-                         }
-                    );
-            }
-            catch (Exception e){
-                LogService.MetroLogger.getSharedLogger().Error("Failed to auto-save current page: " + e.Message);
-            }
-            finally {
-                //unlcoks semaphore 
-                savingSemaphoreSlim.Release();
-            }
-            return flag;
         }
 
         /// <summary>
@@ -263,6 +216,7 @@ namespace PhenoPad
                 // save note pages one by one
                 bool pgResult = true;
                 bool flag = false;
+
                 foreach (var page in notePages)
                 {
                     await CoreApplication.MainView.CoreWindow.Dispatcher.RunAsync(
@@ -299,6 +253,7 @@ namespace PhenoPad
             }
             return false;
         }
+
         /// <summary>
         /// Load everything from disk, include: 
         /// handwritten strokes, typing words, photos and annotations, drawing, collected phenotypes.

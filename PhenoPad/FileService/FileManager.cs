@@ -545,7 +545,7 @@ namespace PhenoPad.FileService
         }
 
         /// <summary>
-        /// Creates and saves all notepage strokes to local file and returns boolean result.
+        /// Creates and saves all strokes of the notepage to local file and returns boolean result.
         /// </summary>
         public async Task<bool> SaveNotePageStrokes(string notebookId, string pageId, NotePageControl notePage)
         {

@@ -145,7 +145,7 @@ namespace PhenoPad
 
             PropertyChanged += MainPage_PropertyChanged;
             // save to disk every 10 seconds
-            // this.saveNotesTimer(30);
+            //this.saveNotesTimer(10); // Currently disabling to test auto-save function
         }
 
 
