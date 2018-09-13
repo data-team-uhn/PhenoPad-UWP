@@ -172,12 +172,14 @@ namespace PhenoPad
         }
         private async void Delete_ItemInvoked(SwipeItem sender, SwipeItemInvokedEventArgs args)
         {
+            
             var id = (string)args.SwipeControl.Tag;
             bool isSuccess = await FileManager.getSharedFileManager().DeleteNotebookById(id);
             if (isSuccess)
             {
                 reloadNotebookList();
                 MessageGrid.Visibility = Visibility.Visible;
+                MetroLogger.getSharedLogger().Info($"Deleted {id}.");
             }
         }
         #endregion

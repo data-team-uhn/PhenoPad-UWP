@@ -1,6 +1,7 @@
 ﻿using PhenoPad.FileService;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -51,7 +52,8 @@ namespace PhenoPad.CustomControl
         public double canvasLeft;
         public double canvasTop;
 
-        private MainPage rootPage; 
+        private MainPage rootPage;
+        public event PropertyChangedEventHandler PropertyChanged;
 
         private bool isInitialized = false;
         public ScaleTransform scaleTransform;
@@ -163,6 +165,10 @@ namespace PhenoPad.CustomControl
             }
         }
 
+        public AddInControl GetAddInControl() {
+            return this;
+        }
+
         /// <summary>
         /// Creates and initializes a new add-in control with given parameters
         /// </summary>
@@ -170,9 +176,7 @@ namespace PhenoPad.CustomControl
         {
             this.InitializeComponent();
             this.Height = height < DEFAULT_HEIGHT ? DEFAULT_HEIGHT : height;
-            this.Width = width < DEFAULT_WIDTH ? DEFAULT_WIDTH : width;
-
-            
+            this.Width = width < DEFAULT_WIDTH ? DEFAULT_WIDTH : width;            
 
             this.name = name;
             this.notebookId = notebookId;
@@ -222,6 +226,7 @@ namespace PhenoPad.CustomControl
             // this.Opacity = 1;
             MovingGrid.Visibility = Visibility.Collapsed;
             Debug.WriteLine("Add-in control manipulation completed");
+            
         }
 
         private void TitleRelativePanel_ManipulationStarted(object sender, ManipulationStartedRoutedEventArgs e)
@@ -231,7 +236,7 @@ namespace PhenoPad.CustomControl
             Debug.WriteLine("Add-in control manipulation started");
         }
 
-        private void TitleRelativePanel_ManipulationDelta(object sender, ManipulationDeltaRoutedEventArgs e)
+        private async void TitleRelativePanel_ManipulationDelta(object sender, ManipulationDeltaRoutedEventArgs e)
         {
             /**
             canvasLeft = Canvas.GetLeft(this) + e.Delta.Translation.X > 0 ? Canvas.GetLeft(this) + e.Delta.Translation.X : 0;
@@ -253,16 +258,18 @@ namespace PhenoPad.CustomControl
             scale = scale < 0.5 ? 0.5 : scale;
             scaleTransform.ScaleY = scale;
 
-
+            await rootPage.curPage.AutoSaveAddin(this.name);
 
         }
         #endregion
 
         #region button click event handlers
 
-        private void Delete_Click(object sender, RoutedEventArgs e)
+        private async void Delete_Click(object sender, RoutedEventArgs e)
         {
+            LogService.MetroLogger.getSharedLogger().Info($"Deleting addin {this.name} from notepage.");
             ((Panel)this.Parent).Children.Remove(this);
+            await rootPage.curPage.AutoSaveAddin(null);
         }
 
         private void DrawingButton_Click(object sender, RoutedEventArgs e)
@@ -330,7 +337,7 @@ namespace PhenoPad.CustomControl
                     InitiateInkCanvas();
                 }
                 stream.Dispose();
-
+                await rootPage.curPage.AutoSaveAddin(this.name);
             }
             // User selects Cancel and picker returns null.
             else
@@ -358,7 +365,8 @@ namespace PhenoPad.CustomControl
                     this.CameraCanvas.Visibility = Visibility.Collapsed;
                     captureControl.unSetUp();
                 }
-                
+                await rootPage.curPage.AutoSaveAddin(this.name);
+
             }
             catch (Exception ex)
             {
@@ -407,6 +415,7 @@ namespace PhenoPad.CustomControl
                 inkCanvas.InkPresenter.InputDeviceTypes =
                     Windows.UI.Core.CoreInputDeviceTypes.None;
             }
+            //await rootPage.curPage.AutoSaveAddin(this.name);
 
         }
 
@@ -429,6 +438,7 @@ namespace PhenoPad.CustomControl
 
             // save bitmapimage to disk
             var result = await FileManager.getSharedFileManager().SaveImageForNotepage(notebookId, pageId, name, wb);
+            await rootPage.curPage.AutoSaveAddin(this.name);
         }
 
         /// <summary>
@@ -481,7 +491,6 @@ namespace PhenoPad.CustomControl
                 scaleTransform.ScaleX = transScale;
                 scaleTransform.ScaleY = transScale;
             }
-
         }
         /// <summary>
         /// When user control is loaded, sets the default size and initialize from disk.
