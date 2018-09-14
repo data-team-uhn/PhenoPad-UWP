@@ -56,14 +56,14 @@ namespace PhenoPad
         //using a semaphore to ensure only one thread is accessing resources
         //its purpose is to avoid concurrent accesses to ensure saving process
         private SemaphoreSlim savingSemaphoreSlim = new SemaphoreSlim(1);
-        private bool loadFromDisk = false;
+        public bool loadFromDisk = false;
 
         /// <summary>
         /// Initializes the new notebook and creates a locally saved file for it.
         /// </summary>
-        private async void InitializeNotebook()
+        public async void InitializeNotebook()
         {
-            LogService.MetroLogger.getSharedLogger().Info("Initialize a new notebook.");
+            MetroLogger.getSharedLogger().Info("Initialize a new notebook.");
             PhenoMana.clearCache();
 
             // Tries to create a file structure for the new notebook.
@@ -101,14 +101,15 @@ namespace PhenoPad
 
             // create file sturcture for this page
             await FileManager.getSharedFileManager().CreateNotePage(notebookObject, curPageIndex.ToString());
+            curPage.Visibility = Visibility.Visible;
         }
 
         /// <summary>
         /// Initializes the notebook by loading from pre-existing local save file.
         /// </summary>
-        private async void InitializeNotebookFromDisk()
+        public async void InitializeNotebookFromDisk()
         {
-            LogService.MetroLogger.getSharedLogger().Info("Open notebook from disk.");
+            MetroLogger.getSharedLogger().Info("Open notebook from disk.");
             PhenoMana.clearCache();
             try
             {
@@ -159,9 +160,10 @@ namespace PhenoPad
                 setNotePageIndex(curPageIndex);
 
                 curPage.initialAnalyze();
+                curPage.Visibility = Visibility.Visible;
             }
             catch (Exception e) {
-                LogService.MetroLogger.getSharedLogger().Error("InitializeNotebookFromDisk():{0}",e);
+                MetroLogger.getSharedLogger().Error($"Failed to Initialize Notebook From Disk:{e.Message}");
             }
 
         }

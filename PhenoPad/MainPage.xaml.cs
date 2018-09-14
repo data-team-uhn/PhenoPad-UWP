@@ -87,7 +87,7 @@ namespace PhenoPad
         public int curPageIndex = -1;
         public static MainPage Current;
         private string curPageId = "";
-        private string notebookId = "";
+        public string notebookId = "";
         private Notebook notebookObject;
         public static readonly string TypeMode = "Typing Mode";
         public static readonly string WritingMode = "Handwriting Mode";
@@ -324,37 +324,29 @@ namespace PhenoPad
         /// <summary>
         /// Initializes the Notebook when user navigated to MainPage.
         /// </summary>
-        protected override void OnNavigatedTo(NavigationEventArgs e)
+        protected async override void OnNavigatedTo(NavigationEventArgs e)
         {
-            // Hide default title bar.
-            var coreTitleBar = CoreApplication.GetCurrentView().TitleBar;
-            coreTitleBar.ExtendViewIntoTitleBar = false;
-            ApplicationViewTitleBar titleBar = ApplicationView.GetForCurrentView().TitleBar;
-            titleBar.ButtonBackgroundColor = Colors.Black;
-            titleBar.ButtonInactiveBackgroundColor = Colors.Black;
-            LogService.MetroLogger.getSharedLogger().Info($"Naviaged to MainPage");
-            //BackButton.IsEnabled = this.Frame.CanGoBack;
+            LogService.MetroLogger.getSharedLogger().Info("Navigated to MainPage.");
+            //initializing notes
+            {
+                var nid = e.Parameter as string;
+                if (nid == "__new__")
+                {
+                    this.loadFromDisk = false;
+                }
+                else
+                {
+                    this.loadFromDisk = true;
+                    this.notebookId = nid;
+                    FileManager.getSharedFileManager().currentNoteboookId = nid;
+                }
 
-            var nid = e.Parameter as string;
-            if (nid == "__new__")
-            {
-                this.loadFromDisk = false;
-            }
-            else
-            {
-                this.loadFromDisk = true;
-                this.notebookId = nid;
-                FileManager.getSharedFileManager().currentNoteboookId = nid;
+                if (loadFromDisk) // Load notes from file
+                    await Dispatcher.RunAsync(CoreDispatcherPriority.High, this.InitializeNotebookFromDisk);
+                else // Create new notebook
+                    await Dispatcher.RunAsync(CoreDispatcherPriority.High, this.InitializeNotebook);
             }
 
-            if (loadFromDisk) // Load notes from file
-            {
-                this.InitializeNotebookFromDisk();
-            }
-            else // Create new notebook
-            {
-                this.InitializeNotebook();
-            }
         }
 
         /// <summary>
@@ -362,6 +354,7 @@ namespace PhenoPad
         /// </summary>
         protected async override void OnNavigatingFrom(NavigatingCancelEventArgs e)
         {
+            curPage.Visibility = Visibility.Collapsed;
             LogService.MetroLogger.getSharedLogger().Info($"Leaving MainPage");
             // this.Frame.BackStack.Clear();
             notePages = null;

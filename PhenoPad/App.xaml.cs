@@ -18,6 +18,11 @@ using Windows.UI.Xaml.Data;
 using Windows.UI.Xaml.Input;
 using Windows.UI.Xaml.Media;
 using Windows.UI.Xaml.Navigation;
+using PhenoPad.LogService;
+using Windows.System;
+using Windows.ApplicationModel.Core;
+using Windows.UI.ViewManagement;
+using Windows.UI;
 
 namespace PhenoPad
 {
@@ -26,8 +31,7 @@ namespace PhenoPad
     /// </summary>
     sealed partial class App : Application
     {
-      
-
+        private bool _isinBackground;
         /// <summary>
         /// Initializes the singleton application object.  This is the first line of authored code
         /// executed, and as such is the logical equivalent of main() or WinMain().
@@ -35,35 +39,52 @@ namespace PhenoPad
         public App()
         {
             this.InitializeComponent();
-            this.Suspending += OnSuspending;
-            
-            UnhandledException += OnUnhandledException;
+            //Binding event handlers to handle app status
+            {
+                this.Suspending += OnSuspending;
+                this.UnhandledException += OnUnhandledException;
+
+                // Subscribe to key lifecyle events to know when the app
+                // transitions to and from foreground and background.
+                // Leaving the background is an important transition
+                // because the app may need to restore UI.
+                EnteredBackground += AppEnteredBackground;
+                LeavingBackground += AppLeavingBackground;
+            }
         }
 
-        private static async void OnUnhandledException(object sender, Windows.UI.Xaml.UnhandledExceptionEventArgs e)
+        private void AppLeavingBackground(object sender, LeavingBackgroundEventArgs e)
         {
-            
-            e.Handled = true;
+            MetroLogger.getSharedLogger().Info("App leaved background.");
+            _isinBackground = false;
+        }
+
+        private void AppEnteredBackground(object sender, EnteredBackgroundEventArgs e)
+        {
+            MetroLogger.getSharedLogger().Info("App entered background.");
+            _isinBackground = true;
+        }
+
+        /// <summary>
+        /// Invoked when Application receives an unhandled exception
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private static async void OnUnhandledException(object sender, Windows.UI.Xaml.UnhandledExceptionEventArgs e)
+        {           
             await Windows.ApplicationModel.Core.CoreApplication.MainView.CoreWindow.Dispatcher.RunAsync(CoreDispatcherPriority.Normal,
                 async () =>
                 {
                     await ShowErrorDialog(e.Message);
-                    LogService.MetroLogger.getSharedLogger().Error("Unhandled exception occured: " + e.Message);
-                });
-           
+                    MetroLogger.getSharedLogger().Error($"Unhandled exception at {sender.ToString()}:\n {e.Message}");
+                    e.Handled = true;
+                });          
         }
 
 
-        private static async System.Threading.Tasks.Task<bool> ShowErrorDialog(string message)
+        private static async Task<bool> ShowErrorDialog(string message)
         {
             var dialog = new MessageDialog("Error: " + message);
-
-            /**
-            dialog.Commands.Add(new UICommand("Abort", delegate
-            {
-                Current.Exit();
-            }));
-            **/
             await dialog.ShowAsync();
             return false;
         }
@@ -73,7 +94,7 @@ namespace PhenoPad
         /// will be used such as when the application is launched to open a specific file.
         /// </summary>
         /// <param name="e">Details about the launch request and process.</param>
-        protected override void OnLaunched(LaunchActivatedEventArgs e)
+        protected override async void OnLaunched(LaunchActivatedEventArgs e)
         {
             Frame rootFrame = Window.Current.Content as Frame;
             
@@ -102,6 +123,7 @@ namespace PhenoPad
                     // When the navigation stack isn't restored navigate to the first page,
                     // configuring the new page by passing required information as a navigation
                     // parameter
+
                     rootFrame.Navigate(typeof(PageOverview), e.Arguments);
                 }
                 // Ensure the current window is active
@@ -130,25 +152,25 @@ namespace PhenoPad
         /// <param name="e">Details about the suspend request.</param>
         private async void OnSuspending(object sender, SuspendingEventArgs e)
         {
-            
-            LogService.MetroLogger.getSharedLogger().Info("App is suspended.");
-
-            var deferral = e.SuspendingOperation.GetDeferral();
-            //TODO: Save application state and stop any background activity
-            LogService.MetroLogger.getSharedLogger().Info("Save data before suspending.");
-            if (MainPage.Current != null)
-                await MainPage.Current.saveNoteToDisk();
-            deferral.Complete();
+            //entering background will by default suspend app, we only need to
+            //handle suspensions that happened when app is in use.
+            if (!_isinBackground) {
+                MetroLogger.getSharedLogger().Info($"App is suspended.");
+                var deferral = e.SuspendingOperation.GetDeferral();
+                if (MainPage.Current != null)
+                    await MainPage.Current.saveNoteToDisk();
+                deferral.Complete();
+            }
         }
 
 
         private void SaveAppData()
         {
-            StorageFolder folder = Windows.Storage.ApplicationData.Current.LocalFolder;
+            StorageFolder folder = ApplicationData.Current.LocalFolder;
             Task<StorageFile> tFile = folder.CreateFileAsync("AppData.txt").AsTask<StorageFile>();
             tFile.Wait();
             StorageFile file = tFile.Result;
-            Task t = Windows.Storage.FileIO.WriteTextAsync(file, "This Is Application data").AsTask();
+            Task t = FileIO.WriteTextAsync(file, "This Is Application data").AsTask();
             t.Wait();
         }
         

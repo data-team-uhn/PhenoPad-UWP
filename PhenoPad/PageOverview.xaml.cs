@@ -49,7 +49,7 @@ namespace PhenoPad
             LoadAllNotes();
             LogService.MetroLogger.getSharedLogger(typeof(PageOverview)).Info("Note list loaded.");
 
-            hide_titlebar();
+            //hide_titlebar();
 
             // https://stackoverflow.com/questions/43699256/how-to-use-acrylic-accent-in-windows-10-creators-update/43711413#43711413
 
@@ -194,15 +194,6 @@ namespace PhenoPad
         #region navigation handlers
         protected override async void OnNavigatedTo(NavigationEventArgs e)
         {
-            await Dispatcher.RunAsync(CoreDispatcherPriority.High, hide_titlebar);
-            MetroLogger.getSharedLogger().Info("Navigated to PageOverview");          
-            reloadNotebookList();    
-        }
-        protected override async void OnNavigatedFrom(NavigationEventArgs e)
-        {
-            MetroLogger.getSharedLogger().Info("Navigated from PageOverview");
-            this.Frame.BackStack.Clear();           
-            //using await annoynous functions to reduce the delay in titlebar showing
             await Dispatcher.RunAsync(CoreDispatcherPriority.High, () =>
             {
                 CoreApplication.GetCurrentView().TitleBar.ExtendViewIntoTitleBar = false;
@@ -211,6 +202,14 @@ namespace PhenoPad
                 titleBar.ButtonBackgroundColor = Colors.Black;
                 titleBar.ButtonInactiveBackgroundColor = Colors.Black;
             });
+            //await Dispatcher.RunAsync(CoreDispatcherPriority.High, hide_titlebar);
+            MetroLogger.getSharedLogger().Info("Navigated to PageOverview");          
+            reloadNotebookList();    
+        }
+        protected override void OnNavigatedFrom(NavigationEventArgs e)
+        {
+            MetroLogger.getSharedLogger().Info("Navigated from PageOverview");
+            this.Frame.BackStack.Clear();
         }
         #endregion
 

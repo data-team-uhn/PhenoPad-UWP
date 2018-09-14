@@ -173,7 +173,12 @@ namespace PhenoPad.CustomControl
         public NotePageControl(string notebookid,string pageid)
         {  
             rootPage = MainPage.Current;
+            
+
             this.InitializeComponent();
+
+            this.Visibility = Visibility.Collapsed;
+
             this.DrawBackgroundLines();
 
             this.notebookId = notebookid;
@@ -259,6 +264,7 @@ namespace PhenoPad.CustomControl
             format.SetLineSpacing(LineSpacingRule.Exactly, 33.7f);
             textNoteEditBox.Document.SetDefaultParagraphFormat(format);
 
+            
 
             // disable moving strokes for now
             //selectionRectangle.ManipulationMode = ManipulationModes.TranslateX | ManipulationModes.TranslateY;
@@ -316,10 +322,10 @@ namespace PhenoPad.CustomControl
         private void Page_Loaded(object sender, RoutedEventArgs e)
         {
             // Draw background lines
+
             DrawBackgroundLines();
             scrollViewer.ChangeView(null, 100, null, true);
             sideScrollView.ChangeView(null, 100, null, true);
-
         }
 
         public async void initialAnalyze()
