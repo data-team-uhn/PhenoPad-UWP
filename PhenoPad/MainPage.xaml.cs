@@ -47,6 +47,7 @@ using System.IO;
 using Windows.Storage;
 using Windows.Media.Editing;
 using System.Runtime.InteropServices.WindowsRuntime;
+using MetroLog;
 
 namespace PhenoPad
 {
@@ -79,6 +80,7 @@ namespace PhenoPad
         Symbol LassoSelect = (Symbol)0xEF20;
         Symbol TouchWriting = (Symbol)0xED5F;
 
+        private ILogger logger = LogService.MetroLogger.getSharedLogger();
         private List<NotePageControl> notePages;
         private List<Button> pageIndexButtons;
         private SimpleOrientationSensor _simpleorientation;
@@ -148,6 +150,17 @@ namespace PhenoPad
             PropertyChanged += MainPage_PropertyChanged;
             // save to disk every 10 seconds
             //this.saveNotesTimer(10); // Currently disabling to test auto-save function
+
+            //When user clicks X while in mainpage, auto-saves all current process and exits the program.
+            Windows.UI.Core.Preview.SystemNavigationManagerPreview.GetForCurrentView().CloseRequested +=
+            async (sender, args) =>
+            {
+                args.Handled = true;
+                logger.Info("Exiting app ...");
+                await this.saveNoteToDisk();
+                App.Current.Exit();
+            };
+
         }
 
 
@@ -1116,10 +1129,12 @@ namespace PhenoPad
             }
         }
 
-        private async void BackButton_Click(object sender, RoutedEventArgs e)
+        private void BackButton_Click(object sender, RoutedEventArgs e)
         {
             // save note
-            await this.saveNoteToDisk();
+            // currently disabled to test out auto-saving
+            //await this.saveNoteToDisk();
+
             UIWebSocketClient.getSharedUIWebSocketClient().disconnect();
             //On_BackRequested();
             this.Frame.Navigate(typeof(PageOverview));
