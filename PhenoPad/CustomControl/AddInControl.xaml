@@ -20,12 +20,19 @@
             <x:Double x:Key="categoryButtonFontSize">27</x:Double>
         </ResourceDictionary>
     </UserControl.Resources>
-    <Grid Background="WhiteSmoke" BorderBrush="LightGray" Name="OutlineGrid">
+    
+    <Grid Background="WhiteSmoke" BorderBrush="LightGray" Name="OutlineGrid"
+          ManipulationMode="TranslateX,TranslateY"
+          ManipulationStarted="Manipulator_OnManipulationStarted"
+          ManipulationDelta="Manipulator_OnManipulationDelta">
+        
         <Grid.RowDefinitions>
             <RowDefinition Height="48"></RowDefinition>
             <RowDefinition Height="*"></RowDefinition>
         </Grid.RowDefinitions>
-       
+
+
+
         <Grid Name="contentGrid" Grid.Row="1">
 
             <!-- The canvas where we render the replacement text and shapes. -->
@@ -36,6 +43,8 @@
             <!--
             <InkCanvas x:Name="inkCanvas" />
             -->
+            
+            
         </Grid>
         <Grid Name="categoryGrid"  Grid.Row="1">
 
@@ -52,9 +61,13 @@
             </StackPanel>
         </Grid>
         <RelativePanel Name="TitleRelativePanel" Background="WhiteSmoke">
-            <Button Style="{StaticResource MyButtonStyle}" Background="Transparent" Foreground="Gray" Height="35" VerticalAlignment="Top" Width="35" Padding="0" Name="deleteButton" Click="Delete_Click">
-                <SymbolIcon Symbol="Clear" Height="35" Width="35"></SymbolIcon>
+            <Rectangle Grid.Row ="0" x:Name="ResizeRectangle" IsHitTestVisible="False"
+               Width="10" Height="10" Fill="White"
+               VerticalAlignment="Top" HorizontalAlignment="Left"/>
+            <Button Style="{StaticResource MyButtonStyle}" Background="Transparent" Foreground="Gray" Height="35" VerticalAlignment="Top" Width="35" Padding="0" Name="deleteButton" Click="Delete_Click" Margin="6,6,-6,-6">
+                <SymbolIcon Symbol="Clear" Height="35" Width="35" Margin="-1,-1,-3,-3" HorizontalAlignment="Left"></SymbolIcon>
             </Button>
+            
         </RelativePanel>
         
         <!--
@@ -108,15 +121,21 @@
                 </Button>-->
                 
             </StackPanel>
+            
         </Grid>
 
         <local:AddInImageControl Grid.Row="1" Visibility="Collapsed" x:Name="imageControl"/>
+        
 
         <InkCanvas Grid.Row="1" Visibility="Collapsed" x:Name="inkCanvas"/>
 
+
         <Grid Grid.Row="0" Grid.RowSpan="2" Background="White" Opacity="0.5" Name="MovingGrid" Visibility="Collapsed">
             
+        
         </Grid>
+
+        
 
     </Grid> 
 </UserControl>

@@ -268,7 +268,7 @@ namespace PhenoPad
                 MetroLogger.getSharedLogger().Error("Failed to auto-save collected phenotypes.");
             }
             else
-                MetroLogger.getSharedLogger().Error("Auto-saving collected phenotypes done.");
+                MetroLogger.getSharedLogger().Info("Auto-saving collected phenotypes done.");
 
             return complete;
         }
