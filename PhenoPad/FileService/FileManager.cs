@@ -819,14 +819,13 @@ namespace PhenoPad.FileService
             {
                 var notebook = await ROOT_FOLDER.GetFolderAsync(id);
                 await notebook.DeleteAsync();
+                return true;
             }
             catch (Exception e)
             {
-                Debug.WriteLine(e.Message);
-                LogService.MetroLogger.getSharedLogger().Error($"Failed to delete notebook: {id}");
-
-            }
-            return true;
+                LogService.MetroLogger.getSharedLogger().Error($"Failed to delete notebook: {id}:{e.Message}");
+                return false;
+            }           
         }
 
         #endregion
