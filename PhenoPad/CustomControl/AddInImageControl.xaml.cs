@@ -29,6 +29,10 @@ namespace PhenoPad.CustomControl
         InkAnalysisResult inkAnalysisResults = null;
         DispatcherTimer autosaveDispatcherTimer = new DispatcherTimer();
 
+        private MainPage rootPage;
+
+        private bool hide = false;
+
         public string name { get; set; }
         public string notebookId { get; set; }
         public string pageId { get; set; }
@@ -43,23 +47,17 @@ namespace PhenoPad.CustomControl
             }
         }
 
-        public AddInImageControl()
-        {
-            try
-            {
-                this.InitializeComponent();
-            }
-            catch (Exception)
-            { }
-        }
-        
+        //Empty Constructor for serilization.
+        public AddInImageControl(){}
+        //The real Constructor with parameters.
         public AddInImageControl(string notebookId, string pageId, string name)
         {
             this.InitializeComponent();  
         }
-
+        //Initializes the image control's properties
         public void initialize(string notebookId, string pageId, string name)
         {
+            rootPage = MainPage.Current;
             this.name = name;
             // Set supported inking device types.
             inkCanvas.InkPresenter.InputDeviceTypes =
@@ -67,15 +65,55 @@ namespace PhenoPad.CustomControl
                 Windows.UI.Core.CoreInputDeviceTypes.Pen;
 
             // Set initial ink stroke attributes.
-            InkDrawingAttributes drawingAttributes = new InkDrawingAttributes();
-            drawingAttributes.Color = Windows.UI.Colors.Black;
-            drawingAttributes.IgnorePressure = false;
-            drawingAttributes.FitToCurve = true;
-            inkCanvas.InkPresenter.UpdateDefaultDrawingAttributes(drawingAttributes);
+            {
+                InkDrawingAttributes drawingAttributes = new InkDrawingAttributes();
+                drawingAttributes.Color = Windows.UI.Colors.Black;
+                drawingAttributes.IgnorePressure = false;
+                drawingAttributes.FitToCurve = true;
+                inkCanvas.InkPresenter.UpdateDefaultDrawingAttributes(drawingAttributes);
+            }
 
+
+            //Timer event handler bindings
+            {
+                inkCanvas.InkPresenter.StrokeInput.StrokeStarted += StrokeInput_StrokeStarted;
+                inkCanvas.InkPresenter.StrokeInput.StrokeEnded += StrokeInput_StrokeEnded;
+                autosaveDispatcherTimer.Tick += AutoSaveTimer_Tick;
+                //If user has not add new stroke in 3 seconds, tick auto timer
+                autosaveDispatcherTimer.Interval = TimeSpan.FromSeconds(3);
+            }
+
+            
+            
         }
 
-        private bool hide = false;
+        private void StrokeInput_StrokeStarted(object sender, object e)
+        {
+            autosaveDispatcherTimer.Stop();
+        }
+
+        private void StrokeInput_StrokeEnded(object sender, object e)
+        {
+            autosaveDispatcherTimer.Start();
+        }
+
+        //Invoked when strokes are processed from wet to dry, tries to call autosave on inkcanvas
+        private async void AutoSaveTimer_Tick(object sender, object e)
+        {
+            //https://docs.microsoft.com/en-us/uwp/api/windows.ui.input.inking.inkpresenter.strokescollected
+            //try
+            //{
+            //    LogService.MetroLogger.getSharedLogger().Info("Auto-saving drawings in ImageAnnotation add-in...");
+            //    StorageFile file = await FileManager.getSharedFileManager().GetNoteFile(notebookId, pageId, NoteFileType.ImageAnnotation, name);
+            //    await FileManager.getSharedFileManager().saveStrokes(file, this.inkCan);
+            //}
+            //catch (Exception ex) {
+            //    LogService.MetroLogger.getSharedLogger().Error($"Failed to auto-save addin drawings: {ex.Message}");
+            //}
+            await rootPage.curPage.AutoSaveAddin(this.name);          
+        }
+
+    
         public void deleteAsHide()
         {
             hide = true;
@@ -85,6 +123,7 @@ namespace PhenoPad.CustomControl
         {
             return imageControl;
         }
+
         private void Delete_Click(object sender, RoutedEventArgs e)
         {
             if (this.hide)

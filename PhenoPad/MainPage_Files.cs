@@ -244,7 +244,7 @@ namespace PhenoPad
             }
             catch (Exception ex)
             {
-                LogService.MetroLogger.getSharedLogger().Error("Failed to save notebook: " + ex.Message);
+                MetroLogger.getSharedLogger().Error("Failed to save notebook: " + ex.Message);
             }
             finally
             {

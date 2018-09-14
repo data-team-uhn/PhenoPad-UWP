@@ -1375,25 +1375,45 @@ namespace PhenoPad
         /// </summary>
         private async void noteNameTextBox_KeyDown(object sender, KeyRoutedEventArgs e)
         {
-            if (e.Key == Windows.System.VirtualKey.Enter)
+            try
             {
-                if (notebookObject != null && !string.IsNullOrEmpty(noteNameTextBox.Text))
+                if (e.Key == Windows.System.VirtualKey.Enter)
                 {
-                    notebookObject.name = noteNameTextBox.Text;
-                    await FileManager.getSharedFileManager().SaveToMetaFile(notebookObject);
-                    LoseFocus(sender);
+                    if (notebookObject != null && !string.IsNullOrEmpty(noteNameTextBox.Text))
+                    {
+                        LogService.MetroLogger.getSharedLogger().Info("Saving new notebook name ... ");
+                        notebookObject.name = noteNameTextBox.Text;
+                        bool result = await FileManager.getSharedFileManager().SaveToMetaFile(notebookObject);
+                        if (result)
+                            LogService.MetroLogger.getSharedLogger().Info("Done saving new notebook name.");
+                        LoseFocus(sender);
+                    }
                 }
             }
+            catch (Exception ex)
+            {
+                LogService.MetroLogger.getSharedLogger().Error($"Failed to save new notebook name:{ex.Message}");
+            }
+
         }
         /// <summary>
         /// Handles when user finish typing new note name but didn't press enter key
         /// </summary>
         private async void noteNameTextBox_LostFocus(object sender, RoutedEventArgs args)
         {
-            if (notebookObject != null && !string.IsNullOrEmpty(noteNameTextBox.Text))
+            try {
+                if (notebookObject != null && !string.IsNullOrEmpty(noteNameTextBox.Text))
+                {
+                    LogService.MetroLogger.getSharedLogger().Info("Saving new notebook name ... ");
+                    notebookObject.name = noteNameTextBox.Text;
+                    bool result = await FileManager.getSharedFileManager().SaveToMetaFile(notebookObject);
+                    if (result)
+                        LogService.MetroLogger.getSharedLogger().Info("Done saving new notebook name.");
+                }
+            }
+            catch (Exception ex)
             {
-                notebookObject.name = noteNameTextBox.Text;
-                await FileManager.getSharedFileManager().SaveToMetaFile(notebookObject);
+                LogService.MetroLogger.getSharedLogger().Error($"Failed to save new notebook name:{ex.Message}");
             }
         }
 

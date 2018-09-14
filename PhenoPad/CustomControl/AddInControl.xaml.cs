@@ -41,7 +41,8 @@ namespace PhenoPad.CustomControl
         IReadOnlyList<InkStroke> inkStrokes = null;
         InkAnalysisResult inkAnalysisResults = null;
 
-        
+        DispatcherTimer autosaveDispatcherTimer = new DispatcherTimer();
+
 
         //public string name { get; }
         //public string notebookId { get; }
@@ -53,7 +54,6 @@ namespace PhenoPad.CustomControl
         public double canvasTop;
 
         private MainPage rootPage;
-        public event PropertyChangedEventHandler PropertyChanged;
 
         private bool isInitialized = false;
         public ScaleTransform scaleTransform;
@@ -183,6 +183,15 @@ namespace PhenoPad.CustomControl
             this.pageId = pageId;
             rootPage = MainPage.Current;
 
+            //Timer event handler bindings
+            {
+                inkCanvas.InkPresenter.StrokeInput.StrokeStarted += StrokeInput_StrokeStarted;
+                inkCanvas.InkPresenter.StrokeInput.StrokeEnded += StrokeInput_StrokeEnded;
+                inkCanvas.InkPresenter.StrokesErased += InkPresenter_StrokesErased;
+                autosaveDispatcherTimer.Tick += AutoSaveTimer_Tick;
+                //If user has not add new stroke in 3 seconds, tick auto timer
+                autosaveDispatcherTimer.Interval = TimeSpan.FromSeconds(1);
+            }
 
             scaleTransform = new ScaleTransform();
             dragTransform = new TranslateTransform();
@@ -504,6 +513,32 @@ namespace PhenoPad.CustomControl
                 TitleRelativePanel.Visibility = Visibility.Collapsed;
                 InitializeFromDisk(true);
             }
+        }
+        #endregion
+
+        #region Auto save drawings
+        private void StrokeInput_StrokeStarted(object sender, object e)
+        {
+            autosaveDispatcherTimer.Stop();
+        }
+
+        private void StrokeInput_StrokeEnded(object sender, object e)
+        {
+            //detected stroke change, start the timer
+            autosaveDispatcherTimer.Start();
+        }
+
+        private void InkPresenter_StrokesErased(object sender, object e)
+        {
+            autosaveDispatcherTimer.Start();
+        }
+
+        //Invoked when strokes are processed from wet to dry, tries to call autosave on inkcanvas
+        private async void AutoSaveTimer_Tick(object sender, object e)
+        {
+            await rootPage.curPage.AutoSaveAddin(this.name);
+            //stop the timer after saving 
+            autosaveDispatcherTimer.Stop();
         }
         #endregion
 

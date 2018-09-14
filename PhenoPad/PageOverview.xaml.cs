@@ -170,16 +170,23 @@ namespace PhenoPad
 
             LoadAllNotes();
         }
+
         private async void Delete_ItemInvoked(SwipeItem sender, SwipeItemInvokedEventArgs args)
         {
-            
             var id = (string)args.SwipeControl.Tag;
-            bool isSuccess = await FileManager.getSharedFileManager().DeleteNotebookById(id);
-            if (isSuccess)
+            try
             {
-                reloadNotebookList();
-                MessageGrid.Visibility = Visibility.Visible;
-                MetroLogger.getSharedLogger().Info($"Deleted {id}.");
+                MetroLogger.getSharedLogger().Info($"Deleting {id}.");
+                bool isSuccess = await FileManager.getSharedFileManager().DeleteNotebookById(id);
+                if (isSuccess)
+                {
+                    reloadNotebookList();
+                    MessageGrid.Visibility = Visibility.Visible;
+                    MetroLogger.getSharedLogger().Info($"Successfully deleted {id}.");
+                }
+            }
+            catch (Exception e) {
+                MetroLogger.getSharedLogger().Error($"Failed to delete {id}: {e.Message}.");
             }
         }
         #endregion
@@ -187,16 +194,16 @@ namespace PhenoPad
         #region navigation handlers
         protected override async void OnNavigatedTo(NavigationEventArgs e)
         {
-            await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, hide_titlebar);
-            LogService.MetroLogger.getSharedLogger().Info("Navigated to PageOverview");          
-            reloadNotebookList();
-            
+            await Dispatcher.RunAsync(CoreDispatcherPriority.High, hide_titlebar);
+            MetroLogger.getSharedLogger().Info("Navigated to PageOverview");          
+            reloadNotebookList();    
         }
         protected override async void OnNavigatedFrom(NavigationEventArgs e)
         {
-            this.Frame.BackStack.Clear();
+            MetroLogger.getSharedLogger().Info("Navigated from PageOverview");
+            this.Frame.BackStack.Clear();           
             //using await annoynous functions to reduce the delay in titlebar showing
-            await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () =>
+            await Dispatcher.RunAsync(CoreDispatcherPriority.High, () =>
             {
                 CoreApplication.GetCurrentView().TitleBar.ExtendViewIntoTitleBar = false;
                 //Changes the background color of title bar back to default
@@ -204,7 +211,6 @@ namespace PhenoPad
                 titleBar.ButtonBackgroundColor = Colors.Black;
                 titleBar.ButtonInactiveBackgroundColor = Colors.Black;
             });
-
         }
         #endregion
 

@@ -511,13 +511,13 @@ namespace PhenoPad.CustomControl
             curLineResultPanel.Visibility = Visibility.Collapsed;
 
             dispatcherTimer.Stop();
-            
+            autosaveDispatcherTimer.Start();
+
             //operationDispathcerTimer.Stop();
             foreach (var stroke in args.Strokes)
             {
                 inkAnalyzer.RemoveDataForStroke(stroke.Id);
             }
-            on_stroke_changed(this, args);
             //operationDispathcerTimer.Start();
             await analyzeInk();
         }
@@ -1327,8 +1327,7 @@ namespace PhenoPad.CustomControl
         /// Auto-saves current strokes on page after input with idle more than 1 second
         /// </summary>
         public async void on_stroke_changed(object sender = null, object e = null)
-        {
-            autosaveDispatcherTimer.Stop();
+        {          
             await autosaveSemaphore.WaitAsync();
             try
             {
@@ -1349,6 +1348,7 @@ namespace PhenoPad.CustomControl
             finally
             {
                 autosaveSemaphore.Release();
+                autosaveDispatcherTimer.Stop();
             }
         }
 
@@ -1472,29 +1472,38 @@ namespace PhenoPad.CustomControl
         //Saves a specific addin control and meta data to disk
         public async Task<bool> AutoSaveAddin(String name) {
             bool result1 = true;
-            bool result2 = true;          
-            if (name != null)
-            {
-                //finds the specific add-in control and save it to disk  
-                List<AddInControl> addinlist = await GetAllAddInControls();
-                AddInControl addin = addinlist.Where(x => x.name == name).ToArray()[0];
-                Debug.WriteLine($"found current addin to be saved {addin.name}");
+            bool result2 = true;
+            try {
+                
+                if (name != null)
+                {
+                    //finds the specific add-in control and save it to disk  
+                    List<AddInControl> addinlist = await GetAllAddInControls();
+                    AddInControl addin = addinlist.Where(x => x.name == name).ToArray()[0];
+                    Debug.WriteLine($"found current addin to be saved {addin.name}");
 
-                var strokesFile = await FileManager.getSharedFileManager().GetNoteFile(notebookId, pageId, NoteFileType.ImageAnnotation, addin.name);
-                result1 = await FileManager.getSharedFileManager().saveStrokes(strokesFile, addin.inkCan);
-                if (!result1)
-                    MetroLogger.getSharedLogger().Error($"Auto-save: note-{notebookId} at page {pageId}, {addin.name} failed to save.");
+                    var strokesFile = await FileManager.getSharedFileManager().GetNoteFile(notebookId, pageId, NoteFileType.ImageAnnotation, addin.name);
+                    result1 = await FileManager.getSharedFileManager().saveStrokes(strokesFile, addin.inkCan);
+                    if (!result1)
+                        MetroLogger.getSharedLogger().Error($"Auto-save: note-{notebookId} at page {pageId}, {addin.name} failed to save.");
+                }
+
+                // add in meta data
+                List<ImageAndAnnotation> imageList = await GetAllAddInObjects();
+                string metapath = FileManager.getSharedFileManager().GetNoteFilePath(notebookId, pageId, NoteFileType.ImageAnnotationMeta);
+                result2 = await FileManager.getSharedFileManager().SaveObjectSerilization(metapath, imageList, typeof(List<ImageAndAnnotation>));
+
+                if (result1 && result2)
+                    logger.Info($"Auto-saving add-in completed.");
+
+                
+            }
+            catch (Exception e) {
+                MetroLogger.getSharedLogger().Error($"Failed to auto-save addin: {e.Message}");
             }
 
-            // add in meta data
-            List<ImageAndAnnotation> imageList = await GetAllAddInObjects();
-            string metapath = FileManager.getSharedFileManager().GetNoteFilePath(notebookId, pageId, NoteFileType.ImageAnnotationMeta);
-            result2 = await FileManager.getSharedFileManager().SaveObjectSerilization(metapath, imageList, typeof(List<ImageAndAnnotation>));
-
-            if (result1 && result2)
-                logger.Info($"Auto-saving add-in completed.");
-
             return result2 && result1;
+
         }
 
 

@@ -516,8 +516,16 @@ namespace PhenoPad.FileService
         public async Task<bool> SaveToMetaFile(Notebook notebook)
         {
             LogService.MetroLogger.getSharedLogger().Info($"Saving notebook meta file object of {notebook.id}");
-            var metafile = GetNoteFilePath(notebook.id, "", NoteFileType.Meta);
-            return await SaveObjectSerilization(metafile, notebook, typeof(Notebook));
+            try
+            {
+                var metafile = GetNoteFilePath(notebook.id, "", NoteFileType.Meta);
+                return await SaveObjectSerilization(metafile, notebook, typeof(Notebook));
+            }
+            catch (Exception e)
+            {
+                LogService.MetroLogger.getSharedLogger().Error($"Failed to save to meta file:{e.Message}");
+                return false;
+            }
         }
 
         // save photos and annotations to disk
@@ -592,32 +600,19 @@ namespace PhenoPad.FileService
                 {
                     serializer.Serialize(stream, tosave);
                 }
-
-                /**
-                if (status == Windows.Storage.Provider.FileUpdateStatus.Complete)
-                {
-                }
-                else
-                {
-                    Debug.WriteLine(status.ToString());
-                    result = false;
-                }**/
             }
             catch (Exception e)
             {
-                Debug.WriteLine(e.Message);
+                LogService.MetroLogger.getSharedLogger().Error($"Failed to save object serilization:{e.Message}");
                 result = false;
-                LogService.MetroLogger.getSharedLogger().Error($"Failed to save object to {filepath}: {e.Message}");
             }
             finally
             {
                 serilizationSS.Release();
                 if (stream != null)
                     stream.Dispose();
-
                 // Finalize write so other apps can update file.
                 // Windows.Storage.Provider.FileUpdateStatus status = await Windows.Storage.CachedFileManager.CompleteUpdatesAsync(sfile);
-
             }
             return result;
         }
@@ -762,26 +757,24 @@ namespace PhenoPad.FileService
         /// </summary>
         public async Task<object> LoadObjectFromSerilization(StorageFile metaFile, Type type)
         {
+            Stream stream = null;
             try
             {
-
-                Stream stream = await metaFile.OpenStreamForReadAsync();
-                if (stream.Length == 0) {
-                    LogService.MetroLogger.getSharedLogger().Info($"Fetched Serilization is an empty file: {metaFile.Path}");
-                    return null;
-                }
+                stream = await metaFile.OpenStreamForReadAsync();
                 //tosave = new Class1("ididid", "namename");
                 var serializer = new XmlSerializer(type);
                 using (stream)
                 {
                     object obj = serializer.Deserialize(stream);
-                    Debug.WriteLine(obj.ToString());
                     return obj;
                 }
             }
             catch (Exception ex)
             {
-                LogService.MetroLogger.getSharedLogger().Error($"Failed to fetch object from serilization file: {metaFile.Path}, error: {ex.Message} ");
+                if (stream == null) 
+                    LogService.MetroLogger.getSharedLogger().Info($"Fetched Serilization is an empty file: {metaFile.Path}");
+                else
+                    LogService.MetroLogger.getSharedLogger().Error($"Failed to fetch object from serilization file: {metaFile.Path}, error: {ex.Message} ");
                 return null;
             }
         }
@@ -791,34 +784,26 @@ namespace PhenoPad.FileService
         /// </summary>
         public async Task<bool> loadStrokes(StorageFile strokesFile, InkCanvas inkcancas)
         {
-            LogService.MetroLogger.getSharedLogger().Info($"Loading strokes from {strokesFile.Path}");
+            LogService.MetroLogger.getSharedLogger().Info($"Loading strokes from disk...");
             // User selects a file and picker returns a reference to the selected file.
-            if (strokesFile != null)
+            try
             {
-                try
+                // Open a file stream for reading.
+                IRandomAccessStream stream = await strokesFile.OpenAsync(FileAccessMode.Read);
+                // Read from file.
+                using (var inputStream = stream.GetInputStreamAt(0))
                 {
-                    // Open a file stream for reading.
-                    IRandomAccessStream stream = await strokesFile.OpenAsync(Windows.Storage.FileAccessMode.Read);
-                    // Read from file.
-                    using (var inputStream = stream.GetInputStreamAt(0))
-                    {
-                        await inkcancas.InkPresenter.StrokeContainer.LoadAsync(inputStream);
-                        Debug.WriteLine($"{strokesFile.Path} has been loaded.");
-                    }
-                    stream.Dispose();
+                    await inkcancas.InkPresenter.StrokeContainer.LoadAsync(inputStream);
+                    LogService.MetroLogger.getSharedLogger().Info($"Strokes have been loaded.");
                 }
-                catch (Exception)
-                {
-                    Debug.WriteLine($"Failed to load {strokesFile.Path}.");
-                    LogService.MetroLogger.getSharedLogger().Error($"Failed to load {strokesFile.Path}.");
-                    return false;
-                }
+                stream.Dispose();
+                return true;
             }
-            else
+            catch (Exception e)
             {
+                LogService.MetroLogger.getSharedLogger().Error($"Failed to load strokes:{e.Message}.");
                 return false;
             }
-            return true;
         }
 
         #endregion
