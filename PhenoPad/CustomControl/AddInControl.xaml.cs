@@ -278,37 +278,37 @@ namespace PhenoPad.CustomControl
         #endregion
 
 
-        private void Manipulator_OnManipulationStarted(object sender, ManipulationStartedRoutedEventArgs e)
-        {
-            Debug.WriteLine($"entered on manipulation:{e.Position.X},{e.Position.Y}");
-            Debug.WriteLine($"canvas:{this.canvasLeft},{this.canvasTop}");
-            bool flag1 = e.Position.X + this.canvasLeft > this.canvasLeft && e.Position.Y + this.canvasTop > this.canvasTop;
-            bool flag2 = e.Position.X + this.canvasLeft < this.canvasLeft + 10 && e.Position.Y + this.canvasTop < this.canvasTop+10;
-            if (flag1 && flag2)
-            {
-                LogService.MetroLogger.getSharedLogger().Info("is resizing");
-                _isResizing = true;
-            } 
-            else _isResizing = false;
-        }
+        //private void Manipulator_OnManipulationStarted(object sender, ManipulationStartedRoutedEventArgs e)
+        //{
+        //    Debug.WriteLine($"entered on manipulation:{e.Position.X},{e.Position.Y}");
+        //    Debug.WriteLine($"canvas:{this.canvasLeft},{this.canvasTop}");
+        //    bool flag1 = e.Position.X + this.canvasLeft > this.canvasLeft && e.Position.Y + this.canvasTop > this.canvasTop;
+        //    bool flag2 = e.Position.X + this.canvasLeft < this.canvasLeft + 10 && e.Position.Y + this.canvasTop < this.canvasTop+10;
+        //    if (flag1 && flag2)
+        //    {
+        //        LogService.MetroLogger.getSharedLogger().Info("is resizing");
+        //        _isResizing = true;
+        //    } 
+        //    else _isResizing = false;
+        //}
 
-        private void Manipulator_OnManipulationDelta(object sender, ManipulationDeltaRoutedEventArgs e)
-        {
-            if (_isResizing)
-            {
-                Width -= e.Delta.Translation.X;
-                Height -= e.Delta.Translation.Y;
-                //TODO need to set min size bound and call auto save
-            }
-            else
-            {
-                autosaveDispatcherTimer.Start();
-                //todo only save on manipulation complete
+        //private void Manipulator_OnManipulationDelta(object sender, ManipulationDeltaRoutedEventArgs e)
+        //{
+        //    if (_isResizing)
+        //    {
+        //        Width -= e.Delta.Translation.X;
+        //        Height -= e.Delta.Translation.Y;
+        //        //TODO need to set min size bound and call auto save
+        //    }
+        //    else
+        //    {
+        //        autosaveDispatcherTimer.Start();
+        //        //todo only save on manipulation complete
 
-                //Canvas.SetLeft(this, Canvas.GetLeft(this) + e.Delta.Translation.X);
-                //Canvas.SetTop(this, Canvas.GetTop(this) + e.Delta.Translation.Y);
-            }
-        }
+        //        //Canvas.SetLeft(this, Canvas.GetLeft(this) + e.Delta.Translation.X);
+        //        //Canvas.SetTop(this, Canvas.GetTop(this) + e.Delta.Translation.Y);
+        //    }
+        //}
 
         #region button click event handlers
 

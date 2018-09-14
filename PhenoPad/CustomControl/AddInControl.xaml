@@ -22,9 +22,7 @@
     </UserControl.Resources>
     
     <Grid Background="WhiteSmoke" BorderBrush="LightGray" Name="OutlineGrid"
-          ManipulationMode="TranslateX,TranslateY"
-          ManipulationStarted="Manipulator_OnManipulationStarted"
-          ManipulationDelta="Manipulator_OnManipulationDelta">
+          >
         
         <Grid.RowDefinitions>
             <RowDefinition Height="48"></RowDefinition>
