@@ -935,33 +935,36 @@ namespace PhenoPad.CustomControl
 
             if (wb != null)
                 canvasAddIn.InitializeFromImage(wb);
-            
-            canvasAddIn.ManipulationMode = ManipulationModes.TranslateX | ManipulationModes.TranslateY | ManipulationModes.Scale;
-            canvasAddIn.ManipulationStarted += ((object sender, ManipulationStartedRoutedEventArgs e)  =>{
-                canvasAddIn.showMovingGrid();
-            });
+
+            //Add-in dimension/location manipulation
+            {
+                canvasAddIn.ManipulationMode = ManipulationModes.TranslateX | ManipulationModes.TranslateY | ManipulationModes.Scale;
+                canvasAddIn.ManipulationStarted += ((object sender, ManipulationStartedRoutedEventArgs e) => {
+                    canvasAddIn.showMovingGrid();
+                });
+                canvasAddIn.ManipulationDelta += ((object sender, ManipulationDeltaRoutedEventArgs e) => {
+                    canvasAddIn.dragTransform.X += e.Delta.Translation.X;
+                    canvasAddIn.dragTransform.Y += e.Delta.Translation.Y;
 
 
-            canvasAddIn.ManipulationDelta += ((object sender, ManipulationDeltaRoutedEventArgs e) => {
-                canvasAddIn.dragTransform.X += e.Delta.Translation.X;
-                canvasAddIn.dragTransform.Y += e.Delta.Translation.Y;
+                    var scale = canvasAddIn.scaleTransform.ScaleX * e.Delta.Scale;
+                    scale = scale > 2.0 ? 2.0 : scale;
+                    scale = scale < 0.5 ? 0.5 : scale;
+                    canvasAddIn.scaleTransform.ScaleX = scale;
+
+                    scale = canvasAddIn.scaleTransform.ScaleY * e.Delta.Scale;
+                    scale = scale > 2.0 ? 2.0 : scale;
+                    scale = scale < 0.5 ? 0.5 : scale;
+                    canvasAddIn.scaleTransform.ScaleY = scale;
+
+                });
+                canvasAddIn.ManipulationCompleted += (async (object sender, ManipulationCompletedRoutedEventArgs e) => {
+                    canvasAddIn.hideMovingGrid();
+                    await this.AutoSaveAddin(canvasAddIn.name);
+                });
+            }
 
 
-                var scale = canvasAddIn.scaleTransform.ScaleX * e.Delta.Scale;
-                scale = scale > 2.0 ? 2.0 : scale;
-                scale = scale < 0.5 ? 0.5 : scale;
-                canvasAddIn.scaleTransform.ScaleX = scale;
-
-                scale = canvasAddIn.scaleTransform.ScaleY * e.Delta.Scale;
-                scale = scale > 2.0 ? 2.0 : scale;
-                scale = scale < 0.5 ? 0.5 : scale;
-                canvasAddIn.scaleTransform.ScaleY = scale;
-
-            });
-            canvasAddIn.ManipulationCompleted += (async (object sender, ManipulationCompletedRoutedEventArgs e) => {
-                canvasAddIn.hideMovingGrid();
-                await this.AutoSaveAddin(canvasAddIn.name);
-            });
 
            
         }
