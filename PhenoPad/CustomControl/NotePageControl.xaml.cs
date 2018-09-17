@@ -958,8 +958,9 @@ namespace PhenoPad.CustomControl
                 canvasAddIn.scaleTransform.ScaleY = scale;
 
             });
-            canvasAddIn.ManipulationCompleted += ((object sender, ManipulationCompletedRoutedEventArgs e) => {
+            canvasAddIn.ManipulationCompleted += (async (object sender, ManipulationCompletedRoutedEventArgs e) => {
                 canvasAddIn.hideMovingGrid();
+                await this.AutoSaveAddin(canvasAddIn.name);
             });
 
            
