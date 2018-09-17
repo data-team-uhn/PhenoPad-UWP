@@ -225,10 +225,11 @@ namespace PhenoPad
                         CoreDispatcherPriority.Normal,
                         async () =>
                         {
-                            LogService.MetroLogger.getSharedLogger().Info($"Saving page {page.pageId}");
+                            MetroLogger.getSharedLogger().Info($"Saving page {page.pageId}");
                             flag = await page.SaveToDisk();
-                            if (!flag) {
-                                LogService.MetroLogger.getSharedLogger().Error($"Page {page.pageId} failed to save.");
+                            if (!flag)
+                            {
+                                MetroLogger.getSharedLogger().Error($"Page {page.pageId} failed to save.");
                                 pgResult = false;
                             }
 
@@ -237,16 +238,22 @@ namespace PhenoPad
                 }
 
 
-                LogService.MetroLogger.getSharedLogger().Info($"Saving phenotypes");
+                MetroLogger.getSharedLogger().Info($"Saving phenotypes");
                 // collected phenotypes
                 bool result2 = await FileManager.getSharedFileManager().saveCollectedPhenotypesToFile(notebookId);
 
-                LogService.MetroLogger.getSharedLogger().Info($"Successfully saved notebook {notebookId} to disk.");
+                MetroLogger.getSharedLogger().Info($"Successfully saved notebook {notebookId} to disk.");
                 return pgResult && result2;
+            }
+            catch (NullReferenceException)
+            {
+                //This exception may be encountered when attemping to click close during main page and there's no
+                //valid notebook id provided.
+                MetroLogger.getSharedLogger().Info("No notes to save.");
             }
             catch (Exception ex)
             {
-                MetroLogger.getSharedLogger().Error("Failed to save notebook: " + ex.Message);
+                MetroLogger.getSharedLogger().Error("Failed to save notebook: " + ex + ex.Message);
             }
             finally
             {
@@ -316,8 +323,8 @@ namespace PhenoPad
             {
                 // Let users choose their ink file using a file picker.
                 // Initialize the picker.
-                Windows.Storage.Pickers.FileSavePicker savePicker = new Windows.Storage.Pickers.FileSavePicker();
-                savePicker.SuggestedStartLocation = Windows.Storage.Pickers.PickerLocationId.DocumentsLibrary;
+                FileSavePicker savePicker = new FileSavePicker();
+                savePicker.SuggestedStartLocation = PickerLocationId.DocumentsLibrary;
                 savePicker.FileTypeChoices.Add("GIF with embedded ISF", new List<string>() { ".gif" });
                 savePicker.DefaultFileExtension = ".gif";
                 savePicker.SuggestedFileName = "InkSample";
@@ -358,6 +365,7 @@ namespace PhenoPad
             // User selects Cancel and picker returns null.
             return 2;
         }
+
         /// <summary>
         /// Promts user to select an .gif file to load saved strokes.
         /// </summary>
@@ -451,6 +459,7 @@ namespace PhenoPad
             }
             return 2;
         }
+
         /// <summary>
         /// Promts user to select an image file type {gif,png,jpg,tif} and tries to load into note.
         /// </summary>

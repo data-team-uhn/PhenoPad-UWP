@@ -15,6 +15,7 @@ using Windows.Graphics.Imaging;
 using System.Runtime.InteropServices.WindowsRuntime;
 using Windows.Graphics.Display;
 using System.Threading;
+using System.Xml;
 
 namespace PhenoPad.FileService
 {
@@ -769,12 +770,15 @@ namespace PhenoPad.FileService
                     return obj;
                 }
             }
+            catch (InvalidOperationException xe) {
+                if (xe.InnerException.GetType() == typeof(XmlException)) {
+                    LogService.MetroLogger.getSharedLogger().Info($"XML object may be empty:{xe.Message}");
+                }       
+                return null;
+            }
             catch (Exception ex)
             {
-                if (stream == null) 
-                    LogService.MetroLogger.getSharedLogger().Info($"Fetched Serilization is an empty file: {metaFile.Path}");
-                else
-                    LogService.MetroLogger.getSharedLogger().Error($"Failed to fetch object from serilization file: {metaFile.Path}, error: {ex.Message} ");
+                LogService.MetroLogger.getSharedLogger().Error($"Failed to fetch object from serilization file: {metaFile.Path}, error: {ex}");
                 return null;
             }
         }

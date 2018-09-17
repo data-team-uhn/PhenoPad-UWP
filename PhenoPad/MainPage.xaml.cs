@@ -127,8 +127,6 @@ namespace PhenoPad
             titleBar.ButtonInactiveBackgroundColor = Colors.Black;
 
 
-
-
             // We want to react whenever speech engine has new results
             // this.speechManager.EngineHasResult += SpeechManager_EngineHasResult;
 
@@ -162,8 +160,6 @@ namespace PhenoPad
             };
 
         }
-
-
 
         /// <summary>
         /// Initializes display for the loaded page
@@ -565,6 +561,7 @@ namespace PhenoPad
             ButtonPaste.IsEnabled = enabled;
             **/
         }
+
         /// <summary>
         /// Not yet implemented
         /// </summary>
@@ -578,6 +575,7 @@ namespace PhenoPad
             //changeSpeechEngineState(!this.AudioOn);
             throw new NotImplementedException();
         }
+
         /// <summary>
         /// Toggles the video button
         /// </summary>
@@ -585,6 +583,7 @@ namespace PhenoPad
         {
             await videoStreamStatusUpdateAsync(this._videoOn);
         }
+
         /// <summary>
         /// Not yet implemented
         /// </summary>
@@ -659,14 +658,14 @@ namespace PhenoPad
             }
         }
 
-        private void MenuFlyoutItem_Click(object sender, RoutedEventArgs e)
-        {
-            throw new NotImplementedException("MenuFlyoutItem_Click");
-        }
-        private void MenuFlyoutItem_Click_1(object sender, RoutedEventArgs e)
-        {
-            throw new NotImplementedException("MenuFlyoutItem_Click_1");
-        }
+        //private void MenuFlyoutItem_Click(object sender, RoutedEventArgs e)
+        //{
+        //    throw new NotImplementedException("MenuFlyoutItem_Click");
+        //}
+        //private void MenuFlyoutItem_Click_1(object sender, RoutedEventArgs e)
+        //{
+        //    throw new NotImplementedException("MenuFlyoutItem_Click_1");
+        //}
 
         private void SpeechButton_Click(object sender, RoutedEventArgs e)
         {
@@ -737,7 +736,7 @@ namespace PhenoPad
         private async void AddPageButton_Click(object sender, RoutedEventArgs e)
         {
             //defining a new string name for the page and creates a new page controller to bind
-            string newPageName = (notePages.Count - 1).ToString();
+            string newPageName = (notePages.Count).ToString();
             NotePageControl aPage = new NotePageControl(this.notebookId, newPageName);
             notePages.Add(aPage);
             inkCanvas = aPage.inkCan;
@@ -754,6 +753,11 @@ namespace PhenoPad
             addNoteIndex(curPageIndex);
 
             await FileManager.getSharedFileManager().CreateNotePage(notebookObject, curPageIndex.ToString());
+            curPage.Visibility = Visibility.Visible;
+
+            foreach (var page in this.notePages) {
+                Debug.WriteLine(page.pageId);
+            } 
 
         }
 
@@ -812,6 +816,7 @@ namespace PhenoPad
             setNotePageIndex(curPageIndex);
 
             curPage.initialAnalyze();
+            curPage.Visibility = Visibility.Visible;
         }
 
         /// <summary>
@@ -1286,6 +1291,7 @@ namespace PhenoPad
         {
             Debug.WriteLine("Property " + e.PropertyName + " changed.");
         }
+
         /// <summary>
         /// Handle denpendency property changed event, including status flag of mic and camera
         /// </summary>
@@ -1293,6 +1299,7 @@ namespace PhenoPad
         {
             Debug.WriteLine(sender.GetValue(dp));
         }
+
         /// <summary>
         /// Display a message to the user.
         /// This method may be called from any thread.
@@ -1310,6 +1317,7 @@ namespace PhenoPad
                 var task = Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () => UpdateStatusAsync(strMessage, type, seconds));
             }
         }
+
         /// <summary>
         /// Updates the notice message to StatusBlock using a semaphore.
         /// </summary>
@@ -1357,6 +1365,7 @@ namespace PhenoPad
             }
 
         }
+
         /// <summary>
         /// Returns the user's input in a dialog input box.
         /// </summary>
@@ -1404,6 +1413,7 @@ namespace PhenoPad
             }
 
         }
+
         /// <summary>
         /// Handles when user finish typing new note name but didn't press enter key
         /// </summary>
@@ -1424,8 +1434,6 @@ namespace PhenoPad
                 LogService.MetroLogger.getSharedLogger().Error($"Failed to save new notebook name:{ex.Message}");
             }
         }
-
-
 
         /// <summary>
         /// Handles when multimedia preview is closed
@@ -1479,6 +1487,7 @@ namespace PhenoPad
 
 
     }
+    //================================= END OF MAINAPGE ==========================================/
 
     /// <summary>
     /// Configurates pen tool including size, shape, color, etc.
@@ -1515,9 +1524,7 @@ namespace PhenoPad
             return inkDrawingAttributes;
         }
 
-        
-
-}
+    }
 
     // MyScript 
     public class FlyoutCommand : System.Windows.Input.ICommand
