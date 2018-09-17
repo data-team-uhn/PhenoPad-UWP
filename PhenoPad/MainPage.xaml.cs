@@ -1411,7 +1411,6 @@ namespace PhenoPad
             {
                 LogService.MetroLogger.getSharedLogger().Error($"Failed to save new notebook name:{ex.Message}");
             }
-
         }
 
         /// <summary>

@@ -53,6 +53,8 @@ namespace PhenoPad
     // This is a partial class of Mainpage that contains methods regarding to video/audio functions including specch engine.
     public sealed partial class MainPage : Page, INotifyPropertyChanged
     {
+        #region properties
+
         private bool _videoOn = false;
         public bool VideoOn
         {
@@ -119,6 +121,9 @@ namespace PhenoPad
         /// </summary>
         private bool isListening;
 
+        #endregion
+        //======================================== START OF METHODS =======================================/
+
         /// <summary>
         /// Initialize Speech Recognizer and compile constraints.
         /// </summary>
@@ -162,6 +167,7 @@ namespace PhenoPad
             speechRecognizer.ContinuousRecognitionSession.ResultGenerated += ContinuousRecognitionSession_ResultGenerated;
             speechRecognizer.HypothesisGenerated += SpeechRecognizer_HypothesisGenerated;
         }
+
         /// <summary>
         /// Handle events fired when error conditions occur, such as the microphone becoming unavailable, or if
         /// some transient issues occur.
@@ -286,6 +292,7 @@ namespace PhenoPad
                 });
             }
         }
+
         private void Tb_PointerReleased(object sender, PointerRoutedEventArgs e)
         {
             throw new NotImplementedException();
@@ -315,6 +322,7 @@ namespace PhenoPad
             //this.cmdBarTextBlock.Text = args.latestSentence;
             throw new NotImplementedException();
         }
+
         /// <summary>
         /// Switch speech engine state for blue tooth devices
         /// </summary>
@@ -343,6 +351,7 @@ namespace PhenoPad
             }
 
         }
+
         /// <summary>
         /// Switch speech engine state for plug-in devices
         /// </summary>
@@ -394,6 +403,7 @@ namespace PhenoPad
             //this.AudioOn = false;
             //testButton.IsChecked = false;
         }
+
         /// <summary>
         /// Sets the audio input status 
         /// </summary>
@@ -427,6 +437,7 @@ namespace PhenoPad
                 //this.audioSwitch.IsEnabled = true;
             }
         }
+
         /// <summary>
         /// Initialize bluetooth stream input status
         /// </summary>
@@ -443,6 +454,7 @@ namespace PhenoPad
                 setStatus("bluetooth");
             }
         }
+
         /// <summary>
         /// Updates the bluetooth video camera stream status 
         /// </summary>
@@ -475,6 +487,7 @@ namespace PhenoPad
             Debug.WriteLine("Setting status value to " + (this.bluetoothService.initialized && desiredStatus).ToString());
             this.VideoOn = this.bluetoothService.initialized && desiredStatus;
         }
+
         /// <summary>
         /// Handles chat view container change event and displays the message on chat view container 
         /// </summary>
