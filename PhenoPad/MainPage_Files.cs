@@ -237,7 +237,6 @@ namespace PhenoPad
                     );
                 }
 
-
                 MetroLogger.getSharedLogger().Info($"Saving phenotypes");
                 // collected phenotypes
                 bool result2 = await FileManager.getSharedFileManager().saveCollectedPhenotypesToFile(notebookId);

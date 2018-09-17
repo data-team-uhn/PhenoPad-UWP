@@ -755,6 +755,7 @@ namespace PhenoPad
             await FileManager.getSharedFileManager().CreateNotePage(notebookObject, curPageIndex.ToString());
             curPage.Visibility = Visibility.Visible;
 
+            //for debugging purposes
             foreach (var page in this.notePages) {
                 Debug.WriteLine(page.pageId);
             } 
@@ -1134,11 +1135,10 @@ namespace PhenoPad
             }
         }
 
-        private void BackButton_Click(object sender, RoutedEventArgs e)
+        private async void BackButton_Click(object sender, RoutedEventArgs e)
         {
             // save note
-            // currently disabled to test out auto-saving
-            //await this.saveNoteToDisk();
+            await this.saveNoteToDisk();
 
             UIWebSocketClient.getSharedUIWebSocketClient().disconnect();
             //On_BackRequested();
