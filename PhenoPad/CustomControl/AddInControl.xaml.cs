@@ -213,7 +213,13 @@ namespace PhenoPad.CustomControl
             this.ManipulationDelta += TitleRelativePanel_ManipulationDelta;
             this.ManipulationCompleted += TitleRelativePanel_ManipulationCompleted;
             **/
-
+            //Add-in dimension/location manipulation
+            {
+                this.ManipulationMode = ManipulationModes.TranslateX | ManipulationModes.TranslateY | ManipulationModes.Scale;
+                this.ManipulationStarted += Panel_ManipulationStarted;
+                this.ManipulationDelta += Panel_ManipulationDelta;
+                this.ManipulationCompleted += Panel_ManipulationCompleted;
+            }
             //translateTransform = new TranslateTransform();
             //this.RenderTransform.translateTransform;
 
@@ -275,6 +281,37 @@ namespace PhenoPad.CustomControl
 
 
         }
+        #endregion
+
+        #region SIZE Manipulation
+
+        private void Panel_ManipulationStarted(object sender, ManipulationStartedRoutedEventArgs e) {
+            
+            this.showMovingGrid();
+        }
+
+        private void Panel_ManipulationDelta(object sender, ManipulationDeltaRoutedEventArgs e) {
+            Console.WriteLine($"Current point coord:{e.Position}");
+
+            this.dragTransform.X += e.Delta.Translation.X;
+            this.dragTransform.Y += e.Delta.Translation.Y;
+
+
+            var scale = this.scaleTransform.ScaleX * e.Delta.Scale;
+            scale = scale > 2.0 ? 2.0 : scale;
+            scale = scale < 0.5 ? 0.5 : scale;
+            this.scaleTransform.ScaleX = scale;
+
+            scale = this.scaleTransform.ScaleY * e.Delta.Scale;
+            scale = scale > 2.0 ? 2.0 : scale;
+            scale = scale < 0.5 ? 0.5 : scale;
+            this.scaleTransform.ScaleY = scale;
+        }
+
+        private void Panel_ManipulationCompleted(object sender, ManipulationCompletedRoutedEventArgs e) {
+            this.hideMovingGrid();
+        }
+
         #endregion
 
 
@@ -436,6 +473,7 @@ namespace PhenoPad.CustomControl
         private void InitiateInkCanvas(bool onlyView = false)
         {
             isInitialized = true;
+            
             //this.ControlStackPanel.Visibility = Visibility.Visible;
             //contentGrid.Children.Add(inkCanvas);
             inkCanvas.Visibility = Visibility.Visible;
@@ -463,6 +501,7 @@ namespace PhenoPad.CustomControl
                     Windows.UI.Core.CoreInputDeviceTypes.None;
             }
             //await rootPage.curPage.AutoSaveAddin(this.name);
+
 
         }
 
