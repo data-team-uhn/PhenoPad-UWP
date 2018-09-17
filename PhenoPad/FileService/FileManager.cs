@@ -204,6 +204,9 @@ namespace PhenoPad.FileService
             {
                 notefile = await ROOT_FOLDER.GetFileAsync(filepath);
             }
+            catch (FileNotFoundException e) {
+                //LogService.MetroLogger.getSharedLogger().Error($"{filepath} does not exists");
+            }
             catch (Exception)
             {
                 Debug.WriteLine($"Failed to get {filepath}");

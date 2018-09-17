@@ -37,6 +37,13 @@ namespace PhenoPad.CustomControl
         private double DEFAULT_WIDTH = 400;
         private double DEFAULT_HEIGHT = 400;
         public string type; // photo, drawing
+        public InkCanvas inkCan
+        {
+            get
+            {
+                return inkCanvas;
+            }
+        }
         InkAnalyzer inkAnalyzer = new InkAnalyzer();
         IReadOnlyList<InkStroke> inkStrokes = null;
         InkAnalysisResult inkAnalysisResults = null;
@@ -62,13 +69,7 @@ namespace PhenoPad.CustomControl
         public TranslateTransform dragTransform;
         public double scale;
 
-        public InkCanvas inkCan
-        {
-            get
-            {
-                return inkCanvas;
-            }
-        }
+        
         public double transX
         {
             get
@@ -272,7 +273,6 @@ namespace PhenoPad.CustomControl
             scale = scale < 0.5 ? 0.5 : scale;
             scaleTransform.ScaleY = scale;
 
-            await rootPage.curPage.AutoSaveAddin(this.name);
 
         }
         #endregion
@@ -494,50 +494,59 @@ namespace PhenoPad.CustomControl
         public async void InitializeFromDisk(bool onlyView = false, double transX = 0, double transY = 0, double transScale = 0)
         {
             this.categoryGrid.Visibility = Visibility.Collapsed;
-            // photo file
-            var file = await FileService.FileManager.getSharedFileManager().GetNoteFileNotCreate(notebookId, pageId, FileService.NoteFileType.Image, name);
-            if (file != null)
+            try
             {
-                // Open a file stream for reading.
-                IRandomAccessStream stream = await file.OpenAsync(Windows.Storage.FileAccessMode.Read);
-                // Read from file.
-                using (var inputStream = stream.GetInputStreamAt(0))
+                // photo file
+                var file = await FileService.FileManager.getSharedFileManager().GetNoteFileNotCreate(notebookId, pageId, FileService.NoteFileType.Image, name);
+                if (file != null)
                 {
-                    BitmapDecoder decoder = await BitmapDecoder.CreateAsync(stream);
-                    SoftwareBitmap softwareBitmap = await decoder.GetSoftwareBitmapAsync();
-                    SoftwareBitmap softwareBitmapBGR8 = SoftwareBitmap.Convert(softwareBitmap,
-                    BitmapPixelFormat.Bgra8,
-                    BitmapAlphaMode.Premultiplied);
-                    SoftwareBitmapSource bitmapSource = new SoftwareBitmapSource();
-                    await bitmapSource.SetBitmapAsync(softwareBitmapBGR8);
-                    Image imageControl = new Image();
-                    imageControl.Source = bitmapSource;
-                    contentGrid.Children.Add(imageControl);
-                    categoryGrid.Visibility = Visibility.Collapsed;
+                    // Open a file stream for reading.
+                    IRandomAccessStream stream = await file.OpenAsync(Windows.Storage.FileAccessMode.Read);
+                    // Read from file.
+                    using (var inputStream = stream.GetInputStreamAt(0))
+                    {
+                        BitmapDecoder decoder = await BitmapDecoder.CreateAsync(stream);
+                        SoftwareBitmap softwareBitmap = await decoder.GetSoftwareBitmapAsync();
+                        SoftwareBitmap softwareBitmapBGR8 = SoftwareBitmap.Convert(softwareBitmap,
+                        BitmapPixelFormat.Bgra8,
+                        BitmapAlphaMode.Premultiplied);
+                        SoftwareBitmapSource bitmapSource = new SoftwareBitmapSource();
+                        await bitmapSource.SetBitmapAsync(softwareBitmapBGR8);
+                        Image imageControl = new Image();
+                        imageControl.Source = bitmapSource;
+                        contentGrid.Children.Add(imageControl);
+                        categoryGrid.Visibility = Visibility.Collapsed;
 
+                    }
+                    stream.Dispose();
                 }
-                stream.Dispose();
+
+                InitiateInkCanvas(onlyView);
+
+                var annofile = await FileService.FileManager.getSharedFileManager().GetNoteFileNotCreate(notebookId, pageId, FileService.NoteFileType.ImageAnnotation, name);
+                if (annofile != null)
+                    await FileService.FileManager.getSharedFileManager().loadStrokes(annofile, inkCanvas);
+
+                /**
+                    string strokeUri = "ms-appdata:///local/" + FileManager.getSharedFileManager().GetNoteFilePath(notebookId, pageId, NoteFileType.ImageAnnotation, name);
+                    BitmapIcon anno = new BitmapIcon();
+                    anno.UriSource = new Uri(strokeUri);
+                    contentGrid.Children.Add(anno);
+        **/
+                if (!onlyView)
+                {
+                    dragTransform.X = transX;
+                    dragTransform.Y = transY;
+                    scaleTransform.ScaleX = transScale;
+                    scaleTransform.ScaleY = transScale;
+                }
+
+            }
+            catch (NullReferenceException e) {
+                LogService.MetroLogger.getSharedLogger().Error($"{e}");
             }
 
-            InitiateInkCanvas(onlyView);
 
-            var annofile = await FileService.FileManager.getSharedFileManager().GetNoteFileNotCreate(notebookId, pageId, FileService.NoteFileType.ImageAnnotation, name);
-            if (annofile != null)
-                await FileService.FileManager.getSharedFileManager().loadStrokes(annofile, inkCanvas);
-
-            /**
-                string strokeUri = "ms-appdata:///local/" + FileManager.getSharedFileManager().GetNoteFilePath(notebookId, pageId, NoteFileType.ImageAnnotation, name);
-                BitmapIcon anno = new BitmapIcon();
-                anno.UriSource = new Uri(strokeUri);
-                contentGrid.Children.Add(anno);
-    **/
-            if (!onlyView)
-            {
-                dragTransform.X = transX;
-                dragTransform.Y = transY;
-                scaleTransform.ScaleX = transScale;
-                scaleTransform.ScaleY = transScale;
-            }
         }
         /// <summary>
         /// When user control is loaded, sets the default size and initialize from disk.
