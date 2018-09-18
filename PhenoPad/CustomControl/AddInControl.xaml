@@ -21,10 +21,7 @@
         </ResourceDictionary>
     </UserControl.Resources>
 
-    <Grid Background="WhiteSmoke" BorderBrush="LightGray" Name="OutlineGrid"
-          ManipulationMode="TranslateX,TranslateY"
-          ManipulationStarted="Manipulator_OnManipulationStarted"
-          ManipulationDelta="Manipulator_OnManipulationDelta">
+    <Grid Background="WhiteSmoke" BorderBrush="LightGray" Name="OutlineGrid">
 
         <Grid.RowDefinitions>
             <RowDefinition Height="48"></RowDefinition>
@@ -59,20 +56,21 @@
             </StackPanel>
         </Grid>
         <RelativePanel Name="TitleRelativePanel" Background="WhiteSmoke">
-            
+
 
             <Button Style="{StaticResource MyButtonStyle}" Background="Transparent" Foreground="Gray" Height="35" VerticalAlignment="Top" Width="35" Padding="0" Name="deleteButton" Click="Delete_Click" Margin="6,6,-6,-6">
                 <SymbolIcon Symbol="Clear" Height="35" Width="35" Margin="-1,-1,-3,-3" HorizontalAlignment="Left"></SymbolIcon>
             </Button>
-            
 
-            
+
+
 
         </RelativePanel>
         <Rectangle Grid.Row ="0" x:Name="ResizeRectangleTopLeft" IsHitTestVisible="False"
                Width="10" Height="10" Fill="Red"
                VerticalAlignment="Top" HorizontalAlignment="Left"/>
         
+
         <Rectangle Grid.Row ="0" x:Name="ResizeRectangleTopRight" IsHitTestVisible="False"
                Width="10" Height="10" Fill="Red"
                VerticalAlignment="Top" HorizontalAlignment="Right"/>
@@ -129,11 +127,9 @@
             </StackPanel>
 
         </Grid>
+        <InkCanvas Grid.Row="1"  Visibility="Collapsed" Margin="10 10 10 10" x:Name="inkCanvas" />
 
         <local:AddInImageControl Grid.Row="1" Visibility="Collapsed" Margin="10 10 10 10" x:Name="imageControl"/>
-
-
-        <InkCanvas Grid.Row="1"  Margin="10 10 10 10" x:Name="inkCanvas" />
         <Rectangle Grid.Row ="1" x:Name="ResizeRectangleBottomRight" IsHitTestVisible="False"
                Width="10" Height="10" Fill="Red"
                VerticalAlignment="Bottom" HorizontalAlignment="Right"/>
@@ -142,7 +138,7 @@
                VerticalAlignment="Bottom" HorizontalAlignment="Left"/>
 
 
-        <Grid Grid.Row="0" Grid.RowSpan="2" Background="White" Opacity="0.5" Name="MovingGrid" Visibility="Collapsed">
+        <Grid Grid.Row="0" Grid.RowSpan="2" Background="White" Opacity="0.5" Margin="10 10 10 10"  Name="MovingGrid" >
 
 
         </Grid>

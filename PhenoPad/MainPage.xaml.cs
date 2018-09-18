@@ -1213,31 +1213,70 @@ namespace PhenoPad
         private void SurfaceMicRadioButton_Checked(object sender, RoutedEventArgs e)
         {
             ConfigService.ConfigService.getConfigService().UseInternalMic();
+            this.audioButton.IsEnabled = true;
             NotifyUser("Using Surface microphone", NotifyType.StatusMessage, 2);
         }
 
         private void ExterMicRadioButton_Checked(object sender, RoutedEventArgs e)
         {
             ConfigService.ConfigService.getConfigService().UseExternalMic();
+            this.StreamButton.IsEnabled = false;
+            this.shutterButton.IsEnabled = false;
+            this.audioButton.IsEnabled = false;
             NotifyUser("Using external microphone", NotifyType.StatusMessage, 2);
         }
-
+        
         private async void OpenFileFolder_Click(object sender, RoutedEventArgs e)
         {
             await Windows.System.Launcher.LaunchFolderAsync(await StorageFolder.GetFolderFromPathAsync(ApplicationData.Current.LocalFolder.Path));
         }
 
+        //Invoked when click on bluetoon button;
         private async void ServerConnectButton_Click(object sender, RoutedEventArgs e)
         {
-            uiClinet = UIWebSocketClient.getSharedUIWebSocketClient();
-            await uiClinet.ConnectToServer();
+            if (!bluetoonOn)
+            {
+                BluetoothProgresssBox.Text = "Connecting to Raspberry Pi";
+                serverConnectButton.IsEnabled = false;
+                BluetoothProgress.IsActive = true;
+                BluetoothComplete.Visibility = Visibility.Collapsed;
+                uiClinet = UIWebSocketClient.getSharedUIWebSocketClient();
+                bool uiResult = await uiClinet.ConnectToServer();
+                if (!uiResult)
+                {
+                    LogService.MetroLogger.getSharedLogger().Error("UIClient failed to connect.");
+                }
+                this.bluetoothService = BluetoothService.BluetoothService.getBluetoothService();
+                await this.bluetoothService.Initialize();
+                if (this.bluetoothService != null) {
+                    this.bluetoonOn = true;
+                }
+                
+            }
+            else {
+                uiClinet.disconnect();
+                bool result = this.bluetoothService.CloseConnection();               
+                if (result)
+                {
+                    this.bluetoothService = null;
+                    this.bluetoonOn = false;
+                    bluetoothInitialized(false);
+                    setStatus("bluetooth");
+                    BluetoothProgresssBox.Text = "Disconnected Raspberry Pi";
+                    BluetoothComplete.Visibility = Visibility.Visible;
+                    BluetoothProgress.IsActive = false;
+                    
+                    NotifyUser("Bluetooth Connection disconnected.", NotifyType.StatusMessage, 2);
+                }
+                else {
+                    NotifyUser("Bluetooth Connection failed to disconnect.", NotifyType.ErrorMessage, 2);
+                }
+                
+            }
 
-
-            this.bluetoothService = BluetoothService.BluetoothService.getBluetoothService();
-            await this.bluetoothService.Initialize();
         }
 
-        private async void CameraButton_Click(object sender, RoutedEventArgs e)
+        private void CameraButton_Click(object sender, RoutedEventArgs e)
         {
 
             // add image

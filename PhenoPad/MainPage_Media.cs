@@ -90,6 +90,9 @@ namespace PhenoPad
                 }
             }
         } //automation properties
+
+        public bool bluetoonOn;
+
         public string RPI_ADDRESS = "http://192.168.137.32:8000";
         public BluetoothService.BluetoothService bluetoothService = null;
         public UIWebSocketClient uiClinet = null;
@@ -412,12 +415,14 @@ namespace PhenoPad
         {
             if (item == "bluetooth")
             {
-                this.BluetoothProgress.IsActive = false;
-                this.BluetoothComplete.Visibility = Visibility.Visible;
-                this.bluetoothStatusText.Text = "ON";
-                // show ip address of 
-                if (this.bluetoothService.rpi_ipaddr != null)
+                this.BluetoothProgress.IsActive = this.bluetoonOn? false:true;
+                this.BluetoothComplete.Visibility = this.bluetoonOn? Visibility.Visible:Visibility.Collapsed;
+                this.bluetoothStatusText.Text = this.bluetoonOn ? "ON" : "OFF";
+                if (bluetoonOn && this.bluetoothService.rpi_ipaddr != null) {
+                    // show ip address of 
                     PiIPAddress.Text = BluetoothService.BluetoothService.getBluetoothService().GetPiIP();
+                }
+                    
             }
             /***
             else if (item == "diarization")
@@ -447,6 +452,7 @@ namespace PhenoPad
             this.StreamButton.IsEnabled = val;
             //this.videoSwitch.IsEnabled = val;
             this.shutterButton.IsEnabled = val;
+            this.audioButton.IsEnabled = val;
             // this.cameraButton.IsEnabled = val;
 
             if (val)

@@ -22,8 +22,8 @@ namespace PhenoPad.BluetoothService
         // A pointer back to the main page is required to display status messages.
         private MainPage rootPage = MainPage.Current;
 
-        RfcommDeviceService _service;
-        StreamSocket _socket;
+        RfcommDeviceService _service = null;
+        StreamSocket _socket = null;
         private DeviceWatcher deviceWatcher = null;
         private DataWriter dataWriter = null;
         public string rpi_ipaddr = null;
@@ -35,6 +35,7 @@ namespace PhenoPad.BluetoothService
         public bool initialized = false;
 
         public static BluetoothService sharedBluetoothService;
+
         public static BluetoothService getBluetoothService()
         {
             if (sharedBluetoothService == null)
@@ -64,7 +65,8 @@ namespace PhenoPad.BluetoothService
             {
                 await rootPage.Dispatcher.RunAsync(CoreDispatcherPriority.High, () =>
                 {
-                    rootPage.NotifyUser("Bluetooth connection is connected.", NotifyType.StatusMessage, 3);
+                    rootPage.NotifyUser("Bluetooth is now connected.", NotifyType.StatusMessage, 3);
+                    rootPage.BluetoothProgresssBox.Text = "Connected to Raspberry Pi";
                 });
             }
         }
@@ -142,6 +144,10 @@ namespace PhenoPad.BluetoothService
                                 rootPage.NotifyUser(
                                        "Could not discover Bluetooh server on the remote device",
                                        NotifyType.ErrorMessage, 2);
+                                rootPage.serverConnectButton.IsEnabled = true;
+                                rootPage.BluetoothProgresssBox.Text = "Please try again soon";
+                                rootPage.BluetoothProgress.IsActive = false;
+                                rootPage.BluetoothComplete.Visibility = Windows.UI.Xaml.Visibility.Collapsed;
                                 return;
                             }
 
@@ -161,8 +167,14 @@ namespace PhenoPad.BluetoothService
                                 dataWriter = new DataWriter(_socket.OutputStream);
                                 //readPacket = new DataReader(_socket.InputStream);
                             }
-                            catch (Exception ex) when ((uint)ex.HResult == 0x80070490) // ERROR_ELEMENT_NOT_FOUND
+                            //catch (Exception ex) when ((uint)ex.HResult == 0x80070490) // ERROR_ELEMENT_NOT_FOUND
+                            //{
+
+                            //}
+                            catch (Exception ex) // ERROR_ELEMENT_NOT_FOUND
                             {
+                                LogService.MetroLogger.getSharedLogger().Error(ex.Message);
+
                             }
                             // send hand shake
                             try
@@ -180,10 +192,14 @@ namespace PhenoPad.BluetoothService
                                    "Connected to Raspberry Pi",
                                    NotifyType.StatusMessage, 2);
                                 rootPage.bluetoothInitialized(true);
+                                rootPage.serverConnectButton.IsEnabled = true;
                             }
                             catch (Exception ex) when ((uint)ex.HResult == 0x80072745)
                             {
-                                // The remote device has disconnected the connection
+                                rootPage.NotifyUser(
+                                   "The remote device has disconnected.",
+                                   NotifyType.StatusMessage, 2);
+                                LogService.MetroLogger.getSharedLogger().Info("The remote device has disconnected.");
                                 return;
                             }
 
@@ -297,6 +313,7 @@ namespace PhenoPad.BluetoothService
         {
             return this.rpi_ipaddr;
         }
+
         public async Task<bool> checkConnection()
         {
             try
@@ -304,7 +321,6 @@ namespace PhenoPad.BluetoothService
                 string temp = "are you alive?";
                 //dataWriter.WriteUInt32((uint)temp.Length);
                 dataWriter.WriteString(temp);
-                Debug.WriteLine("");
 
                 LogService.MetroLogger.getSharedLogger().Info("Checking whether the connection is still alive");
 
@@ -359,17 +375,52 @@ namespace PhenoPad.BluetoothService
             }
         }
 
-        public async void CloseConnection()
+        public bool CloseConnection()
         {
+            //try
+            //{
+            //    await this._socket.CancelIOAsync();
+            //    this.cancellationSource.Cancel();
+            //    return true;
+            //}
+            //catch (Exception e)
+            //{
+
+            //}
             try
             {
-                await this._socket.CancelIOAsync();
                 this.cancellationSource.Cancel();
-            }
-            catch (Exception)
-            {
+                if (dataWriter != null)
+                {
+                    dataWriter.DetachStream();
+                    dataWriter = null;
+                }
+
+
+                if (_service != null)
+                {
+                    _service.Dispose();
+                    _service = null;
+                }
+                lock (this)
+                {
+                    if (_socket != null)
+                    {
+                        _socket.Dispose();
+                        _socket = null;
+                    }
+                }
+                //StopWatcher();
+                //sharedBluetoothService = null;
+                
+                return true;
 
             }
+            catch (Exception e) {
+                LogService.MetroLogger.getSharedLogger().Error($"Failed to close bluetooth connection:{e}:{e.Message}");
+                return false;
+            }
+
         }
 
         public async Task sendBluetoothMessage(string message)

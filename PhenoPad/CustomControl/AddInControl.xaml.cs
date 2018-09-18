@@ -187,6 +187,7 @@ namespace PhenoPad.CustomControl
             this.name = name;
             this.notebookId = notebookId;
             this.pageId = pageId;
+            this._isResizing = false;
             rootPage = MainPage.Current;
 
             //Timer event handler bindings
@@ -216,9 +217,9 @@ namespace PhenoPad.CustomControl
             //Add-in dimension/location manipulation
             {
                 this.ManipulationMode = ManipulationModes.TranslateX | ManipulationModes.TranslateY | ManipulationModes.Scale;
-                this.ManipulationStarted += Panel_ManipulationStarted;
-                this.ManipulationDelta += Panel_ManipulationDelta;
-                this.ManipulationCompleted += Panel_ManipulationCompleted;
+                this.ManipulationStarted += Manipulator_OnManipulationStarted;
+                this.ManipulationDelta += Manipulator_OnManipulationDelta;
+                this.ManipulationCompleted += Manipulator_OnManipulationCompleted;
             }
             //translateTransform = new TranslateTransform();
             //this.RenderTransform.translateTransform;
@@ -283,7 +284,7 @@ namespace PhenoPad.CustomControl
         }
         #endregion
 
-        #region SIZE Manipulation
+        #region SIZE Manipulation using two fingers
 
         private void Panel_ManipulationStarted(object sender, ManipulationStartedRoutedEventArgs e) {
             
@@ -312,6 +313,48 @@ namespace PhenoPad.CustomControl
             this.hideMovingGrid();
         }
 
+        #endregion
+
+        #region Corner drag for size changes
+        private void Manipulator_OnManipulationStarted(object sender, ManipulationStartedRoutedEventArgs e)
+        {
+            Debug.WriteLine(e.Position);
+            this.showMovingGrid();
+            //if (e.Position.X > Width - ResizeRectangle.Width && e.Position.Y > Height - ResizeRectangle.Height) _isResizing = true;
+            //else _isResizing = false;
+        }
+
+        private void Manipulator_OnManipulationDelta(object sender, ManipulationDeltaRoutedEventArgs e)
+        {
+            Debug.WriteLine("on manipulation");
+            //if (_isResizing)
+            //{
+            //    Width += e.Delta.Translation.X;
+            //    Height += e.Delta.Translation.Y;
+            //}
+            //else
+            //{
+                Console.WriteLine($"Current point coord:{e.Position}");
+
+                this.dragTransform.X += e.Delta.Translation.X;
+                this.dragTransform.Y += e.Delta.Translation.Y;
+
+
+                var scale = this.scaleTransform.ScaleX * e.Delta.Scale;
+                scale = scale > 2.0 ? 2.0 : scale;
+                scale = scale < 0.5 ? 0.5 : scale;
+                this.scaleTransform.ScaleX = scale;
+
+                scale = this.scaleTransform.ScaleY * e.Delta.Scale;
+                scale = scale > 2.0 ? 2.0 : scale;
+                scale = scale < 0.5 ? 0.5 : scale;
+                this.scaleTransform.ScaleY = scale;
+            //}
+        }
+
+        private void Manipulator_OnManipulationCompleted(object sender, ManipulationCompletedRoutedEventArgs e) {
+            this.hideMovingGrid();
+        }
         #endregion
 
 

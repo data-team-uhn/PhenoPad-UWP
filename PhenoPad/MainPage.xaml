@@ -222,7 +222,8 @@
                     <StackPanel  Orientation="Vertical" VerticalAlignment="Bottom" Grid.Row="2" Grid.Column="0" Background="Transparent">
 
                         <Button Height="60" 
-                                Name="serverConnectButton" Foreground="Black" Style="{StaticResource MyButtonStyle}" Background="{StaticResource Left_Panel_Title_BG}" Click="ServerConnectButton_Click" IsEnabled="True">
+                                x:Name="serverConnectButton" x:FieldModifier="public"
+                                Foreground="Black" Style="{StaticResource MyButtonStyle}" Background="{StaticResource Left_Panel_Title_BG}" Click="ServerConnectButton_Click" IsEnabled="True">
                             <Button.Flyout>
                                 <Flyout Placement="Right">
                                     <Grid>
@@ -238,20 +239,20 @@
                                             <RowDefinition Height="*"/>
                                         </Grid.RowDefinitions>
 
-                                        <TextBlock Grid.Row="0" Grid.Column="0" Text="Connecting to Raspberry Pi" Margin="5"/>
+                                        <TextBlock Grid.Row="0" Grid.Column="0" x:Name="BluetoothProgresssBox" x:FieldModifier="public" Text="Connecting to Raspberry Pi" Margin="5"/>
                                         <!--
                                         <TextBlock Grid.Row="1" Grid.Column="0" Text="Recognition" Margin="5"/>
                                         <TextBlock Grid.Row="2" Grid.Column="0" Text="Diarization" Margin="5"/>
                                         -->
 
-                                        <ProgressRing Grid.Row="0" Grid.Column="1" Margin="5" Name="BluetoothProgress" IsActive="True"/>
+                                        <ProgressRing Grid.Row="0" Grid.Column="1" Margin="5" x:Name="BluetoothProgress" x:FieldModifier="public" IsActive="True"/>
                                         <!--
                                         <ProgressRing Grid.Row="1" Grid.Column="1" Margin="5" Name="RecognitionProgress" IsActive="True"/>
                                         <ProgressRing Grid.Row="2" Grid.Column="1" Margin="5" Name="DiarizationProgress" IsActive="True"/>
                                         -->
                                         <BitmapIcon Grid.Row="0" Grid.Column="1" Width="32" Height="32"
                                                 UriSource="ms-appx:///Assets/checkmark.png" 
-                                                Name="BluetoothComplete" Visibility="Collapsed"/>
+                                                x:Name="BluetoothComplete" x:FieldModifier="public" Visibility="Collapsed"/>
 
 
                                         <TextBlock Grid.Row="0" Grid.Column="2" Text="" Name="PiIPAddress" Margin="5"/>
@@ -272,8 +273,8 @@
                         </Button>
 
 
-                        <ToggleButton  Height="60" HorizontalAlignment="Stretch"  Style="{StaticResource MyToggleButtonStyle2}" Background="{StaticResource Left_Panel_Title_BG}" Name="audioButton" Click="AudioStreamButton_Clicked"
-                                    IsEnabled="True">
+                        <ToggleButton  Height="60" HorizontalAlignment="Stretch"  Style="{StaticResource MyToggleButtonStyle2}" Background="{StaticResource Left_Panel_Title_BG}" Name="audioButton" IsEnabled="False" Click="AudioStreamButton_Clicked"
+                                    >
                             <StackPanel>
                             <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE720;"/>
                                 <TextBlock FontSize="12" Name="audioStatusText" Text="OFF"></TextBlock>
@@ -288,7 +289,7 @@
                         </ToggleButton>
 
                         <ToggleButton  Height="60" HorizontalAlignment="Stretch" Name="StreamButton"   Click="StreamButton_Click" Style="{StaticResource MyToggleButtonStyle2}" Background="{StaticResource Left_Panel_Title_BG}"
-                                     IsEnabled="True" >
+                                     IsEnabled="False" >
                             <StackPanel>
                                 <SymbolIcon Symbol="Video"></SymbolIcon>
                                 <TextBlock FontSize="12" Name="cameraStatusText" Text="OFF"></TextBlock>
