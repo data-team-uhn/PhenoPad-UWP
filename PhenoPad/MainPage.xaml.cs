@@ -691,6 +691,8 @@ namespace PhenoPad
 
         private void AudioStreamButton_Clicked(object sender, RoutedEventArgs e)
         {
+            audioButton.IsEnabled = false;
+            //TODO- ADD TIMER TICK TO REENABLE AFTER 5 SEC;
             // use external microphone
             if (ConfigService.ConfigService.getConfigService().IfUseExternalMicrophone())
             {
@@ -718,6 +720,7 @@ namespace PhenoPad
                     changeSpeechEngineState(false);
                     audioStatusText.Text = "OFF";
                 }
+                audioButton.IsEnabled = true;
             }
 
 

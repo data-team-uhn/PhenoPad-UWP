@@ -273,7 +273,7 @@
                         </Button>
 
 
-                        <ToggleButton  Height="60" HorizontalAlignment="Stretch"  Style="{StaticResource MyToggleButtonStyle2}" Background="{StaticResource Left_Panel_Title_BG}" Name="audioButton" IsEnabled="False" Click="AudioStreamButton_Clicked"
+                        <ToggleButton  Height="60" HorizontalAlignment="Stretch"  Style="{StaticResource MyToggleButtonStyle2}" Background="{StaticResource Left_Panel_Title_BG}" x:Name="audioButton" x:FieldModifier="public"  IsEnabled="False" Click="AudioStreamButton_Clicked"
                                     >
                             <StackPanel>
                             <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE720;"/>

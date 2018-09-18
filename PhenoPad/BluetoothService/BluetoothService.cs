@@ -445,6 +445,7 @@ namespace PhenoPad.BluetoothService
 
             try
             {
+
                 dataWriter.WriteString(message);
                 Debug.WriteLine("Writing message " + message + " via Bluetooth");
                 await dataWriter.StoreAsync();
