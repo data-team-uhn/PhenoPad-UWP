@@ -146,8 +146,6 @@ namespace PhenoPad
             chatView.ContainerContentChanging += OnChatViewContainerContentChanging;
             realtimeChatView.ItemsSource = SpeechManager.getSharedSpeechManager().realtimeConversation;
 
-            //by default sets the microphone to external one.
-            ExterMicRadioButton_Checked(null,null);
 
             audioTimer.Tick += ReEnableAudioButton;
             audioTimer.Interval = TimeSpan.FromSeconds(5);
@@ -1233,6 +1231,10 @@ namespace PhenoPad
             ConfigService.ConfigService.getConfigService().UseInternalMic();
             this.audioButton.IsEnabled = true;
             this.serverConnectButton.IsEnabled = false;
+            this.StreamButton.IsEnabled = false;
+
+
+
             //this.StreamButton.IsEnabled = true;
             NotifyUser("Using Surface microphone", NotifyType.StatusMessage, 2);
         }
@@ -1240,8 +1242,8 @@ namespace PhenoPad
         private void ExterMicRadioButton_Checked(object sender, RoutedEventArgs e)
         {
             ConfigService.ConfigService.getConfigService().UseExternalMic();
-            //this.serverConnectButton.IsEnabled = true;
             this.StreamButton.IsEnabled = false;
+            this.serverConnectButton.IsEnabled = true;
             this.shutterButton.IsEnabled = false;
             this.audioButton.IsEnabled = false;
             NotifyUser("Using external microphone", NotifyType.StatusMessage, 2);
