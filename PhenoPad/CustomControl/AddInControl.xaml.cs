@@ -5,6 +5,7 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Numerics;
 using System.Runtime.InteropServices.WindowsRuntime;
 using Windows.Foundation;
 using Windows.Foundation.Collections;
@@ -27,6 +28,12 @@ using Windows.UI.Xaml.Shapes;
 
 namespace PhenoPad.CustomControl
 {
+    enum Direction {
+        TOPLEFT,
+        TOPRIGHT,
+        BOTTOMLEFT,
+        BOTTOMRIGHT
+    }
     /// <summary>
     /// Control class for canvas add-ins after drawing a rectangle on note page, shows options of operations.
     /// </summary>
@@ -36,6 +43,10 @@ namespace PhenoPad.CustomControl
 
         private double DEFAULT_WIDTH = 400;
         private double DEFAULT_HEIGHT = 400;
+        private double MIN_WIDTH = 300;
+        private double MIN_HEIGHT = 300;
+        private double cornerX;
+        private double cornerY;
         public string type; // photo, drawing
         public InkCanvas inkCan
         {
@@ -68,6 +79,7 @@ namespace PhenoPad.CustomControl
         public ScaleTransform scaleTransform;
         public TranslateTransform dragTransform;
         public double scale;
+
 
         
         public double transX
@@ -102,7 +114,7 @@ namespace PhenoPad.CustomControl
         }
 
         private bool _isResizing;
-
+        private Direction resizeDir;
         public static readonly DependencyProperty nameProperty = DependencyProperty.Register(
          "name",
          typeof(String),
@@ -182,7 +194,10 @@ namespace PhenoPad.CustomControl
         {
             this.InitializeComponent();
             this.Height = height < DEFAULT_HEIGHT ? DEFAULT_HEIGHT : height;
-            this.Width = width < DEFAULT_WIDTH ? DEFAULT_WIDTH : width;            
+            this.Width = width < DEFAULT_WIDTH ? DEFAULT_WIDTH : width;
+            //by default setting the corner bound to be 10px
+            this.cornerX = 10;
+            this.cornerY = 10;
 
             this.name = name;
             this.notebookId = notebookId;
@@ -319,21 +334,90 @@ namespace PhenoPad.CustomControl
         private void Manipulator_OnManipulationStarted(object sender, ManipulationStartedRoutedEventArgs e)
         {
             Debug.WriteLine(e.Position);
-            this.showMovingGrid();
-            //if (e.Position.X > Width - ResizeRectangle.Width && e.Position.Y > Height - ResizeRectangle.Height) _isResizing = true;
-            //else _isResizing = false;
+            double xPos = e.Position.X;
+            double yPos = e.Position.Y;
+            bool topLeft = xPos < 50  && yPos < 50 ;
+            bool topRight = (xPos > this.Width - 50) &&  (yPos < 50);
+            bool bottomLeft = xPos < 50  && yPos > this.Height - 50;
+            bool bottomRight = (xPos > this.Width - 50) && (yPos > this.Height - 50);
+            //the pointer is in one of the resizing corners
+            if (topLeft || topRight || bottomLeft || bottomRight)
+            {
+                Debug.WriteLine("resizing");
+                this._isResizing = true;
+                if (topLeft) this.resizeDir = Direction.TOPLEFT;
+                else if (topRight) this.resizeDir = Direction.TOPRIGHT;
+                else if (bottomLeft) this.resizeDir = Direction.BOTTOMLEFT;
+                else if (bottomRight) this.resizeDir = Direction.BOTTOMRIGHT;
+                Debug.WriteLine(this.resizeDir);
+            }
+            //pointer is within center moving grid panel for zoom in/out
+            else {
+                Debug.WriteLine("zooming");
+                this._isResizing = false;
+                this.showMovingGrid();
+            }
+        }
+
+        private void ResizePanel(ManipulationDeltaRoutedEventArgs e, Direction dir) {
+            double left = Canvas.GetLeft(this);
+            double top = Canvas.GetTop(this);
+            if (dir == Direction.TOPLEFT)
+            {
+                this.Width -= e.Delta.Translation.X / this.scaleTransform.ScaleX;
+                this.Height -= e.Delta.Translation.Y / this.scaleTransform.ScaleY;
+                if (this.Width >= this.MIN_WIDTH && this.Height >= this.MIN_HEIGHT) {
+                    Canvas.SetLeft(this, left + e.Delta.Translation.X);
+                    Canvas.SetTop(this, top + e.Delta.Translation.Y);
+                    this.canvasTop += e.Delta.Translation.Y;
+                    this.canvasLeft += e.Delta.Translation.X;
+                    //problem: need to find a good way to keep strokes fixed in place when extending
+                    // from topleft or bottom left
+
+                }
+
+            }
+            if (dir == Direction.TOPRIGHT) {
+                this.Width += e.Delta.Translation.X / this.scaleTransform.ScaleX;
+                this.Height -= e.Delta.Translation.Y / this.scaleTransform.ScaleY;
+                if (this.Height >= this.MIN_HEIGHT) {
+                    Canvas.SetTop(this, top + e.Delta.Translation.Y);
+                    this.canvasTop += e.Delta.Translation.Y;
+                }
+                    
+            }
+            
+            if (dir == Direction.BOTTOMLEFT)
+            {
+                this.Width -= e.Delta.Translation.X / this.scaleTransform.ScaleX ;
+                this.Height += e.Delta.Translation.Y / this.scaleTransform.ScaleY;
+                if (this.Width >= this.MIN_WIDTH) {
+                    Canvas.SetLeft(this, left + e.Delta.Translation.X);
+                    this.canvasLeft += e.Delta.Translation.X;
+                }
+                    
+            }
+            if (dir == Direction.BOTTOMRIGHT)
+            {
+                this.Width += e.Delta.Translation.X;
+                this.Height += e.Delta.Translation.Y;
+            }
+
+            //setting minimal resizing sizes
+            this.Width = this.Width < this.MIN_WIDTH ? this.MIN_WIDTH : this.Width;
+            this.Height = this.Height < this.MIN_HEIGHT ? this.MIN_HEIGHT : this.Height;
+
         }
 
         private void Manipulator_OnManipulationDelta(object sender, ManipulationDeltaRoutedEventArgs e)
         {
-            Debug.WriteLine("on manipulation");
-            //if (_isResizing)
-            //{
-            //    Width += e.Delta.Translation.X;
-            //    Height += e.Delta.Translation.Y;
-            //}
-            //else
-            //{
+            //Debug.WriteLine("on manipulation");
+            if (_isResizing)
+            {
+                    ResizePanel(e,this.resizeDir);
+            }
+            else
+            {
                 Console.WriteLine($"Current point coord:{e.Position}");
 
                 this.dragTransform.X += e.Delta.Translation.X;
@@ -344,16 +428,19 @@ namespace PhenoPad.CustomControl
                 scale = scale > 2.0 ? 2.0 : scale;
                 scale = scale < 0.5 ? 0.5 : scale;
                 this.scaleTransform.ScaleX = scale;
+                this.cornerX = this.cornerX * scale;
 
                 scale = this.scaleTransform.ScaleY * e.Delta.Scale;
                 scale = scale > 2.0 ? 2.0 : scale;
                 scale = scale < 0.5 ? 0.5 : scale;
                 this.scaleTransform.ScaleY = scale;
-            //}
+                this.cornerY = this.cornerY * scale;
+            }
         }
 
-        private void Manipulator_OnManipulationCompleted(object sender, ManipulationCompletedRoutedEventArgs e) {
+        private async void Manipulator_OnManipulationCompleted(object sender, ManipulationCompletedRoutedEventArgs e) {
             this.hideMovingGrid();
+            //await rootPage.curPage.AutoSaveAddin(this.name);
         }
         #endregion
 
@@ -536,7 +623,6 @@ namespace PhenoPad.CustomControl
                 //setting current active canvas to 
                 inkToolbar.TargetInkCanvas = inkCanvas;
                 inkToolbar.Visibility = Visibility.Visible;
-
             }
             else // only for viewing on page overview page
             {
