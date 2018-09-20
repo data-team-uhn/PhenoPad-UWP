@@ -24,6 +24,7 @@ using Windows.UI.Xaml.Media.Imaging;
 using Windows.UI.Xaml.Navigation;
 using Windows.UI.Xaml.Shapes;
 
+
 // The User Control item template is documented at https://go.microsoft.com/fwlink/?LinkId=234236
 
 namespace PhenoPad.CustomControl
@@ -58,6 +59,7 @@ namespace PhenoPad.CustomControl
         InkAnalyzer inkAnalyzer = new InkAnalyzer();
         IReadOnlyList<InkStroke> inkStrokes = null;
         InkAnalysisResult inkAnalysisResults = null;
+        private Rect allStrokes;
 
         DispatcherTimer autosaveDispatcherTimer = new DispatcherTimer();
 
@@ -221,7 +223,7 @@ namespace PhenoPad.CustomControl
             tg.Children.Add(scaleTransform);
             tg.Children.Add(dragTransform);
             this.RenderTransform = tg;
-            Debug.WriteLine("added new image component");
+
             /**
             this.CanDrag = true;
             this.ManipulationMode = ManipulationModes.TranslateX | ManipulationModes.TranslateY | ManipulationModes.Scale;
@@ -302,17 +304,15 @@ namespace PhenoPad.CustomControl
         #region Corner drag for size changes
         private void Manipulator_OnManipulationStarted(object sender, ManipulationStartedRoutedEventArgs e)
         {
-            Debug.WriteLine(e.Position);
             double xPos = e.Position.X;
             double yPos = e.Position.Y;
-            bool topLeft = xPos < 10  && yPos < 10 ;
-            bool topRight = (xPos > this.Width - 10) &&  (yPos < 10);
+            bool topLeft = xPos < 20  && yPos < 20 ;
+            bool topRight = (xPos > this.Width - 20) &&  (yPos < 20);
             bool bottomLeft = xPos < 20  && yPos > this.Height - 20;
             bool bottomRight = (xPos > this.Width - 20) && (yPos > this.Height - 20);
             //the pointer is in one of the resizing corners
             if (topLeft || topRight || bottomLeft || bottomRight)
             {
-                Debug.WriteLine("resizing");
                 this._isResizing = true;
                 if (topLeft) this.resizeDir = Direction.TOPLEFT;
                 else if (topRight) this.resizeDir = Direction.TOPRIGHT;
@@ -322,15 +322,18 @@ namespace PhenoPad.CustomControl
             }
             //pointer is within center moving grid panel for zoom in/out
             else {
-                Debug.WriteLine("zooming");
                 this._isResizing = false;
                 this.showMovingGrid();
             }
         }
-
+        /// <summary>
+        /// Apply delta canvas extension based on pre-set direction and pointer movement delta,move strokes accordingly.
+        /// </summary>
         private void ResizePanel(ManipulationDeltaRoutedEventArgs e, Direction dir) {
+
             double left = Canvas.GetLeft(this);
             double top = Canvas.GetTop(this);
+
             if (dir == Direction.TOPLEFT)
             {
                 this.Width -= e.Delta.Translation.X / this.scaleTransform.ScaleX;
@@ -338,12 +341,14 @@ namespace PhenoPad.CustomControl
                 if (this.Width >= this.MIN_WIDTH && this.Height >= this.MIN_HEIGHT) {
                     Canvas.SetLeft(this, left + e.Delta.Translation.X);
                     Canvas.SetTop(this, top + e.Delta.Translation.Y);
+                    
                     this.canvasTop += e.Delta.Translation.Y;
                     this.canvasLeft += e.Delta.Translation.X;
-                    //problem: need to find a good way to keep strokes fixed in place when extending
-                    // from topleft or bottom left
+                    //when extending from the top/left, shift the current strokes accordingly.
+                    foreach (InkStroke st in inkCanvas.InkPresenter.StrokeContainer.GetStrokes())
+                        st.Selected = true;
+                    inkCanvas.InkPresenter.StrokeContainer.MoveSelected(new Point(-e.Delta.Translation.X, -e.Delta.Translation.Y));
                 }
-
             }
             if (dir == Direction.TOPRIGHT) {
                 this.Width += e.Delta.Translation.X / this.scaleTransform.ScaleX;
@@ -353,8 +358,7 @@ namespace PhenoPad.CustomControl
                     this.canvasTop += e.Delta.Translation.Y;
                 }
                     
-            }
-            
+            }            
             if (dir == Direction.BOTTOMLEFT)
             {
                 this.Width -= e.Delta.Translation.X / this.scaleTransform.ScaleX ;
@@ -362,52 +366,30 @@ namespace PhenoPad.CustomControl
                 if (this.Width >= this.MIN_WIDTH) {
                     Canvas.SetLeft(this, left + e.Delta.Translation.X);
                     this.canvasLeft += e.Delta.Translation.X;
-                }
-                    
+                    //when extending from the top/left, shift the current strokes accordingly.
+                    foreach (InkStroke st in inkCanvas.InkPresenter.StrokeContainer.GetStrokes())
+                        st.Selected = true;
+                    inkCanvas.InkPresenter.StrokeContainer.MoveSelected(new Point(-e.Delta.Translation.X, 0 ));
+                }                    
             }
             if (dir == Direction.BOTTOMRIGHT)
             {
                 this.Width += e.Delta.Translation.X;
                 this.Height += e.Delta.Translation.Y;
             }
-
             //setting minimal resizing sizes
             this.Width = this.Width < this.MIN_WIDTH ? this.MIN_WIDTH : this.Width;
             this.Height = this.Height < this.MIN_HEIGHT ? this.MIN_HEIGHT : this.Height;
-
         }
 
         private void Manipulator_OnManipulationDelta(object sender, ManipulationDeltaRoutedEventArgs e)
         {
-            //Debug.WriteLine("on manipulation");
             if (_isResizing)
-            {
-                    ResizePanel(e,this.resizeDir);
-            }
+                ResizePanel(e,this.resizeDir);
             else
             {
-                //if (e.Position.Y < 48) {
-                    this.dragTransform.X += e.Delta.Translation.X;
-                    this.dragTransform.Y += e.Delta.Translation.Y;
-                //}
-
-                
-
-
-                //var scale = this.scaleTransform.ScaleX * e.Delta.Scale;
-                //scale = scale > 2.0 ? 2.0 : scale;
-                //scale = scale < 0.5 ? 0.5 : scale;
-                //this.scaleTransform.ScaleX = scale;
-                //this.cornerX = this.cornerX * scale;
-
-                //scale = this.scaleTransform.ScaleY * e.Delta.Scale;
-                //scale = scale > 2.0 ? 2.0 : scale;
-                //scale = scale < 0.5 ? 0.5 : scale;
-                //this.scaleTransform.ScaleY = scale;
-                //this.cornerY = this.cornerY * scale;
-
-
-
+                this.dragTransform.X += e.Delta.Translation.X;
+                this.dragTransform.Y += e.Delta.Translation.Y;           
             }
         }
 
@@ -601,6 +583,7 @@ namespace PhenoPad.CustomControl
             }
             else // only for viewing on page overview page
             {
+                
                 inkCanvas.InkPresenter.InputDeviceTypes =
                     Windows.UI.Core.CoreInputDeviceTypes.None;
             }
@@ -608,9 +591,6 @@ namespace PhenoPad.CustomControl
 
 
         }
-
-
-
 
         /// <summary>
         /// //Initialize a bitmap image to add-in canvas and calls InitiateInkCanvas
@@ -640,7 +620,8 @@ namespace PhenoPad.CustomControl
             try
             {
                 // photo file
-                var file = await FileService.FileManager.getSharedFileManager().GetNoteFileNotCreate(notebookId, pageId, FileService.NoteFileType.Image, name);
+                var file = await FileManager.getSharedFileManager().GetNoteFileNotCreate(notebookId, pageId, NoteFileType.Image, name);
+
                 if (file != null)
                 {
                     // Open a file stream for reading.
@@ -662,13 +643,14 @@ namespace PhenoPad.CustomControl
 
                     }
                     stream.Dispose();
+                    scrollViewer.ZoomMode = ZoomMode.Disabled;
                 }
-
+           
                 InitiateInkCanvas(onlyView);
 
-                var annofile = await FileService.FileManager.getSharedFileManager().GetNoteFileNotCreate(notebookId, pageId, FileService.NoteFileType.ImageAnnotation, name);
+                var annofile = await FileManager.getSharedFileManager().GetNoteFileNotCreate(notebookId, pageId, NoteFileType.ImageAnnotation, name);
                 if (annofile != null)
-                    await FileService.FileManager.getSharedFileManager().loadStrokes(annofile, inkCanvas);
+                    await FileManager.getSharedFileManager().loadStrokes(annofile, inkCanvas);
 
                 /**
                     string strokeUri = "ms-appdata:///local/" + FileManager.getSharedFileManager().GetNoteFilePath(notebookId, pageId, NoteFileType.ImageAnnotation, name);
@@ -691,6 +673,7 @@ namespace PhenoPad.CustomControl
 
 
         }
+
         /// <summary>
         /// When user control is loaded, sets the default size and initialize from disk.
         /// </summary>
@@ -715,6 +698,7 @@ namespace PhenoPad.CustomControl
         private void StrokeInput_StrokeEnded(object sender, object e)
         {
             //detected stroke change, start the timer
+            this.allStrokes = inkCan.InkPresenter.StrokeContainer.SelectWithLine(new Point(0,0), new Point(inkCan.Width,inkCan.Height));
             autosaveDispatcherTimer.Start();
         }
 
