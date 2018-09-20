@@ -67,6 +67,7 @@ namespace PhenoPad.BluetoothService
                 {
                     rootPage.NotifyUser("Bluetooth is now connected.", NotifyType.StatusMessage, 3);
                     rootPage.BluetoothProgresssBox.Text = "Connected to Raspberry Pi";
+                    rootPage.bluetoonOn = true;
                 });
             }
         }
@@ -148,6 +149,7 @@ namespace PhenoPad.BluetoothService
                                 rootPage.BluetoothProgresssBox.Text = "Please try again soon";
                                 rootPage.BluetoothProgress.IsActive = false;
                                 rootPage.BluetoothComplete.Visibility = Windows.UI.Xaml.Visibility.Collapsed;
+                                rootPage.bluetoonOn = false;
                                 return;
                             }
 
@@ -191,6 +193,7 @@ namespace PhenoPad.BluetoothService
                                 rootPage.NotifyUser(
                                    "Connected to Raspberry Pi",
                                    NotifyType.StatusMessage, 2);
+                                rootPage.bluetoonOn = true;
                                 rootPage.bluetoothInitialized(true);
                                 rootPage.serverConnectButton.IsEnabled = true;
                             }
