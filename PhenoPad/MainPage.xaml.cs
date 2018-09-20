@@ -96,7 +96,6 @@ namespace PhenoPad
         public static readonly string ViewMode = "View Mode";
         private string currentMode = WritingMode;
         private bool ifViewMode = false;
-        private string curMic = "external";
 
         private SemaphoreSlim notifySemaphoreSlim = new SemaphoreSlim(1);
         #endregion
@@ -146,12 +145,6 @@ namespace PhenoPad
             chatView.ContainerContentChanging += OnChatViewContainerContentChanging;
             realtimeChatView.ItemsSource = SpeechManager.getSharedSpeechManager().realtimeConversation;
 
-            //by default sets the microphone to external one.
-            ExterMicRadioButton_Checked(null,null);
-
-            audioTimer.Tick += ReEnableAudioButton;
-            audioTimer.Interval = TimeSpan.FromSeconds(5);
-
             PropertyChanged += MainPage_PropertyChanged;
             // save to disk every 10 seconds
             //this.saveNotesTimer(10); // Currently disabling to test auto-save function
@@ -167,8 +160,6 @@ namespace PhenoPad
             };
 
         }
-
-
 
         /// <summary>
         /// Initializes display for the loaded page
@@ -700,9 +691,8 @@ namespace PhenoPad
 
         private void AudioStreamButton_Clicked(object sender, RoutedEventArgs e)
         {
-            //Temporarily disables audio button for avoiding frequent requests
             audioButton.IsEnabled = false;
-            audioTimer.Start();
+            //TODO- ADD TIMER TICK TO REENABLE AFTER 5 SEC;
             // use external microphone
             if (ConfigService.ConfigService.getConfigService().IfUseExternalMicrophone())
             {
@@ -730,21 +720,16 @@ namespace PhenoPad
                     changeSpeechEngineState(false);
                     audioStatusText.Text = "OFF";
                 }
+                audioButton.IsEnabled = true;
             }
 
 
         }
 
-        private void ReEnableAudioButton(object sender, object e)
+        private void MicButton_Click(object sender, RoutedEventArgs e)
         {
-            this.audioButton.IsEnabled = true;
-            audioTimer.Stop();
+            enableMic();
         }
-
-        //private void MicButton_Click(object sender, RoutedEventArgs e)
-        //{
-        //    enableMic();
-        //}
 
         private void PageOverviewButton_Click(object sender, RoutedEventArgs e)
         {
@@ -1232,15 +1217,12 @@ namespace PhenoPad
         {
             ConfigService.ConfigService.getConfigService().UseInternalMic();
             this.audioButton.IsEnabled = true;
-            this.serverConnectButton.IsEnabled = false;
-            //this.StreamButton.IsEnabled = true;
             NotifyUser("Using Surface microphone", NotifyType.StatusMessage, 2);
         }
 
         private void ExterMicRadioButton_Checked(object sender, RoutedEventArgs e)
         {
             ConfigService.ConfigService.getConfigService().UseExternalMic();
-            //this.serverConnectButton.IsEnabled = true;
             this.StreamButton.IsEnabled = false;
             this.shutterButton.IsEnabled = false;
             this.audioButton.IsEnabled = false;
@@ -1269,6 +1251,9 @@ namespace PhenoPad
                 }
                 this.bluetoothService = BluetoothService.BluetoothService.getBluetoothService();
                 await this.bluetoothService.Initialize();
+                if (this.bluetoothService != null) {
+                    this.bluetoonOn = true;
+                }
                 
             }
             else {

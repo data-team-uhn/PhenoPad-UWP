@@ -46,8 +46,8 @@ namespace PhenoPad.CustomControl
         private double DEFAULT_HEIGHT = 400;
         private double MIN_WIDTH = 300;
         private double MIN_HEIGHT = 300;
-        double curWidth;
-        double curHeight; 
+        private double cornerX;
+        private double cornerY;
         public string type; // photo, drawing
         public InkCanvas inkCan
         {
@@ -198,8 +198,8 @@ namespace PhenoPad.CustomControl
             this.Height = height < DEFAULT_HEIGHT ? DEFAULT_HEIGHT : height;
             this.Width = width < DEFAULT_WIDTH ? DEFAULT_WIDTH : width;
             //by default setting the corner bound to be 10px
-            double curWidth = this.Width;
-            double curHeight = this.Height;
+            this.cornerX = 10;
+            this.cornerY = 10;
 
             this.name = name;
             this.notebookId = notebookId;
@@ -306,8 +306,6 @@ namespace PhenoPad.CustomControl
         {
             double xPos = e.Position.X;
             double yPos = e.Position.Y;
-            
-            //setting corner detections for canvas extension
             bool topLeft = xPos < 20  && yPos < 20 ;
             bool topRight = (xPos > this.Width - 20) &&  (yPos < 20);
             bool bottomLeft = xPos < 20  && yPos > this.Height - 20;
@@ -316,14 +314,13 @@ namespace PhenoPad.CustomControl
             if (topLeft || topRight || bottomLeft || bottomRight)
             {
                 this._isResizing = true;
-                curWidth = this.Width;
-                curHeight = this.Height;
                 if (topLeft) this.resizeDir = Direction.TOPLEFT;
                 else if (topRight) this.resizeDir = Direction.TOPRIGHT;
                 else if (bottomLeft) this.resizeDir = Direction.BOTTOMLEFT;
                 else if (bottomRight) this.resizeDir = Direction.BOTTOMRIGHT;
+                Debug.WriteLine(this.resizeDir);
             }
-            //pointer is within title bar for X,Y translation
+            //pointer is within center moving grid panel for zoom in/out
             else {
                 this._isResizing = false;
                 this.showMovingGrid();
@@ -336,11 +333,9 @@ namespace PhenoPad.CustomControl
 
             double left = Canvas.GetLeft(this);
             double top = Canvas.GetTop(this);
-            
 
             if (dir == Direction.TOPLEFT)
             {
-
                 this.Width -= e.Delta.Translation.X / this.scaleTransform.ScaleX;
                 this.Height -= e.Delta.Translation.Y / this.scaleTransform.ScaleY;
                 if (this.Width >= this.MIN_WIDTH && this.Height >= this.MIN_HEIGHT) {
@@ -375,10 +370,7 @@ namespace PhenoPad.CustomControl
                     foreach (InkStroke st in inkCanvas.InkPresenter.StrokeContainer.GetStrokes())
                         st.Selected = true;
                     inkCanvas.InkPresenter.StrokeContainer.MoveSelected(new Point(-e.Delta.Translation.X, 0 ));
-                }
-                if (this.Width < curWidth) {
-                    this.scrollViewer.MinZoomFactor = (float)(this.Width/curWidth);
-                }
+                }                    
             }
             if (dir == Direction.BOTTOMRIGHT)
             {
@@ -396,7 +388,6 @@ namespace PhenoPad.CustomControl
                 ResizePanel(e,this.resizeDir);
             else
             {
-
                 this.dragTransform.X += e.Delta.Translation.X;
                 this.dragTransform.Y += e.Delta.Translation.Y;           
             }
@@ -707,6 +698,7 @@ namespace PhenoPad.CustomControl
         private void StrokeInput_StrokeEnded(object sender, object e)
         {
             //detected stroke change, start the timer
+            this.allStrokes = inkCan.InkPresenter.StrokeContainer.SelectWithLine(new Point(0,0), new Point(inkCan.Width,inkCan.Height));
             autosaveDispatcherTimer.Start();
         }
 

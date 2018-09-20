@@ -201,6 +201,7 @@ namespace PhenoPad.SpeechService
                         string outAccumulator = String.Empty;
                         string json = SpeechEngineInterpreter.getFirstJSON(accumulator, out outAccumulator);
                         accumulator = outAccumulator;
+
                         // Only process if we have valid JSON
                         if (json.Length != 0)
                         {
@@ -349,7 +350,6 @@ namespace PhenoPad.SpeechService
                 {
                     attemptConnection = false;
                 }
-                Debug.WriteLine("connecting");
             }
 
 
