@@ -198,8 +198,9 @@ namespace PhenoPad.CustomControl
             this.Height = height < DEFAULT_HEIGHT ? DEFAULT_HEIGHT : height;
             this.Width = width < DEFAULT_WIDTH ? DEFAULT_WIDTH : width;
             //by default setting the corner bound to be 10px
-            double curWidth = this.Width;
-            double curHeight = this.Height;
+
+            this.inkCan.Width = this.Width;
+            this.inkCan.Height = this.Height;
 
             this.name = name;
             this.notebookId = notebookId;
@@ -343,16 +344,17 @@ namespace PhenoPad.CustomControl
 
                 this.Width -= e.Delta.Translation.X / this.scaleTransform.ScaleX;
                 this.Height -= e.Delta.Translation.Y / this.scaleTransform.ScaleY;
+
                 if (this.Width >= this.MIN_WIDTH && this.Height >= this.MIN_HEIGHT) {
                     Canvas.SetLeft(this, left + e.Delta.Translation.X);
                     Canvas.SetTop(this, top + e.Delta.Translation.Y);
                     
                     this.canvasTop += e.Delta.Translation.Y;
                     this.canvasLeft += e.Delta.Translation.X;
-                    //when extending from the top/left, shift the current strokes accordingly.
-                    foreach (InkStroke st in inkCanvas.InkPresenter.StrokeContainer.GetStrokes())
-                        st.Selected = true;
-                    inkCanvas.InkPresenter.StrokeContainer.MoveSelected(new Point(-e.Delta.Translation.X, -e.Delta.Translation.Y));
+                        //when extending from the top/left, shift the current strokes accordingly.
+                        foreach (InkStroke st in inkCanvas.InkPresenter.StrokeContainer.GetStrokes())
+                            st.Selected = true;
+                        inkCanvas.InkPresenter.StrokeContainer.MoveSelected(new Point(-e.Delta.Translation.X, -e.Delta.Translation.Y));                   
                 }
             }
             if (dir == Direction.TOPRIGHT) {
@@ -385,9 +387,15 @@ namespace PhenoPad.CustomControl
                 this.Width += e.Delta.Translation.X;
                 this.Height += e.Delta.Translation.Y;
             }
+            if (this.Width > this.inkCan.Width || this.Height > this.inkCan.Height)
+            {
+                inkCan.Width = this.Width;
+                inkCan.Height = this.Height;
+            }
             //setting minimal resizing sizes
             this.Width = this.Width < this.MIN_WIDTH ? this.MIN_WIDTH : this.Width;
             this.Height = this.Height < this.MIN_HEIGHT ? this.MIN_HEIGHT : this.Height;
+
         }
 
         private void Manipulator_OnManipulationDelta(object sender, ManipulationDeltaRoutedEventArgs e)
