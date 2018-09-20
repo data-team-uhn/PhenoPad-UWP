@@ -309,6 +309,7 @@ namespace PhenoPad.SpeechService
 
             while (attemptConnection)
             {
+                Debug.WriteLine("connecting");
                 speechStreamSocket = new SpeechStreamSocket(this.serverAddress, this.serverPort);
                 //speechAPI.setupClient(this.serverAddress);
                 speechAPI.setupClient(this.serverAddress);
