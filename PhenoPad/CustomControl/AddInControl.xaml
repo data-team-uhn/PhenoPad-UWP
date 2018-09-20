@@ -26,7 +26,7 @@
         <Grid.RowDefinitions>
             <RowDefinition Height="48"></RowDefinition>
             <RowDefinition Height="*"></RowDefinition>
-            <RowDefinition Height="10"></RowDefinition>
+            <RowDefinition Height="20"></RowDefinition>
         </Grid.RowDefinitions>
 
         <Grid Name="contentGrid" Grid.Row="1">
@@ -127,8 +127,8 @@
             <ScrollViewer  Grid.Row="1" x:Name="scrollViewer" Visibility="Collapsed" ZoomMode="Enabled" MinZoomFactor="1" VerticalScrollMode="Enabled" VerticalScrollBarVisibility="Auto" HorizontalScrollMode="Enabled" HorizontalScrollBarVisibility="Auto">
                 <Grid Height="auto" Margin="10 10 10 10">
 
-                <InkCanvas Grid.Row="1"  Visibility="Collapsed"  Margin="10 10 10 10" x:Name="inkCanvas" />
-                <local:AddInImageControl Grid.Row="1" Visibility="Collapsed" Margin="10 10 10 10" x:Name="imageControl"/>
+                <InkCanvas Grid.Row="1"  Visibility="Collapsed"   x:Name="inkCanvas" />
+                <local:AddInImageControl Grid.Row="1" Visibility="Collapsed" x:Name="imageControl"/>
                 </Grid>
             </ScrollViewer>
 
@@ -137,13 +137,13 @@
 
 
 
-        <Grid Grid.Row="0" Background="White" Opacity="0.1"  Visibility="Collapsed" Margin="10 10 10 0"  Name="MovingGrid" >
+        <Grid Grid.Row="0" Background="White" Opacity="0.1"  Visibility="Collapsed" Name="MovingGrid" >
         </Grid>
         <Rectangle Grid.Row ="2" x:Name="ResizeRectangleBottomRight" IsHitTestVisible="False"
-               Width="10" Height="10" Fill="red"
+               Width="20" Height="20" Fill="red"
                VerticalAlignment="Bottom" HorizontalAlignment="Right"/>
         <Rectangle Grid.Row ="2" x:Name="ResizeRectangleBottomLeft" IsHitTestVisible="False"
-               Width="10" Height="10" Fill="red"
+               Width="20" Height="20" Fill="red"
                VerticalAlignment="Bottom" HorizontalAlignment="Left"/>
         <Rectangle Grid.Row ="0" x:Name="ResizeRectangleTopLeft" IsHitTestVisible="False"
                Width="10" Height="10" Fill="red"

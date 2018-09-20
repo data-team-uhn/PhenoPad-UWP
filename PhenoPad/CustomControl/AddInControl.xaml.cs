@@ -299,37 +299,6 @@ namespace PhenoPad.CustomControl
         }
         #endregion
 
-        #region SIZE Manipulation using two fingers
-
-        private void Panel_ManipulationStarted(object sender, ManipulationStartedRoutedEventArgs e) {
-            
-            this.showMovingGrid();
-        }
-
-        private void Panel_ManipulationDelta(object sender, ManipulationDeltaRoutedEventArgs e) {
-            Console.WriteLine($"Current point coord:{e.Position}");
-
-            this.dragTransform.X += e.Delta.Translation.X;
-            this.dragTransform.Y += e.Delta.Translation.Y;
-
-
-            var scale = this.scaleTransform.ScaleX * e.Delta.Scale;
-            scale = scale > 2.0 ? 2.0 : scale;
-            scale = scale < 0.5 ? 0.5 : scale;
-            this.scaleTransform.ScaleX = scale;
-
-            scale = this.scaleTransform.ScaleY * e.Delta.Scale;
-            scale = scale > 2.0 ? 2.0 : scale;
-            scale = scale < 0.5 ? 0.5 : scale;
-            this.scaleTransform.ScaleY = scale;
-        }
-
-        private void Panel_ManipulationCompleted(object sender, ManipulationCompletedRoutedEventArgs e) {
-            this.hideMovingGrid();
-        }
-
-        #endregion
-
         #region Corner drag for size changes
         private void Manipulator_OnManipulationStarted(object sender, ManipulationStartedRoutedEventArgs e)
         {
@@ -338,8 +307,8 @@ namespace PhenoPad.CustomControl
             double yPos = e.Position.Y;
             bool topLeft = xPos < 10  && yPos < 10 ;
             bool topRight = (xPos > this.Width - 10) &&  (yPos < 10);
-            bool bottomLeft = xPos < 10  && yPos > this.Height - 10;
-            bool bottomRight = (xPos > this.Width - 10) && (yPos > this.Height - 10);
+            bool bottomLeft = xPos < 20  && yPos > this.Height - 20;
+            bool bottomRight = (xPos > this.Width - 20) && (yPos > this.Height - 20);
             //the pointer is in one of the resizing corners
             if (topLeft || topRight || bottomLeft || bottomRight)
             {
@@ -417,10 +386,10 @@ namespace PhenoPad.CustomControl
             }
             else
             {
-                if (e.Position.Y < 48) {
+                //if (e.Position.Y < 48) {
                     this.dragTransform.X += e.Delta.Translation.X;
                     this.dragTransform.Y += e.Delta.Translation.Y;
-                }
+                //}
 
                 
 
@@ -442,9 +411,9 @@ namespace PhenoPad.CustomControl
             }
         }
 
-        private async void Manipulator_OnManipulationCompleted(object sender, ManipulationCompletedRoutedEventArgs e) {
+        private void Manipulator_OnManipulationCompleted(object sender, ManipulationCompletedRoutedEventArgs e) {
             this.hideMovingGrid();
-            //await rootPage.curPage.AutoSaveAddin(this.name);
+            autosaveDispatcherTimer.Start();
         }
         #endregion
 
