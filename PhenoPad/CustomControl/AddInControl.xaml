@@ -26,6 +26,7 @@
         <Grid.RowDefinitions>
             <RowDefinition Height="48"></RowDefinition>
             <RowDefinition Height="*"></RowDefinition>
+            <RowDefinition Height="10"></RowDefinition>
         </Grid.RowDefinitions>
 
         <Grid Name="contentGrid" Grid.Row="1">
@@ -55,7 +56,8 @@
                 </Button>
             </StackPanel>
         </Grid>
-        
+
+
 
         <!--
         <StackPanel Name="ControlStackPanel" Visibility="Collapsed" Orientation="Horizontal" FlowDirection="RightToLeft">
@@ -121,30 +123,34 @@
             </StackPanel>
 
         </Grid>
-        <InkCanvas Grid.Row="1"  Visibility="Collapsed" Margin="10 10 10 10" x:Name="inkCanvas" />
+        
+            <ScrollViewer  Grid.Row="1" x:Name="scrollViewer" Visibility="Collapsed" ZoomMode="Enabled" MinZoomFactor="1" VerticalScrollMode="Enabled" VerticalScrollBarVisibility="Auto" HorizontalScrollMode="Enabled" HorizontalScrollBarVisibility="Auto">
+                <Grid Height="auto" Margin="10 10 10 10">
 
-        <local:AddInImageControl Grid.Row="1" Visibility="Collapsed" Margin="10 10 10 10" x:Name="imageControl"/>
-        <Rectangle Grid.Row ="1" x:Name="ResizeRectangleBottomRight" IsHitTestVisible="False"
-               Width="10" Height="10"
+                <InkCanvas Grid.Row="1"  Visibility="Collapsed"  Margin="10 10 10 10" x:Name="inkCanvas" />
+                <local:AddInImageControl Grid.Row="1" Visibility="Collapsed" Margin="10 10 10 10" x:Name="imageControl"/>
+                </Grid>
+            </ScrollViewer>
+
+
+            
+
+
+
+        <Grid Grid.Row="0" Background="White" Opacity="0.1"  Visibility="Collapsed" Margin="10 10 10 0"  Name="MovingGrid" >
+        </Grid>
+        <Rectangle Grid.Row ="2" x:Name="ResizeRectangleBottomRight" IsHitTestVisible="False"
+               Width="10" Height="10" Fill="red"
                VerticalAlignment="Bottom" HorizontalAlignment="Right"/>
-        <Rectangle Grid.Row ="1" x:Name="ResizeRectangleBottomLeft" IsHitTestVisible="False"
-               Width="10" Height="10" 
+        <Rectangle Grid.Row ="2" x:Name="ResizeRectangleBottomLeft" IsHitTestVisible="False"
+               Width="10" Height="10" Fill="red"
                VerticalAlignment="Bottom" HorizontalAlignment="Left"/>
         <Rectangle Grid.Row ="0" x:Name="ResizeRectangleTopLeft" IsHitTestVisible="False"
-               Width="10" Height="10" 
+               Width="10" Height="10" Fill="red"
                VerticalAlignment="Top" HorizontalAlignment="Left"/>
-
-
         <Rectangle Grid.Row ="0" x:Name="ResizeRectangleTopRight" IsHitTestVisible="False"
-               Width="10" Height="10" 
+               Width="10" Height="10" Fill="red"
                VerticalAlignment="Top" HorizontalAlignment="Right"/>
-
-
-        <Grid Grid.Row="0" Grid.RowSpan="2" Background="White" Opacity="0.1" Visibility="Collapsed" Margin="10 10 10 10"  Name="MovingGrid" >
-
-
-        </Grid>
-
 
 
     </Grid>

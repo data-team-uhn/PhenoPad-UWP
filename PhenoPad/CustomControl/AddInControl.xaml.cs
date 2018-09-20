@@ -336,10 +336,10 @@ namespace PhenoPad.CustomControl
             Debug.WriteLine(e.Position);
             double xPos = e.Position.X;
             double yPos = e.Position.Y;
-            bool topLeft = xPos < 50  && yPos < 50 ;
-            bool topRight = (xPos > this.Width - 50) &&  (yPos < 50);
-            bool bottomLeft = xPos < 50  && yPos > this.Height - 50;
-            bool bottomRight = (xPos > this.Width - 50) && (yPos > this.Height - 50);
+            bool topLeft = xPos < 10  && yPos < 10 ;
+            bool topRight = (xPos > this.Width - 10) &&  (yPos < 10);
+            bool bottomLeft = xPos < 10  && yPos > this.Height - 10;
+            bool bottomRight = (xPos > this.Width - 10) && (yPos > this.Height - 10);
             //the pointer is in one of the resizing corners
             if (topLeft || topRight || bottomLeft || bottomRight)
             {
@@ -417,23 +417,28 @@ namespace PhenoPad.CustomControl
             }
             else
             {
-                Console.WriteLine($"Current point coord:{e.Position}");
+                if (e.Position.Y < 48) {
+                    this.dragTransform.X += e.Delta.Translation.X;
+                    this.dragTransform.Y += e.Delta.Translation.Y;
+                }
 
-                this.dragTransform.X += e.Delta.Translation.X;
-                this.dragTransform.Y += e.Delta.Translation.Y;
+                
 
 
-                var scale = this.scaleTransform.ScaleX * e.Delta.Scale;
-                scale = scale > 2.0 ? 2.0 : scale;
-                scale = scale < 0.5 ? 0.5 : scale;
-                this.scaleTransform.ScaleX = scale;
-                this.cornerX = this.cornerX * scale;
+                //var scale = this.scaleTransform.ScaleX * e.Delta.Scale;
+                //scale = scale > 2.0 ? 2.0 : scale;
+                //scale = scale < 0.5 ? 0.5 : scale;
+                //this.scaleTransform.ScaleX = scale;
+                //this.cornerX = this.cornerX * scale;
 
-                scale = this.scaleTransform.ScaleY * e.Delta.Scale;
-                scale = scale > 2.0 ? 2.0 : scale;
-                scale = scale < 0.5 ? 0.5 : scale;
-                this.scaleTransform.ScaleY = scale;
-                this.cornerY = this.cornerY * scale;
+                //scale = this.scaleTransform.ScaleY * e.Delta.Scale;
+                //scale = scale > 2.0 ? 2.0 : scale;
+                //scale = scale < 0.5 ? 0.5 : scale;
+                //this.scaleTransform.ScaleY = scale;
+                //this.cornerY = this.cornerY * scale;
+
+
+
             }
         }
 
@@ -579,6 +584,7 @@ namespace PhenoPad.CustomControl
                     captureControl.unSetUp();
                 }
                 await rootPage.curPage.AutoSaveAddin(this.name);
+                scrollViewer.ZoomMode = ZoomMode.Disabled;
 
             }
             catch (Exception ex)
@@ -606,6 +612,7 @@ namespace PhenoPad.CustomControl
             //this.ControlStackPanel.Visibility = Visibility.Visible;
             //contentGrid.Children.Add(inkCanvas);
             inkCanvas.Visibility = Visibility.Visible;
+            scrollViewer.Visibility = Visibility.Visible;
             if (!onlyView) // added from note page, need editing
             {
                 // Set supported input type to default using both moush and pen
