@@ -373,7 +373,6 @@ namespace PhenoPad.CustomControl
                     this.canvasLeft += e.Delta.Translation.X;
                     //problem: need to find a good way to keep strokes fixed in place when extending
                     // from topleft or bottom left
-
                 }
 
             }

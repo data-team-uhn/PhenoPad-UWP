@@ -125,18 +125,18 @@
 
         <local:AddInImageControl Grid.Row="1" Visibility="Collapsed" Margin="10 10 10 10" x:Name="imageControl"/>
         <Rectangle Grid.Row ="1" x:Name="ResizeRectangleBottomRight" IsHitTestVisible="False"
-               Width="10" Height="10" Fill="Red"
+               Width="10" Height="10"
                VerticalAlignment="Bottom" HorizontalAlignment="Right"/>
         <Rectangle Grid.Row ="1" x:Name="ResizeRectangleBottomLeft" IsHitTestVisible="False"
-               Width="10" Height="10" Fill="Red"
+               Width="10" Height="10" 
                VerticalAlignment="Bottom" HorizontalAlignment="Left"/>
         <Rectangle Grid.Row ="0" x:Name="ResizeRectangleTopLeft" IsHitTestVisible="False"
-               Width="10" Height="10" Fill="Red"
+               Width="10" Height="10" 
                VerticalAlignment="Top" HorizontalAlignment="Left"/>
 
 
         <Rectangle Grid.Row ="0" x:Name="ResizeRectangleTopRight" IsHitTestVisible="False"
-               Width="10" Height="10" Fill="Red"
+               Width="10" Height="10" 
                VerticalAlignment="Top" HorizontalAlignment="Right"/>
 
 
