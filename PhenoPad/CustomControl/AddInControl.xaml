@@ -125,9 +125,9 @@
         </Grid>
         
             <ScrollViewer  Grid.Row="1" x:Name="scrollViewer" Visibility="Collapsed" ZoomMode="Enabled" MinZoomFactor="1" VerticalScrollMode="Enabled" VerticalScrollBarVisibility="Auto" HorizontalScrollMode="Enabled" HorizontalScrollBarVisibility="Auto">
-                <Grid Height="auto" Margin="10 10 10 10">
+                <Grid Background="Beige" Margin="10 10 10 10" x:Name="scrollGrid">
 
-                <InkCanvas Grid.Row="1"  Visibility="Collapsed"   x:Name="inkCanvas" />
+                <InkCanvas Grid.Row="1" Visibility="Collapsed" Margin="10 10 10 10" x:Name="inkCanvas" />
                 <local:AddInImageControl Grid.Row="1" Visibility="Collapsed" x:Name="imageControl"/>
                 </Grid>
             </ScrollViewer>
@@ -139,7 +139,7 @@
 
         <Grid Grid.Row="0" Background="White" Opacity="0.1"  Visibility="Collapsed" Name="MovingGrid" >
         </Grid>
-        <Rectangle Grid.Row ="2" x:Name="ResizeRectangleBottomRight" IsHitTestVisible="False"
+        <!--<Rectangle Grid.Row ="2" x:Name="ResizeRectangleBottomRight" IsHitTestVisible="False"
                Width="20" Height="20" Fill="red"
                VerticalAlignment="Bottom" HorizontalAlignment="Right"/>
         <Rectangle Grid.Row ="2" x:Name="ResizeRectangleBottomLeft" IsHitTestVisible="False"
@@ -150,7 +150,7 @@
                VerticalAlignment="Top" HorizontalAlignment="Left"/>
         <Rectangle Grid.Row ="0" x:Name="ResizeRectangleTopRight" IsHitTestVisible="False"
                Width="10" Height="10" Fill="red"
-               VerticalAlignment="Top" HorizontalAlignment="Right"/>
+               VerticalAlignment="Top" HorizontalAlignment="Right"/>-->
 
 
     </Grid>

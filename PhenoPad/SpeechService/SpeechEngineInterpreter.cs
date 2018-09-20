@@ -187,122 +187,132 @@ namespace PhenoPad.SpeechService
         }
 
         // Looks at speech engine result to identify what can be done
-        public void processJSON(SpeechEngineJSON json)
+        public async void processJSON(SpeechEngineJSON json)
         {
-            // We take for granted that diarizatio will always be a lot slower than 
-            // speech recognition
-
-            if (json != null)
+            try
             {
-                if (json.worker_pid != 0)
+                // We take for granted that diarizatio will always be a lot slower than 
+                // speech recognition
+
+                if (json != null)
                 {
-                    this.worker_pid = json.worker_pid;
-                    Debug.WriteLine("Worker PID upon processing " + this.worker_pid.ToString());
-                }
-
-                // First check if speech is final (remember that diarization is always slower)
-                if (json.result.final)
-                {
-                    this.queryPhenoService(json.result.hypotheses[0].transcript);
-
-                    Debug.WriteLine(json.result.hypotheses[0].transcript);
-
-                    // Then we should have a bunch of words to look at
-                    double latest = 0;
-                    double OFFSET = 0;          // not too sure if word alignment data is actually correct from aspire???
-                    foreach (WordAlignment wa in json.result.hypotheses[0].word_alignment)
+                    if (json.worker_pid != 0)
                     {
-                        // Remove <laughter> <unk> etc.
-                        //if (wa.word.IndexOf('[') == -1 && wa.word.IndexOf('<') == -1)
+                        this.worker_pid = json.worker_pid;
+                        Debug.WriteLine("Worker PID upon processing " + this.worker_pid.ToString());
+                    }
+
+                    // First check if speech is final (remember that diarization is always slower)
+                    if (json.result.final)
+                    {
+                        this.queryPhenoService(json.result.hypotheses[0].transcript);
+
+                        Debug.WriteLine(json.result.hypotheses[0].transcript);
+
+                        // Then we should have a bunch of words to look at
+                        double latest = 0;
+                        double OFFSET = 0;          // not too sure if word alignment data is actually correct from aspire???
+                        foreach (WordAlignment wa in json.result.hypotheses[0].word_alignment)
                         {
-                            // Make sure word does not start before 0
-                            double word_start = Math.Max(wa.start + json.segment_start + OFFSET, 0);
-                            double word_end = Math.Max(wa.start + wa.length + json.segment_start + OFFSET, 0);
-                            var w = new WordSpoken(wa.word, -1, new TimeInterval(word_start, word_end));
-                            words.Add(w);
-                            latest = wa.start + wa.length + json.segment_start;
+                            // Remove <laughter> <unk> etc.
+                            //if (wa.word.IndexOf('[') == -1 && wa.word.IndexOf('<') == -1)
+                            {
+                                // Make sure word does not start before 0
+                                double word_start = Math.Max(wa.start + json.segment_start + OFFSET, 0);
+                                double word_end = Math.Max(wa.start + wa.length + json.segment_start + OFFSET, 0);
+                                var w = new WordSpoken(wa.word, -1, new TimeInterval(word_start, word_end));
+                                words.Add(w);
+                                latest = wa.start + wa.length + json.segment_start;
+                            }
                         }
+
+                        if (latest == 0)
+                        {
+                            latest = words[words.Count - 1].interval.end;
+                        }
+                        //Debug.WriteLine("Latest final sentence up to " + latest.ToString());
+
+                        /*if (json.result.hypotheses[0].word_alignment.Count > 0)
+                        {
+                            words.Add(new WordSpoken(".", -1, new TimeInterval(latest, latest)));
+                        }*/
                     }
 
-                    if (latest == 0)
+                    // Then check if we have results from diarization
+                    if (json.result.diarization != null && json.result.diarization.Count > 0)
                     {
-                        latest = words[words.Count - 1].interval.end;
-                    }
-                    //Debug.WriteLine("Latest final sentence up to " + latest.ToString());
+                        bool full = false;
+                        if (!json.result.diarization_incremental)
+                        {
+                            //Debug.WriteLine("Received new diarization. Removing previous results.");
+                            this.diarization.Clear();
+                            this.diarizationSmallSeg.Clear();
+                            this.diarizationWordIndex = 0;
+                            this.constructDiarizedSentenceIndex = 0;
+                            full = true;
+                        }
+                        foreach (var d in json.result.diarization)
+                        {
+                            int speaker = d.speaker;
+                            //Debug.WriteLine("Identified speaker is " + speaker.ToString());
+                            double start = d.start;
+                            double end = d.end;
 
-                    /*if (json.result.hypotheses[0].word_alignment.Count > 0)
-                    {
-                        words.Add(new WordSpoken(".", -1, new TimeInterval(latest, latest)));
-                    }*/
+                            var interval = new TimeInterval(start, end);
+                            this.insertToDiarization(interval, speaker);
+                        }
+
+                        this.assignSpeakerToWords();
+                        //Debug.WriteLine("Diarized to word count" + diarizationWordIndex.ToString());
+                        //Debug.WriteLine("Total word count" + words.Count.ToString());
+                        //Debug.WriteLine(json.original);
+                        this.formConversation(full);
+
+                        // so that we don't have an overflow of words
+                        this.constructTempSentence();
+                        //this.printDiarizationResult();
+                    }
+
                 }
 
-                // Then check if we have results from diarization
-                if (json.result.diarization != null && json.result.diarization.Count > 0)
+                this.realtimeSentences = this.constructTempSentence();
+
+                if (!json.result.final)
                 {
-                    bool full = false;
-                    if (!json.result.diarization_incremental)
+                    this.realtimeLastSentence = json.result.hypotheses[0].transcript.Trim();
+
+                    await Windows.ApplicationModel.Core.CoreApplication.MainView.CoreWindow.Dispatcher.RunAsync(CoreDispatcherPriority.Normal,
+                    () =>
                     {
-                        //Debug.WriteLine("Received new diarization. Removing previous results.");
-                        this.diarization.Clear();
-                        this.diarizationSmallSeg.Clear();
-                        this.diarizationWordIndex = 0;
-                        this.constructDiarizedSentenceIndex = 0;
-                        full = true;
+                        if (this.tempSentence.Equals("ADD NEW"))
+                        {
+                            this.realtimeConversation.UpdateLastMessage(this.constructRealtimeTempBubble(), true);
+                            //Debug.WriteLine("Not final, no existing");
+                        }
+                        else
+                        {
+                            this.realtimeConversation.UpdateLastMessage(this.constructRealtimeTempBubble(), false);
+                            //Debug.WriteLine("Not final, but has existing");
+                        }
+                        this.tempSentence = String.Empty;
                     }
-                    foreach (var d in json.result.diarization)
-                    {
-                        int speaker = d.speaker;
-                        //Debug.WriteLine("Identified speaker is " + speaker.ToString());
-                        double start = d.start;
-                        double end = d.end;
-
-                        var interval = new TimeInterval(start, end);
-                        this.insertToDiarization(interval, speaker);
-                    }
-
-                    this.assignSpeakerToWords();
-                    //Debug.WriteLine("Diarized to word count" + diarizationWordIndex.ToString());
-                    //Debug.WriteLine("Total word count" + words.Count.ToString());
-                    //Debug.WriteLine(json.original);
-                    this.formConversation(full);
-
-                    // so that we don't have an overflow of words
-                    this.constructTempSentence();
-                    //this.printDiarizationResult();
+                    );
+                }
+                else
+                {
+                    this.tempSentence = "ADD NEW";
+                    this.formRealtimeConversation();
+                    //Debug.WriteLine("Final");
                 }
 
+                // latest sentence has a length cap
+                //this.constructLatestSentence();
+            }
+            catch (Exception e) {
+                LogService.MetroLogger.getSharedLogger().Error(e.Message);
             }
 
-            this.realtimeSentences = this.constructTempSentence();
 
-            if (!json.result.final)
-            {
-                this.realtimeLastSentence = json.result.hypotheses[0].transcript.Trim();
-
-                Windows.ApplicationModel.Core.CoreApplication.MainView.CoreWindow.Dispatcher.RunAsync(CoreDispatcherPriority.Normal,
-                () =>
-                {
-                    if (this.tempSentence.Equals("ADD NEW"))
-                    {
-                        this.realtimeConversation.UpdateLastMessage(this.constructRealtimeTempBubble(), true);
-                        //Debug.WriteLine("Not final, no existing");
-                    } else
-                    {
-                        this.realtimeConversation.UpdateLastMessage(this.constructRealtimeTempBubble(), false);
-                        //Debug.WriteLine("Not final, but has existing");
-                    }
-                    this.tempSentence = String.Empty;
-                }
-                );
-            } else
-            {
-                this.tempSentence = "ADD NEW";
-                this.formRealtimeConversation();
-                //Debug.WriteLine("Final");
-            }
-
-            // latest sentence has a length cap
-            //this.constructLatestSentence();
         }
 
         /// <summary>

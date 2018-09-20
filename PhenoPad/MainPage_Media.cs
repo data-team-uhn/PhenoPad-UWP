@@ -98,6 +98,8 @@ namespace PhenoPad
         public UIWebSocketClient uiClinet = null;
         private int doctor = 0;
         bool speechEngineRunning = false;
+        private DispatcherTimer audioTimer = new DispatcherTimer();
+        
 
         public SpeechManager speechManager = SpeechManager.getSharedSpeechManager();
         /// <summary>
@@ -349,7 +351,6 @@ namespace PhenoPad
             }
             catch (Exception e)
             {
-                //Debug.WriteLine(e.Message);
                 LogService.MetroLogger.getSharedLogger().Error("Failed to start/stop bluetooth audio: " + e.Message);
             }
 
