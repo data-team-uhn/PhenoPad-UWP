@@ -7,8 +7,8 @@
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:customcontrol="using:PhenoPad.CustomControl"
     xmlns:phenotypeservice="using:PhenoPad.PhenotypeService"
-
-     xmlns:hwrservice="using:PhenoPad.HWRService"
+    xmlns:hwrservice="using:PhenoPad.HWRService"
+    xmlns:fileservice="using:PhenoPad.FileService"
     mc:Ignorable="d"
     VerticalAlignment="Stretch" 
     HorizontalAlignment="Stretch"
@@ -126,7 +126,7 @@
     </UserControl.Resources>
     <Grid >
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="15"></ColumnDefinition>
+            <ColumnDefinition Width="100"></ColumnDefinition>
             <ColumnDefinition Width="*"></ColumnDefinition>
         </Grid.ColumnDefinitions>
         <ScrollViewer Name="sideScrollView" Visibility="Collapsed" ViewChanged="ScrollView_ViewChanged" VerticalScrollBarVisibility="Hidden" >
@@ -174,7 +174,9 @@
                     </RichEditBox>
                 </Grid>
 
-                <!-- Note taking ink canvas -->
+                
+
+                        <!-- Note taking ink canvas -->
                 <InkCanvas  x:Name="inkCanvas"/>
                 
                 <!-- pop up after selection-->
@@ -358,6 +360,17 @@
             </Grid>
         </ScrollViewer>
 
-        
+        <GridView Grid.Column="0" Background="Red" x:Name="addinList">
+            <GridView.ItemTemplate>
+                <DataTemplate x:DataType="fileservice:ImageAndAnnotation">
+                    <Button Click="addinIcon_clicked">
+                        <customcontrol:AddInControl name="{x:Bind name}" notebookId="{x:Bind notebookId}" isIcon="{x:Bind isIcon}" pageId="{x:Bind pageId}"></customcontrol:AddInControl>
+                    </Button>
+                </DataTemplate>
+            </GridView.ItemTemplate>
+        </GridView>
+
+
     </Grid>
+    
 </UserControl>

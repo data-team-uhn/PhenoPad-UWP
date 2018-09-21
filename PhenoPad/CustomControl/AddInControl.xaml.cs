@@ -73,6 +73,8 @@ namespace PhenoPad.CustomControl
         public double width;
         public double canvasLeft;
         public double canvasTop;
+        public double canvasWidth;
+        public double canvasHeight;
 
         private MainPage rootPage;
 
@@ -81,7 +83,6 @@ namespace PhenoPad.CustomControl
         public ScaleTransform scaleTransform;
         public TranslateTransform dragTransform;
         public double scale;
-
 
         
         public double transX
@@ -116,6 +117,7 @@ namespace PhenoPad.CustomControl
         }
 
         private bool _isResizing;
+        private bool _isMoving;
         private Direction resizeDir;
         public static readonly DependencyProperty nameProperty = DependencyProperty.Register(
          "name",
@@ -167,6 +169,23 @@ namespace PhenoPad.CustomControl
          typeof(TextBlock),
          new PropertyMetadata(null)
        );
+
+        public bool isICON
+        {
+            get { return (bool)GetValue(isIconProperty); }
+            set
+            {
+                SetValue(isIconProperty, value);
+            }
+        }
+
+        public static readonly DependencyProperty isIconProperty = DependencyProperty.Register(
+         "isIcon",
+         typeof(bool),
+         typeof(TextBlock),
+         new PropertyMetadata(null)
+       );
+
         #endregion
 
         #region constructors
@@ -177,6 +196,7 @@ namespace PhenoPad.CustomControl
         {
             try
             {
+
                 this.InitializeComponent();
             }
             catch (Exception e)
@@ -197,11 +217,14 @@ namespace PhenoPad.CustomControl
             this.InitializeComponent();
             this.Height = height < DEFAULT_HEIGHT ? DEFAULT_HEIGHT : height;
             this.Width = width < DEFAULT_WIDTH ? DEFAULT_WIDTH : width;
-            //by default setting the corner bound to be 10px
 
-            this.inkCan.Width = this.Width;
-            this.inkCan.Height = this.Height;
+            canvasWidth = this.Width;
+            canvasHeight = this.Height - 88; // Canvas Height = frame height - control UI heights
 
+            inkCan.Height = canvasHeight;
+            inkCan.Width = canvasWidth;
+
+            
             this.name = name;
             this.notebookId = notebookId;
             this.pageId = pageId;
@@ -317,6 +340,7 @@ namespace PhenoPad.CustomControl
             if (topLeft || topRight || bottomLeft || bottomRight)
             {
                 this._isResizing = true;
+                this._isMoving = false;
                 curWidth = this.Width;
                 curHeight = this.Height;
                 if (topLeft) this.resizeDir = Direction.TOPLEFT;
@@ -327,8 +351,12 @@ namespace PhenoPad.CustomControl
             //pointer is within title bar for X,Y translation
             else {
                 this._isResizing = false;
-                this.showMovingGrid();
+                if (yPos < 68) {
+                    this._isMoving = true;
+                    this.showMovingGrid();
+                }       
             }
+            Debug.WriteLine($"Is resizing:{this._isResizing}, Is moving:{this._isMoving}");
         }
         /// <summary>
         /// Apply delta canvas extension based on pre-set direction and pointer movement delta,move strokes accordingly.
@@ -387,14 +415,21 @@ namespace PhenoPad.CustomControl
                 this.Width += e.Delta.Translation.X;
                 this.Height += e.Delta.Translation.Y;
             }
-            if (this.Width > this.inkCan.Width || this.Height > this.inkCan.Height)
-            {
-                inkCan.Width = this.Width;
-                inkCan.Height = this.Height;
-            }
+            
             //setting minimal resizing sizes
             this.Width = this.Width < this.MIN_WIDTH ? this.MIN_WIDTH : this.Width;
             this.Height = this.Height < this.MIN_HEIGHT ? this.MIN_HEIGHT : this.Height;
+            //Adjusting ink canvas size relative to frame
+            if (this.Width > this.inkCan.Width)
+            {
+                inkCan.Width = this.Width;
+                canvasWidth = inkCan.Width;
+            }
+            if (this.Height > this.inkCan.Height) {
+                inkCan.Height = this.Height;
+                canvasHeight = inkCan.Height;
+            }
+                
 
         }
 
@@ -402,17 +437,19 @@ namespace PhenoPad.CustomControl
         {
             if (_isResizing)
                 ResizePanel(e,this.resizeDir);
-            else
+            if (_isMoving)
             {
-
                 this.dragTransform.X += e.Delta.Translation.X;
-                this.dragTransform.Y += e.Delta.Translation.Y;           
+                this.dragTransform.Y += e.Delta.Translation.Y;
             }
+
         }
 
         private void Manipulator_OnManipulationCompleted(object sender, ManipulationCompletedRoutedEventArgs e) {
             this.hideMovingGrid();
             autosaveDispatcherTimer.Start();
+            this._isMoving = false;
+            this._isResizing = false;
         }
         #endregion
 
@@ -576,9 +613,10 @@ namespace PhenoPad.CustomControl
         private void InitiateInkCanvas(bool onlyView = false)
         {
             isInitialized = true;
-            
+
             //this.ControlStackPanel.Visibility = Visibility.Visible;
             //contentGrid.Children.Add(inkCanvas);
+
             inkCanvas.Visibility = Visibility.Visible;
             scrollViewer.Visibility = Visibility.Visible;
             if (!onlyView) // added from note page, need editing
@@ -590,23 +628,21 @@ namespace PhenoPad.CustomControl
 
                 // Set initial ink stroke attributes and updates
                 InkDrawingAttributes drawingAttributes = new InkDrawingAttributes();
-                drawingAttributes.Color = Windows.UI.Colors.Black;
+                drawingAttributes.Color = Colors.Black;
                 drawingAttributes.IgnorePressure = false;
                 drawingAttributes.FitToCurve = true;
                 inkCanvas.InkPresenter.UpdateDefaultDrawingAttributes(drawingAttributes);
                 //setting current active canvas to 
                 inkToolbar.TargetInkCanvas = inkCanvas;
                 inkToolbar.Visibility = Visibility.Visible;
+
             }
             else // only for viewing on page overview page
             {
                 
-                inkCanvas.InkPresenter.InputDeviceTypes =
-                    Windows.UI.Core.CoreInputDeviceTypes.None;
+                inkCanvas.InkPresenter.InputDeviceTypes = Windows.UI.Core.CoreInputDeviceTypes.None;
             }
             //await rootPage.curPage.AutoSaveAddin(this.name);
-
-
         }
 
         /// <summary>
