@@ -900,7 +900,7 @@ namespace PhenoPad.CustomControl
             foreach(var con in addinlist)
             {
                 ImageAndAnnotation temp = new ImageAndAnnotation(con.name, notebookId, pageId, con.canvasLeft, con.canvasTop,
-                                                                      con.transX, con.transY, con.transScale, con.ActualWidth, con.ActualHeight);
+                                                                      0, 0, 0, con.ActualWidth, con.ActualHeight);
                 olist.Add(temp);
             }
 
@@ -948,12 +948,6 @@ namespace PhenoPad.CustomControl
 
             if (wb != null)
                 canvasAddIn.InitializeFromImage(wb);
-
-
-
-
-
-           
         }
 
         public void AddImageControl(string imagename, SoftwareBitmapSource source)
@@ -1026,6 +1020,47 @@ namespace PhenoPad.CustomControl
             await photo.DeleteAsync();
     **/
         }
+
+        public void AddImagesToView(List<ImageAndAnnotation> images) {
+            if (images.Count > 0)
+            {
+                addinIconList.Visibility = Visibility.Visible;
+                addinIconList.ItemsSource = images;
+            }
+            else
+            {
+                addinIconList.ItemsSource = new List<ImageAndAnnotation>();
+                addinIconList.Visibility = Visibility.Collapsed;
+            }
+        }
+
+        private async void AddinList_Click(object sender, RoutedEventArgs e)
+        {
+            string addinName = ((AddInControl)((Button)sender).Content).name;
+            List<ImageAndAnnotation> imageAndAnno = await FileManager.getSharedFileManager().GetImgageAndAnnotationObjectFromXML(notebookId, pageId);
+            ImageAndAnnotation ia = imageAndAnno.Find(x=> x.name == addinName);
+            //Debug.WriteLine($"Selected:{addin.name},{addin.canvasLeft},{addin.canvasTop},{addin.width},{addin.height}");
+            //await CoreApplication.MainView.CoreWindow.Dispatcher.RunAsync(
+            //    CoreDispatcherPriority.Normal, async () =>
+            //    {
+            //        ((Button)sender).Content = addin.name;
+            //        userControlCanvas.Children.Add(addin);
+            //        addin.switchToEdit();
+            //        addinIconBase.Visibility = Visibility.Collapsed;
+            //    }
+            //);
+
+            addImageAndAnnotationControl(ia.name, ia.canvasLeft, ia.canvasTop, true, null,
+                ia.transX, ia.transY, ia.transScale, width: ia.width, height: ia.height);
+
+        }
+
+        private void AddinListButton_Click(object sender,RoutedEventArgs e)
+        {
+            addinIconBase.Visibility = addinIconBase.Visibility == Visibility.Visible ? Visibility.Collapsed : Visibility.Visible;
+        }
+
+
         #endregion
 
 

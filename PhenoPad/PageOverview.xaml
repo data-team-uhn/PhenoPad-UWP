@@ -106,6 +106,7 @@
                         </SwipeControl>
                     </DataTemplate>
                 </ListView.ItemTemplate>
+                
                 <ListView.ItemContainerStyle>
                     <Style TargetType="ListViewItem">
                         <Setter Property="HorizontalContentAlignment" Value="Stretch" />

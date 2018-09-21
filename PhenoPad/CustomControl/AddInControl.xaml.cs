@@ -83,12 +83,16 @@ namespace PhenoPad.CustomControl
         public double scale;
 
 
-        
+
         public double transX
         {
             get
             {
                 return dragTransform.X;
+            }
+            set
+            {
+
             }
         }
         public double transY
@@ -98,6 +102,7 @@ namespace PhenoPad.CustomControl
                 return dragTransform.Y;
             }
         }
+
         public double transScale
         {
             get
@@ -199,6 +204,11 @@ namespace PhenoPad.CustomControl
             this.InitializeComponent();
             this.Height = height < DEFAULT_HEIGHT ? DEFAULT_HEIGHT : height;
             this.Width = width < DEFAULT_WIDTH ? DEFAULT_WIDTH : width;
+            this.width = this.Width;
+            this.height = this.Height;
+            canvasTop = Canvas.GetTop(this);
+            canvasLeft = Canvas.GetLeft(this);
+
             //by default setting the corner bound to be 10px
 
             this.inkCan.Width = this.Width;
@@ -367,6 +377,7 @@ namespace PhenoPad.CustomControl
             if (dir == Direction.TOPRIGHT) {
                 this.Width += e.Delta.Translation.X / this.scaleTransform.ScaleX;
                 this.Height -= e.Delta.Translation.Y / this.scaleTransform.ScaleY;
+                
                 if (this.Height >= this.MIN_HEIGHT) {
                     Canvas.SetTop(this, top + e.Delta.Translation.Y);
                     this.canvasTop += e.Delta.Translation.Y;
@@ -417,9 +428,13 @@ namespace PhenoPad.CustomControl
             }
         }
 
-        private async void Manipulator_OnManipulationCompleted(object sender, ManipulationCompletedRoutedEventArgs e) {
+        private void Manipulator_OnManipulationCompleted(object sender, ManipulationCompletedRoutedEventArgs e) {
             this._isMoving = false;
             this._isResizing = false;
+            this.width = this.Width;
+            this.height = this.Height;
+            this.canvasLeft = Canvas.GetLeft(inkCan);
+            this.canvasTop = Canvas.GetTop(inkCan);
             this.hideMovingGrid();
             autosaveDispatcherTimer.Start();
         }
@@ -671,7 +686,7 @@ namespace PhenoPad.CustomControl
                     stream.Dispose();
                     scrollViewer.ZoomMode = ZoomMode.Disabled;
                 }
-           
+
                 InitiateInkCanvas(onlyView);
 
                 var annofile = await FileManager.getSharedFileManager().GetNoteFileNotCreate(notebookId, pageId, NoteFileType.ImageAnnotation, name);
@@ -693,8 +708,12 @@ namespace PhenoPad.CustomControl
                 }
 
             }
-            catch (NullReferenceException e) {
+            catch (NullReferenceException e)
+            {
                 LogService.MetroLogger.getSharedLogger().Error($"{e}");
+            }
+            catch (Exception ex) {
+                LogService.MetroLogger.getSharedLogger().Error($"{ex}");
             }
 
 
@@ -713,6 +732,33 @@ namespace PhenoPad.CustomControl
                 InitializeFromDisk(true);
             }
         }
+
+        public void switchToEdit()
+        {
+            this.viewOnly = false;
+            showControlUI();
+            inkCanvas.Visibility = Visibility.Visible;
+            scrollViewer.Visibility = Visibility.Visible;
+            // Set supported input type to default using both moush and pen
+            inkCanvas.InkPresenter.InputDeviceTypes =
+                Windows.UI.Core.CoreInputDeviceTypes.Mouse |
+                Windows.UI.Core.CoreInputDeviceTypes.Pen;
+
+            // Set initial ink stroke attributes and updates
+            InkDrawingAttributes drawingAttributes = new InkDrawingAttributes();
+            drawingAttributes.Color = Colors.Black;
+            drawingAttributes.IgnorePressure = false;
+            drawingAttributes.FitToCurve = true;
+            inkCanvas.InkPresenter.UpdateDefaultDrawingAttributes(drawingAttributes);
+            //setting current active canvas to 
+            inkToolbar.TargetInkCanvas = inkCanvas;
+            inkToolbar.Visibility = Visibility.Visible;
+
+            this.Width = this.width;
+            this.Height = this.height;
+
+        }
+        
         #endregion
 
         #region Auto save drawings

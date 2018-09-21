@@ -9,6 +9,7 @@
     xmlns:phenotypeservice="using:PhenoPad.PhenotypeService"
 
      xmlns:hwrservice="using:PhenoPad.HWRService"
+    xmlns:fileservice="using:PhenoPad.FileService"
     mc:Ignorable="d"
     VerticalAlignment="Stretch" 
     HorizontalAlignment="Stretch"
@@ -358,6 +359,34 @@
             </Grid>
         </ScrollViewer>
 
-        
+
+        <Grid Name="addinIconBase" Grid.Column="0"
+                    Grid.ColumnSpan="2" Width="400" Background="LightGray"
+              HorizontalAlignment="Left" Visibility="Collapsed" >
+            <TextBlock VerticalAlignment="Top" HorizontalTextAlignment="Right"
+                       Grid.Row="0" FontSize="25" 
+                       Foreground="Black" 
+                       Margin="10 10 20 10">Add-In List</TextBlock>
+            <GridView Name="addinIconList">
+            <GridView.ItemTemplate>
+                <DataTemplate x:DataType="fileservice:ImageAndAnnotation">
+                    <Button Click="AddinList_Click">
+                        <customcontrol:AddInControl name="{x:Bind name}" notebookId="{x:Bind notebookId}" viewOnly="True" pageId="{x:Bind pageId}">
+                            
+                        </customcontrol:AddInControl>
+                    </Button>
+                </DataTemplate>
+            </GridView.ItemTemplate>
+            </GridView>
+        </Grid>
+
+        <Button Grid.ColumnSpan="2" VerticalAlignment="Top" 
+                      Width="50" Height="30" 
+                      Margin="10 10 10 10"
+                Click="AddinListButton_Click" Foreground="Black">
+            <SymbolIcon Symbol="Pictures"/>
+        </Button>
+
+
     </Grid>
 </UserControl>
