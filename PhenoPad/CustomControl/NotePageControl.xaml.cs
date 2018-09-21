@@ -1026,6 +1026,13 @@ namespace PhenoPad.CustomControl
             await photo.DeleteAsync();
     **/
         }
+
+
+        public void AddinsButton_Click(object sender, RoutedEventArgs e)
+        {
+            addinBase.Visibility = addinBase.Visibility == Visibility.Visible ? Visibility.Collapsed : Visibility.Visible;
+        }
+
         #endregion
 
 
