@@ -23,6 +23,7 @@ namespace PhenoPad.FileService
         public string date { get; set; }
         public double width { get; set; }
         public double height { get; set; }
+        public bool inDock { get; set; }
 
 
         /// <summary>
@@ -37,7 +38,7 @@ namespace PhenoPad.FileService
         /// </summary>
         public ImageAndAnnotation(string name, string notebookId, string pageId,
                                     double canvasLeft, double canvasTop,
-                                    double transX, double transY, double transScale, double width, double height)
+                                    double transX, double transY, double transScale, double width, double height,bool inDock)
         {
             this.name = name;
             this.notebookId = notebookId;
@@ -49,6 +50,7 @@ namespace PhenoPad.FileService
             this.height = height;
             this.width = width;
             this.transScale = transScale;
+            this.inDock = inDock;
             date = DateTime.Now.ToString("MM/dd/yyyy HH:mm:ss");
         }
 

@@ -74,6 +74,8 @@ namespace PhenoPad.CustomControl
         public double canvasLeft;
         public double canvasTop;
 
+        public bool inDock;
+
         private MainPage rootPage;
 
         private bool isInitialized = false;
@@ -203,7 +205,7 @@ namespace PhenoPad.CustomControl
 
             this.inkCan.Width = this.Width;
             this.inkCan.Height = this.Height - 88;
-
+            this.inDock = false;
             this.name = name;
             this.notebookId = notebookId;
             this.pageId = pageId;
@@ -465,6 +467,14 @@ namespace PhenoPad.CustomControl
             LogService.MetroLogger.getSharedLogger().Info($"Deleting addin {this.name} from notepage.");
             ((Panel)this.Parent).Children.Remove(this);
             await rootPage.curPage.AutoSaveAddin(null);
+        }
+
+        private async void Minimize_Click(object sender, RoutedEventArgs e)
+        {
+            this.inDock = true;
+            await rootPage.curPage.AutoSaveAddin(null);
+            //TODO: deletes the current add-in control from page but keeps its record
+
         }
 
         private void DrawingButton_Click(object sender, RoutedEventArgs e)

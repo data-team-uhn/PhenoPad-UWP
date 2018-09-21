@@ -900,7 +900,8 @@ namespace PhenoPad.CustomControl
             foreach(var con in addinlist)
             {
                 ImageAndAnnotation temp = new ImageAndAnnotation(con.name, notebookId, pageId, con.canvasLeft, con.canvasTop,
-                                                                      con.transX, con.transY, con.transScale, con.ActualWidth, con.ActualHeight);
+                                                                      con.transX, con.transY, con.transScale, con.ActualWidth, con.ActualHeight,
+                                                                      con.inDock);
                 olist.Add(temp);
             }
 
