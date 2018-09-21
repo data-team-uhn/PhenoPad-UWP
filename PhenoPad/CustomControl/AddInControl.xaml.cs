@@ -116,6 +116,8 @@ namespace PhenoPad.CustomControl
         }
 
         private bool _isResizing;
+        private bool _isMoving;
+
         private Direction resizeDir;
         public static readonly DependencyProperty nameProperty = DependencyProperty.Register(
          "name",
@@ -200,7 +202,7 @@ namespace PhenoPad.CustomControl
             //by default setting the corner bound to be 10px
 
             this.inkCan.Width = this.Width;
-            this.inkCan.Height = this.Height;
+            this.inkCan.Height = this.Height - 88;
 
             this.name = name;
             this.notebookId = notebookId;
@@ -276,7 +278,7 @@ namespace PhenoPad.CustomControl
             Debug.WriteLine("Add-in control manipulation started");
         }
 
-        private async void TitleRelativePanel_ManipulationDelta(object sender, ManipulationDeltaRoutedEventArgs e)
+        private void TitleRelativePanel_ManipulationDelta(object sender, ManipulationDeltaRoutedEventArgs e)
         {
             /**
             canvasLeft = Canvas.GetLeft(this) + e.Delta.Translation.X > 0 ? Canvas.GetLeft(this) + e.Delta.Translation.X : 0;
@@ -317,6 +319,7 @@ namespace PhenoPad.CustomControl
             if (topLeft || topRight || bottomLeft || bottomRight)
             {
                 this._isResizing = true;
+                this._isMoving = false;
                 curWidth = this.Width;
                 curHeight = this.Height;
                 if (topLeft) this.resizeDir = Direction.TOPLEFT;
@@ -327,7 +330,12 @@ namespace PhenoPad.CustomControl
             //pointer is within title bar for X,Y translation
             else {
                 this._isResizing = false;
-                this.showMovingGrid();
+                if (yPos < 68)
+                {
+                    this._isMoving = true;
+                    this.showMovingGrid();
+                }
+                
             }
         }
         /// <summary>
@@ -341,7 +349,6 @@ namespace PhenoPad.CustomControl
 
             if (dir == Direction.TOPLEFT)
             {
-
                 this.Width -= e.Delta.Translation.X / this.scaleTransform.ScaleX;
                 this.Height -= e.Delta.Translation.Y / this.scaleTransform.ScaleY;
 
@@ -363,8 +370,7 @@ namespace PhenoPad.CustomControl
                 if (this.Height >= this.MIN_HEIGHT) {
                     Canvas.SetTop(this, top + e.Delta.Translation.Y);
                     this.canvasTop += e.Delta.Translation.Y;
-                }
-                    
+                }                  
             }            
             if (dir == Direction.BOTTOMLEFT)
             {
@@ -387,10 +393,12 @@ namespace PhenoPad.CustomControl
                 this.Width += e.Delta.Translation.X;
                 this.Height += e.Delta.Translation.Y;
             }
-            if (this.Width > this.inkCan.Width || this.Height > this.inkCan.Height)
-            {
+            if (this.Width > this.inkCan.Width) {
                 inkCan.Width = this.Width;
-                inkCan.Height = this.Height;
+            }
+            if (this.Height - 88 > this.inkCan.Height)
+            {          
+                inkCan.Height = this.Height - 88;
             }
             //setting minimal resizing sizes
             this.Width = this.Width < this.MIN_WIDTH ? this.MIN_WIDTH : this.Width;
@@ -402,15 +410,16 @@ namespace PhenoPad.CustomControl
         {
             if (_isResizing)
                 ResizePanel(e,this.resizeDir);
-            else
+            else if (_isMoving)
             {
-
                 this.dragTransform.X += e.Delta.Translation.X;
                 this.dragTransform.Y += e.Delta.Translation.Y;           
             }
         }
 
-        private void Manipulator_OnManipulationCompleted(object sender, ManipulationCompletedRoutedEventArgs e) {
+        private async void Manipulator_OnManipulationCompleted(object sender, ManipulationCompletedRoutedEventArgs e) {
+            this._isMoving = false;
+            this._isResizing = false;
             this.hideMovingGrid();
             autosaveDispatcherTimer.Start();
         }
