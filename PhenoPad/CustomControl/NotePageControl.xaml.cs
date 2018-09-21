@@ -161,9 +161,6 @@ namespace PhenoPad.CustomControl
 
         private InkDrawingAttributes drawingAttributesBackUp;
         Dictionary<string, List<Phenotype>> oldAnnotations = new Dictionary<string, List<Phenotype>>();
-
-
-
         Dictionary<TextBox, List<string>> textBlockToAlternatives = new Dictionary<TextBox, List<string>>();
         /*************************END OF CLASS PROPERTIES*************************************/
         #endregion
@@ -950,22 +947,15 @@ namespace PhenoPad.CustomControl
                 canvasAddIn.InitializeFromDisk(false, transX, transY, transScale);
 
             if (wb != null)
-                canvasAddIn.InitializeFromImage(wb);        
+                canvasAddIn.InitializeFromImage(wb);
+
+
+
+
+
+           
         }
 
-        public void addImageAndAnnotationIcons(List<ImageAndAnnotation> addins)
-        {
-            if (addins.Count > 0)
-            {
-                addinList.Visibility = Visibility.Visible;
-                addinList.ItemsSource = addins;
-            }
-            else
-            {
-                addinList.ItemsSource = new List<ImageAndAnnotation>();
-                addinList.Visibility = Visibility.Collapsed;
-            }
-        }
         public void AddImageControl(string imagename, SoftwareBitmapSource source)
         {
             AddInImageControl imageControl = new AddInImageControl(notebookId, pageId, imagename);
@@ -3048,10 +3038,8 @@ namespace PhenoPad.CustomControl
                 annotateCurrentLineAndUpdateUI(curLineObject);
             }
 
-        private void Button_Click(object sender, RoutedEventArgs e)
-        {
 
-        }
+
     }
 
 
