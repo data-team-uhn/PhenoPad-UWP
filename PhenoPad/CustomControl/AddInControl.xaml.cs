@@ -467,12 +467,14 @@ namespace PhenoPad.CustomControl
             LogService.MetroLogger.getSharedLogger().Info($"Deleting addin {this.name} from notepage.");
             ((Panel)this.Parent).Children.Remove(this);
             await rootPage.curPage.AutoSaveAddin(null);
+            rootPage.curPage.refreshAddInList();
         }
 
         private async void Minimize_Click(object sender, RoutedEventArgs e)
         {
             this.inDock = true;
             this.Visibility = Visibility.Collapsed;
+            rootPage.curPage.addinBase.Visibility = Visibility.Visible;
             await rootPage.curPage.AutoSaveAddin(this.name);
             rootPage.curPage.refreshAddInList();
         }
