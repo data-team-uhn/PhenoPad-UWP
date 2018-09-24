@@ -469,11 +469,12 @@ namespace PhenoPad.CustomControl
             await rootPage.curPage.AutoSaveAddin(null);
         }
 
-        private void Minimize_Click(object sender, RoutedEventArgs e)
+        private async void Minimize_Click(object sender, RoutedEventArgs e)
         {
             this.inDock = true;
             this.Visibility = Visibility.Collapsed;
-            autosaveDispatcherTimer.Start();
+            await rootPage.curPage.AutoSaveAddin(this.name);
+            rootPage.curPage.refreshAddInList();
         }
 
         private void DrawingButton_Click(object sender, RoutedEventArgs e)

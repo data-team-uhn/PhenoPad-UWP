@@ -151,6 +151,7 @@ namespace PhenoPad
                         {
                             aPage.addImageAndAnnotationControl(ia.name, ia.canvasLeft, ia.canvasTop, true, null, ia.transX, ia.transY, ia.transScale, 
                                 width: ia.width, height: ia.height, indock: ia.inDock);
+
                         }
                 }
 

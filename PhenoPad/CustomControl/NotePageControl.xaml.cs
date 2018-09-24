@@ -934,7 +934,7 @@ namespace PhenoPad.CustomControl
 
         public void addImageAndAnnotationControl(string name, double left, double top, bool loadFromDisk, WriteableBitmap wb = null, 
                                                     double transX = 0, double transY = 0, double transScale = 0, double width = -1, double height = -1,
-                                                    bool indock = true){
+                                                    bool indock = false){
             AddInControl canvasAddIn = new AddInControl(name, notebookId, pageId, width, height);
             //canvasAddIn.Width = 400; //stroke.BoundingRect.Width;
             //canvasAddIn.Height = 400;  //stroke.BoundingRect.Height;
@@ -1051,12 +1051,19 @@ namespace PhenoPad.CustomControl
             addin.inDock = false;
             addin.Visibility = Visibility.Visible;
             addin.autosaveDispatcherTimer.Start();
-            
+            addinBase.Visibility = Visibility.Collapsed;
         }
-
+        /// <summary>
+        /// Refreshes and show the list of addins within a notepage
+        /// </summary>
         public void AddinsButton_Click(object sender, RoutedEventArgs e)
         {
             addinBase.Visibility = addinBase.Visibility == Visibility.Visible ? Visibility.Collapsed : Visibility.Visible;
+        }
+
+        public async void refreshAddInList() {
+            List<ImageAndAnnotation> imageAndAnno = await FileManager.getSharedFileManager().GetImgageAndAnnotationObjectFromXML(notebookId, pageId);
+            this.showAddIn(imageAndAnno);
         }
 
         #endregion
@@ -1437,7 +1444,6 @@ namespace PhenoPad.CustomControl
 
                 if (result1 && result2)
                     logger.Info($"Auto-saving add-in completed.");
-
                 
             }
             catch (Exception e) {
