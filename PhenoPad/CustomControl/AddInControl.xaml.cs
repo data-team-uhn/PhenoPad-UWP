@@ -61,7 +61,7 @@ namespace PhenoPad.CustomControl
         InkAnalysisResult inkAnalysisResults = null;
         private Rect allStrokes;
 
-        DispatcherTimer autosaveDispatcherTimer = new DispatcherTimer();
+        public DispatcherTimer autosaveDispatcherTimer = new DispatcherTimer();
 
         //https://stackoverflow.com/questions/48397647/uwp-is-there-anyway-to-implement-control-for-resizing-and-move-textbox-in-canva
 
@@ -469,12 +469,11 @@ namespace PhenoPad.CustomControl
             await rootPage.curPage.AutoSaveAddin(null);
         }
 
-        private async void Minimize_Click(object sender, RoutedEventArgs e)
+        private void Minimize_Click(object sender, RoutedEventArgs e)
         {
             this.inDock = true;
-            await rootPage.curPage.AutoSaveAddin(null);
-            //TODO: deletes the current add-in control from page but keeps its record
-
+            this.Visibility = Visibility.Collapsed;
+            autosaveDispatcherTimer.Start();
         }
 
         private void DrawingButton_Click(object sender, RoutedEventArgs e)

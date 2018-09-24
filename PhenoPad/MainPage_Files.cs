@@ -146,9 +146,11 @@ namespace PhenoPad
 
                     List<ImageAndAnnotation> imageAndAnno = await FileManager.getSharedFileManager().GetImgageAndAnnotationObjectFromXML(notebookId, pageIds[i]);
                     if (imageAndAnno != null)
+                        aPage.showAddIn(imageAndAnno);
                         foreach (var ia in imageAndAnno)
                         {
-                            aPage.addImageAndAnnotationControl(ia.name, ia.canvasLeft, ia.canvasTop, true, null, ia.transX, ia.transY, ia.transScale, width: ia.width, height: ia.height);
+                            aPage.addImageAndAnnotationControl(ia.name, ia.canvasLeft, ia.canvasTop, true, null, ia.transX, ia.transY, ia.transScale, 
+                                width: ia.width, height: ia.height, indock: ia.inDock);
                         }
                 }
 

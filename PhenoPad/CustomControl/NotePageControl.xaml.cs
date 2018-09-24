@@ -933,13 +933,14 @@ namespace PhenoPad.CustomControl
         }
 
         public void addImageAndAnnotationControl(string name, double left, double top, bool loadFromDisk, WriteableBitmap wb = null, 
-                                                    double transX = 0, double transY = 0, double transScale = 0, double width = -1, double height = -1)
-        {
+                                                    double transX = 0, double transY = 0, double transScale = 0, double width = -1, double height = -1,
+                                                    bool indock = true){
             AddInControl canvasAddIn = new AddInControl(name, notebookId, pageId, width, height);
             //canvasAddIn.Width = 400; //stroke.BoundingRect.Width;
             //canvasAddIn.Height = 400;  //stroke.BoundingRect.Height;
             canvasAddIn.canvasLeft = left;
             canvasAddIn.canvasTop = top;
+            canvasAddIn.inDock = indock;
             Canvas.SetLeft(canvasAddIn, left);
             Canvas.SetTop(canvasAddIn, top);
             userControlCanvas.Children.Add(canvasAddIn);
@@ -950,11 +951,8 @@ namespace PhenoPad.CustomControl
             if (wb != null)
                 canvasAddIn.InitializeFromImage(wb);
 
-
-
-
-
-           
+            //If this addin was hidden during the last edit, auto hides it from initialization
+            canvasAddIn.Visibility = indock ? Visibility.Collapsed : Visibility.Visible;
         }
 
         public void AddImageControl(string imagename, SoftwareBitmapSource source)
@@ -1028,6 +1026,33 @@ namespace PhenoPad.CustomControl
     **/
         }
 
+        public void showAddIn(List<ImageAndAnnotation> images)
+        {
+            if (images.Count > 0)
+            {
+                addinlist.Visibility = Visibility.Visible;
+                addinlist.ItemsSource = images;
+            }
+            else
+            {
+                addinlist.ItemsSource = new List<ImageAndAnnotation>();
+                addinlist.Visibility = Visibility.Collapsed;
+            }
+        }
+
+        public async void addInIcon_Click(object sender, RoutedEventArgs e)
+        {
+            //gets the clicked addin name and search for the specific addin
+            //in user canvas, then hides its panel
+            AddInControl icon = (AddInControl)((Button)sender).Content;
+            string name = icon.name;
+            List<AddInControl> addinlist = await GetAllAddInControls();
+            AddInControl addin = addinlist.Where(x => x.name == name).ToList()[0];
+            addin.inDock = false;
+            addin.Visibility = Visibility.Visible;
+            addin.autosaveDispatcherTimer.Start();
+            
+        }
 
         public void AddinsButton_Click(object sender, RoutedEventArgs e)
         {
