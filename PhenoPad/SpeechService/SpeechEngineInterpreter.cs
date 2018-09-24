@@ -394,7 +394,7 @@ namespace PhenoPad.SpeechService
             {
                 Body = this.tempSentence,
                 Speaker = 99,
-                //DisplayTime = DateTime.Now.ToString(),
+                DisplayTime = DateTime.Now,
                 IsFinal = false,
                 ConversationIndex = this.conversationIndex
             };
@@ -408,6 +408,7 @@ namespace PhenoPad.SpeechService
             {
                 Body = this.realtimeLastSentence,
                 Speaker = 99,
+                DisplayTime = DateTime.Now,
                 //Interval = new TimeInterval(start, start + length),
                 IsFinal = false,
                 ConversationIndex = this.conversationIndex
@@ -536,7 +537,7 @@ namespace PhenoPad.SpeechService
                     {
                         Body = sentence + ".",
                         Speaker = (uint)prevSpeaker,
-                        //DisplayTime = format_seconds(prevStart, words[i-1].interval.end),
+                        DisplayTime = DateTime.Now,
                         Interval = new TimeInterval(prevStart, words[wordIndex - 1].interval.end),
                         IsFinal = true,
                         ConversationIndex = this.conversationIndex
@@ -563,6 +564,7 @@ namespace PhenoPad.SpeechService
                     Speaker = (uint)prevSpeaker,
                     Interval = new TimeInterval(prevStart, speechEnd),
                     IsFinal = true,
+                    DisplayTime = DateTime.Now,
                     ConversationIndex = this.conversationIndex
                 };
                 messages.Add(m);
@@ -607,11 +609,13 @@ namespace PhenoPad.SpeechService
                     {
                         Body = sentence,
                         Speaker = (uint)99,
-                        //DisplayTime = DateTime.Now.ToString(),
-                        IsFinal = true,
+                        DisplayTime = DateTime.Now,
+                        
+                        IsFinal = false,
                         ConversationIndex = this.conversationIndex
                     };
                     messages.Add(m);
+                    Debug.WriteLine(m.DisplayTime);
                 }
             }
 

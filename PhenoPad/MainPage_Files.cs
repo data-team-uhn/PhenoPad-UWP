@@ -126,7 +126,7 @@ namespace PhenoPad
                 SpeechManager.getSharedSpeechManager().setAudioIndex(notebookObject.audioCount);
                 String fName = prefix;
                 this.conversations = new List<TextMessage>();
-                for (int i = 0; i < notebookObject.audioCount; i++) {
+                for (int i = 1 ; i <= notebookObject.audioCount; i++) {
                     fName = prefix + i.ToString();
                     List<TextMessage> messages = await FileManager.getSharedFileManager().GetSavedTranscriptsFromXML(notebookId, fName);
                     if (messages == null)
@@ -139,9 +139,6 @@ namespace PhenoPad
                     }
                 }
                 pastchatView.ItemsSource = this.conversations;
-                MainSplitView.IsPaneOpen = true;
-                pastSpeechView.Visibility = Visibility.Visible;
-                //pastchatView.Visibility = Visibility.Visible;
 
 
                 List<Phenotype> phenos = await FileManager.getSharedFileManager().GetSavedPhenotypeObjectsFromXML(notebookId);

@@ -99,6 +99,7 @@ namespace PhenoPad
             }
         }
         public int ConversationIndex { get; set; }
+        public DateTime DisplayTime;
 
         //public string DisplayTime { get; set; }
 
@@ -226,7 +227,8 @@ namespace PhenoPad
             }
             //for displaying historical conversations
             else if (m.IsFinal) {
-                return m.start + " - " + m.end + "  Conversation(" + m.ConversationIndex + ")\t";
+                string date = String.Format("{0:g}", m.DisplayTime);
+                return date+"  "+ m.start + " - " + m.end + " Session #" + m.ConversationIndex;
             }
             else
             {
@@ -589,11 +591,6 @@ namespace PhenoPad
             }*/
         }
 
-        public void displayPastConversations(List<TextMessage> messages) {
-            
-
-
-        }
 
         private void BackButton_Click(object sender, Windows.UI.Xaml.RoutedEventArgs e)
         {

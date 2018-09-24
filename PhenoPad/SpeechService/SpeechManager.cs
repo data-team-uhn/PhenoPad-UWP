@@ -56,7 +56,6 @@ namespace PhenoPad.SpeechService
         public static SpeechManager sharedSpeechManager;
         
         public Conversation conversation = new Conversation();
-        public List<Conversation> allConversations = new List<Conversation>();
         public Conversation realtimeConversation = new Conversation();
         public SpeechEngineInterpreter speechInterpreter;
         private MainPage rootPage = MainPage.Current;
@@ -140,8 +139,8 @@ namespace PhenoPad.SpeechService
                 this.conversation.Add(new TextMessage
                 {
                     Body = text,
-                    //DisplayTime = DateTime.Now.ToString(),
-                    IsFinal =  true,
+                    DisplayTime = DateTime.Now,
+                    IsFinal =  false,
                     Speaker = speaker,
                     Interval = new TimeInterval(start, start + duration)
                     
