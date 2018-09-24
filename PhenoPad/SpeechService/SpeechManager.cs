@@ -56,6 +56,7 @@ namespace PhenoPad.SpeechService
         public static SpeechManager sharedSpeechManager;
         
         public Conversation conversation = new Conversation();
+        public List<Conversation> allConversations = new List<Conversation>();
         public Conversation realtimeConversation = new Conversation();
         public SpeechEngineInterpreter speechInterpreter;
         private MainPage rootPage = MainPage.Current;

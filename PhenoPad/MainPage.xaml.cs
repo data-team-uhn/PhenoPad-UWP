@@ -1090,6 +1090,7 @@ namespace PhenoPad
                 MainSplitView.IsPaneOpen = true;
                 QuickViewButtonSymbol.Symbol = Symbol.Clear;
                 speechQuickView.Visibility = Visibility.Collapsed;
+                //pastchatView.Visibility = Visibility.Collapsed;
             }
             else
             {
@@ -1098,6 +1099,7 @@ namespace PhenoPad
                     OverViewToggleButton.IsChecked = true;
                     SpeechToggleButton.IsChecked = false;
                     speechQuickView.Visibility = Visibility.Collapsed;
+                    //pastchatView.Visibility = Visibility.Collapsed;
                 }
                 else
                 {
@@ -1114,7 +1116,9 @@ namespace PhenoPad
             {
                 MainSplitView.IsPaneOpen = true;
                 QuickViewButtonSymbol.Symbol = Symbol.Clear;
+
                 speechQuickView.Visibility = Visibility.Visible;
+                //pastchatView.Visibility = Visibility.Visible;
             }
             else
             {
@@ -1123,6 +1127,7 @@ namespace PhenoPad
                     OverViewToggleButton.IsChecked = false;
                     SpeechToggleButton.IsChecked = true;
                     speechQuickView.Visibility = Visibility.Visible;
+                    //pastchatView.Visibility = Visibility.Visible;
                 }
                 else
                 {

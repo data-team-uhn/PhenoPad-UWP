@@ -15,6 +15,7 @@ namespace PhenoPad.FileService
         public List<NotePage> notePages { get; set; }
         public string firstPageUri { get; set; }
         public int audioCount { get; set; }
+        public List<TextMessage> transcripts { get; set; }
 
         /// <summary>
         /// Creates a new empty Notebook instance for serilization.
@@ -31,6 +32,7 @@ namespace PhenoPad.FileService
             this.id = id;
             name = "Untitled note";
             notePages = new List<NotePage>();
+            transcripts = new List<TextMessage>();
             date = DateTime.Now.ToString("MM/dd/yyyy HH:mm:ss");
             patientName = "Unknown";
             firstPageUri = "ms-appdata:///local/" + FileManager.getSharedFileManager().GetNoteFilePath(id, "0", NoteFileType.Strokes);

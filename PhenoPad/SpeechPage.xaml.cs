@@ -132,6 +132,10 @@ namespace PhenoPad
             }
         }
 
+        public void fileterMessage() {
+            // TODO need to filter useless phrases of message for better display
+        }
+
         public int PhenoColumn
         {
             get
@@ -200,7 +204,7 @@ namespace PhenoPad
 
             string now = DateTime.Today.ToString("D");
 
-            if (m.Interval != null && m.Interval.start != -1)
+            if ((m.Interval != null && m.Interval.start != -1))
             {
                 double start_time = m.Interval.start;
                 double end_time = m.Interval.end;
@@ -219,6 +223,10 @@ namespace PhenoPad
                     end_minute.ToString("D2") + ":" + end_second.ToString("D2") + "." + end_mili.ToString("D2");
 
                 return now + "\tConversation(" + m.ConversationIndex + ")\t" + result;
+            }
+            //for displaying historical conversations
+            else if (m.IsFinal) {
+                return m.start + " - " + m.end + "  Conversation(" + m.ConversationIndex + ")\t";
             }
             else
             {
@@ -245,6 +253,8 @@ namespace PhenoPad
         }
 
         public bool HasMoreItems { get; } = true;
+
+        //===========================================================
 
         public IAsyncOperation<LoadMoreItemsResult> LoadMoreItemsAsync(uint count)
         {
@@ -558,11 +568,11 @@ namespace PhenoPad
 
             if (message.IsNotFinal)
             {
-                args.ItemContainer.HorizontalAlignment = Windows.UI.Xaml.HorizontalAlignment.Right;
+                args.ItemContainer.HorizontalAlignment = HorizontalAlignment.Right;
             }
             else
             {
-                args.ItemContainer.HorizontalAlignment = (message.Speaker == doctor) ? Windows.UI.Xaml.HorizontalAlignment.Right : Windows.UI.Xaml.HorizontalAlignment.Left;
+                args.ItemContainer.HorizontalAlignment = (message.Speaker == doctor) ? HorizontalAlignment.Right : HorizontalAlignment.Left;
             }
 
             /*if (message.Speaker != 99 && message.Speaker != -1 && message.Speaker > maxSpeaker)
@@ -577,6 +587,12 @@ namespace PhenoPad
                 }
                 maxSpeaker = (int)message.Speaker;
             }*/
+        }
+
+        public void displayPastConversations(List<TextMessage> messages) {
+            
+
+
         }
 
         private void BackButton_Click(object sender, Windows.UI.Xaml.RoutedEventArgs e)

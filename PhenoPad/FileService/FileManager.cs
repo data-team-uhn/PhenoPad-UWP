@@ -172,6 +172,20 @@ namespace PhenoPad.FileService
         }
 
         /// <summary>
+        /// Gets the saved transcripts from disk and return as a list of text messages.
+        /// </summary>
+        public async Task<List<TextMessage>> GetSavedTranscriptsFromXML(string notebookId,string name = "")
+        {
+            var trans = await GetNoteFile(notebookId, "", NoteFileType.Transcriptions,name);
+            object obj = await LoadObjectFromSerilization(trans, typeof(List<TextMessage>));
+            if (obj != null) {
+                return obj as List<TextMessage>;
+            }
+            return null;
+        }
+
+
+        /// <summary>
         /// Creates and returns a new local file for given Notebook, returns null if failed.
         /// </summary>
         public async Task<StorageFile> GetNoteFile(string notebookId, string notePageId, NoteFileType fileType, string name = "")

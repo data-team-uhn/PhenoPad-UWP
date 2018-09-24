@@ -700,7 +700,6 @@ namespace PhenoPad.SpeechService
                 }
                 catch (Exception e)
                 {
-                    Debug.WriteLine(e.Message);
                     LogService.MetroLogger.getSharedLogger().Error("Failed to save current conversations transcriptions into disk: " + e.Message);
                 }
             }

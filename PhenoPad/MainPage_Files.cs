@@ -57,6 +57,8 @@ namespace PhenoPad
         //its purpose is to avoid concurrent accesses to ensure saving process
         private SemaphoreSlim savingSemaphoreSlim = new SemaphoreSlim(1);
         public bool loadFromDisk = false;
+        string prefix = "transcriptions_";
+        public List<TextMessage> conversations;
 
         /// <summary>
         /// Initializes the new notebook and creates a locally saved file for it.
@@ -120,18 +122,44 @@ namespace PhenoPad
                 if (notebookObject != null)
                     noteNameTextBox.Text = notebookObject.name;
 
+                //Gets the possible stored conversation transcripts from disk
                 SpeechManager.getSharedSpeechManager().setAudioIndex(notebookObject.audioCount);
+                String fName = prefix;
+                this.conversations = new List<TextMessage>();
+                for (int i = 0; i < notebookObject.audioCount; i++) {
+                    fName = prefix + i.ToString();
+                    List<TextMessage> messages = await FileManager.getSharedFileManager().GetSavedTranscriptsFromXML(notebookId, fName);
+                    if (messages == null)
+                    {
+                        MetroLogger.getSharedLogger().Error($"Failed to load transcript_{i}, file may not exist.");
+                    }
+                    else {
+                        Debug.WriteLine("successfully loaded transcripts.\n");
+                        this.conversations.AddRange(messages);                       
+                    }
+                }
+                pastchatView.ItemsSource = this.conversations;
+                MainSplitView.IsPaneOpen = true;
+                pastSpeechView.Visibility = Visibility.Visible;
+                //pastchatView.Visibility = Visibility.Visible;
+
+
                 List<Phenotype> phenos = await FileManager.getSharedFileManager().GetSavedPhenotypeObjectsFromXML(notebookId);
                 if (phenos != null && phenos.Count > 0)
                 {
                     PhenotypeManager.getSharedPhenotypeManager().addPhenotypesFromFile(phenos);
                 }
+
+
+
                 if (pageIds == null || pageIds.Count == 0)
                 {
                     NotifyUser("Did not find anything in this notebook, will create a new one.", NotifyType.ErrorMessage, 2);
                     this.InitializeNotebook();
+
                 }
 
+                // Process loading note pages one by one
                 notePages = new List<NotePageControl>();
                 pageIndexButtons = new List<Button>();
 
