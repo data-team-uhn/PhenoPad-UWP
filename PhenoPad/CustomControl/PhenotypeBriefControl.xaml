@@ -15,8 +15,8 @@
         </Flyout>
     </UserControl.Resources>
 
-    <Border CornerRadius="10">
-        <Grid Height="30" Name="NameGrid" Background="LightGoldenrodYellow">
+    <Border CornerRadius="5">
+        <Grid Height="30" Margin="1 0 1 0" Name="NameGrid">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="Auto"></ColumnDefinition>
                 <ColumnDefinition Width="Auto"></ColumnDefinition>
@@ -30,8 +30,8 @@
                         Grid.Column="1" x:Name="phenotypeNameTextBlock" 
                         Text="" Margin="3" Padding="5 0 0 0"
                         Foreground="Black" Opacity="0.6"/>
-                <Line Stretch="Fill" Stroke="LightCoral" StrokeThickness="2" X1="1" Y1="0" 
-                      HorizontalAlignment="Stretch" VerticalAlignment="Center" Name="NameCrossLine" />
+                <!--<Line Stretch="Fill" Stroke="LightCoral" StrokeThickness="2" X1="1" Y1="0" 
+                      HorizontalAlignment="Stretch" VerticalAlignment="Center" Name="NameCrossLine" />-->
             </Grid>
             <Button Grid.Column="1" Grid.Row="0" x:Name="DeleteBtn" 
                     VerticalAlignment="Center" Height="40"
