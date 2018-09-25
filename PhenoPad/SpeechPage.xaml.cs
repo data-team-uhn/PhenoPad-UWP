@@ -227,8 +227,11 @@ namespace PhenoPad
             }
             //for displaying historical conversations
             else if (m.IsFinal) {
+                //gets the date in mm/dd/yyyy HH:MM AM/PM format
                 string date = String.Format("{0:g}", m.DisplayTime);
-                return date+"  "+ m.start + " - " + m.end + " Session #" + m.ConversationIndex;
+                //determines whos speaking: todo: clsssify who is doctor/patient
+                string speaker = m.Speaker == 0 ? "Doctor" : "Patient:" + m.Speaker;
+                return date+"  "+ " Session #" + m.ConversationIndex+", by Speaker "+ m.Speaker;
             }
             else
             {

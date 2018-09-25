@@ -564,7 +564,7 @@
                     <Grid Name="pastSpeechView" Grid.Row="0" Grid.Column="1" Grid.RowSpan="3" Visibility="Collapsed" Padding="5" Background="White">
                         <TextBlock Text="Past Conversations" FontWeight="SemiBold" FontSize="18" HorizontalAlignment="Left" Margin="10 10 20 10" />
                         <local:ChatListView x:Name="pastchatView" Grid.Row="0" 
-                            IncrementalLoadingThreshold="2" Margin="0 50 0 0" 
+                            IncrementalLoadingThreshold="2" Margin="0 60 0 0" 
                             BorderBrush="White" BorderThickness="2"
                             ScrollViewer.VerticalScrollBarVisibility="Hidden">
                             <ListView.ItemsPanel>
@@ -600,34 +600,35 @@
                                         </Grid.RowDefinitions>
 
                                         <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="Auto"/>
-                                            <ColumnDefinition Width="Auto" />
+                                            <ColumnDefinition Width="auto"/>
                                         </Grid.ColumnDefinitions>
 
                                         <!--Finalized message color-->
-                                        <Grid
+                            <Grid
                             Grid.Row="0"
-                            Grid.Column="{Binding TextColumn}"
+                            Grid.Column="0"
+                            Grid.ColumnSpan="2"
                             Background="{Binding Converter={StaticResource bcConverter}}"
                             Visibility="{x:Bind Path=IsFinal}"/>
 
-                                        <Grid
+                            <Grid
                             Grid.Row="0"
                             Grid.Column="{Binding TextColumn}">
                                             <Grid.RowDefinitions>
                                                 <RowDefinition Height="Auto"/>
                                                 <RowDefinition Height="Auto"/>
                                             </Grid.RowDefinitions>
-
-                                            <TextBlock
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="auto" />
+                                            </Grid.ColumnDefinitions>
+                               <TextBlock
                                 Text="{x:Bind Body}"
                                 Grid.Row="0"
                                 Grid.Column="0"
-                                TextWrapping="Wrap"
-                                MaxWidth="400"                                                             
-                                FontSize="15"
-                               
-                                Margin="5"
+                                MaxWidth= "340"
+                                TextWrapping="WrapWholeWords"                                                                                          
+                                FontSize="15"                              
+                                Padding="10 10 10 10"
                                 VerticalAlignment="Center"
                                 HorizontalAlignment="Left"
                                 Foreground="Black"/>
@@ -637,9 +638,8 @@
                                     Grid.Column="0"
                                     FontSize="11"
                                     Text="{Binding Converter={StaticResource intervalConverter}}"
-                                    TextWrapping="Wrap"
-                                    Padding="3" 
-                                    Margin="5"
+                                    TextWrapping="Wrap"                        
+                                    Padding="10 10 10 10"
                                     Foreground="Black"
                                 />
                               
