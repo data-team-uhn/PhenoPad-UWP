@@ -15,18 +15,30 @@
         </Flyout>
     </UserControl.Resources>
 
-    <Grid Padding="0 0 0 0" Name="NameGrid">
-        <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="Auto"></ColumnDefinition>
-            <ColumnDefinition Width="25"></ColumnDefinition>
+    <Border CornerRadius="10">
+        <Grid Height="30" Name="NameGrid" Background="LightGoldenrodYellow">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"></ColumnDefinition>
+                <ColumnDefinition Width="Auto"></ColumnDefinition>
+            </Grid.ColumnDefinitions>
 
-        </Grid.ColumnDefinitions>
-        <Grid Grid.Column="0">
-            <TextBlock  Tapped="phenotypeNameTextBlock_Tapped" VerticalAlignment="Center"  Padding="10 0 10 0" FontSize="15" Grid.Column="1" x:Name="phenotypeNameTextBlock" Text=""  HorizontalAlignment="Stretch"/>
-            <Line Stretch="Fill" Stroke="LightCoral" StrokeThickness="2 " X1="1" Y1="13" HorizontalAlignment="Stretch" VerticalAlignment="Center" Name="NameCrossLine" />
+
+            <Grid Grid.Column="0" Grid.Row="0" VerticalAlignment="Center">
+              
+                <TextBlock  Tapped="phenotypeNameTextBlock_Tapped" 
+                        VerticalAlignment="Center" FontSize="15" 
+                        Grid.Column="1" x:Name="phenotypeNameTextBlock" 
+                        Text="" Margin="3" Padding="5 0 0 0"
+                        Foreground="Black" Opacity="0.6"/>
+                <Line Stretch="Fill" Stroke="LightCoral" StrokeThickness="2" X1="1" Y1="0" 
+                      HorizontalAlignment="Stretch" VerticalAlignment="Center" Name="NameCrossLine" />
+            </Grid>
+            <Button Grid.Column="1" Grid.Row="0" x:Name="DeleteBtn" 
+                    VerticalAlignment="Center" Height="40"
+                Background="{x:Null}" Style="{StaticResource ButtonStyle1}" 
+                Click="DeleteBtn_Click">
+                <SymbolIcon Symbol="Delete" Foreground="Black" Opacity="0.6" />
+            </Button>
         </Grid>
-        <Button Grid.Column="1" x:Name="DeleteBtn" Background="{x:Null}" Foreground="Gray" Click="DeleteBtn_Click" Width="25" MinWidth="25" MinHeight="25" Height="25" Padding="0">
-            <SymbolIcon Symbol="Delete"/>
-        </Button>
-    </Grid>
+    </Border>
 </UserControl>
