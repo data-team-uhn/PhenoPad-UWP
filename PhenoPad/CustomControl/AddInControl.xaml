@@ -94,6 +94,12 @@
 
         <Grid Grid.Row="1" Grid.RowSpan="2" Background="White" Opacity="0.5"  Visibility="Collapsed" Name="MovingGrid" >
         </Grid>
+        <SymbolIcon Grid.Row="3" HorizontalAlignment="Right" VerticalAlignment="Center" Symbol="FullScreen" RenderTransformOrigin="0.5,0.5">
+            <SymbolIcon.RenderTransform>
+                <CompositeTransform Rotation="90" ScaleX="0.7" ScaleY="0.7"/>
+
+            </SymbolIcon.RenderTransform>
+        </SymbolIcon>
 
     </Grid>
 </UserControl>
