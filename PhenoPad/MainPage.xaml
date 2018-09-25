@@ -204,28 +204,32 @@
                     </Grid.ColumnDefinitions>
                     <!-- Tab buttons-->
                     <StackPanel Orientation="Vertical" VerticalAlignment="Top" Grid.Row="0" Grid.Column="0" Background="Transparent">
-                        <Button Visibility="Collapsed" BorderThickness="0" Foreground="Gray" Background="WhiteSmoke" Width="40" Height="30" Name="QuickViewButton" Click="QuickViewButton_Click">
+                        <Button Visibility="Collapsed"  BorderThickness="0" Foreground="Gray" Background="WhiteSmoke" Width="40" Height="30" Name="QuickViewButton" Click="QuickViewButton_Click">
                             <SymbolIcon Name="QuickViewButtonSymbol" Symbol="Clear"></SymbolIcon>
                         </Button>
-                        <ToggleButton IsChecked="False" Style="{StaticResource MyToggleButtonStyle}" Background="{StaticResource Left_Panel_Title_BG}" Width="40" Height="80" Name="OverViewToggleButton" Click="OverViewToggleButton_Click">
+                        <ToggleButton IsChecked="False" ToolTipService.ToolTip="Show Phenotype/Diagnosis" Style="{StaticResource MyToggleButtonStyle}" Background="{StaticResource Left_Panel_Title_BG}" Width="40" Height="80" Name="OverViewToggleButton" Click="OverViewToggleButton_Click">
                             <Grid>
                                 <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE8BC;"/>
                             </Grid>
                         </ToggleButton>
-                        <ToggleButton Style="{StaticResource MyToggleButtonStyle}" Background="{StaticResource Left_Panel_Title_BG}"  Width="40" Height="80" Name="SpeechToggleButton" Click="SpeechToggleButton_Click">
+                        <ToggleButton Style="{StaticResource MyToggleButtonStyle}" ToolTipService.ToolTip="Show past conversations" Background="{StaticResource Left_Panel_Title_BG}"  Width="40" Height="80" Name="SpeechToggleButton" Click="SpeechToggleButton_Click">
                             <Grid>
-                                <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE8F2;"/>
+                                <SymbolIcon Height="50" Width="50" HorizontalAlignment="Center" Symbol="Clock"/>
                             </Grid>
                         </ToggleButton>
                     </StackPanel>
 
                     <StackPanel  Orientation="Vertical" VerticalAlignment="Bottom" Grid.Row="2" Grid.Column="0" Background="Transparent">
 
-                        <Button Height="60" 
+                        <Button Style="{StaticResource ButtonStyle1}" Height="60" 
+                                ToolTipService.ToolTip="Connect/Disconnect to Rasberry pi"
                                 x:Name="serverConnectButton" x:FieldModifier="public"
-                                Foreground="Black" Style="{StaticResource MyButtonStyle}" Background="{StaticResource Left_Panel_Title_BG}" Click="ServerConnectButton_Click" IsEnabled="True">
+                                Foreground="Black"  
+                                Background="{StaticResource Left_Panel_Title_BG}" 
+                                Click="ServerConnectButton_Click" IsEnabled="True">
                             <Button.Flyout>
                                 <Flyout Placement="Right">
+
                                     <Grid>
                                         <Grid.ColumnDefinitions>
                                             <ColumnDefinition Width="200"/>
@@ -239,29 +243,24 @@
                                             <RowDefinition Height="*"/>
                                         </Grid.RowDefinitions>
 
-                                        <TextBlock Grid.Row="0" Grid.Column="0" x:Name="BluetoothProgresssBox" x:FieldModifier="public" Text="Connecting to Raspberry Pi" Margin="5"/>
-                                        <!--
-                                        <TextBlock Grid.Row="1" Grid.Column="0" Text="Recognition" Margin="5"/>
-                                        <TextBlock Grid.Row="2" Grid.Column="0" Text="Diarization" Margin="5"/>
-                                        -->
+                                        <TextBlock Grid.Row="0" Grid.Column="0" x:Name="BluetoothProgresssBox" 
+                                                       x:FieldModifier="public" Text="Connecting to Raspberry Pi" 
+                                                       Margin="5"/>
 
-                                        <ProgressRing Grid.Row="0" Grid.Column="1" Margin="5" x:Name="BluetoothProgress" x:FieldModifier="public" IsActive="True"/>
-                                        <!--
-                                        <ProgressRing Grid.Row="1" Grid.Column="1" Margin="5" Name="RecognitionProgress" IsActive="True"/>
-                                        <ProgressRing Grid.Row="2" Grid.Column="1" Margin="5" Name="DiarizationProgress" IsActive="True"/>
-                                        -->
+                                        <ProgressRing Grid.Row="0" Grid.Column="1" Margin="5" 
+                                                          x:Name="BluetoothProgress" x:FieldModifier="public" 
+                                                          IsActive="True"/>
+
                                         <BitmapIcon Grid.Row="0" Grid.Column="1" Width="32" Height="32"
                                                 UriSource="ms-appx:///Assets/checkmark.png" 
                                                 x:Name="BluetoothComplete" x:FieldModifier="public" Visibility="Collapsed"/>
 
-
                                         <TextBlock Grid.Row="0" Grid.Column="2" Text="" Name="PiIPAddress" Margin="5"/>
                                     </Grid>
+
                                 </Flyout>
                             </Button.Flyout>
-                            <ToolTipService.ToolTip>
-                                <TextBlock Text="Connect to server"/>
-                            </ToolTipService.ToolTip>
+                                 
                             <Grid>
                                 <StackPanel>
                                     <FontIcon FontSize="24" FontFamily="Segoe MDL2 Assets" Glyph="&#xE702;" HorizontalAlignment="Left" Width="20" Height="20" VerticalAlignment="Top">
@@ -273,22 +272,26 @@
                         </Button>
 
 
-                        <ToggleButton  Height="60" HorizontalAlignment="Stretch"  Style="{StaticResource MyToggleButtonStyle2}" Background="{StaticResource Left_Panel_Title_BG}" x:Name="audioButton" x:FieldModifier="public"  IsEnabled="False" Click="AudioStreamButton_Clicked"
-                                    >
+                        <ToggleButton  Height="60" HorizontalAlignment="Stretch" ToolTipService.ToolTip="Start/Stop Audio"
+                                       Style="{StaticResource MyToggleButtonStyle2}" Background="{StaticResource Left_Panel_Title_BG}" 
+                                       x:Name="audioButton" x:FieldModifier="public"  IsEnabled="False" Click="AudioStreamButton_Clicked">
                             <StackPanel>
                                 <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE720;" HorizontalAlignment="Left" Width="21"/>
                                 <TextBlock FontSize="12" Name="audioStatusText" Text="OFF"></TextBlock>
                             </StackPanel>
                         </ToggleButton>
 
-                        <ToggleButton Visibility="Collapsed" Height="50" HorizontalAlignment="Stretch" Name="shutterButton"  Style="{StaticResource MyToggleButtonStyle2}" Background="{StaticResource Left_Panel_Title_BG}"
-                              Click="CameraButton_Click">
-
+                        <ToggleButton Visibility="Collapsed" Height="50" HorizontalAlignment="Stretch" 
+                                      Name="shutterButton"  Style="{StaticResource MyToggleButtonStyle2}" 
+                                      Background="{StaticResource Left_Panel_Title_BG}" 
+                                      Click="CameraButton_Click">
                             <SymbolIcon Symbol="WebCam"></SymbolIcon>
-
                         </ToggleButton>
 
-                        <ToggleButton  Height="60" HorizontalAlignment="Stretch" Name="StreamButton"   Click="StreamButton_Click" Style="{StaticResource MyToggleButtonStyle2}" Background="{StaticResource Left_Panel_Title_BG}"
+                        <ToggleButton  Height="60" HorizontalAlignment="Stretch" Name="StreamButton"   
+                                       ToolTipService.ToolTip="Start/Stop Video Stream"
+                                       Click="StreamButton_Click" Style="{StaticResource MyToggleButtonStyle2}" 
+                                       Background="{StaticResource Left_Panel_Title_BG}"
                                      IsEnabled="False" >
                             <StackPanel>
                                 <SymbolIcon Symbol="Video"></SymbolIcon>
@@ -296,8 +299,10 @@
                             </StackPanel>
                         </ToggleButton>
 
-                        <Button Height="60"  HorizontalAlignment="Stretch" Name="PreviewButton" Click="PreviewButton_Click" Style="{StaticResource MyButtonStyle}" Background="{StaticResource Left_Panel_Title_BG}">
-
+                        <Button Height="60"  HorizontalAlignment="Stretch" 
+                                ToolTipService.ToolTip="Show Device/Server Setting"
+                                Name="PreviewButton" Click="PreviewButton_Click" 
+                                Style="{StaticResource ButtonStyle1}" Background="{StaticResource Left_Panel_Title_BG}">
                             <SymbolIcon Symbol="More"></SymbolIcon>
                         </Button>
                     </StackPanel>

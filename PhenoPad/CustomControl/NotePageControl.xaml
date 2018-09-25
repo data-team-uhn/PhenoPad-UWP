@@ -373,11 +373,11 @@
                 </GridView.ItemTemplate>
             </GridView>
         </Grid>
-
         <Button Grid.Column="0" Grid.ColumnSpan="2" VerticalAlignment="Top" 
+                Style="{StaticResource ButtonStyle1}"
                 Margin="10 10 10 10" ToolTipService.ToolTip="Toggle Add-In Box"
                 Click="AddinsButton_Click">
-            <SymbolIcon Symbol="Pictures"/>
+                <SymbolIcon Symbol="Pictures"/>
         </Button>
 
 

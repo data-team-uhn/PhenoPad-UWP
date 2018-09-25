@@ -1182,14 +1182,11 @@ namespace PhenoPad
 
         private void PreviewButton_Click(object sender, RoutedEventArgs e)
         {
-            // var mediaFlyout = (Flyout)this.Resources["MultimediaPreviewFlyout"];
-            // mediaFlyout.ShowAt((FrameworkElement)sender);
             if (MultimediaPreviewGrid.Visibility == Visibility.Collapsed)
             {
                 PreviewMultiMedia();
             }
-            MultimediaPreviewGrid.Visibility = Visibility.Visible;
-
+            MultimediaPreviewGrid.Visibility = MultimediaPreviewGrid.Visibility == Visibility.Visible? Visibility.Collapsed : Visibility.Visible;
         }
 
         private void MultimediaClose_Click(object sender, RoutedEventArgs e)
@@ -1239,6 +1236,7 @@ namespace PhenoPad
             ConfigService.ConfigService.getConfigService().UseInternalMic();
             this.audioButton.IsEnabled = true;
             this.serverConnectButton.IsEnabled = false;
+            this.serverConnectButton.RemoveFocusEngagement();
             this.StreamButton.IsEnabled = false;
 
 
