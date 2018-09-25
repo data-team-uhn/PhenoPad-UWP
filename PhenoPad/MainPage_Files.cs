@@ -124,14 +124,16 @@ namespace PhenoPad
 
                 //Gets the possible stored conversation transcripts from disk
                 SpeechManager.getSharedSpeechManager().setAudioIndex(notebookObject.audioCount);
+                Debug.WriteLine($"audio count = {notebookObject.audioCount}");
                 String fName = prefix;
                 this.conversations = new List<TextMessage>();
-                for (int i = 1 ; i <= notebookObject.audioCount; i++) {
-                    fName = prefix + i.ToString();
+                for (int i = 0 ; i < notebookObject.audioCount; i++) {
+                    //the audio index starts with 1 instead of 0
+                    fName = prefix + (i+1).ToString();
                     List<TextMessage> messages = await FileManager.getSharedFileManager().GetSavedTranscriptsFromXML(notebookId, fName);
                     if (messages == null)
                     {
-                        MetroLogger.getSharedLogger().Error($"Failed to load transcript_{i}, file may not exist.");
+                        MetroLogger.getSharedLogger().Error($"Failed to load transcript_{i+1}, file may not exist.");
                     }
                     else {
                         Debug.WriteLine("successfully loaded transcripts.\n");

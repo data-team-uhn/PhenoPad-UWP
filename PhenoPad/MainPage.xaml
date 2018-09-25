@@ -617,15 +617,17 @@
                                 Grid.Row="0"
                                 Grid.Column="0"
                                 TextWrapping="Wrap"
-                                MinWidth="300"                                
+                                MaxWidth="400"                                                             
                                 FontSize="15"
-                                Padding="10"
+                               
+                                Margin="5"
                                 VerticalAlignment="Center"
                                 HorizontalAlignment="Left"
                                 Foreground="Black"/>
 
                                <TextBlock
                                     Grid.Row="1"
+                                    Grid.Column="0"
                                     FontSize="11"
                                     Text="{Binding Converter={StaticResource intervalConverter}}"
                                     TextWrapping="Wrap"
