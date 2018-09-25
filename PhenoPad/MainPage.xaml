@@ -604,24 +604,25 @@
                                         </Grid.ColumnDefinitions>
 
                                         <!--Finalized message color-->
-                            <Grid
+                                        <Border BorderThickness="1" CornerRadius="10">
+                                            <Grid
                             Grid.Row="0"
                             Grid.Column="0"
                             Grid.ColumnSpan="2"
                             Background="{Binding Converter={StaticResource bcConverter}}"
                             Visibility="{x:Bind Path=IsFinal}"/>
-
-                            <Grid
+                                        </Border>
+                                        <Grid
                             Grid.Row="0"
                             Grid.Column="{Binding TextColumn}">
-                                            <Grid.RowDefinitions>
-                                                <RowDefinition Height="Auto"/>
-                                                <RowDefinition Height="Auto"/>
-                                            </Grid.RowDefinitions>
-                                            <Grid.ColumnDefinitions>
-                                                <ColumnDefinition Width="auto" />
-                                            </Grid.ColumnDefinitions>
-                               <TextBlock
+                                                <Grid.RowDefinitions>
+                                                    <RowDefinition Height="Auto"/>
+                                                    <RowDefinition Height="Auto"/>
+                                                </Grid.RowDefinitions>
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="auto" />
+                                                </Grid.ColumnDefinitions>
+                                                <TextBlock
                                 Text="{x:Bind Body}"
                                 Grid.Row="0"
                                 Grid.Column="0"
@@ -633,7 +634,7 @@
                                 HorizontalAlignment="Left"
                                 Foreground="Black"/>
 
-                               <TextBlock
+                                                <TextBlock
                                     Grid.Row="1"
                                     Grid.Column="0"
                                     FontSize="11"
@@ -642,10 +643,11 @@
                                     Padding="10 10 10 10"
                                     Foreground="Black"
                                 />
-                              
-                                        </Grid>
 
-                                     
+                                            </Grid>
+                                        
+
+
                                     </Grid>
                                 </DataTemplate>
                             </ListView.ItemTemplate>
