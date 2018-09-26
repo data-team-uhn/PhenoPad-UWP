@@ -127,13 +127,14 @@ namespace PhenoPad
                 Debug.WriteLine($"audio count = {notebookObject.audioCount}");
                 String fName = prefix;
                 this.conversations = new List<TextMessage>();
-                for (int i = 0 ; i < notebookObject.audioCount; i++) {
+                for (int i = 1 ; i <= notebookObject.audioCount; i++) {
                     //the audio index starts with 1 instead of 0
-                    fName = prefix + (i+1).ToString();
+                    fName = prefix + i.ToString();
                     List<TextMessage> messages = await FileManager.getSharedFileManager().GetSavedTranscriptsFromXML(notebookId, fName);
                     if (messages == null)
                     {
-                        MetroLogger.getSharedLogger().Error($"Failed to load transcript_{i+1}, file may not exist.");
+                        NotifyUser($"Failed to load transcript_{i}, file may be empty.", NotifyType.StatusMessage, 2);
+                        MetroLogger.getSharedLogger().Error($"Failed to load transcript_{i}, file may not exist.");
                     }
                     else {
                         Debug.WriteLine("successfully loaded transcripts.\n");
@@ -231,18 +232,18 @@ namespace PhenoPad
             {
                 MetroLogger.getSharedLogger().Info($"Saving notebook {notebookId} to disk...");
 
-                MetroLogger.getSharedLogger().Info($"Saving audio");
-                // save audio count
-                {
-                    if (notebookObject != null)
-                    {
-                        notebookObject.audioCount = SpeechManager.getSharedSpeechManager().getAudioCount();
-                        await FileManager.getSharedFileManager().SaveToMetaFile(notebookObject);
-                    }
+                //MetroLogger.getSharedLogger().Info($"Saving audio");
+                //// save audio count
+                //{
+                //    if (notebookObject != null)
+                //    {
+                //        notebookObject.audioCount = SpeechManager.getSharedSpeechManager().getAudioCount();
+                //        await FileManager.getSharedFileManager().SaveToMetaFile(notebookObject);
+                //    }
 
-                    // save audio transcriptions
-                    await SpeechManager.getSharedSpeechManager().SaveTranscriptions();
-                }
+                //    // save audio transcriptions
+                //    await SpeechManager.getSharedSpeechManager().SaveTranscriptions();
+                //}
 
 
                 // save note pages one by one
@@ -532,20 +533,26 @@ namespace PhenoPad
             }
         }
 
+        public async void updateAudioMeta() {
+            notebookObject.audioCount = SpeechManager.getSharedSpeechManager().getAudioCount();
+            await FileManager.getSharedFileManager().SaveToMetaFile(notebookObject);
+        }
+
         public async void updatePastConversation() {
-            int count = SpeechManager.getSharedSpeechManager().getAudioCount();
+            int count = notebookObject.audioCount;
             //Debug.WriteLine($"audio count = {notebookObject.audioCount}");
             String fName = prefix;
             this.conversations = new List<TextMessage>();
-            for (int i = 0; i < count; i++)
+            for (int i = 1 ; i <= count; i++)
             {          
                 //the audio index starts with 1 instead of 0
-                fName = prefix + (i + 1).ToString();
+                fName = prefix + i.ToString();
                 Debug.WriteLine($"fetching audio {fName}");
                 List<TextMessage> messages = await FileManager.getSharedFileManager().GetSavedTranscriptsFromXML(this.notebookId, fName);
                 if (messages == null)
                 {
-                    MetroLogger.getSharedLogger().Error($"Failed to load transcript_{i + 1}, file may not exist.");
+                    MetroLogger.getSharedLogger().Error($"Failed to load transcript_{i}, file may not exist.");
+                    NotifyUser($"Failed to load transcript_{i}, file may be empty.", NotifyType.StatusMessage, 2);
                 }
                 else
                 {

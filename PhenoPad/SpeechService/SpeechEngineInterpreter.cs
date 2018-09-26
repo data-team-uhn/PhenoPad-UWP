@@ -695,6 +695,7 @@ namespace PhenoPad.SpeechService
 
                 try
                 {
+                    LogService.MetroLogger.getSharedLogger().Info($"Saving current conversation to transcript_{this.conversationIndex}");
                     string fpath = FileManager.getSharedFileManager().GetNoteFilePath(
                       FileManager.getSharedFileManager().currentNoteboookId,
                       "",

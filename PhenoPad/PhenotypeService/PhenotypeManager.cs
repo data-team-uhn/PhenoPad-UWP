@@ -8,6 +8,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Xml;
+using Windows.UI.Xaml;
 using Windows.Web.Http;
 
 namespace PhenoPad.PhenotypeService
@@ -30,7 +31,8 @@ namespace PhenoPad.PhenotypeService
         private MainPage rootPage = MainPage.Current;
         public ObservableCollection<Phenotype> phenotypesCandidates;
 
-
+        DispatcherTimer autosavetimer;
+        //===========================================METHODS===============================================
         public PhenotypeManager()
         {
             savedPhenotypes = new ObservableCollection<Phenotype>();
@@ -39,6 +41,10 @@ namespace PhenoPad.PhenotypeService
             phenotypesInNote = new ObservableCollection<Phenotype>();
             phenotypesInSpeech = new ObservableCollection<Phenotype>();
             phenotypesCandidates = new ObservableCollection<Phenotype>();
+            autosavetimer = new DispatcherTimer();
+            autosavetimer.Tick += autosaver_tick;
+            //setting autosave phonetype interval to be about 2 seconds
+            autosavetimer.Interval = TimeSpan.FromSeconds(2);
         }
         public static PhenotypeManager getSharedPhenotypeManager()
         {
@@ -55,7 +61,6 @@ namespace PhenoPad.PhenotypeService
 
         public void clearCache()
         {
-            // sharedPhenotypeManager = new PhenotypeManager();
             savedPhenotypes.Clear();
             suggestedPhenotypes.Clear();
             predictedDiseases.Clear();
@@ -63,6 +68,11 @@ namespace PhenoPad.PhenotypeService
             phenotypesInSpeech.Clear();
             phenotypesCandidates.Clear();
             rootPage = MainPage.Current;
+        }
+
+        public async void autosaver_tick(object sender = null, object e = null) {
+            await rootPage.AutoSavePhenotypes();
+            autosavetimer.Stop();
         }
 
         // return # of added phenotypes
@@ -99,7 +109,7 @@ namespace PhenoPad.PhenotypeService
             return true;
         }
 
-        public async void addPhenotypeInSpeech(List<Phenotype> phenos)
+        public void addPhenotypeInSpeech(List<Phenotype> phenos)
         {
             foreach (var p in phenos)
             {
@@ -109,9 +119,9 @@ namespace PhenoPad.PhenotypeService
                 }
                 addPhenotypeCandidate(p, SourceType.Speech);
             }
-            await rootPage.AutoSavePhenotypes();
+            autosavetimer.Start();
         }
-        public async void addPhenotypeCandidate(Phenotype pheno, SourceType from)
+        public void addPhenotypeCandidate(Phenotype pheno, SourceType from)
         {
             Phenotype temp = phenotypesCandidates.Where(x => x == pheno).FirstOrDefault();
             if(temp != null)
@@ -136,7 +146,7 @@ namespace PhenoPad.PhenotypeService
             }
             
             rootPage.OpenCandidate();
-            await rootPage.AutoSavePhenotypes();   
+            autosavetimer.Start();
             return;
         }
 
@@ -244,7 +254,8 @@ namespace PhenoPad.PhenotypeService
                     predictedDiseases.Add(d);
                 }
             }
-            await rootPage.AutoSavePhenotypes();
+
+            autosavetimer.Start();
 
         }
 
@@ -254,11 +265,11 @@ namespace PhenoPad.PhenotypeService
                 return false;
             
             savedPhenotypes.RemoveAt(idx);
-            await rootPage.AutoSavePhenotypes();
+            autosavetimer.Start();
             return true;
         }
 
-        public async Task<bool> deletePhenotype(Phenotype pheno)
+        public bool deletePhenotype(Phenotype pheno)
         {
             Phenotype temp = suggestedPhenotypes.Where(x => x == pheno).FirstOrDefault();
             if (temp != null)
@@ -283,12 +294,12 @@ namespace PhenoPad.PhenotypeService
                 phenotypesCandidates.Remove(temp);
                 phenotypesCandidates.Insert(0, pp);
             }
-            await rootPage.AutoSavePhenotypes();
+            autosavetimer.Start();
             return false;
         }
 
 
-        public async void updatePhenotypeAsync(Phenotype pheno)
+        public void updatePhenotypeAsync(Phenotype pheno)
         {
             Phenotype temp = savedPhenotypes.Where(x => x == pheno).FirstOrDefault();
             if (temp != null)
@@ -305,10 +316,11 @@ namespace PhenoPad.PhenotypeService
             temp = phenotypesCandidates.Where(x => x == pheno).FirstOrDefault();
             if (temp != null)
                 temp.state = pheno.state;
-            await rootPage.AutoSavePhenotypes();
+
+            autosavetimer.Start();
         }
 
-        public async void removeByIdAsync(string pid, SourceType type)
+        public void removeByIdAsync(string pid, SourceType type)
         {
             //if (type == SourceType.Saved)
             //{
@@ -348,7 +360,7 @@ namespace PhenoPad.PhenotypeService
                 }
             }
 
-            await rootPage.AutoSavePhenotypes();
+            autosavetimer.Start();
 
         }
 

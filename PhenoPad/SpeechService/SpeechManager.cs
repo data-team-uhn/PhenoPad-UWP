@@ -96,6 +96,7 @@ namespace PhenoPad.SpeechService
             this.speechInterpreter = new SpeechEngineInterpreter(this.conversation, this.realtimeConversation);
             this.speechStreamSocket = new SpeechStreamSocket(this.serverAddress, this.serverPort);
             this.speechAPI = new SpeechRESTAPI();
+            
         }
 
         public void cleanUp()
@@ -551,8 +552,9 @@ namespace PhenoPad.SpeechService
         //==================================================================================================================
         public async Task SaveTranscriptions()
         {
-            LogService.MetroLogger.getSharedLogger().Info("Saving transriptions for audio_" + (getAudioCount()+1));
+            LogService.MetroLogger.getSharedLogger().Info("Saving transriptions for audio_" + getAudioCount());
             await this.speechInterpreter.SaveCurrentConversationsToDisk();
+            MainPage.Current.updateAudioMeta();
             MainPage.Current.updatePastConversation();
         }
       
