@@ -71,6 +71,7 @@ namespace PhenoPad.SpeechService
 
         public event TypedEventHandler<SpeechManager, SpeechEngineInterpreter> EngineHasResult;
         public event TypedEventHandler<SpeechManager, StorageFile> RecordingCreated;
+        public StorageFile savedFile;
 
         // file debug seems to be broken?
         private bool useFile = false;
@@ -132,42 +133,46 @@ namespace PhenoPad.SpeechService
         {
             return this.serverPort;
         }
-        public void AddNewMessage(string text, double start, double duration, uint speaker)
+        public void setAudioIndex(int count)
         {
-            if (text.Length > 0)
-            {
-                this.conversation.Add(new TextMessage
-                {
-                    Body = text,
-                    DisplayTime = DateTime.Now,
-                    IsFinal =  false,
-                    Speaker = speaker,
-                    Interval = new TimeInterval(start, start + duration)
-                    
-                });
-            }
+            this.speechInterpreter.conversationIndex = count;
+        }
+        public int getAudioCount()
+        {
+            return this.speechInterpreter.conversationIndex;
         }
 
+        // ================================= AUDIO START / STOP FOR USING EXTERNAL MICROPHONE =============================
         /// <summary>
         /// connect to client/speech/results
         /// only receive results without sending audio signals
         /// </summary>
         public async void ReceiveASRResults()
         {
-            speechResultsSocket = new SpeechResultsSocket(this.serverAddress, this.serverPort);
-            //speechAPI.setupClient(this.serverAddress);
-            //speechAPI.setupClient(this.serverAddress);
-            bool succeed = await speechResultsSocket.ConnectToServer();
+            MainPage.Current.NotifyUser("Connecting to speech result server...", NotifyType.StatusMessage, 3);
+
+            bool succeed = false;
+            try {
+                speechResultsSocket = new SpeechResultsSocket(this.serverAddress, this.serverPort);
+                succeed = await speechResultsSocket.ConnectToServer();
+            } catch (Exception e)
+            {
+                //this is to handle some url problems
+                LogService.MetroLogger.getSharedLogger().Error("Failed to connect to speech result socket:" + e.Message);
+            }
+
 
             if (!succeed)
             {
-                MainPage.Current.NotifyUser("Connection to speech results server failed.", NotifyType.ErrorMessage, 3);
+                MainPage.Current.NotifyUser("Failed to connect to speech result server.", NotifyType.ErrorMessage, 3);
+                MainPage.Current.ReEnableAudioButton(null,null);
                 return;
             }
 
-            MainPage.Current.NotifyUser("Connection established", NotifyType.StatusMessage, 2);
+            MainPage.Current.onAudioStarted();
             SpeechPage.Current.setSpeakerButtonEnabled(true);
             SpeechPage.Current.adjustSpeakerCount(2);
+
 
             cancellationSource = new CancellationTokenSource();
             CancellationToken cancellationToken = cancellationSource.Token;                 // need this to actually cancel reading from websocketS
@@ -272,59 +277,55 @@ namespace PhenoPad.SpeechService
 
                 }
             }, cancellationToken);
-            //Task.Run(() => speechStreamSocket.ReceiveMessageUsingStreamWebSocket(), TaskCreationOptions.LongRunning);
 
             return;
         }
 
-        public void StopASRResults()
+        public async void StopASRResults()
         {
-            //await endSemaphoreSlim.WaitAsync();
             try
-            {
-                MainPage.Current.NotifyUser("Disconnecting from speech engine", NotifyType.StatusMessage, 2);
-                //deviceInputNode.Stop();
+            {          
                 cancellationSource.Cancel();
-                speechResultsSocket.CloseConnnction();
-
+                await speechResultsSocket.CloseConnnction();
                 SpeechPage.Current.setSpeakerButtonEnabled(false);
+                MainPage.Current.onAudioEnded();
             }
             catch (Exception e)
             {
-                Debug.WriteLine(e.Message);
-            }
-            finally
-            {
-                //endSemaphoreSlim.Release();
+                LogService.MetroLogger.getSharedLogger().Error($"Failed stopping bluetooth ASR:"+ e.Message);
             }
         }
-
-
-
-        public async Task StartAudio()
+        // ================================== AUDIO START / STOP FOR USING INTERNAL MICROPHONE =============================
+        public async Task<bool> StartAudio()
         {
             bool attemptConnection = true;
+            bool succeed = false;
             int count = 1;
-
+            MainPage.Current.NotifyUser("Connecting to speech engine, please wait ...", NotifyType.StatusMessage, 7);
             while (attemptConnection)
             {
-                Debug.WriteLine("connecting");
-                speechStreamSocket = new SpeechStreamSocket(this.serverAddress, this.serverPort);
-                //speechAPI.setupClient(this.serverAddress);
-                speechAPI.setupClient(this.serverAddress);
-                bool succeed = await speechStreamSocket.ConnectToServer();
+                try
+                {
+                    speechStreamSocket = new SpeechStreamSocket(this.serverAddress, this.serverPort);
+                    speechAPI.setupClient(this.serverAddress);
+                    succeed = await speechStreamSocket.ConnectToServer();
+                }
+                catch (Exception e)
+                {
+                    LogService.MetroLogger.getSharedLogger().Error("Failed to connect to specch engine:"+e.Message);
+                }
 
                 if (!succeed)
                 {
-                    MainPage.Current.NotifyUser("Connection to speech engine failed.", NotifyType.ErrorMessage, 5);
+                    //MainPage.Current.NotifyUser("Connection to speech engine failed.", NotifyType.ErrorMessage, 5);
 
                     // Display a dialog box to allow for retry
                     // https://code.msdn.microsoft.com/windowsapps/How-to-show-message-dialog-35468701
-                    var messageDialog = new MessageDialog("We failed to connect to speech analysis engine (" 
-                        + this.serverAddress + ":" + this.serverPort  + ") just now.");
-
-                    messageDialog.Commands.Add(new UICommand("Try Again") { Id = 0 });
-                    messageDialog.Commands.Add(new UICommand("Cancel") { Id = 1 });
+                    var messageDialog = new MessageDialog("Failed to connect to (" 
+                        + this.serverAddress + ":" + this.serverPort  + ").\nWould you like to retry this connection?");
+                    messageDialog.Title = "CONNECTION ERROR";
+                    messageDialog.Commands.Add(new UICommand("YES") { Id = 0 });
+                    messageDialog.Commands.Add(new UICommand("NO") { Id = 1 });
                     // Set the command that will be invoked by default
                     messageDialog.DefaultCommandIndex = 0;
                     // Set the command to be invoked when escape is pressed
@@ -337,35 +338,35 @@ namespace PhenoPad.SpeechService
                     {
                         // Technically we don't have to do anything here
                         count++;
-                        MainPage.Current.NotifyUser("Connect to speech engine attempt " + count.ToString(), NotifyType.StatusMessage, 2);
+                        MainPage.Current.NotifyUser($"Retry connection at attempt #{count.ToString()} ... " , NotifyType.StatusMessage, 2);
                         attemptConnection = true;
                     }
                     else
                     {
+                        MainPage.Current.NotifyUser("Connection cancelled", NotifyType.ErrorMessage, 2);
                         attemptConnection = false;
-                        return;
+                        MainPage.Current.ReEnableAudioButton(null, null);
+                        MainPage.Current.audioButton.IsChecked = false;
+                        return false;
                     }
-                }
+                }                
                 else
                 {
+                    //Connection success,break from loop
                     attemptConnection = false;
                 }
-                Debug.WriteLine("connecting");
             }
-
 
            await CreateAudioGraph();
            // await BluetoothService.BluetoothService.getBluetoothService().sendBluetoothMessage("audio start");
 
-
-
             // Wait 10 seconds so that the server has time to create a worker
             // else you'll see lots of audio delays
             await Task.Delay(5000);
-            MainPage.Current.NotifyUser("Connection established", NotifyType.StatusMessage, 2);
-            SpeechPage.Current.setSpeakerButtonEnabled(true);
+            SpeechPage.Current.setSpeakerButtonEnabled(true);           
             SpeechPage.Current.adjustSpeakerCount(2);
-
+            //Triggers audio started event handler in Mainpage to switch necessary interface layout
+            MainPage.Current.onAudioStarted();
 
             startGraph();
             if (useFile)
@@ -377,7 +378,6 @@ namespace PhenoPad.SpeechService
                 deviceInputNode.Start();
                 // await BluetoothService.BluetoothService.getBluetoothService().sendBluetoothMessage("odas start");
             }
-
 
             // save this to file
             this.byte_accumulator = new List<byte>();
@@ -492,25 +492,23 @@ namespace PhenoPad.SpeechService
              }, cancellationToken);
             //Task.Run(() => speechStreamSocket.ReceiveMessageUsingStreamWebSocket(), TaskCreationOptions.LongRunning);
 
-            return;
+            return true;
         }
-
         private SemaphoreSlim endSemaphoreSlim = new SemaphoreSlim(1);
-        public async Task EndAudio(string notebookid)
+        public async Task<bool> EndAudio(string notebookid)
         {
             //await endSemaphoreSlim.WaitAsync();
-            try {
+            try
+            {
+                MainPage.Current.NotifyUser("Disconnecting from speech engine ...", NotifyType.StatusMessage, 2);
                 if (graph != null && (fileInputNode != null || useFile == false))
-                {
-                    MainPage.Current.NotifyUser("Disconnecting from speech engine", NotifyType.StatusMessage, 2);
+                {                   
                     //deviceInputNode.Stop();
                     cancellationSource.Cancel();
 
                     if (useFile)
-                    {
                         fileInputNode.Stop();
-                    }
-                    
+
                     graph.Stop();
                     speechStreamSocket.CloseConnnction();
                     // await BluetoothService.BluetoothService.getBluetoothService().sendBluetoothMessage("audio end");
@@ -529,48 +527,42 @@ namespace PhenoPad.SpeechService
                     rootPage.NotifyUser("Recording to file completed successfully!", NotifyType.StatusMessage, 1);
                     **/
                     if (graph != null)
-                    {
                         graph.Dispose();
-                    }
 
                     if (notebookid != "")
                     {
                         this.writeToFile(notebookid);
-                        this.SaveTranscriptions();
+                        await this.SaveTranscriptions();
                     }
-                        
+
                     SpeechPage.Current.setSpeakerButtonEnabled(false);
+                    //Triggers audio started event handler in Mainpage to switch necessary interface layout
+                    MainPage.Current.onAudioEnded();
                 }
+                return true;
             }
-            finally
-            {
-                //endSemaphoreSlim.Release();
+            catch (Exception e) {
+                LogService.MetroLogger.getSharedLogger().Error("Error while ending audio:"+e.Message);
+                MainPage.Current.NotifyUser("Failed to disconnect", NotifyType.ErrorMessage, 2);
+                return false;
             }
         }
 
-        public void setAudioIndex(int count)
-        {
-            this.speechInterpreter.conversationIndex = count;
-        }
-        public int getAudioCount()
-        {
-            return this.speechInterpreter.conversationIndex;
-        }
-
+        //==================================================================================================================
         public async Task SaveTranscriptions()
         {
-            Debug.WriteLine("Saving transriptions for audio_" + getAudioCount());
+            LogService.MetroLogger.getSharedLogger().Info("Saving transriptions for audio_" + (getAudioCount()+1));
             await this.speechInterpreter.SaveCurrentConversationsToDisk();
+            MainPage.Current.updatePastConversation();
         }
-
-        public Windows.Storage.StorageFile savedFile;
+      
         public async void writeToFile(string notebookid)
         {
             MainPage.Current.NotifyUser("Saving conversation audio", NotifyType.StatusMessage, 2);
 
             //string datestring = System.DateTime.Now.ToString("dd-MM-yyyy-HH-mm-ss");
             savedFile = await FileService.FileManager.getSharedFileManager().GetNoteFile(notebookid, "", FileService.NoteFileType.Audio, "audio_" + this.speechInterpreter.conversationIndex);
-                // await storageFolder.CreateFileAsync("sample_" + this.speechInterpreter.conversationIndex + ".wav", Windows.Storage.CreationCollisionOption.ReplaceExisting);
+            // await storageFolder.CreateFileAsync("sample_" + this.speechInterpreter.conversationIndex + ".wav", Windows.Storage.CreationCollisionOption.ReplaceExisting);
 
             Debug.WriteLine("Output file to " + savedFile.Path.ToString());
 
@@ -637,6 +629,8 @@ namespace PhenoPad.SpeechService
             }
 
         }
+
+
 
         private async Task CreateAudioGraph()
         {
@@ -738,7 +732,21 @@ namespace PhenoPad.SpeechService
             }
         }
 
-        
+        public void AddNewMessage(string text, double start, double duration, uint speaker)
+        {
+            if (text.Length > 0)
+            {
+                this.conversation.Add(new TextMessage
+                {
+                    Body = text,
+                    DisplayTime = DateTime.Now,
+                    IsFinal = false,
+                    Speaker = speaker,
+                    Interval = new TimeInterval(start, start + duration)
+
+                });
+            }
+        }
 
         private async Task SelectOutputFile()
         {

@@ -428,7 +428,8 @@ namespace PhenoPad.BluetoothService
 
         public async Task sendBluetoothMessage(string message)
         {
-
+            //if bluetooth connection is not establiched,
+            //initializes the connection first
             if (this.initialized == false)
             {
                 await this.InitiateConnection();
@@ -438,24 +439,21 @@ namespace PhenoPad.BluetoothService
                     rootPage.NotifyUser(
                     "Unable to re-initialize Bluetooth device (should be raspberry pi)",
                     NotifyType.StatusMessage, 2);
-
+                    rootPage.ReEnableAudioButton(null,null);
                     // Later command should attemp to re-initialize
                     this.initialized = false;
                     return;
                 }
             }
 
-
+            
             try
             {
-
                 dataWriter.WriteString(message);
                 Debug.WriteLine("Writing message " + message + " via Bluetooth");
                 await dataWriter.StoreAsync();
+              
 
-                //rootPage.NotifyUser(
-                //            "Sending message \"" + message + "\"",
-                //            NotifyType.StatusMessage, 1);
             }
             catch (Exception ex) when ((uint)ex.HResult == 0x80072745)
             {

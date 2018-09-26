@@ -146,7 +146,7 @@ namespace PhenoPad
             chatView.ContainerContentChanging += OnChatViewContainerContentChanging;
             realtimeChatView.ItemsSource = SpeechManager.getSharedSpeechManager().realtimeConversation;
 
-
+            speechEngineRunning = false;
             audioTimer.Tick += ReEnableAudioButton;
             audioTimer.Interval = TimeSpan.FromSeconds(5);
 
@@ -696,47 +696,31 @@ namespace PhenoPad
             }
         }
 
+        /// <summary>
+        /// Invoked when user presses the Microphone button on sidebar, requests speech engine connection
+        /// as well as connection to remote server for speech recognition
+        /// </summary>
         private void AudioStreamButton_Clicked(object sender, RoutedEventArgs e)
         {
             //Temporarily disables audio button for avoiding frequent requests
             audioButton.IsEnabled = false;
-            audioTimer.Start();
+            
+            //NOTE that since we cannot use both internal/external micriphone at the same time
+            //we will use the speechEngineRunning as a flag to indicate if audio is working
+            //at the moment
+
             // use external microphone
             if (ConfigService.ConfigService.getConfigService().IfUseExternalMicrophone())
-            {
-                if (audioButton.IsChecked == true)
-                {
-                    changeSpeechEngineState_BT(true);
-                    audioStatusText.Text = "ON";
-                }
-                else
-                {
-                    changeSpeechEngineState_BT(false);
-                    audioStatusText.Text = "OFF";
-                }
-            }
+                changeSpeechEngineState_BT();
             // use internal microphone
             else
-            {
-                if (audioButton.IsChecked == true)
-                {
-                    changeSpeechEngineState(true);
-                    audioStatusText.Text = "ON";
-                }
-                else
-                {
-                    changeSpeechEngineState(false);
-                    audioStatusText.Text = "OFF";
-                }
-            }
-
-
+                changeSpeechEngineState();
         }
 
-        private void ReEnableAudioButton(object sender, object e)
+        public void ReEnableAudioButton(object sender, object e)
         {
             this.audioButton.IsEnabled = true;
-            audioTimer.Stop();
+            //audioTimer.Stop();
         }
 
         //private void MicButton_Click(object sender, RoutedEventArgs e)
@@ -744,11 +728,12 @@ namespace PhenoPad
         //    enableMic();
         //}
 
-        private void PageOverviewButton_Click(object sender, RoutedEventArgs e)
-        {
+        //private void PageOverviewButton_Click(object sender, RoutedEventArgs e)
+        //{
+        //    NotifyUser("PageOverviewButton_Click not implemented yet.");
+        //}
 
-        }
-
+        //=======================================SWITCHING NOTE PAGES===================================
         private async void AddPageButton_Click(object sender, RoutedEventArgs e)
         {
             //defining a new string name for the page and creates a new page controller to bind
@@ -836,6 +821,8 @@ namespace PhenoPad
             curPage.Visibility = Visibility.Visible;
         }
 
+        //=======================================NOTE SAVING INTERFACES=====================================
+
         /// <summary>
         /// Invoked when user clicks export note button from drop down menu
         /// </summary>
@@ -895,8 +882,6 @@ namespace PhenoPad
             }
         }
 
-
-
         private async void ChangeServer_Click(object sender, RoutedEventArgs e)
         {
             //string text = await InputTextDialogAsync("Change a server: ", "");
@@ -908,7 +893,7 @@ namespace PhenoPad
             string serverPath = SpeechManager.getSharedSpeechManager().getServerAddress() + ":" + SpeechManager.getSharedSpeechManager().getServerPort();
 
             if (serverPath == "")
-                serverPath = "speechengine.ccm.sickkids.ca";
+                serverPath = "phenopad.ccm.sickkids.ca";
 
             string text = await InputTextDialogAsync("Change a server. Server Address (or sickkids): ", serverPath);
 
@@ -1005,21 +990,21 @@ namespace PhenoPad
             curPage.hideTextEditGrid();
         }
 
-        private void MyScriptButton_Click(object sender, RoutedEventArgs e)
-        {
-            /**
-            if (myScriptEditor.Visibility == Visibility.Collapsed)
-            {
-                myScriptEditor.Visibility = Visibility.Visible;
-                myScriptEditor.NewFile();
-            }
-            else
-            {
-                myScriptEditor.Visibility = Visibility.Collapsed;
-            }
-    **/
+    //    private void MyScriptButton_Click(object sender, RoutedEventArgs e)
+    //    {
+    //        /**
+    //        if (myScriptEditor.Visibility == Visibility.Collapsed)
+    //        {
+    //            myScriptEditor.Visibility = Visibility.Visible;
+    //            myScriptEditor.NewFile();
+    //        }
+    //        else
+    //        {
+    //            myScriptEditor.Visibility = Visibility.Collapsed;
+    //        }
+    //**/
 
-        }
+    //    }
 
         private void FullscreenButton_Click(object sender, RoutedEventArgs e)
         {
@@ -1046,7 +1031,18 @@ namespace PhenoPad
             }
         }
 
-
+        private async void SaveButton_Click(object sender, RoutedEventArgs e)
+        {
+            bool result = await saveNoteToDisk();
+            if (result)
+            {
+                NotifyUser("Successfully saved to disk.", NotifyType.StatusMessage, 2);
+            }
+            else
+            {
+                NotifyUser("Failed to save to disk.", NotifyType.ErrorMessage, 2);
+            }
+        }
 
         private void OpenCandidate_Click(object sender, RoutedEventArgs e)
         {
@@ -1068,6 +1064,7 @@ namespace PhenoPad
             }
 
         }
+
         public void OpenCandidate()
         {
             if (candidatePhenoListView.Items.Count() > 0)
@@ -1195,28 +1192,16 @@ namespace PhenoPad
             videoStreamWebSocket.Close(1000, "no reason:)");
         }
 
-        private async void SaveButton_Click(object sender, RoutedEventArgs e)
-        {
-            bool result = await saveNoteToDisk();
-            if (result)
-            {
-                NotifyUser("Successfully saved to disk.", NotifyType.StatusMessage, 2);
-            }
-            else
-            {
-                NotifyUser("Failed to save to disk.", NotifyType.ErrorMessage, 2);
-            }
-        }
 
         private void FullscreenBtn_Click(object sender, RoutedEventArgs e)
         {
 
         }
 
-        private void MyscriptBtn_Click(object sender, RoutedEventArgs e)
-        {
-            // myScriptEditor.Visibility = MyscriptBtn.IsChecked != null && (bool)MyscriptBtn.IsChecked ? Visibility.Visible : Visibility.Collapsed;
-        }
+        //private void MyscriptBtn_Click(object sender, RoutedEventArgs e)
+        //{
+        //    // myScriptEditor.Visibility = MyscriptBtn.IsChecked != null && (bool)MyscriptBtn.IsChecked ? Visibility.Visible : Visibility.Collapsed;
+        //}
 
         private void PrintButton_Click(object sender, RoutedEventArgs e)
         {
@@ -1230,17 +1215,13 @@ namespace PhenoPad
             }
         }
 
-
+       
         private void SurfaceMicRadioButton_Checked(object sender, RoutedEventArgs e)
         {
             ConfigService.ConfigService.getConfigService().UseInternalMic();
             this.audioButton.IsEnabled = true;
             this.serverConnectButton.IsEnabled = false;
-            this.serverConnectButton.RemoveFocusEngagement();
             this.StreamButton.IsEnabled = false;
-
-
-
             //this.StreamButton.IsEnabled = true;
             NotifyUser("Using Surface microphone", NotifyType.StatusMessage, 2);
         }

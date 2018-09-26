@@ -100,7 +100,7 @@ namespace PhenoPad
 
             currentMode = WritingMode;
             modeTextBlock.Text = WritingMode;
-
+            SurfaceMicRadioButton_Checked(null, null);
             // create file sturcture for this page
             await FileManager.getSharedFileManager().CreateNotePage(notebookObject, curPageIndex.ToString());
             curPage.Visibility = Visibility.Visible;
@@ -118,7 +118,7 @@ namespace PhenoPad
                 //Gets all stored pages from the notebook.
                 List<string> pageIds = await FileManager.getSharedFileManager().GetPageIdsByNotebook(notebookId);
                 notebookObject = await FileManager.getSharedFileManager().GetNotebookObjectFromXML(notebookId);
-
+                SurfaceMicRadioButton_Checked(null,null);
                 if (notebookObject != null)
                     noteNameTextBox.Text = notebookObject.name;
 
@@ -531,6 +531,31 @@ namespace PhenoPad
                 return false;
             }
         }
+
+        public async void updatePastConversation() {
+            int count = SpeechManager.getSharedSpeechManager().getAudioCount();
+            //Debug.WriteLine($"audio count = {notebookObject.audioCount}");
+            String fName = prefix;
+            this.conversations = new List<TextMessage>();
+            for (int i = 0; i < count; i++)
+            {          
+                //the audio index starts with 1 instead of 0
+                fName = prefix + (i + 1).ToString();
+                Debug.WriteLine($"fetching audio {fName}");
+                List<TextMessage> messages = await FileManager.getSharedFileManager().GetSavedTranscriptsFromXML(this.notebookId, fName);
+                if (messages == null)
+                {
+                    MetroLogger.getSharedLogger().Error($"Failed to load transcript_{i + 1}, file may not exist.");
+                }
+                else
+                {
+                    Debug.WriteLine("successfully loaded transcripts.\n");
+                    this.conversations.AddRange(messages);
+                }
+            }
+            pastchatView.ItemsSource = this.conversations;
+        }
+
 
     }
 }

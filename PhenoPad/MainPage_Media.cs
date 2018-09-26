@@ -298,10 +298,7 @@ namespace PhenoPad
             }
         }
 
-        private void Tb_PointerReleased(object sender, PointerRoutedEventArgs e)
-        {
-            throw new NotImplementedException();
-        }
+
 
         /// <summary>
         /// Provide feedback to the user based on whether the recognizer is receiving their voice input.
@@ -332,21 +329,19 @@ namespace PhenoPad
         /// Switch speech engine state for blue tooth devices
         /// </summary>
         /// <param name="state">current state of speech engine</param>
-        private async void changeSpeechEngineState_BT(bool state)
+        private async void changeSpeechEngineState_BT()
         {
             try
             {
-                if (state == true)
-                {
-                    SpeechManager.getSharedSpeechManager().ReceiveASRResults();
+                if (speechEngineRunning == false)
+                {                 
                     await BluetoothService.BluetoothService.getBluetoothService().sendBluetoothMessage("audio start");
-                    LogService.MetroLogger.getSharedLogger().Info("Bluetooth audio streaming started.");
+                    SpeechManager.getSharedSpeechManager().ReceiveASRResults();                 
                 }
                 else
-                {
-                    SpeechManager.getSharedSpeechManager().StopASRResults();
+                {                    
                     await BluetoothService.BluetoothService.getBluetoothService().sendBluetoothMessage("audio stop");
-                    LogService.MetroLogger.getSharedLogger().Info("Bluetooth audio streaming stopped.");
+                    SpeechManager.getSharedSpeechManager().StopASRResults();
                 }
             }
             catch (Exception e)
@@ -356,49 +351,41 @@ namespace PhenoPad
 
         }
 
+        public void onAudioStarted() {
+            speechEngineRunning = true;
+            NotifyUser("Audio service started.", NotifyType.StatusMessage, 3);
+            LogService.MetroLogger.getSharedLogger().Info("Audio started.");
+            audioStatusText.Text = "ON";
+            ReEnableAudioButton(null, null);
+            audioButton.IsChecked = true;
+        }
+
+        public void onAudioEnded() {
+            speechEngineRunning = false;
+            NotifyUser("Audio service ended.", NotifyType.StatusMessage, 3);
+            LogService.MetroLogger.getSharedLogger().Info("Audio stopped.");
+            audioStatusText.Text = "OFF";
+            ReEnableAudioButton(null, null);
+            audioButton.IsChecked = false;
+        }
+
         /// <summary>
         /// Switch speech engine state for plug-in devices
         /// </summary>
         /// <param name="state">current state of speech engine</param>
-        private async void changeSpeechEngineState(bool state)
+        private async void changeSpeechEngineState()
         {
-            //SpeechStreamSocket sss = new SpeechStreamSocket();
-            //sss.connect();
             try
             {
-                Task speechManagerTask;
                 if (speechEngineRunning == false)
-                {
-                    // 
-
-                    //await Task.Delay(10000);
-                    // 
-                    //await BluetoothService.BluetoothService.getBluetoothService().sendBluetoothMessage("odas start");
-
-
-                    speechManagerTask = SpeechManager.getSharedSpeechManager().StartAudio();
-
-                    speechEngineRunning = !speechEngineRunning;
-
-                    await speechManagerTask;
-
-                    LogService.MetroLogger.getSharedLogger().Info("Audio started.");
-                    //await BluetoothService.BluetoothService.getBluetoothService().sendBluetoothMessage("audio start");
-                }
+                    await SpeechManager.getSharedSpeechManager().StartAudio();
                 else
-                {
-                    speechManagerTask = SpeechManager.getSharedSpeechManager().EndAudio(notebookId);
-
-                    speechEngineRunning = !speechEngineRunning;
-
-
-                    LogService.MetroLogger.getSharedLogger().Info("Audio stopped.");
-                    //await BluetoothService.BluetoothService.getBluetoothService().sendBluetoothMessage("audio end");
-                }
+                    await SpeechManager.getSharedSpeechManager().EndAudio(notebookId);
             }
             catch (Exception ex)
             {
                 LogService.MetroLogger.getSharedLogger().Error("Failed to start/stop audio: " + ex.Message);
+                ReEnableAudioButton(null, null);
             }
 
             // Note that we have a giant loop in speech manager so that after it is done
@@ -451,11 +438,8 @@ namespace PhenoPad
         public void bluetoothInitialized(bool val)
         {
             this.StreamButton.IsEnabled = val;
-            //this.videoSwitch.IsEnabled = val;
             this.shutterButton.IsEnabled = val;
             this.audioButton.IsEnabled = val;
-            // this.cameraButton.IsEnabled = val;
-
             if (val)
             {
                 setStatus("bluetooth");
@@ -564,67 +548,67 @@ namespace PhenoPad
             }
         }
 
-        private async void enableMic()
-        {
-            //micButton.IsEnabled = false;
-            if (isListening == false)
-            {
-                // The recognizer can only start listening in a continuous fashion if the recognizer is currently idle.
-                // This prevents an exception from occurring.
-                if (speechRecognizer.State == SpeechRecognizerState.Idle)
-                {
-                    try
-                    {
-                        isListening = true;
-                        await speechRecognizer.ContinuousRecognitionSession.StartAsync();
-                    }
-                    catch (Exception ex)
-                    {
-                        var messageDialog = new Windows.UI.Popups.MessageDialog(ex.Message, "Exception");
-                        await messageDialog.ShowAsync();
+        //private async void enableMic()
+        //{
+        //    //micButton.IsEnabled = false;
+        //    if (isListening == false)
+        //    {
+        //        // The recognizer can only start listening in a continuous fashion if the recognizer is currently idle.
+        //        // This prevents an exception from occurring.
+        //        if (speechRecognizer.State == SpeechRecognizerState.Idle)
+        //        {
+        //            try
+        //            {
+        //                isListening = true;
+        //                await speechRecognizer.ContinuousRecognitionSession.StartAsync();
+        //            }
+        //            catch (Exception ex)
+        //            {
+        //                var messageDialog = new MessageDialog(ex.Message, "Exception");
+        //                await messageDialog.ShowAsync();
 
-                        if ((uint)ex.HResult == HResultPrivacyStatementDeclined)
-                        {
-                            //Show a UI link to the privacy settings.
-                            //hlOpenPrivacySettings.Visibility = Visibility.Visible;
-                        }
-                        else
-                        {
-                            // var messageDialog = new Windows.UI.Popups.MessageDialog(ex.Message, "Exception");
-                            // await messageDialog.ShowAsync();
-                        }
+        //                if ((uint)ex.HResult == HResultPrivacyStatementDeclined)
+        //                {
+        //                    //Show a UI link to the privacy settings.
+        //                    //hlOpenPrivacySettings.Visibility = Visibility.Visible;
+        //                }
+        //                else
+        //                {
+        //                    // var messageDialog = new Windows.UI.Popups.MessageDialog(ex.Message, "Exception");
+        //                    // await messageDialog.ShowAsync();
+        //                }
 
-                        isListening = false;
+        //                isListening = false;
 
-                    }
-                }
-            }
-            else
-            {
-                isListening = false;
+        //            }
+        //        }
+        //    }
+        //    else
+        //    {
+        //        isListening = false;
 
-                if (speechRecognizer.State != SpeechRecognizerState.Idle)
-                {
-                    // Cancelling recognition prevents any currently recognized speech from
-                    // generating a ResultGenerated event. StopAsync() will allow the final session to 
-                    // complete.
-                    try
-                    {
-                        await speechRecognizer.ContinuousRecognitionSession.StopAsync();
+        //        if (speechRecognizer.State != SpeechRecognizerState.Idle)
+        //        {
+        //            // Cancelling recognition prevents any currently recognized speech from
+        //            // generating a ResultGenerated event. StopAsync() will allow the final session to 
+        //            // complete.
+        //            try
+        //            {
+        //                await speechRecognizer.ContinuousRecognitionSession.StopAsync();
 
-                        Console.WriteLine("Speech recognition stopped.");
-                        // Ensure we don't leave any hypothesis text behind
-                        //cmdBarTextBlock.Text = dictatedTextBuilder.ToString();
-                    }
-                    catch (Exception exception)
-                    {
-                        var messageDialog = new Windows.UI.Popups.MessageDialog(exception.Message, "Exception");
-                        await messageDialog.ShowAsync();
-                    }
-                }
-            }
-            //micButton.IsEnabled = true;
-        }
+        //                Console.WriteLine("Speech recognition stopped.");
+        //                // Ensure we don't leave any hypothesis text behind
+        //                //cmdBarTextBlock.Text = dictatedTextBuilder.ToString();
+        //            }
+        //            catch (Exception exception)
+        //            {
+        //                var messageDialog = new MessageDialog(exception.Message, "Exception");
+        //                await messageDialog.ShowAsync();
+        //            }
+        //        }
+        //    }
+        //    //micButton.IsEnabled = true;
+        //}
 
     }
 }
