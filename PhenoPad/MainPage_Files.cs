@@ -119,25 +119,19 @@ namespace PhenoPad
             {
                 //Gets all stored pages and notebook object from the disk
                 List<string> pageIds = await FileManager.getSharedFileManager().GetPageIdsByNotebook(notebookId);
-                if (pageIds == null || pageIds.Count == 0)
-                {
-                    NotifyUser("Notebook file corrupted, creating a new note ...", NotifyType.ErrorMessage, 2);
-                    //Since something wrong happened with notebook, for sake of cleaness will delete the corrupted file
-                    await FileManager.getSharedFileManager().DeleteNotebookById(notebookId);
-                    this.InitializeNotebook();
-                    return;
-                }
+
                 //If notebook file exists, continues with loading...
                 notebookObject = await FileManager.getSharedFileManager().GetNotebookObjectFromXML(notebookId);
-                SurfaceMicRadioButton_Checked(null,null);
-                if (notebookObject != null)
-                    noteNameTextBox.Text = notebookObject.name;
+                SurfaceMicRadioButton_Checked(null, null);
+                //if (notebookObject != null)
+                noteNameTextBox.Text = notebookObject.name;
 
                 //Gets the possible stored conversation transcripts from XML meta
                 SpeechManager.getSharedSpeechManager().setAudioIndex(notebookObject.audioCount);
                 String fName = prefix;
                 this.conversations = new List<TextMessage>();
-                for (int i = 1 ; i <= notebookObject.audioCount; i++) {
+                for (int i = 1; i <= notebookObject.audioCount; i++)
+                {
                     //the audio index starts with 1 instead of 0
                     fName = prefix + i.ToString();
                     List<TextMessage> messages = await FileManager.getSharedFileManager().GetSavedTranscriptsFromXML(notebookId, fName);
@@ -146,9 +140,10 @@ namespace PhenoPad
                         NotifyUser($"Failed to load transcript_{i}, file may be empty.", NotifyType.StatusMessage, 2);
                         MetroLogger.getSharedLogger().Error($"Failed to load transcript_{i}, file may not exist or is empty.");
                     }
-                    else {
+                    else
+                    {
                         MetroLogger.getSharedLogger().Info($"Loaded transcript_{i}.");
-                        this.conversations.AddRange(messages);                       
+                        this.conversations.AddRange(messages);
                     }
                 }
                 pastchatView.ItemsSource = this.conversations;
@@ -167,7 +162,7 @@ namespace PhenoPad
                 for (int i = 0; i < pageIds.Count; ++i)
                 {
                     //load strokes
-                    NotePageControl aPage = new NotePageControl(notebookObject.name,i.ToString());
+                    NotePageControl aPage = new NotePageControl(notebookObject.name, i.ToString());
                     notePages.Add(aPage);
                     aPage.pageId = pageIds[i];
                     aPage.notebookId = notebookId;
@@ -178,12 +173,12 @@ namespace PhenoPad
                     if (imageAndAnno != null)
                         //shows add-in icons into side bar
                         aPage.showAddIn(imageAndAnno);
-                        //loop to add actual add-in to canvas but hides it depending on its inDock value
-                        foreach (var ia in imageAndAnno)
-                        {
-                            aPage.addImageAndAnnotationControl(ia.name, ia.canvasLeft, ia.canvasTop, true, null, ia.transX, ia.transY, ia.transScale, 
-                                width: ia.width, height: ia.height, indock: ia.inDock);
-                        }
+                    //loop to add actual add-in to canvas but hides it depending on its inDock value
+                    foreach (var ia in imageAndAnno)
+                    {
+                        aPage.addImageAndAnnotationControl(ia.name, ia.canvasLeft, ia.canvasTop, true, null, ia.transX, ia.transY, ia.transScale,
+                            width: ia.width, height: ia.height, indock: ia.inDock);
+                    }
                 }
                 //setting initial page to first page and auto-start analyzing strokes
                 inkCanvas = notePages[0].inkCan;
@@ -195,7 +190,19 @@ namespace PhenoPad
                 curPage.initialAnalyze();
                 curPage.Visibility = Visibility.Visible;
             }
-            catch (Exception e) {
+            catch (NullReferenceException)
+            {
+                //NullReferenceException is very likely to happen when things aren't saved properlly
+                NotifyUser("Notebook files are corrupted, creating a new note ...", NotifyType.ErrorMessage, 2);
+                MetroLogger.getSharedLogger().Error("Notebook files are corrupted and cannot be read, will create a new one instead.");
+                //Since something wrong happened with notebook, for sake of cleaness will delete the corrupted directory for now
+                //FUTURE WORK: if wanted, can implement partial load and ignore loading the corrupted part.
+                await FileManager.getSharedFileManager().DeleteNotebookById(notebookId);
+                this.InitializeNotebook();
+                return;
+            }
+            catch (Exception e)
+            {
                 MetroLogger.getSharedLogger().Error($"Failed to Initialize Notebook From Disk:{e}:{e.Message}");
             }
 

@@ -491,7 +491,7 @@ namespace PhenoPad.CustomControl
         #region Hand writting mode 
         // ==================================== Handwriting mode ===================================================/
 
-        private async void InkPresenter_StrokesErased(InkPresenter sender, InkStrokesErasedEventArgs args)
+        private void InkPresenter_StrokesErased(InkPresenter sender, InkStrokesErasedEventArgs args)
         {
             ClearSelectionAsync();
 
@@ -499,10 +499,9 @@ namespace PhenoPad.CustomControl
             //operationDispathcerTimer.Stop();
             foreach (var stroke in args.Strokes)
             {
-                inkAnalyzer.RemoveDataForStroke(stroke.Id);
+                inkAnalyzer.RemoveDataForStroke(stroke.Id);      
             }
             //operationDispathcerTimer.Start();
-            await analyzeInk();
             //dispatcherTimer.Start();
             autosaveDispatcherTimer.Start();
         }
@@ -560,7 +559,7 @@ namespace PhenoPad.CustomControl
                         inkAnalyzer.SetStrokeDataKind(s.Id, InkAnalysisStrokeKind.Writing);
                         //here we need instant call to analyze ink for the specified line input
                         await analyzeInk(s);
-                        //s.Selected = false;
+                      
                     }
                 }                
             }
@@ -1650,7 +1649,8 @@ namespace PhenoPad.CustomControl
             if (result.Status == InkAnalysisStatus.Updated)
             {
                 //first need to clear all previous selections to filter out strokes that don't want to be deleted
-                foreach (InkStroke s in inkCanvas.InkPresenter.StrokeContainer.GetStrokes())
+                //ClearSelectionAsync();
+                foreach (var s in inkCanvas.InkPresenter.StrokeContainer.GetStrokes())
                     s.Selected = false;
                 //Gets all strokes from inkoperationanalyzer
                 var inkdrawingNodes = inkOperationAnalyzer.AnalysisRoot.FindNodes(InkAnalysisNodeKind.InkDrawing);
@@ -1988,9 +1988,9 @@ namespace PhenoPad.CustomControl
         /// </summary>
         private async Task<bool> analyzeInk(InkStroke lastStroke = null)
         {
-            if (lastStroke == null) { 
-                PhenoMana.phenotypesCandidates.Clear();
-            }
+            //if (lastStroke == null) { 
+            //    PhenoMana.phenotypesCandidates.Clear();
+            //}
             dispatcherTimer.Stop();
             Debug.WriteLine("analyzing...");
             if (inkAnalyzer.IsAnalyzing)
