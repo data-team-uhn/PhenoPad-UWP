@@ -60,11 +60,14 @@ namespace PhenoPad
         string prefix = "transcriptions_";
         public List<TextMessage> conversations;
 
+        //=============================================================================================
+
         /// <summary>
         /// Initializes the new notebook and creates a locally saved file for it.
         /// </summary>
         public async void InitializeNotebook()
         {
+            NotifyUser("Creating Notebook...",NotifyType.StatusMessage,3);
             MetroLogger.getSharedLogger().Info("Initialize a new notebook.");
             PhenoMana.clearCache();
 
@@ -90,9 +93,6 @@ namespace PhenoPad
             inkCanvas = aPage.inkCan;
             MainPageInkBar.TargetInkCanvas = inkCanvas;
             curPage = aPage;
-            // var screenSize = HelperFunctions.GetCurrentDisplaySize();
-            //aPage.Height = screenSize.Height;
-            //aPage.Width = screenSize.Width;
             curPageIndex = 0;
             PageHost.Content = curPage;
             addNoteIndex(curPageIndex);
@@ -100,6 +100,7 @@ namespace PhenoPad
 
             currentMode = WritingMode;
             modeTextBlock.Text = WritingMode;
+            //by default uses internal microphone
             SurfaceMicRadioButton_Checked(null, null);
             // create file sturcture for this page
             await FileManager.getSharedFileManager().CreateNotePage(notebookObject, curPageIndex.ToString());
@@ -111,20 +112,29 @@ namespace PhenoPad
         /// </summary>
         public async void InitializeNotebookFromDisk()
         {
-            MetroLogger.getSharedLogger().Info("Open notebook from disk.");
+            NotifyUser("Loading Notebook ...", NotifyType.StatusMessage, 3);
+            MetroLogger.getSharedLogger().Info("Initializing notebook from disk ...");
             PhenoMana.clearCache();
             try
             {
-                //Gets all stored pages from the notebook.
+                //Gets all stored pages and notebook object from the disk
                 List<string> pageIds = await FileManager.getSharedFileManager().GetPageIdsByNotebook(notebookId);
+                if (pageIds == null || pageIds.Count == 0)
+                {
+                    NotifyUser("Notebook file corrupted, creating a new note ...", NotifyType.ErrorMessage, 2);
+                    //Since something wrong happened with notebook, for sake of cleaness will delete the corrupted file
+                    await FileManager.getSharedFileManager().DeleteNotebookById(notebookId);
+                    this.InitializeNotebook();
+                    return;
+                }
+                //If notebook file exists, continues with loading...
                 notebookObject = await FileManager.getSharedFileManager().GetNotebookObjectFromXML(notebookId);
                 SurfaceMicRadioButton_Checked(null,null);
                 if (notebookObject != null)
                     noteNameTextBox.Text = notebookObject.name;
 
-                //Gets the possible stored conversation transcripts from disk
+                //Gets the possible stored conversation transcripts from XML meta
                 SpeechManager.getSharedSpeechManager().setAudioIndex(notebookObject.audioCount);
-                Debug.WriteLine($"audio count = {notebookObject.audioCount}");
                 String fName = prefix;
                 this.conversations = new List<TextMessage>();
                 for (int i = 1 ; i <= notebookObject.audioCount; i++) {
@@ -134,29 +144,20 @@ namespace PhenoPad
                     if (messages == null)
                     {
                         NotifyUser($"Failed to load transcript_{i}, file may be empty.", NotifyType.StatusMessage, 2);
-                        MetroLogger.getSharedLogger().Error($"Failed to load transcript_{i}, file may not exist.");
+                        MetroLogger.getSharedLogger().Error($"Failed to load transcript_{i}, file may not exist or is empty.");
                     }
                     else {
-                        Debug.WriteLine("successfully loaded transcripts.\n");
+                        MetroLogger.getSharedLogger().Info($"Loaded transcript_{i}.");
                         this.conversations.AddRange(messages);                       
                     }
                 }
                 pastchatView.ItemsSource = this.conversations;
 
-
+                //Gets all saved phenotypes from XML meta
                 List<Phenotype> phenos = await FileManager.getSharedFileManager().GetSavedPhenotypeObjectsFromXML(notebookId);
                 if (phenos != null && phenos.Count > 0)
                 {
                     PhenotypeManager.getSharedPhenotypeManager().addPhenotypesFromFile(phenos);
-                }
-
-
-
-                if (pageIds == null || pageIds.Count == 0)
-                {
-                    NotifyUser("Did not find anything in this notebook, will create a new one.", NotifyType.ErrorMessage, 2);
-                    this.InitializeNotebook();
-
                 }
 
                 // Process loading note pages one by one
@@ -165,60 +166,61 @@ namespace PhenoPad
 
                 for (int i = 0; i < pageIds.Count; ++i)
                 {
+                    //load strokes
                     NotePageControl aPage = new NotePageControl(notebookObject.name,i.ToString());
                     notePages.Add(aPage);
                     aPage.pageId = pageIds[i];
                     aPage.notebookId = notebookId;
                     await FileManager.getSharedFileManager().LoadNotePageStroke(notebookId, pageIds[i], aPage);
                     addNoteIndex(i);
-
+                    //load image/drawing addins
                     List<ImageAndAnnotation> imageAndAnno = await FileManager.getSharedFileManager().GetImgageAndAnnotationObjectFromXML(notebookId, pageIds[i]);
                     if (imageAndAnno != null)
+                        //shows add-in icons into side bar
                         aPage.showAddIn(imageAndAnno);
+                        //loop to add actual add-in to canvas but hides it depending on its inDock value
                         foreach (var ia in imageAndAnno)
                         {
                             aPage.addImageAndAnnotationControl(ia.name, ia.canvasLeft, ia.canvasTop, true, null, ia.transX, ia.transY, ia.transScale, 
                                 width: ia.width, height: ia.height, indock: ia.inDock);
-
                         }
                 }
-
+                //setting initial page to first page and auto-start analyzing strokes
                 inkCanvas = notePages[0].inkCan;
                 MainPageInkBar.TargetInkCanvas = inkCanvas;
                 curPage = notePages[0];
                 curPageIndex = 0;
                 PageHost.Content = curPage;
                 setNotePageIndex(curPageIndex);
-
                 curPage.initialAnalyze();
                 curPage.Visibility = Visibility.Visible;
             }
             catch (Exception e) {
-                MetroLogger.getSharedLogger().Error($"Failed to Initialize Notebook From Disk:{e.Message}");
+                MetroLogger.getSharedLogger().Error($"Failed to Initialize Notebook From Disk:{e}:{e.Message}");
             }
 
         }
 
-        /// <summary>
-        /// Saves the Notebook to disk after a specified time in seconds.
-        /// </summary>
-        private void saveNotesTimer(int seconds)
-        {
-            TimeSpan period = TimeSpan.FromSeconds(seconds);
+        ///// <summary>
+        ///// Saves the Notebook to disk after a specified time in seconds.
+        ///// </summary>
+        //private void saveNotesTimer(int seconds)
+        //{
+        //    TimeSpan period = TimeSpan.FromSeconds(seconds);
 
-            ThreadPoolTimer PeriodicTimer = ThreadPoolTimer.CreatePeriodicTimer(async (source) =>
-            {
-                try
-                {
-                    LogService.MetroLogger.getSharedLogger().Info("Timer tick, auto-saving everything...");
-                    await this.saveNoteToDisk();
-                }
-                catch (Exception e)
-                {
-                    Debug.WriteLine(e.Message);
-                }
-            }, period);
-        }
+        //    ThreadPoolTimer PeriodicTimer = ThreadPoolTimer.CreatePeriodicTimer(async (source) =>
+        //    {
+        //        try
+        //        {
+        //            LogService.MetroLogger.getSharedLogger().Info("Timer tick, auto-saving everything...");
+        //            await this.saveNoteToDisk();
+        //        }
+        //        catch (Exception e)
+        //        {
+        //            Debug.WriteLine(e.Message);
+        //        }
+        //    }, period);
+        //}
 
         /// <summary>
         /// Save everything to disk, include: 
@@ -228,58 +230,46 @@ namespace PhenoPad
         {
             //locks semaphore before accessing
             await savingSemaphoreSlim.WaitAsync();
+            bool pgResult = true;
+            bool flag = false;
+            bool result2 = false;
             try
             {
-                MetroLogger.getSharedLogger().Info($"Saving notebook {notebookId} to disk...");
-
-                //MetroLogger.getSharedLogger().Info($"Saving audio");
-                //// save audio count
-                //{
-                //    if (notebookObject != null)
-                //    {
-                //        notebookObject.audioCount = SpeechManager.getSharedSpeechManager().getAudioCount();
-                //        await FileManager.getSharedFileManager().SaveToMetaFile(notebookObject);
-                //    }
-
-                //    // save audio transcriptions
-                //    await SpeechManager.getSharedSpeechManager().SaveTranscriptions();
-                //}
-
-
+                MetroLogger.getSharedLogger().Info($"Saving notebook {notebookId} ...");
                 // save note pages one by one
-                bool pgResult = true;
-                bool flag = false;
-
                 foreach (var page in notePages)
                 {
                     await CoreApplication.MainView.CoreWindow.Dispatcher.RunAsync(
                         CoreDispatcherPriority.Normal,
                         async () =>
                         {
-                            MetroLogger.getSharedLogger().Info($"Saving page {page.pageId}");
+                            MetroLogger.getSharedLogger().Info($"Saving page {page.pageId} ...");
                             flag = await page.SaveToDisk();
                             if (!flag)
                             {
                                 MetroLogger.getSharedLogger().Error($"Page {page.pageId} failed to save.");
                                 pgResult = false;
                             }
-
                         }
                     );
                 }
-
-                MetroLogger.getSharedLogger().Info($"Saving phenotypes");
+                MetroLogger.getSharedLogger().Info($"Saving phenotypes ...");
                 // collected phenotypes
-                bool result2 = await FileManager.getSharedFileManager().saveCollectedPhenotypesToFile(notebookId);
+                result2 = await FileManager.getSharedFileManager().saveCollectedPhenotypesToFile(notebookId);
+                if (!result2)
+                    MetroLogger.getSharedLogger().Error($"Failed to save collected phenotypes");
 
-                MetroLogger.getSharedLogger().Info($"Successfully saved notebook {notebookId} to disk.");
-                return pgResult && result2;
+                if (pgResult && result2) {
+                    MetroLogger.getSharedLogger().Info($"Successfully saved notebook {notebookId} to disk.");
+                }
+                else
+                    MetroLogger.getSharedLogger().Info($"Some parts of notebook {notebookId} failed to save.");
+                
             }
             catch (NullReferenceException)
             {
                 //This exception may be encountered when attemping to click close during main page and there's no
-                //valid notebook id provided.
-                MetroLogger.getSharedLogger().Info("No notes to save.");
+                //valid notebook id provided. Technically nothing needs to be done here              
             }
             catch (Exception ex)
             {
@@ -288,9 +278,9 @@ namespace PhenoPad
             finally
             {
                 //unlcoks semaphore 
-                savingSemaphoreSlim.Release();
+                savingSemaphoreSlim.Release();               
             }
-            return false;
+            return pgResult && result2;
         }
 
         /// <summary>
@@ -417,7 +407,7 @@ namespace PhenoPad
                 using (var inputStream = stream.GetInputStreamAt(0))
                 {
                     await inkCanvas.InkPresenter.StrokeContainer.LoadAsync(inputStream);
-                    await curPage.StartAnalysisAfterLoad();
+                    curPage.initialAnalyze();
                     stream.Dispose();
                     return true;
                 }
@@ -533,11 +523,16 @@ namespace PhenoPad
             }
         }
 
+        /// <summary>
+        /// Saves the current audio metadata to disk
+        /// </summary>
         public async void updateAudioMeta() {
             notebookObject.audioCount = SpeechManager.getSharedSpeechManager().getAudioCount();
             await FileManager.getSharedFileManager().SaveToMetaFile(notebookObject);
         }
-
+        /// <summary>
+        /// Gets saved transcripts from disk and updates the past conversations panel
+        /// </summary>
         public async void updatePastConversation() {
             int count = notebookObject.audioCount;
             //Debug.WriteLine($"audio count = {notebookObject.audioCount}");
@@ -547,7 +542,6 @@ namespace PhenoPad
             {          
                 //the audio index starts with 1 instead of 0
                 fName = prefix + i.ToString();
-                Debug.WriteLine($"fetching audio {fName}");
                 List<TextMessage> messages = await FileManager.getSharedFileManager().GetSavedTranscriptsFromXML(this.notebookId, fName);
                 if (messages == null)
                 {
@@ -556,13 +550,11 @@ namespace PhenoPad
                 }
                 else
                 {
-                    Debug.WriteLine("successfully loaded transcripts.\n");
+                    MetroLogger.getSharedLogger().Error($"Loaded transcript_{i}.");
                     this.conversations.AddRange(messages);
                 }
             }
             pastchatView.ItemsSource = this.conversations;
         }
-
-
     }
 }

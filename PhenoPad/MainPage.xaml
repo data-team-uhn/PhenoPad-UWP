@@ -711,7 +711,7 @@
                         </Grid.RowDefinitions>
 
                         <Grid Name="OpenCandidatePanelButtonGrid" Grid.Column="0">
-                            <ToggleButton HorizontalAlignment="Center" Background="Transparent" Style="{StaticResource MyToggleButtonStyle}" IsChecked="False" 
+                            <ToggleButton HorizontalAlignment="Center" Background="Transparent" Style="{StaticResource MyToggleButtonStyle}" IsChecked="false" 
                                           VerticalAlignment="Center"  Name="OpenCandidatePanelButton" Click="OpenCandidate_Click" Height="40">
                                 <Grid>
                                     <FontIcon Visibility="Collapsed" Name="OpenCandidatePanelButtonIcon" Foreground="Gold" FontWeight="ExtraBlack"  FontFamily="Segoe MDL2 Assets" Glyph="&#xE82F;"/>

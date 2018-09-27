@@ -173,17 +173,18 @@ namespace PhenoPad.CustomControl
             {
                 //NameGrid.Background = Application.Current.Resources["Button_Background"] as SolidColorBrush;
                 //phenotypeNameTextBlock.Foreground = Application.Current.Resources["WORD_DARK"] as SolidColorBrush;
-                phenotypeNameTextBlock.Foreground = new SolidColorBrush(Colors.Black);
+                //phenotypeNameTextBlock.Foreground = new SolidColorBrush(Colors.Black);
+                phenotypeNameTextBlock.Foreground = new SolidColorBrush(Colors.White);
                 phenotypeNameTextBlock.Text = phenotypeName;
-                NameGrid.Background = new SolidColorBrush(Colors.LightGreen);
+                NameGrid.Background = new SolidColorBrush(Colors.CornflowerBlue);
                 //NameCrossLine.Visibility = Visibility.Collapsed;
             }
             //user selects the phenotype as N
             else
             {
                 //NameGrid.Background = new SolidColorBrush(Colors.LightCoral);
-                phenotypeNameTextBlock.Foreground = new SolidColorBrush(Colors.Black);
-                NameGrid.Background = new SolidColorBrush(Colors.LightCoral);
+                phenotypeNameTextBlock.Foreground = new SolidColorBrush(Colors.White);
+                NameGrid.Background = new SolidColorBrush(Colors.PaleVioletRed);
                 phenotypeNameTextBlock.Text = "No " + phenotypeName;
                 //NameCrossLine.Visibility = Visibility.Visible;
             }

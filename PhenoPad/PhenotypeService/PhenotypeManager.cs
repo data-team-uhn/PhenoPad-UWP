@@ -43,8 +43,8 @@ namespace PhenoPad.PhenotypeService
             phenotypesCandidates = new ObservableCollection<Phenotype>();
             autosavetimer = new DispatcherTimer();
             autosavetimer.Tick += autosaver_tick;
-            //setting autosave phonetype interval to be about 2 seconds
-            autosavetimer.Interval = TimeSpan.FromSeconds(2);
+            //setting autosave phonetype interval to be about 0.1 seconds
+            autosavetimer.Interval = TimeSpan.FromSeconds(0.1);
         }
         public static PhenotypeManager getSharedPhenotypeManager()
         {
@@ -143,10 +143,10 @@ namespace PhenoPad.PhenotypeService
                 else {
                     temp.state = pheno.state;
                 }
-            }
-            
+            }           
+           
             rootPage.OpenCandidate();
-            autosavetimer.Start();
+            //autosavetimer.Start();
             return;
         }
 
@@ -317,7 +317,7 @@ namespace PhenoPad.PhenotypeService
             if (temp != null)
                 temp.state = pheno.state;
 
-            autosavetimer.Start();
+            //autosavetimer.Start();
         }
 
         public void removeByIdAsync(string pid, SourceType type)
@@ -480,9 +480,6 @@ namespace PhenoPad.PhenotypeService
                     phenotypesInSpeech.Insert(ind, pp);
                 
             }
-
-            
-
             updateSuggestionAndDifferential();
         }
 
@@ -547,7 +544,7 @@ namespace PhenoPad.PhenotypeService
         public async Task<Dictionary<string, Phenotype>> annotateByNCRAsync(string str)
         {
             //Create an HTTP client object
-            Windows.Web.Http.HttpClient httpClient = new Windows.Web.Http.HttpClient();
+            HttpClient httpClient = new HttpClient();
 
             //Add a user-agent header to the GET request. 
             var headers = httpClient.DefaultRequestHeaders;

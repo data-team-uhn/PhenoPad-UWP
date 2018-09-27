@@ -496,10 +496,6 @@ namespace PhenoPad.CustomControl
             ClearSelectionAsync();
 
             curLineResultPanel.Visibility = Visibility.Collapsed;
-
-            dispatcherTimer.Stop();
-            autosaveDispatcherTimer.Start();
-
             //operationDispathcerTimer.Stop();
             foreach (var stroke in args.Strokes)
             {
@@ -507,6 +503,8 @@ namespace PhenoPad.CustomControl
             }
             //operationDispathcerTimer.Start();
             await analyzeInk();
+            //dispatcherTimer.Start();
+            autosaveDispatcherTimer.Start();
         }
         //stroke input handling: a stroke input has started
         private void StrokeInput_StrokeStarted(InkStrokeInput sender, PointerEventArgs args)
@@ -533,59 +531,47 @@ namespace PhenoPad.CustomControl
         }
      
         private async void InkPresenter_StrokesCollectedAsync(InkPresenter sender, InkStrokesCollectedEventArgs args)
-        {
+        {          
             if (!leftLasso)
-            {
-                // dispatcherTimer.Stop();
-                operationDispathcerTimer.Stop();
-
-                
+            {//processing strokes inputs
+                //dispatcherTimer.Stop();
+                //operationDispathcerTimer.Stop();
+               
                 foreach (var s in args.Strokes)
                 {
+                    
+                    //Process strokes that excess maximum height for recognition
                     if (s.BoundingRect.Height > MAX_WRITING)
                     {
+                        Debug.WriteLine("this stroke exceeded max_writing.");
                         inkOperationAnalyzer.AddDataForStroke(s);
                         try
                         {
                             await RecognizeInkOperation();
                         }
-                        catch (Exception) { }
+                        catch (Exception e) {
+                            Debug.WriteLine($"InkPresenter_StrokesCollectedAsync in NotePageControl:{e}|{e.Message}");
+                        }
                     }
+                    //Instantly analyze ink inputs
                     else
                     {
                         inkAnalyzer.AddDataForStroke(s);
                         inkAnalyzer.SetStrokeDataKind(s.Id, InkAnalysisStrokeKind.Writing);
+                        //here we need instant call to analyze ink for the specified line input
                         await analyzeInk(s);
+                        //s.Selected = false;
                     }
-                }
-                // recognize by line
-                /**
-                if (lastStroke != null)
-                {
-                    int lineIndex = getLineNumByRect(lastStroke.BoundingRect);
-                    if (lineIndex != lastStrokeLine || linesToAnnotate.Count == 0)
-                    {
-                        linesToAnnotate.Enqueue(lineIndex);
-                        lastStrokeLine = lineIndex;
-                    }
-                }
-                **/
-
-                // start to analyze ink anaylsis on collected strokes.
-                // dispatcherTimer.Start();
-
-                //inkAnalyzer.AddDataForStrokes(args.Strokes);
-                
+                }                
             }
             else
-            {
+            {//processing strokes selected with left mouse lasso strokes
                 leftLossoStroke = args.Strokes;
                 foreach (var s in args.Strokes)
                 {
-                    //inkCanvas.InkPresenter.StrokeContainer.
+                    //TODO: 
                 }
             }
-
         }
 
         // stroke input handling: mouse pointer pressed
@@ -628,7 +614,6 @@ namespace PhenoPad.CustomControl
             if (isBoundRect)
             {
                 lasso.Points.Add(args.CurrentPoint.RawPosition);
-
             }
         }
         // select strokes by "marking" handling: pointer released
@@ -639,36 +624,37 @@ namespace PhenoPad.CustomControl
             //lasso.Points.Add(lasso.Points.ElementAt(0));
             isBoundRect = false;
             RecognizeSelection();
-            /**
-            if (lasso.Points.Count() < 20)
-            {
-                TapAPosition(lasso.Points.ElementAt(0));
-            }
-            else
-            {
-                boundingRect = inkCanvas.InkPresenter.StrokeContainer.SelectWithPolyLine(lasso.Points);
-                if (boundingRect.Equals(new Rect(0, 0, 0, 0)))
-                {
-                    boundingRect = Rect.Empty;
-                    selectionCanvas.Children.Clear();
-                    SelectByUnderLine(new Rect(
-                        new Point(lasso.Points.Min(p => p.X), lasso.Points.Min(p => p.Y)),
-                        new Point(lasso.Points.Max(p => p.X), lasso.Points.Max(p => p.Y))
-                        ));
-                }
-                else
-                {
-                    foreach (var s in inkCanvas.InkPresenter.StrokeContainer.GetStrokes())
-                    {
-                        if(s.Selected == true)
-                            SetSelectedStrokeStyle(s);
-                    }
-                }
-                isBoundRect = false;
-                DrawBoundingRect();
-            }
-            **/
+            ///**
+            //if (lasso.Points.Count() < 20)
+            //{
+            //    TapAPosition(lasso.Points.ElementAt(0));
+            //}
+            //else
+            //{
+            //    boundingRect = inkCanvas.InkPresenter.StrokeContainer.SelectWithPolyLine(lasso.Points);
+            //    if (boundingRect.Equals(new Rect(0, 0, 0, 0)))
+            //    {
+            //        boundingRect = Rect.Empty;
+            //        selectionCanvas.Children.Clear();
+            //        SelectByUnderLine(new Rect(
+            //            new Point(lasso.Points.Min(p => p.X), lasso.Points.Min(p => p.Y)),
+            //            new Point(lasso.Points.Max(p => p.X), lasso.Points.Max(p => p.Y))
+            //            ));
+            //    }
+            //    else
+            //    {
+            //        foreach (var s in inkCanvas.InkPresenter.StrokeContainer.GetStrokes())
+            //        {
+            //            if(s.Selected == true)
+            //                SetSelectedStrokeStyle(s);
+            //        }
+            //    }
+            //    isBoundRect = false;
+            //    DrawBoundingRect();
+            //}
+            //**/
         }
+
         public void SelectByUnderLine(Rect strokeRect)
         {
             var xFrom = strokeRect.Left;
@@ -786,7 +772,7 @@ namespace PhenoPad.CustomControl
                     inkAnalyzer.ReplaceDataForStroke(stroke);
                 }
                     
-            dispatcherTimer.Start();
+            //dispatcherTimer.Start();
         }
 
         private void SelectionRectangle_ManipulationStarted(object sender, ManipulationStartedRoutedEventArgs e)
@@ -936,8 +922,6 @@ namespace PhenoPad.CustomControl
                                                     double transX = 0, double transY = 0, double transScale = 0, double width = -1, double height = -1,
                                                     bool indock = false){
             AddInControl canvasAddIn = new AddInControl(name, notebookId, pageId, width, height);
-            //canvasAddIn.Width = 400; //stroke.BoundingRect.Width;
-            //canvasAddIn.Height = 400;  //stroke.BoundingRect.Height;
             canvasAddIn.canvasLeft = left;
             canvasAddIn.canvasTop = top;
             canvasAddIn.inDock = indock;
@@ -1069,7 +1053,6 @@ namespace PhenoPad.CustomControl
         #endregion
 
 
-
         #region Timer Event Handlers
         //==============================TIMER EVENT HANDLERS ========================================//
 
@@ -1177,6 +1160,7 @@ namespace PhenoPad.CustomControl
         private async void OperationDispatcherTimer_Tick(object sender, object e)
         {
             operationDispathcerTimer.Stop();
+            Debug.WriteLine("operationdispatcher tick was called?????????????????????????");
             if (!inkOperationAnalyzer.IsAnalyzing)
             {
                 var result = await inkOperationAnalyzer.AnalyzeAsync();
@@ -1263,17 +1247,9 @@ namespace PhenoPad.CustomControl
         /// </summary>
         private async void InkAnalysisDispatcherTimer_Tick(object sender, object e)
         {
-            //await deleteSemaphoreSlim.WaitAsync();
-            //try
-            //{
-
             dispatcherTimer.Stop();
+            Debug.WriteLine("ink analysis tick, will analyze ink ...");
             await analyzeInk();
-            //}
-            // finally
-            // {
-            //   deleteSemaphoreSlim.Release();
-            //}
         }
 
         /// <summary>
@@ -1517,7 +1493,8 @@ namespace PhenoPad.CustomControl
                 }
 
                 //recognize selection
-                List<HWRRecognizedText> recognitionResults = await HWRService.HWRManager.getSharedHWRManager().OnRecognizeAsync(inkCanvas.InkPresenter.StrokeContainer, InkRecognitionTarget.Selected);
+                List<HWRRecognizedText> recognitionResults = await HWRManager.getSharedHWRManager().OnRecognizeAsync(inkCanvas.InkPresenter.StrokeContainer, 
+                    InkRecognitionTarget.Selected);
                 return recognitionResults;
             }
             catch (Exception ex)
@@ -1659,64 +1636,46 @@ namespace PhenoPad.CustomControl
             }
         }
 
+
+
+
+        /// <summary>
+        /// Recognize a set of strokes as whether a shape or just drawing and handles each case
+        /// accordingly.
+        /// </summary>
         private async Task<int> RecognizeInkOperation()
         {
             var result = await inkOperationAnalyzer.AnalyzeAsync();
 
             if (result.Status == InkAnalysisStatus.Updated)
             {
+                //first need to clear all previous selections to filter out strokes that don't want to be deleted
+                foreach (InkStroke s in inkCanvas.InkPresenter.StrokeContainer.GetStrokes())
+                    s.Selected = false;
+                //Gets all strokes from inkoperationanalyzer
                 var inkdrawingNodes = inkOperationAnalyzer.AnalysisRoot.FindNodes(InkAnalysisNodeKind.InkDrawing);
                 foreach (InkAnalysisInkDrawing drawNode in inkdrawingNodes)
                 {
+                    //user has drawn a square/rectangle for adding an add-in
                     if (drawNode.DrawingKind == InkAnalysisDrawingKind.Rectangle || drawNode.DrawingKind == InkAnalysisDrawingKind.Square)
                     {
+                        Debug.WriteLine("stroke cinsidered as rec/squ");
                         foreach (var dstroke in drawNode.GetStrokeIds())
                         {
                             var stroke = inkCanvas.InkPresenter.StrokeContainer.GetStrokeById(dstroke);
+                            //adds a new add-in control 
                             addImageAndAnnotationControl(FileManager.getSharedFileManager().CreateUniqueName(),
                                 stroke.BoundingRect.X, stroke.BoundingRect.Y, false,
                                 width: stroke.BoundingRect.Width, height: stroke.BoundingRect.Height);
-                            /**
-                            canvasAddIn.PointerEntered += delegate (object sender, PointerRoutedEventArgs e)
-                            {
-                                canvasAddIn.showControlPanel();
-                            };
-                            canvasAddIn.PointerExited += delegate (object sender, PointerRoutedEventArgs e)
-                            {
-                                canvasAddIn.hideControlPanel();
-                            };
-                            
-                            canvasAddIn.CanDrag = true;
-                            canvasAddIn.ManipulationMode = ManipulationModes.All;
-                            canvasAddIn.ManipulationDelta += delegate (object sdr, ManipulationDeltaRoutedEventArgs args)
-                            {
-                                if (args.Delta.Expansion == 0)
-                                {
-                                    Canvas.SetLeft(canvasAddIn, Canvas.GetLeft(canvasAddIn) + args.Delta.Translation.X);
-                                    Canvas.SetTop(canvasAddIn, Canvas.GetTop(canvasAddIn) + args.Delta.Translation.Y);
-                                }
-                                else
-                                {
-                                    //canvasAddIn.Width += args.Delta.Translation.X * 2;
-                                    //canvasAddIn.Height += args.Delta.Translation.Y * 2;
-                                }
-                            };
-                            **/
                             stroke.Selected = true;
                         }
+                        //dispose the strokes as don't need them anymore
                         inkOperationAnalyzer.RemoveDataForStrokes(drawNode.GetStrokeIds());
                         inkCanvas.InkPresenter.StrokeContainer.DeleteSelected();
-
-
                     }
-                    if (drawNode.DrawingKind == InkAnalysisDrawingKind.Drawing)
-                    { // straight line for annotation
-                      //var lineRect = node.BoundingRect;
-
-                    }
-                    if (drawNode.DrawingKind == InkAnalysisDrawingKind.Ellipse || drawNode.DrawingKind == InkAnalysisDrawingKind.Circle)
-                    {
-                        //Debug.WriteLine("Circle!");
+                    else {
+                        //you need this else statement for debugging reasons...
+                        Debug.WriteLine(drawNode.DrawingKind);
                     }
                 }
                 // delete all strokes that are too large, like drawings
@@ -1728,6 +1687,7 @@ namespace PhenoPad.CustomControl
                     inkOperationAnalyzer.RemoveDataForStroke(sid);
                 }
                 //inkCanvas.InkPresenter.StrokeContainer.DeleteSelected();
+                return 1;
             }
             return -1;
         }
@@ -2006,50 +1966,41 @@ namespace PhenoPad.CustomControl
 
         // =============================== ANALYZE INKS ==============================================//
 
-        public async Task StartAnalysisAfterLoad()
-        {
-            inkAnalyzer.AddDataForStrokes(inkCanvas.InkPresenter.StrokeContainer.GetStrokes());
-            await inkAnalyzer.AnalyzeAsync();
-            /**
-            for (int i = 0; i < (PAGE_HEIGHT / LINE_HEIGHT); ++i) {
-                linesToAnnotate.Enqueue(i);
-            }
-            dispatcherTimer.Start();
-            **/
-            //core.PointerHovering += Core_PointerHovering;
-            //core.PointerExiting += Core_PointerExiting;
-            //core.PointerEntering += Core_PointerHovering;
-        }
-
+        /// <summary>
+        /// Called upon page creation/page switch, will re-analyze everything on the current page and
+        /// change phenotype candidates accordingly.
+        /// </summary>
         public async void initialAnalyze()
         {
-            inkAnalyzer.AddDataForStrokes(inkCanvas.InkPresenter.StrokeContainer.GetStrokes());
-            // dispatcherTimer.Start();
-
+            rootPage.NotifyUser("Analyzing current page ...",NotifyType.StatusMessage,2);
+            Debug.WriteLine("changed page, will analyze strokes");
+            inkAnalyzer = new InkAnalyzer();
+            inkAnalyzer.AddDataForStrokes(inkCan.InkPresenter.StrokeContainer.GetStrokes());
             bool result = false;
             while (!result)
-            {
                 result = await analyzeInk();
-                await Task.Delay(1000);
-            }
+            Debug.WriteLine("done initial analyze, result = " + result);
         }
 
         /// <summary>
-        ///  Analyze ink strokes
+        ///  Analyze ink strokes contained in inkAnalyzer and add phenotype candidates
+        ///  from fetching API
         /// </summary>
-        /// <param name="lastStroke">if this is not null, only focus on current line</param>
-        /// <returns></returns>
         private async Task<bool> analyzeInk(InkStroke lastStroke = null)
         {
-            logger.Info("Trying to analyze ink strokes of current page...");
+            if (lastStroke == null) { 
+                PhenoMana.phenotypesCandidates.Clear();
+            }
+            dispatcherTimer.Stop();
+            Debug.WriteLine("analyzing...");
             if (inkAnalyzer.IsAnalyzing)
             {
+                Debug.WriteLine("already analyzing...");
                 // inkAnalyzer is being used 
                 // try again after some time by dispatcherTimer 
                 dispatcherTimer.Start();
                 return false;
             }
-
             // analyze 
             var result = await inkAnalyzer.AnalyzeAsync();
 
@@ -2081,7 +2032,9 @@ namespace PhenoPad.CustomControl
                             var hwrresult = await RecognizeLine(line.Id);
                             nl.HwrResult = hwrresult;
                             idToNoteLine[line.Id] = nl;
+                            Debug.WriteLine("fetching from API...");
                             Dictionary<string, Phenotype> annoResult = await PhenoMana.annotateByNCRAsync(idToNoteLine.GetValueOrDefault(line.Id).Text);
+                            Debug.WriteLine(annoResult.Count);
                             if (annoResult != null && annoResult.Count != 0)
                             {
                                 int lineNum = getLineNumByRect(line.BoundingRect);
@@ -2112,34 +2065,6 @@ namespace PhenoPad.CustomControl
 
                  
                 }
-
-                // this.textLines[paraLine] = ((InkAnalysisLine)line).RecognizedText;
-                //this.setTextNoteEditBox();
-
-                // remove shown textblocks of that line 
-                /**
-                if (recognizedTextBlocks.Keys.Contains(line.Id))
-                {
-                    foreach (TextBox tb in recognizedTextBlocks[line])
-                    {
-                        recognizedTextCanvas.Children.Remove(tb);
-                    }
-                }
-                recognizedTextBlocks[line] = new List<TextBox>();
-                string str = "";
-                foreach (IInkAnalysisNode child in lineNode.Children)
-                {
-                    if(child.Kind == InkAnalysisNodeKind.InkWord)
-                    {
-                        str += ((InkAnalysisInkWord)child).RecognizedText + " ";
-                        recognizedTextBlocks[line].Add(AddBoundingRectAndLabel(
-                            line, 
-                            child.BoundingRect, 
-                            ((InkAnalysisInkWord)child).RecognizedText,
-                            new List<String>(((InkAnalysisInkWord)child).TextAlternates))
-                        );
-                    }
-                }**/
                 return true;
             }
             return false;
