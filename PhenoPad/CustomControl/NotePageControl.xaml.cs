@@ -934,6 +934,8 @@ namespace PhenoPad.CustomControl
             if (wb != null)
                 canvasAddIn.InitializeFromImage(wb);
 
+            AddInPreview icon = new AddInPreview(canvasAddIn);
+
             //If this addin was hidden during the last edit, auto hides it from initialization
             canvasAddIn.Visibility = indock ? Visibility.Collapsed : Visibility.Visible;
         }
@@ -1050,7 +1052,6 @@ namespace PhenoPad.CustomControl
         }
 
         #endregion
-
 
         #region Timer Event Handlers
         //==============================TIMER EVENT HANDLERS ========================================//
@@ -1460,6 +1461,7 @@ namespace PhenoPad.CustomControl
 
         #endregion
 
+        #region ink recognition
         // ============================== INK RECOGNITION ==============================================//
 
 
@@ -1634,9 +1636,6 @@ namespace PhenoPad.CustomControl
                 searchPhenotypes(str);
             }
         }
-
-
-
 
         /// <summary>
         /// Recognize a set of strokes as whether a shape or just drawing and handles each case
@@ -1964,6 +1963,9 @@ namespace PhenoPad.CustomControl
             //recognitionCanvas.Children.Add(polygon);
         }
 
+        #endregion
+
+        #region ink analyzing
         // =============================== ANALYZE INKS ==============================================//
 
         /// <summary>
@@ -2417,14 +2419,9 @@ namespace PhenoPad.CustomControl
 
         }
 
-        /**
-        private void HoverPhenoPopupText_Tapped(object sender, TappedRoutedEventArgs e)
-        {
-            phenotypesOfLines[hoveringLine].ElementAt(0).state = 1;
-            PhenotypeManager.getSharedPhenotypeManager().addPhenotype(phenotypesOfLines[hoveringLine].ElementAt(0), SourceType.Notes);
-            HoverPhenoPanel.BorderThickness = new Thickness(2);
-        }**/
+        #endregion
 
+        #region ink canvas interaction event handlers
 
         // ======================== INK CANVAS INTERACTION EVENT HANDLERS ====================================//
 
@@ -2816,8 +2813,7 @@ namespace PhenoPad.CustomControl
             textNoteDispatcherTimer.Stop();
             textNoteDispatcherTimer.Start();
         }
-
-
+        #endregion
 
         #region for test only
         // FOR TESTING ONLY
@@ -2925,7 +2921,7 @@ namespace PhenoPad.CustomControl
                         ****/
 
         }
-        #endregion
+       
 
 
         private void curLineResultButtonClick(object sender, RoutedEventArgs e)
@@ -3001,7 +2997,15 @@ namespace PhenoPad.CustomControl
                 // annotation and UI
                 annotateCurrentLineAndUpdateUI(curLineObject);
             }
+        #endregion
 
+        /**
+        private void HoverPhenoPopupText_Tapped(object sender, TappedRoutedEventArgs e)
+        {
+            phenotypesOfLines[hoveringLine].ElementAt(0).state = 1;
+            PhenotypeManager.getSharedPhenotypeManager().addPhenotype(phenotypesOfLines[hoveringLine].ElementAt(0), SourceType.Notes);
+            HoverPhenoPanel.BorderThickness = new Thickness(2);
+        }**/
 
 
     }

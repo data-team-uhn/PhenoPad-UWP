@@ -75,6 +75,7 @@ namespace PhenoPad.CustomControl
         public double canvasTop;
 
         public bool inDock;
+        public bool hasImage;
 
         private MainPage rootPage;
 
@@ -682,7 +683,10 @@ namespace PhenoPad.CustomControl
                     }
                     stream.Dispose();
                     scrollViewer.ZoomMode = ZoomMode.Disabled;
+                    this.hasImage = true;
                 }
+                else
+                    this.hasImage = false;
            
                 InitiateInkCanvas(onlyView);
 

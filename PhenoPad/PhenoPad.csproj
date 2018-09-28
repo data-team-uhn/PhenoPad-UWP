@@ -121,6 +121,9 @@
     <Compile Include="CustomControl\AddInControl.xaml.cs">
       <DependentUpon>AddInControl.xaml</DependentUpon>
     </Compile>
+    <Compile Include="CustomControl\AddInPreview.xaml.cs">
+      <DependentUpon>AddInPreview.xaml</DependentUpon>
+    </Compile>
     <Compile Include="CustomControl\DiseaseControl.xaml.cs">
       <DependentUpon>DiseaseControl.xaml</DependentUpon>
     </Compile>
@@ -232,6 +235,10 @@
       <SubType>Designer</SubType>
     </Page>
     <Page Include="CustomControl\AddInControl.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="CustomControl\AddInPreview.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
