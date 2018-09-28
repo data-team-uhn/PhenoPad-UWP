@@ -365,30 +365,21 @@
               >
             <!--<TextBlock VerticalAlignment="Top" Grid.Row="0" HorizontalAlignment="Right"                     
                        FontSize="30" Foreground="Black" Margin="20 10 20 10">Add-in Box</TextBlock>-->
-            <ListView Name="addinlist" ScrollViewer.VerticalScrollBarVisibility="Hidden">
-                <ListView.ItemTemplate>
+            <GridView Name="addinlist" ScrollViewer.VerticalScrollBarVisibility="Hidden">
+                <GridView.ItemTemplate>
                     <DataTemplate x:DataType="fileservice:ImageAndAnnotation">
                         <Button Click="addInIcon_Click">
-                            <!--<customcontrol:AddInControl name="{x:Bind name}" notebookId="{x:Bind notebookId}" 
-                                                        viewOnly="True" pageId="{x:Bind pageId}" />-->
-                            <customcontrol:AddInPreview />
+                            <customcontrol:AddInControl name="{x:Bind name}" notebookId="{x:Bind notebookId}" 
+                                                        viewOnly="True" pageId="{x:Bind pageId}">
+                                <customcontrol:AddInControl.RenderTransform>
+                                    <ScaleTransform ScaleX="200" ScaleY="200" />
+                                </customcontrol:AddInControl.RenderTransform>
+                            </customcontrol:AddInControl>
+                                <!--<customcontrol:AddInPreview />-->
                         </Button>
                     </DataTemplate>
-                </ListView.ItemTemplate>
-                <ListView.ItemContainerStyle>
-                    <Style TargetType="ListViewItem">
-                        <Setter Property="Padding" Value="0"/>
-                        <Setter Property="Margin" Value="10"/>
-                        <!--<Setter Property="Template">
-                            <Setter.Value>
-                                <ControlTemplate>
-                                    <ContentPresenter/>
-                                </ControlTemplate>
-                            </Setter.Value>
-                        </Setter>-->
-                    </Style>
-                </ListView.ItemContainerStyle>
-            </ListView>
+                </GridView.ItemTemplate>
+            </GridView>
         </Grid>
         
         <Button Grid.Column="0" Grid.ColumnSpan="2" VerticalAlignment="Top" 

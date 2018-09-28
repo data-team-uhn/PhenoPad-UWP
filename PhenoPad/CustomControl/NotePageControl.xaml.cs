@@ -934,7 +934,7 @@ namespace PhenoPad.CustomControl
             if (wb != null)
                 canvasAddIn.InitializeFromImage(wb);
 
-            AddInPreview icon = new AddInPreview(canvasAddIn);
+            //AddInPreview icon = new AddInPreview(canvasAddIn);
 
             //If this addin was hidden during the last edit, auto hides it from initialization
             canvasAddIn.Visibility = indock ? Visibility.Collapsed : Visibility.Visible;
