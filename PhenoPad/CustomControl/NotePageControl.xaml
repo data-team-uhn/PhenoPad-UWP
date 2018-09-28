@@ -369,8 +369,13 @@
                 <ListView.ItemTemplate>
                     <DataTemplate x:DataType="fileservice:ImageAndAnnotation">
                         <Button Click="addInIcon_Click">
-                            <customcontrol:AddInControl name="{x:Bind name}" notebookId="{x:Bind notebookId}" 
-                                                        viewOnly="True" pageId="{x:Bind pageId}" />
+                            <!--<customcontrol:AddInControl name="{x:Bind name}" notebookId="{x:Bind notebookId}" 
+                                                        viewOnly="True" pageId="{x:Bind pageId}" />-->
+                            <Grid Name="{x:Bind name}">
+                                <InkCanvas x:Name="previewCanvas" />
+                                <Image x:Name="photo"/>
+                            </Grid>
+
                         </Button>
                     </DataTemplate>
                 </ListView.ItemTemplate>

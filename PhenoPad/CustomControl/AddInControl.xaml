@@ -31,15 +31,18 @@
         </Grid.RowDefinitions>
 
         <Grid Name="contentGrid" Grid.Row="2">
-            <!-- The canvas where we render the replacement text and shapes. -->
-            <!--
-            <Canvas x:Name="recognitionCanvas" />
-            -->
-            <!-- The canvas for ink input. -->
-            <!--
-            <InkCanvas x:Name="inkCanvas" />
-            -->
+            <!--<local:AddInImageControl Canvas.ZIndex="1" Visibility="Collapsed" x:Name="imageControl"/>-->
+            <ScrollViewer Canvas.ZIndex="2" Grid.Row="2" x:Name="scrollViewer" Visibility="Collapsed" ZoomMode="Enabled" 
+                              MinZoomFactor="1" VerticalScrollMode="Enabled" 
+                              VerticalScrollBarVisibility="Auto" 
+                              HorizontalScrollMode="Enabled" 
+                              HorizontalScrollBarVisibility="Auto">
+                <Grid x:Name="scrollGrid">
+                    <InkCanvas Visibility="Collapsed" x:Name="inkCanvas" />
+                </Grid>
+            </ScrollViewer>
         </Grid>
+
         <Grid Name="categoryGrid"  Grid.Row="2">
 
             <StackPanel Name="SelectionStackPanel"  Width="200"  HorizontalAlignment="Center" VerticalAlignment="Center">
@@ -85,12 +88,7 @@
             <photovideoservice:PhotoVideoCaptureControl x:Name="captureControl"></photovideoservice:PhotoVideoCaptureControl>
         </Grid>
         
-        <ScrollViewer  Grid.Row="2" x:Name="scrollViewer" Visibility="Collapsed" ZoomMode="Enabled" MinZoomFactor="1" VerticalScrollMode="Enabled" VerticalScrollBarVisibility="Auto" HorizontalScrollMode="Enabled" HorizontalScrollBarVisibility="Auto">
-            <Grid x:Name="scrollGrid">
-                <InkCanvas Grid.Row="2" Visibility="Collapsed" x:Name="inkCanvas" />
-                <local:AddInImageControl Grid.Row="2" Visibility="Collapsed" x:Name="imageControl"/>
-            </Grid>
-        </ScrollViewer>
+
 
         <Grid Grid.Row="1" Grid.RowSpan="2" Background="White" Opacity="0.5"  Visibility="Collapsed" Name="MovingGrid" >
         </Grid>

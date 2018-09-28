@@ -84,6 +84,9 @@ namespace PhenoPad.CustomControl
         public TranslateTransform dragTransform;
         public double scale;
 
+        Image snapshot;
+        public bool hasImage;
+
 
         
         public double transX
@@ -410,13 +413,16 @@ namespace PhenoPad.CustomControl
 
         private void Manipulator_OnManipulationDelta(object sender, ManipulationDeltaRoutedEventArgs e)
         {
-            if (_isResizing)
-                ResizePanel(e,this.resizeDir);
+            if (_isResizing) {
+                ResizePanel(e, this.resizeDir);
+            }
+                
             else if (_isMoving)
             {
                 this.dragTransform.X += e.Delta.Translation.X;
                 this.dragTransform.Y += e.Delta.Translation.Y;           
             }
+
         }
 
         private async void Manipulator_OnManipulationCompleted(object sender, ManipulationCompletedRoutedEventArgs e) {
@@ -494,7 +500,7 @@ namespace PhenoPad.CustomControl
         {
             this.CameraCanvas.Visibility = Visibility.Visible;
             captureControl.setUp();
-            this.imageControl.deleteAsHide();
+            //this.imageControl.deleteAsHide();
             PhotoButton.Visibility = Visibility.Visible;
         }
 
@@ -597,6 +603,11 @@ namespace PhenoPad.CustomControl
         private void InitiateInkCanvas(bool onlyView = false)
         {
             isInitialized = true;
+            if (hasImage) {
+                scrollViewer.VerticalScrollMode = ScrollMode.Disabled;
+                scrollViewer.HorizontalScrollMode = ScrollMode.Disabled;
+                scrollViewer.ZoomMode = ZoomMode.Disabled;
+            }
             
             //this.ControlStackPanel.Visibility = Visibility.Visible;
             //contentGrid.Children.Add(inkCanvas);
@@ -620,8 +631,7 @@ namespace PhenoPad.CustomControl
                 inkToolbar.Visibility = Visibility.Visible;
             }
             else // only for viewing on page overview page
-            {
-                
+            {               
                 inkCanvas.InkPresenter.InputDeviceTypes =
                     Windows.UI.Core.CoreInputDeviceTypes.None;
             }
@@ -662,26 +672,17 @@ namespace PhenoPad.CustomControl
 
                 if (file != null)
                 {
-                    // Open a file stream for reading.
-                    IRandomAccessStream stream = await file.OpenAsync(Windows.Storage.FileAccessMode.Read);
-                    // Read from file.
-                    using (var inputStream = stream.GetInputStreamAt(0))
-                    {
-                        BitmapDecoder decoder = await BitmapDecoder.CreateAsync(stream);
-                        SoftwareBitmap softwareBitmap = await decoder.GetSoftwareBitmapAsync();
-                        SoftwareBitmap softwareBitmapBGR8 = SoftwareBitmap.Convert(softwareBitmap,
-                        BitmapPixelFormat.Bgra8,
-                        BitmapAlphaMode.Premultiplied);
-                        SoftwareBitmapSource bitmapSource = new SoftwareBitmapSource();
-                        await bitmapSource.SetBitmapAsync(softwareBitmapBGR8);
-                        Image imageControl = new Image();
-                        imageControl.Source = bitmapSource;
-                        contentGrid.Children.Add(imageControl);
-                        categoryGrid.Visibility = Visibility.Collapsed;
+                    BitmapImage img = new BitmapImage(new Uri(file.Path));
 
-                    }
-                    stream.Dispose();
-                    scrollViewer.ZoomMode = ZoomMode.Disabled;
+                    Debug.WriteLine(img.DecodePixelHeight);
+                    Debug.WriteLine(img.DecodePixelWidth);
+
+                    Image photo = new Image();
+                    photo.Source = img;
+                    photo.Visibility = Visibility.Visible;
+                    contentGrid.Children.Add(photo);
+                    categoryGrid.Visibility = Visibility.Collapsed;
+                    this.hasImage = true;
                 }
            
                 InitiateInkCanvas(onlyView);
@@ -788,5 +789,10 @@ namespace PhenoPad.CustomControl
         }
         #endregion
 
+        public void UpdateSnapShot() {
+
+        }
+
     }
+
 }
