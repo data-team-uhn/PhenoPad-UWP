@@ -1,47 +1,9 @@
-﻿using PhenoPad.PhenotypeService;
-using System;
+﻿using System;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using System.IO;
 using System.Linq;
-using System.Runtime.InteropServices.WindowsRuntime;
-using Windows.Foundation;
-using Windows.Foundation.Collections;
-using Windows.UI.Core;
-using Windows.UI.Input.Inking;
-using Windows.UI.Input.Inking.Analysis;
-using Windows.UI.Xaml;
-using Windows.UI.Xaml.Controls;
-using Windows.UI.Xaml.Controls.Primitives;
-using Windows.UI.Xaml.Data;
-using Windows.UI.Xaml.Input;
-using Windows.UI.Xaml.Media;
-using Windows.UI.Xaml.Navigation;
-using Windows.UI.Xaml.Shapes;
-using PhenoPad.HWRService;
-using PhenoPad.Styles;
-using Windows.UI.Input.Inking.Core;
-using System.Diagnostics;
+using System.Text;
 using System.Threading.Tasks;
-using Windows.UI;
-using Windows.Media.Capture;
-using Windows.Storage;
-using Windows.Storage.Streams;
-using Windows.Graphics.Imaging;
-using Windows.UI.Xaml.Media.Imaging;
-using PhenoPad.PhotoVideoService;
-using Windows.UI.Notifications;
-using Windows.ApplicationModel.Core;
-using System.Threading;
-using System.Collections;
-using Windows.UI.Xaml.Documents;
-using Windows.UI.Text;
-using PhenoPad.FileService;
-using System.Numerics;
-using Windows.UI.Xaml.Hosting;
-using Windows.Graphics.Display;
-using PhenoPad.LogService;
-using MetroLog;
+using Windows.UI.Xaml;
 
 namespace PhenoPad.FileService
 {
@@ -62,7 +24,6 @@ namespace PhenoPad.FileService
         public double width { get; set; }
         public double height { get; set; }
         public bool inDock { get; set; }
-        public InkCanvas canvas;
 
 
         /// <summary>
