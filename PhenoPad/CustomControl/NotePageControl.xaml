@@ -359,23 +359,41 @@
             </Grid>
         </ScrollViewer>
 
-        <Grid x:Name="addinBase" x:FieldModifier="public" Grid.Column="0" Grid.ColumnSpan="2" Visibility="Collapsed"
-              Background="WhiteSmoke" Width="400" HorizontalAlignment="Left">
-            <TextBlock VerticalAlignment="Top" Grid.Row="0" HorizontalAlignment="Right"                     
-                       FontSize="30" Foreground="Black" Margin="20 10 20 10">Add-in Box</TextBlock>
-            <GridView Name="addinlist" Margin="10 70 10 10">
-                <GridView.ItemTemplate>
+        <Grid x:Name="addinBase" x:FieldModifier="public" Grid.Column="0" Grid.ColumnSpan="2" 
+              Visibility="Collapsed"
+              Background="{StaticResource TITLE_BAR_WHITE}" Width="300" HorizontalAlignment="Left"
+              >
+            <!--<TextBlock VerticalAlignment="Top" Grid.Row="0" HorizontalAlignment="Right"                     
+                       FontSize="30" Foreground="Black" Margin="20 10 20 10">Add-in Box</TextBlock>-->
+            <ListView Name="addinlist" ScrollViewer.VerticalScrollBarVisibility="Hidden">
+                <ListView.ItemTemplate>
                     <DataTemplate x:DataType="fileservice:ImageAndAnnotation">
                         <Button Click="addInIcon_Click">
-                            <customcontrol:AddInControl name="{x:Bind name}" notebookId="{x:Bind notebookId}" viewOnly="True" pageId="{x:Bind pageId}"></customcontrol:AddInControl>
+                            <customcontrol:AddInControl name="{x:Bind name}" notebookId="{x:Bind notebookId}" 
+                                                        viewOnly="True" pageId="{x:Bind pageId}" />
                         </Button>
                     </DataTemplate>
-                </GridView.ItemTemplate>
-            </GridView>
+                </ListView.ItemTemplate>
+                <ListView.ItemContainerStyle>
+                    <Style TargetType="ListViewItem">
+                        <Setter Property="Padding" Value="0"/>
+                        <Setter Property="Margin" Value="10"/>
+                        <!--<Setter Property="Template">
+                            <Setter.Value>
+                                <ControlTemplate>
+                                    <ContentPresenter/>
+                                </ControlTemplate>
+                            </Setter.Value>
+                        </Setter>-->
+                    </Style>
+                </ListView.ItemContainerStyle>
+            </ListView>
         </Grid>
+        
         <Button Grid.Column="0" Grid.ColumnSpan="2" VerticalAlignment="Top" 
+                HorizontalAlignment="Right"
                 Style="{StaticResource ButtonStyle1}"
-                Margin="10 10 10 10" ToolTipService.ToolTip="Toggle Add-In Box"
+                Margin="15 15 25 10" ToolTipService.ToolTip="Toggle Add-In Box"
                 Click="AddinsButton_Click">
                 <SymbolIcon Symbol="Pictures"/>
         </Button>
