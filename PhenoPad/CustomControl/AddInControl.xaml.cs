@@ -567,10 +567,23 @@ namespace PhenoPad.CustomControl
                    pageId, name);
                 if (imageSource != null)
                 {
+                    var file = await FileManager.getSharedFileManager().GetNoteFileNotCreate(notebookId, pageId, NoteFileType.Image, name);
                     //MainPage.Current.curPage.AddImageControl(imagename, imageSource);
                     Image imageControl = new Image();
+                    BitmapImage rawphoto = new BitmapImage(new Uri(imageSource));
+
+                    //setting the photo width to be current frame's width
+                    var properties = await file.Properties.GetImagePropertiesAsync();
+                    var filewidth = properties.Width;
+                    var fileheight = properties.Height;
+                    Debug.WriteLine($"file:{filewidth},{fileheight}");
+                    //Converting bitmap image ratio for decoding
+                    double ratio = (double)filewidth / fileheight;
+                    rawphoto.DecodePixelWidth = (int)this.Width;
+                    this.Height = this.Width / ratio;
+
                     //imageControl.Source = imageSource;
-                    imageControl.Source = new BitmapImage(new Uri(imageSource));
+                    imageControl.Source = rawphoto;
                     contentGrid.Children.Add(imageControl);
                     categoryGrid.Visibility = Visibility.Collapsed;
                     InitiateInkCanvas();
@@ -676,7 +689,7 @@ namespace PhenoPad.CustomControl
 
                     Debug.WriteLine(img.DecodePixelHeight);
                     Debug.WriteLine(img.DecodePixelWidth);
-
+                    
                     Image photo = new Image();
                     photo.Source = img;
                     photo.Visibility = Visibility.Visible;
