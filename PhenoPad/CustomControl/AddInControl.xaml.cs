@@ -44,8 +44,8 @@ namespace PhenoPad.CustomControl
 
         private double DEFAULT_WIDTH = 400;
         private double DEFAULT_HEIGHT = 400;
-        private double MIN_WIDTH = 300;
-        private double MIN_HEIGHT = 300;
+        private double MIN_WIDTH = 350;
+        private double MIN_HEIGHT = 350;
         double curWidth;
         double curHeight; 
         public string type; // photo, drawing
@@ -73,6 +73,7 @@ namespace PhenoPad.CustomControl
         public double width;
         public double canvasLeft;
         public double canvasTop;
+        public double imgratio;
 
         public bool inDock;
 
@@ -213,6 +214,8 @@ namespace PhenoPad.CustomControl
             this.notebookId = notebookId;
             this.pageId = pageId;
             this._isResizing = false;
+            this.hasImage = false;
+
             rootPage = MainPage.Current;
 
             //Timer event handler bindings
@@ -232,13 +235,6 @@ namespace PhenoPad.CustomControl
             tg.Children.Add(dragTransform);
             this.RenderTransform = tg;
 
-            /**
-            this.CanDrag = true;
-            this.ManipulationMode = ManipulationModes.TranslateX | ManipulationModes.TranslateY | ManipulationModes.Scale;
-            this.ManipulationStarted += TitleRelativePanel_ManipulationStarted;
-            this.ManipulationDelta += TitleRelativePanel_ManipulationDelta;
-            this.ManipulationCompleted += TitleRelativePanel_ManipulationCompleted;
-            **/
             //Add-in dimension/location manipulation
             {
                 this.ManipulationMode = ManipulationModes.TranslateX | ManipulationModes.TranslateY | ManipulationModes.Scale;
@@ -246,65 +242,6 @@ namespace PhenoPad.CustomControl
                 this.ManipulationDelta += Manipulator_OnManipulationDelta;
                 this.ManipulationCompleted += Manipulator_OnManipulationCompleted;
             }
-            //translateTransform = new TranslateTransform();
-            //this.RenderTransform.translateTransform;
-
-            /**
-            TitleRelativePanel.ManipulationDelta += delegate (object sdr, ManipulationDeltaRoutedEventArgs args)
-            {
-                if (args.Delta.Expansion == 0)
-                {
-                    Canvas.SetLeft(this, Canvas.GetLeft(this) + args.Delta.Translation.X);
-                    Canvas.SetTop(this, Canvas.GetTop(this) + args.Delta.Translation.Y);
-                }
-                else
-                {
-                    //canvasAddIn.Width += args.Delta.Translation.X * 2;
-                    //canvasAddIn.Height += args.Delta.Translation.Y * 2;
-                }
-            };
-    **/
-        }
-        #endregion
-
-        #region title relative panel
-        private void TitleRelativePanel_ManipulationCompleted(object sender, ManipulationCompletedRoutedEventArgs e)
-        {
-            // this.Opacity = 1;
-            MovingGrid.Visibility = Visibility.Collapsed;
-            Debug.WriteLine("Add-in control manipulation completed");
-            
-        }
-
-        private void TitleRelativePanel_ManipulationStarted(object sender, ManipulationStartedRoutedEventArgs e)
-        {
-            // this.Opacity = 0.4;
-            MovingGrid.Visibility = Visibility.Visible;
-            Debug.WriteLine("Add-in control manipulation started");
-        }
-
-        private void TitleRelativePanel_ManipulationDelta(object sender, ManipulationDeltaRoutedEventArgs e)
-        {
-            /**
-            canvasLeft = Canvas.GetLeft(this) + e.Delta.Translation.X > 0 ? Canvas.GetLeft(this) + e.Delta.Translation.X : 0;
-            canvasTop = Canvas.GetTop(this) + e.Delta.Translation.Y > 0 ? Canvas.GetTop(this) + e.Delta.Translation.Y : 0;
-            Canvas.SetLeft(this, canvasLeft);
-            Canvas.SetTop(this, canvasTop);
-            **/
-            dragTransform.X += e.Delta.Translation.X;
-            dragTransform.Y += e.Delta.Translation.Y;
-
-
-            scale = scaleTransform.ScaleX * e.Delta.Scale;
-            scale = scale > 2.0 ? 2.0 : scale;
-            scale = scale < 0.5 ? 0.5 : scale;
-            scaleTransform.ScaleX = scale;
-
-            scale = scaleTransform.ScaleY * e.Delta.Scale;
-            scale = scale > 2.0 ? 2.0 : scale;
-            scale = scale < 0.5 ? 0.5 : scale;
-            scaleTransform.ScaleY = scale;
-
 
         }
         #endregion
@@ -339,8 +276,7 @@ namespace PhenoPad.CustomControl
                 {
                     this._isMoving = true;
                     this.showMovingGrid();
-                }
-                
+                }                
             }
         }
         /// <summary>
@@ -354,60 +290,97 @@ namespace PhenoPad.CustomControl
 
             if (dir == Direction.TOPLEFT)
             {
-                this.Width -= e.Delta.Translation.X / this.scaleTransform.ScaleX;
-                this.Height -= e.Delta.Translation.Y / this.scaleTransform.ScaleY;
+                if (! hasImage) {
+                    this.Width -= e.Delta.Translation.X;
+                    this.Height -= e.Delta.Translation.Y;
+                    if (this.Width >= this.MIN_WIDTH && this.Height >= this.MIN_HEIGHT)
+                    {
+                        Canvas.SetLeft(this, left + e.Delta.Translation.X);
+                        Canvas.SetTop(this, top + e.Delta.Translation.Y);
 
-                if (this.Width >= this.MIN_WIDTH && this.Height >= this.MIN_HEIGHT) {
-                    Canvas.SetLeft(this, left + e.Delta.Translation.X);
-                    Canvas.SetTop(this, top + e.Delta.Translation.Y);
-                    
-                    this.canvasTop += e.Delta.Translation.Y;
-                    this.canvasLeft += e.Delta.Translation.X;
+                        this.canvasTop = Canvas.GetTop(this.inkCan);
+                        this.canvasLeft = Canvas.GetLeft(this.inkCan);
                         //when extending from the top/left, shift the current strokes accordingly.
                         foreach (InkStroke st in inkCanvas.InkPresenter.StrokeContainer.GetStrokes())
                             st.Selected = true;
-                        inkCanvas.InkPresenter.StrokeContainer.MoveSelected(new Point(-e.Delta.Translation.X, -e.Delta.Translation.Y));                   
-                }
+                        inkCanvas.InkPresenter.StrokeContainer.MoveSelected(new Point(-e.Delta.Translation.X, -e.Delta.Translation.Y));
+                    }
+                }               
+
             }
             if (dir == Direction.TOPRIGHT) {
-                this.Width += e.Delta.Translation.X / this.scaleTransform.ScaleX;
-                this.Height -= e.Delta.Translation.Y / this.scaleTransform.ScaleY;
-                if (this.Height >= this.MIN_HEIGHT) {
-                    Canvas.SetTop(this, top + e.Delta.Translation.Y);
-                    this.canvasTop += e.Delta.Translation.Y;
-                }                  
+                if (! hasImage)
+                {
+                    this.Width += e.Delta.Translation.X;
+                    this.Height -= e.Delta.Translation.Y;
+                    //resetting canvas topleft corner after resizing
+                    if (this.Height >= this.MIN_HEIGHT)
+                    {
+                        Canvas.SetTop(this, top + e.Delta.Translation.Y);
+                        this.canvasTop = Canvas.GetTop(this.inkCan);
+                    }
+                }
+
             }            
             if (dir == Direction.BOTTOMLEFT)
             {
-                this.Width -= e.Delta.Translation.X / this.scaleTransform.ScaleX ;
-                this.Height += e.Delta.Translation.Y / this.scaleTransform.ScaleY;
-                if (this.Width >= this.MIN_WIDTH) {
-                    Canvas.SetLeft(this, left + e.Delta.Translation.X);
-                    this.canvasLeft += e.Delta.Translation.X;
-                    //when extending from the top/left, shift the current strokes accordingly.
-                    foreach (InkStroke st in inkCanvas.InkPresenter.StrokeContainer.GetStrokes())
-                        st.Selected = true;
-                    inkCanvas.InkPresenter.StrokeContainer.MoveSelected(new Point(-e.Delta.Translation.X, 0 ));
+                //photo resizing will be only available for bottomright corner detection
+                if (! hasImage)
+                {
+                    this.Width -= e.Delta.Translation.X;
+                    this.Height += e.Delta.Translation.Y;
+                    if (this.Width >= this.MIN_WIDTH)
+                    {
+                        Canvas.SetLeft(this, left + e.Delta.Translation.X);
+                        this.canvasLeft = Canvas.GetLeft(this.inkCan);
+                        //when extending from the top/left, shift the current strokes accordingly.
+                        foreach (InkStroke st in inkCanvas.InkPresenter.StrokeContainer.GetStrokes())
+                            st.Selected = true;
+                        inkCanvas.InkPresenter.StrokeContainer.MoveSelected(new Point(-e.Delta.Translation.X, 0));
+                    }
                 }
-                if (this.Width < curWidth) {
-                    this.scrollViewer.MinZoomFactor = (float)(this.Width/curWidth);
-                }
+
+
             }
             if (dir == Direction.BOTTOMRIGHT)
             {
-                this.Width += e.Delta.Translation.X;
-                this.Height += e.Delta.Translation.Y;
+                if (hasImage)
+                {
+                    Debug.WriteLine($"{this.Height},{ this.MIN_WIDTH / imgratio + 88}");
+                    if (this.Width >= this.MIN_WIDTH && this.Height >= (this.MIN_WIDTH / imgratio + 88)) {
+                        //only resizing based on photo width/height ratio
+                        this.Height += e.Delta.Translation.Y;
+                        this.Width += e.Delta.Translation.Y * imgratio;
+                    }
+                }
+                else {
+                    this.Width += e.Delta.Translation.X;
+                    this.Height += e.Delta.Translation.Y;
+                }
             }
-            if (this.Width > this.inkCan.Width) {
+
+
+            //setting minimal resizing sizes
+            if (hasImage)
+            {
+                this.Width = this.Width < this.MIN_WIDTH ? this.MIN_WIDTH : this.Width;
+                this.Height = this.Width <= this.MIN_WIDTH? (this.MIN_WIDTH / imgratio + 88) : this.Height;
+                Debug.WriteLine($"new h={this.Height}");
+                inkCan.Height = this.Height - 88;
                 inkCan.Width = this.Width;
             }
-            if (this.Height - 88 > this.inkCan.Height)
-            {          
-                inkCan.Height = this.Height - 88;
+            else {
+                if (this.Width > this.inkCan.Width)
+                {
+                    inkCan.Width = this.Width;
+                }
+                if (this.Height - 88 > this.inkCan.Height)
+                {
+                    inkCan.Height = this.Height - 88;
+                }
+                this.Width = this.Width < this.MIN_WIDTH ? this.MIN_WIDTH : this.Width;
+                this.Height = this.Height < this.MIN_HEIGHT ? this.MIN_HEIGHT : this.Height;
             }
-            //setting minimal resizing sizes
-            this.Width = this.Width < this.MIN_WIDTH ? this.MIN_WIDTH : this.Width;
-            this.Height = this.Height < this.MIN_HEIGHT ? this.MIN_HEIGHT : this.Height;
 
         }
 
@@ -425,9 +398,13 @@ namespace PhenoPad.CustomControl
 
         }
 
-        private async void Manipulator_OnManipulationCompleted(object sender, ManipulationCompletedRoutedEventArgs e) {
+        private void Manipulator_OnManipulationCompleted(object sender, ManipulationCompletedRoutedEventArgs e) {
             this._isMoving = false;
             this._isResizing = false;
+            this.canvasLeft = Canvas.GetLeft(this);
+            this.canvasTop = Canvas.GetTop(this);
+            this.height = this.Height;
+            this.width = this.Width;
             this.hideMovingGrid();
             autosaveDispatcherTimer.Start();
         }
@@ -570,29 +547,30 @@ namespace PhenoPad.CustomControl
                     var file = await FileManager.getSharedFileManager().GetNoteFileNotCreate(notebookId, pageId, NoteFileType.Image, name);
                     //MainPage.Current.curPage.AddImageControl(imagename, imageSource);
                     Image imageControl = new Image();
-                    BitmapImage rawphoto = new BitmapImage(new Uri(imageSource));
+                    BitmapImage rawphoto = new BitmapImage(new Uri(file.Path));
 
                     //setting the photo width to be current frame's width
                     var properties = await file.Properties.GetImagePropertiesAsync();
                     var filewidth = properties.Width;
                     var fileheight = properties.Height;
-                    Debug.WriteLine($"file:{filewidth},{fileheight}");
-                    //Converting bitmap image ratio for decoding
-                    double ratio = (double)filewidth / fileheight;
-                    rawphoto.DecodePixelWidth = (int)this.Width;
-                    this.Height = this.Width / ratio;
+                    //Resizing the add-in frame according to the image ratio
+                    imgratio = (double)filewidth / fileheight;
+                    this.Height = this.Width / imgratio + 88;
+                    this.inkCan.Height = this.Height - 88;
+                    this.inkCan.Width = this.Width;
+                    this.height = this.Height;
+                    this.width = this.Width;
 
-                    //imageControl.Source = imageSource;
                     imageControl.Source = rawphoto;
                     contentGrid.Children.Add(imageControl);
                     categoryGrid.Visibility = Visibility.Collapsed;
-                    InitiateInkCanvas();
                     this.PhotoButton.Visibility = Visibility.Collapsed;
-                    this.CameraCanvas.Visibility = Visibility.Collapsed;
+                    this.CameraCanvas.Visibility = Visibility.Collapsed;                   
                     captureControl.unSetUp();
+                    this.hasImage = true;
+                    InitiateInkCanvas();
                 }
                 await rootPage.curPage.AutoSaveAddin(this.name);
-                scrollViewer.ZoomMode = ZoomMode.Disabled;
 
             }
             catch (Exception ex)
@@ -616,16 +594,18 @@ namespace PhenoPad.CustomControl
         private void InitiateInkCanvas(bool onlyView = false)
         {
             isInitialized = true;
-            if (hasImage) {
-                scrollViewer.VerticalScrollMode = ScrollMode.Disabled;
-                scrollViewer.HorizontalScrollMode = ScrollMode.Disabled;
-                scrollViewer.ZoomMode = ZoomMode.Disabled;
-            }
+            Debug.WriteLine($"hasimage={hasImage}");
+            if (hasImage)
+              hideScrollViewer();
+
+            scrollViewer.Visibility = Visibility.Visible;
+
+            inkCan.Height = this.Height - 88;
+            inkCan.Width = this.Width;
             
             //this.ControlStackPanel.Visibility = Visibility.Visible;
             //contentGrid.Children.Add(inkCanvas);
-            inkCanvas.Visibility = Visibility.Visible;
-            scrollViewer.Visibility = Visibility.Visible;
+            inkCan.Visibility = Visibility.Visible;
             if (!onlyView) // added from note page, need editing
             {
                 // Set supported input type to default using both moush and pen
@@ -635,7 +615,7 @@ namespace PhenoPad.CustomControl
 
                 // Set initial ink stroke attributes and updates
                 InkDrawingAttributes drawingAttributes = new InkDrawingAttributes();
-                drawingAttributes.Color = Windows.UI.Colors.Black;
+                drawingAttributes.Color = Colors.Black;
                 drawingAttributes.IgnorePressure = false;
                 drawingAttributes.FitToCurve = true;
                 inkCanvas.InkPresenter.UpdateDefaultDrawingAttributes(drawingAttributes);
@@ -682,19 +662,18 @@ namespace PhenoPad.CustomControl
             {
                 // photo file
                 var file = await FileManager.getSharedFileManager().GetNoteFileNotCreate(notebookId, pageId, NoteFileType.Image, name);
-
+                
                 if (file != null)
                 {
-                    BitmapImage img = new BitmapImage(new Uri(file.Path));
-
-                    Debug.WriteLine(img.DecodePixelHeight);
-                    Debug.WriteLine(img.DecodePixelWidth);
-                    
+                    var properties = await file.Properties.GetImagePropertiesAsync();
+                    imgratio = (double)properties.Width / properties.Height;
+                    BitmapImage img = new BitmapImage(new Uri(file.Path));                    
                     Image photo = new Image();
                     photo.Source = img;
                     photo.Visibility = Visibility.Visible;
                     contentGrid.Children.Add(photo);
                     categoryGrid.Visibility = Visibility.Collapsed;
+                    this.Height = this.Width / imgratio + 88;
                     this.hasImage = true;
                 }
            
@@ -704,12 +683,6 @@ namespace PhenoPad.CustomControl
                 if (annofile != null)
                     await FileManager.getSharedFileManager().loadStrokes(annofile, inkCanvas);
 
-                /**
-                    string strokeUri = "ms-appdata:///local/" + FileManager.getSharedFileManager().GetNoteFilePath(notebookId, pageId, NoteFileType.ImageAnnotation, name);
-                    BitmapIcon anno = new BitmapIcon();
-                    anno.UriSource = new Uri(strokeUri);
-                    contentGrid.Children.Add(anno);
-        **/
                 if (!onlyView)
                 {
                     dragTransform.X = transX;
@@ -799,6 +772,13 @@ namespace PhenoPad.CustomControl
             OutlineGrid.Background = new SolidColorBrush(Colors.WhiteSmoke);
             this.TitleRelativePanel.Visibility = Visibility.Visible;
             this.inkToolbar.Visibility = Visibility.Visible;
+        }
+        public void hideScrollViewer() {
+            scrollViewer.VerticalScrollMode = ScrollMode.Disabled;
+            scrollViewer.HorizontalScrollMode = ScrollMode.Disabled;
+            scrollViewer.ZoomMode = ZoomMode.Disabled;
+            scrollViewer.HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled;
+            scrollViewer.VerticalScrollBarVisibility = ScrollBarVisibility.Disabled;
         }
         #endregion
 
