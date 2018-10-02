@@ -147,6 +147,7 @@ namespace PhenoPad
                     }
                 }
                 pastchatView.ItemsSource = this.conversations;
+                SpeechPage.Current.updateChat();
 
                 //Gets all saved phenotypes from XML meta
                 List<Phenotype> phenos = await FileManager.getSharedFileManager().GetSavedPhenotypeObjectsFromXML(notebookId);
@@ -561,6 +562,7 @@ namespace PhenoPad
                     this.conversations.AddRange(messages);
                 }
             }
+            SpeechPage.Current.updateChat();
             pastchatView.ItemsSource = this.conversations;
         }
     }

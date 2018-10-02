@@ -394,7 +394,7 @@ namespace PhenoPad.SpeechService
             {
                 Body = this.tempSentence,
                 Speaker = 99,
-                DisplayTime = DateTime.Now,
+                //DisplayTime = DateTime.Now,
                 IsFinal = false,
                 ConversationIndex = this.conversationIndex
             };
@@ -408,7 +408,7 @@ namespace PhenoPad.SpeechService
             {
                 Body = this.realtimeLastSentence,
                 Speaker = 99,
-                DisplayTime = DateTime.Now,
+                //DisplayTime = DateTime.Now,
                 //Interval = new TimeInterval(start, start + length),
                 IsFinal = false,
                 ConversationIndex = this.conversationIndex
@@ -609,7 +609,7 @@ namespace PhenoPad.SpeechService
                     {
                         Body = sentence,
                         Speaker = (uint)99,
-                        DisplayTime = DateTime.Now,
+                        //DisplayTime = DateTime.Now,
                         
                         IsFinal = false,
                         ConversationIndex = this.conversationIndex

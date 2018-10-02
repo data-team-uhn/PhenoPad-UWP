@@ -87,7 +87,7 @@
                     <ToolTipService.ToolTip>
                         <TextBlock  >Show Past Conversations</TextBlock>
                     </ToolTipService.ToolTip>
-                    <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE8F2;"/>
+                    <SymbolIcon Symbol="Clock"/>
                 </AppBarToggleButton>
 
                 <AppBarSeparator/>

@@ -525,6 +525,7 @@ namespace PhenoPad
     public sealed partial class SpeechPage : Page
     {
         public static SpeechPage Current;
+        public static MainPage mainpage;
         public PhenotypeManager PhenoMana => PhenotypeManager.getSharedPhenotypeManager();
         private int doctor = 0;
         private int curSpeakerCount = 2;
@@ -536,13 +537,18 @@ namespace PhenoPad
         {
             this.InitializeComponent();
             SpeechPage.Current = this;
-
-            chatView.ItemsSource = SpeechManager.getSharedSpeechManager().conversation;
+            mainpage = MainPage.Current;
+            chatView.ItemsSource = mainpage.conversations;
+            //chatView.ItemsSource = SpeechManager.getSharedSpeechManager().conversation;
             chatView.ContainerContentChanging += OnChatViewContainerContentChanging;
-            realtimeChatView.ItemsSource = SpeechManager.getSharedSpeechManager().realtimeConversation;
+            //realtimeChatView.ItemsSource = SpeechManager.getSharedSpeechManager().realtimeConversation;
 
             SpeechManager.getSharedSpeechManager().EngineHasResult += SpeechPage_EngineHasResult;
             SpeechManager.getSharedSpeechManager().RecordingCreated += SpeechPage_RecordingCreated;
+        }
+
+        public void updateChat() {
+            chatView.ItemsSource = MainPage.Current.conversations;
         }
 
         private void SpeechPage_RecordingCreated(SpeechManager sender, Windows.Storage.StorageFile args)

@@ -84,44 +84,23 @@
                             <ColumnDefinition Width="Auto"/>
                             <ColumnDefinition Width="Auto" />
                         </Grid.ColumnDefinitions>
-
-                        <!--
-                        
-                        <Polygon
-                            Grid.Row="1"
-                            Grid.Column="{Binding TextColumn}"
-                            Fill="{Binding Converter={StaticResource bcConverter}}"
-                            HorizontalAlignment="Left"
-                            Points="0,0 0,18 18,18"
-                            Visibility="{x:Bind OnLeft}"
-                            Margin="0,0,10,0">
-                        </Polygon>
-
-                        <Polygon
-                            Grid.Row="1"
-                            Grid.Column="{Binding TextColumn}"
-                            Fill="{Binding Converter={StaticResource bcConverter}}"
-                            HorizontalAlignment="Right"
-                            Points="18,0 18,18 0,18"
-                            Visibility="{x:Bind OnRight}"
-                            Margin="0,0,10,0"/>
-                        -->
                         
                         <!--Finalized message color-->
                         <Grid
                             Grid.Row="0"
                             Grid.Column="{Binding TextColumn}"
+                            MinWidth="300"
+                            MaxWidth="600"
                             Background="{Binding Converter={StaticResource bcConverter}}"
                             Visibility="{x:Bind Path=IsFinal}"/>
 
                         <!--Not finalized message color-->
-                        <Grid
+                            <Grid
                             Grid.Row="0"
                             Grid.Column="{Binding TextColumn}"
                             Background="{StaticResource Background_Temp}"
                             Visibility="{x:Bind Path=IsNotFinal}"/>
-
-                        <Grid
+                            <Grid
                             Grid.Row="0"
                             Grid.Column="{Binding TextColumn}">
                             <Grid.RowDefinitions>
@@ -129,7 +108,7 @@
                                 <RowDefinition Height="Auto"/>
                             </Grid.RowDefinitions>
 
-                            <TextBlock
+                                    <TextBlock
                                 Text="{x:Bind Body}"
                                 Grid.Row="0"
                                 Grid.Column="0"
@@ -150,10 +129,12 @@
                                     Text="{Binding Converter={StaticResource intervalConverter}}"
                                     TextWrapping="Wrap"
                                     Padding="3" 
+                                    HorizontalAlignment="Left"
                                     Foreground="Black"
                                 />
                             </Button>
                         </Grid>
+
 
                         <ListView x:Name="phenoFromConversationListView" 
                                     Grid.Column="{Binding PhenoColumn}"
