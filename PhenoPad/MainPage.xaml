@@ -85,7 +85,7 @@
                 </AppBarToggleButton>
                 <AppBarToggleButton Style="{StaticResource MyAppBarToggleButtonStyle}" Label="Speech" Name="SpeechButton" Click="SpeechButton_Click">
                     <ToolTipService.ToolTip>
-                        <TextBlock  >Show speech recognition panel</TextBlock>
+                        <TextBlock  >Show Past Conversations</TextBlock>
                     </ToolTipService.ToolTip>
                     <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE8F2;"/>
                 </AppBarToggleButton>
@@ -203,6 +203,7 @@
                         <ColumnDefinition Width="*"/>
                     </Grid.ColumnDefinitions>
                     <!-- Tab buttons-->
+                    
                     <StackPanel Orientation="Vertical" VerticalAlignment="Top" Grid.Row="0" Grid.Column="0" Background="Transparent">
                         <Button Visibility="Collapsed"  BorderThickness="0" Foreground="Gray" Background="WhiteSmoke" Width="40" Height="30" Name="QuickViewButton" Click="QuickViewButton_Click">
                             <SymbolIcon Name="QuickViewButtonSymbol" Symbol="Clear"></SymbolIcon>
@@ -212,9 +213,12 @@
                                 <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE8BC;"/>
                             </Grid>
                         </ToggleButton>
-                        <ToggleButton Style="{StaticResource MyToggleButtonStyle}" ToolTipService.ToolTip="Show past conversations" Background="{StaticResource Left_Panel_Title_BG}"  Width="40" Height="80" Name="SpeechToggleButton" Click="SpeechToggleButton_Click">
+                        <ToggleButton Style="{StaticResource MyToggleButtonStyle}" 
+                                      ToolTipService.ToolTip="Show Speech conversations" 
+                                      Background="{StaticResource Left_Panel_Title_BG}"  Width="40" Height="80" 
+                                      Name="SpeechToggleButton" Click="SpeechToggleButton_Click">
                             <Grid>
-                                <SymbolIcon Height="50" Width="50" HorizontalAlignment="Center" Symbol="Clock"/>
+                                <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE8F2;"/>
                             </Grid>
                         </ToggleButton>
                     </StackPanel>
@@ -306,7 +310,8 @@
                             <SymbolIcon Symbol="More"></SymbolIcon>
                         </Button>
                     </StackPanel>
-
+                    
+                    <!--Quick View Panels-->
                     <Grid Name="QuickView1" Background="White" Grid.Row="0" Grid.Column="1">
                         <ListView ScrollViewer.VerticalScrollBarVisibility="Hidden" x:Name="savedPhenoListView" Padding="3 0" ItemsSource="{x:Bind PhenoMana.savedPhenotypes, Mode=OneWay}">
                             <!--
@@ -403,17 +408,22 @@
                         </ListView>
                     </Grid>
 
-                    <Grid Name="speechQuickView" Grid.Row="0" Grid.Column="1" Grid.RowSpan="3" Visibility="Collapsed" Padding="5" Background="White">
+                    <Grid Name="speechQuickView" Grid.Row="0" Grid.Column="1" 
+                          Grid.RowSpan="3" Visibility="Collapsed" Padding="5" 
+                          Background="White">
+                        
                         <Grid.RowDefinitions>
                             <RowDefinition Height="*"></RowDefinition>
                             <RowDefinition Height="Auto"></RowDefinition>
                         </Grid.RowDefinitions>
-                        <local:ChatListView x:Name="chatView" Visibility="Visible" Background="White"  Grid.Row="0"
+
+                        <TextBlock Text="Current Conversation" FontSize="16" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="10" />
+                            <local:ChatListView x:Name="chatView" Visibility="Visible" Background="White"  Grid.Row="0"
                             IncrementalLoadingThreshold="2" 
+                            Margin="0 50 0 0"
                             ScrollViewer.VerticalScrollBarVisibility="Hidden">
                             <ListView.ItemsPanel>
                                 <ItemsPanelTemplate>
-                                    <!--" ItemsStackPanel ItemsUpdatingScrollMode="KeepLastItemInView" VerticalAlignment="Bottom"/-->
                                     <ItemsStackPanel ItemsUpdatingScrollMode="KeepLastItemInView"  VerticalAlignment="Bottom"/>
                                 </ItemsPanelTemplate>
                             </ListView.ItemsPanel>
@@ -422,6 +432,13 @@
                                 <Style TargetType="ListViewItem">
                                     <Setter Property="Padding" Value="0"/>
                                     <Setter Property="Margin" Value="0"/>
+                                    <Setter Property="Template">
+                                        <Setter.Value>
+                                            <ControlTemplate>
+                                                <ContentPresenter/>
+                                            </ControlTemplate>
+                                        </Setter.Value>
+                                    </Setter>
                                 </Style>
                             </ListView.ItemContainerStyle>
 
@@ -436,41 +453,23 @@
                                             <ColumnDefinition Width="Auto"/>
                                         </Grid.ColumnDefinitions>
 
-                                        <!--
-                        
-                        <Polygon
-                            Grid.Row="1"
-                            Grid.Column="{Binding TextColumn}"
-                            Fill="{Binding Converter={StaticResource bcConverter}}"
-                            HorizontalAlignment="Left"
-                            Points="0,0 0,18 18,18"
-                            Visibility="{x:Bind OnLeft}"
-                            Margin="0,0,10,0">
-                        </Polygon>
-
-                        <Polygon
-                            Grid.Row="1"
-                            Grid.Column="{Binding TextColumn}"
-                            Fill="{Binding Converter={StaticResource bcConverter}}"
-                            HorizontalAlignment="Right"
-                            Points="18,0 18,18 0,18"
-                            Visibility="{x:Bind OnRight}"
-                            Margin="0,0,10,0"/>
-                        -->
-
                                         <!--Finalized message color-->
-                                        <Grid
+                                        <Border CornerRadius="10">
+                                            <Grid
                             Grid.Row="0"
                             Grid.Column="0"
                             Background="{Binding Converter={StaticResource bcConverter}}"
                             Visibility="{x:Bind Path=IsFinal}"/>
+                                        </Border>
 
                                         <!--Not finalized message color-->
-                                        <Grid
+                                        <Border CornerRadius="10">
+                                            <Grid
                             Grid.Row="0"
                             Grid.Column="0"
                             Background="{StaticResource Background_Temp}"
                             Visibility="{x:Bind Path=IsNotFinal}"/>
+                                        </Border>
 
                                         <Grid MaxWidth="260" MinWidth="100"
                             Grid.Row="0"
@@ -485,12 +484,10 @@
                                 Grid.Column="0"
                                 TextWrapping="Wrap"
                                
-                                FontSize="18"
+                                FontSize="16"
                                 Padding="3"
                                 VerticalAlignment="Center"
                                 Foreground="Black"/>
-
-
                                         </Grid>
 
 
@@ -498,34 +495,33 @@
                                 </DataTemplate>
                             </ListView.ItemTemplate>
                         </local:ChatListView>
-
-                        <local:ChatListView x:Name="realtimeChatView" Grid.Row="1" Background="White"
+                                    <local:ChatListView x:Name="realtimeChatView" Grid.Row="1" Background="White"
                             IncrementalLoadingThreshold="2" 
                             ScrollViewer.VerticalScrollBarVisibility="Hidden">
-                            <ListView.ItemsPanel>
-                                <ItemsPanelTemplate>
-                                    <ItemsStackPanel ItemsUpdatingScrollMode="KeepLastItemInView" VerticalAlignment="Bottom"  HorizontalAlignment="Right"/>
-                                </ItemsPanelTemplate>
-                            </ListView.ItemsPanel>
+                                        <ListView.ItemsPanel>
+                                            <ItemsPanelTemplate>
+                                                <ItemsStackPanel ItemsUpdatingScrollMode="KeepLastItemInView" VerticalAlignment="Bottom"  HorizontalAlignment="Right"/>
+                                            </ItemsPanelTemplate>
+                                        </ListView.ItemsPanel>
 
-                            <ListView.ItemContainerStyle>
-                                <Style TargetType="ListViewItem">
-                                    <Setter Property="HorizontalContentAlignment" Value="Stretch" />
-                                    <Setter Property="Padding" Value="0"/>
-                                    <Setter Property="Margin" Value="0"/>
-                                </Style>
-                            </ListView.ItemContainerStyle>
+                                        <ListView.ItemContainerStyle>
+                                            <Style TargetType="ListViewItem">
+                                                <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                                                <Setter Property="Padding" Value="0"/>
+                                                <Setter Property="Margin" Value="0"/>
+                                            </Style>
+                                        </ListView.ItemContainerStyle>
 
-                            <ListView.ItemContainerTransitions>
-                                <TransitionCollection/>
-                            </ListView.ItemContainerTransitions>
+                                        <ListView.ItemContainerTransitions>
+                                            <TransitionCollection/>
+                                        </ListView.ItemContainerTransitions>
 
-                            <ListView.ItemTemplate>
-                                <DataTemplate x:DataType="local:TextMessage">
-                                    <Grid Margin="6">
+                                        <ListView.ItemTemplate>
+                                            <DataTemplate x:DataType="local:TextMessage">
+                                                <Grid Margin="6">
 
-                                        <!--Right/Bottom polygon-->
-                                        <!--<Polygon
+                                                    <!--Right/Bottom polygon-->
+                                                    <!--<Polygon
                             Grid.Row="1"
                             Fill="LightSlateGray"
                             HorizontalAlignment="Right"
@@ -533,19 +529,19 @@
                             Visibility="Visible"
                             Margin="0,0,10,0"/>-->
 
-                                        <!--Message color-->
-                                        <Grid
+                                                    <!--Message color-->
+                                                    <Grid
                             Grid.Row="0"
                             Background="LightGray"/>
 
-                                        <Grid MaxWidth="260" MinWidth="100"
+                                                    <Grid MaxWidth="260" MinWidth="100"
                             Grid.Row="0">
-                                            <Grid.RowDefinitions>
-                                                <RowDefinition Height="Auto"/>
-                                                <RowDefinition Height="Auto"/>
-                                            </Grid.RowDefinitions>
+                                                        <Grid.RowDefinitions>
+                                                            <RowDefinition Height="Auto"/>
+                                                            <RowDefinition Height="Auto"/>
+                                                        </Grid.RowDefinitions>
 
-                                            <TextBlock 
+                                                        <TextBlock 
                                 Text="{x:Bind Body}"
                                 Grid.Row="0"
                                 Grid.Column="0"
@@ -557,13 +553,12 @@
                                 Foreground="Black"/>
 
 
-                                        </Grid>
+                                                    </Grid>
 
-                                    </Grid>
-                                </DataTemplate>
-                            </ListView.ItemTemplate>
-                        </local:ChatListView>
-                       
+                                                </Grid>
+                                            </DataTemplate>
+                                        </ListView.ItemTemplate>
+                                    </local:ChatListView>
                     </Grid>
 
                     <Grid Name="pastSpeechView" Grid.Row="0" Grid.Column="1" Grid.RowSpan="3" Visibility="Collapsed" Padding="5" Background="White">

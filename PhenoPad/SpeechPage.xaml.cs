@@ -526,7 +526,12 @@ namespace PhenoPad
     {
         public static SpeechPage Current;
         public PhenotypeManager PhenoMana => PhenotypeManager.getSharedPhenotypeManager();
+        private int doctor = 0;
+        private int curSpeakerCount = 2;
+        private string loadedMedia = String.Empty;
 
+
+        //=================================METHODS==============================================
         public SpeechPage()
         {
             this.InitializeComponent();
@@ -540,7 +545,6 @@ namespace PhenoPad
             SpeechManager.getSharedSpeechManager().RecordingCreated += SpeechPage_RecordingCreated;
         }
 
-        private string loadedMedia = String.Empty;
         private void SpeechPage_RecordingCreated(SpeechManager sender, Windows.Storage.StorageFile args)
         {
             Windows.ApplicationModel.Core.CoreApplication.MainView.CoreWindow.Dispatcher.RunAsync(CoreDispatcherPriority.Normal,
@@ -554,9 +558,6 @@ namespace PhenoPad
             }
             );
         }
-
-        private int doctor = 0;
-        private int curSpeakerCount = 2;
 
         private void SpeechPage_EngineHasResult(SpeechManager sender, SpeechEngineInterpreter args)
         {
@@ -593,7 +594,6 @@ namespace PhenoPad
                 maxSpeaker = (int)message.Speaker;
             }*/
         }
-
 
         private void BackButton_Click(object sender, Windows.UI.Xaml.RoutedEventArgs e)
         {
@@ -680,12 +680,9 @@ namespace PhenoPad
             }
         }
 
-        /**
-         * true = up
-         * false = down
-         */
         private String changeNumSpeakers(String text, bool direction)
         {
+            //true = up, false = down
             int proposed = Int32.Parse(text);
             if (direction)
             {

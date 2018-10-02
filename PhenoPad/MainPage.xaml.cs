@@ -1058,9 +1058,9 @@ namespace PhenoPad
             {
                 MainSplitView.IsPaneOpen = true;
                 QuickViewButtonSymbol.Symbol = Symbol.Clear;
-                //speechQuickView.Visibility = Visibility.Collapsed;
+                speechQuickView.Visibility = Visibility.Collapsed;
                 //pastchatView.Visibility = Visibility.Collapsed;
-                pastSpeechView.Visibility = Visibility.Collapsed;
+                //pastSpeechView.Visibility = Visibility.Collapsed;
             }
             else
             {
@@ -1068,9 +1068,9 @@ namespace PhenoPad
                 {
                     OverViewToggleButton.IsChecked = true;
                     SpeechToggleButton.IsChecked = false;
-                    //speechQuickView.Visibility = Visibility.Collapsed;
+                    speechQuickView.Visibility = Visibility.Collapsed;
                     //pastchatView.Visibility = Visibility.Collapsed;
-                    pastSpeechView.Visibility = Visibility.Collapsed;
+                    //pastSpeechView.Visibility = Visibility.Collapsed;
                 }
                 else
                 {
@@ -1087,8 +1087,8 @@ namespace PhenoPad
             {
                 MainSplitView.IsPaneOpen = true;
                 QuickViewButtonSymbol.Symbol = Symbol.Clear;
-                pastSpeechView.Visibility = Visibility.Visible;
-                //speechQuickView.Visibility = Visibility.Visible;
+                //pastSpeechView.Visibility = Visibility.Visible;
+                speechQuickView.Visibility = Visibility.Visible;
                 //pastchatView.Visibility = Visibility.Visible;
             }
             else
@@ -1097,8 +1097,8 @@ namespace PhenoPad
                 {
                     OverViewToggleButton.IsChecked = false;
                     SpeechToggleButton.IsChecked = true;
-                    pastSpeechView.Visibility = Visibility.Visible;
-                    //speechQuickView.Visibility = Visibility.Visible;
+                    //pastSpeechView.Visibility = Visibility.Visible;
+                    speechQuickView.Visibility = Visibility.Visible;
                     //pastchatView.Visibility = Visibility.Visible;
                 }
                 else
