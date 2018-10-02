@@ -360,21 +360,21 @@
         </ScrollViewer>
 
         <Grid x:Name="addinBase" x:FieldModifier="public" Grid.Column="0" Grid.ColumnSpan="2" 
-              Visibility="Collapsed"
-              Background="{StaticResource TITLE_BAR_WHITE}" Width="300" HorizontalAlignment="Left"
+              Visibility="Collapsed" Padding="0 50 0 0"
+              Background="{StaticResource TITLE_BAR_WHITE}" HorizontalAlignment="Right"
               >
-            <!--<TextBlock VerticalAlignment="Top" Grid.Row="0" HorizontalAlignment="Right"                     
-                       FontSize="30" Foreground="Black" Margin="20 10 20 10">Add-in Box</TextBlock>-->
-            <ListView Name="addinlist" ScrollViewer.VerticalScrollBarVisibility="Hidden">
+            <TextBlock VerticalAlignment="Top" Grid.Row="0" HorizontalAlignment="Right"                     
+                       FontSize="25" Foreground="Black" Margin="20 10 20 10">Collections</TextBlock>
+            <ListView Name="addinlist" ScrollViewer.VerticalScrollBarVisibility="Hidden"
+                      Margin="0 50 0 0">
                 <ListView.ItemTemplate>
                     <DataTemplate x:DataType="fileservice:ImageAndAnnotation">
-                        <Button Click="addInIcon_Click">
-                            <!--<customcontrol:AddInControl name="{x:Bind name}" notebookId="{x:Bind notebookId}" 
-                                                        viewOnly="True" pageId="{x:Bind pageId}" />-->
-                            <Grid Name="{x:Bind name}">
-                                <InkCanvas x:Name="previewCanvas" />
-                                <Image x:Name="photo"/>
-                            </Grid>
+                        <Button Click="addInIcon_Click" HorizontalAlignment="Center" Width="200"
+                                Style="{StaticResource ButtonStyle1}">
+                            <Viewbox Name="AddInIcon" Stretch="Uniform">
+                                <customcontrol:AddInControl name="{x:Bind name}" notebookId="{x:Bind notebookId}" 
+                                                        viewOnly="True" pageId="{x:Bind pageId}" />
+                            </Viewbox>
 
                         </Button>
                     </DataTemplate>
@@ -402,6 +402,10 @@
                 Click="AddinsButton_Click">
                 <SymbolIcon Symbol="Pictures"/>
         </Button>
+        
+        <TextBlock Text="" Name="NumIcon" Grid.Column="0" Grid.ColumnSpan="2" 
+                   Margin="50 21 70 50" FontSize="15"
+                   VerticalAlignment="Top" HorizontalAlignment="Right"/>
 
 
     </Grid>

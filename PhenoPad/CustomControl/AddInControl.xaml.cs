@@ -57,9 +57,6 @@ namespace PhenoPad.CustomControl
             }
         }
         InkAnalyzer inkAnalyzer = new InkAnalyzer();
-        IReadOnlyList<InkStroke> inkStrokes = null;
-        InkAnalysisResult inkAnalysisResults = null;
-        private Rect allStrokes;
 
         public DispatcherTimer autosaveDispatcherTimer = new DispatcherTimer();
 
@@ -74,6 +71,7 @@ namespace PhenoPad.CustomControl
         public double canvasLeft;
         public double canvasTop;
         public double imgratio;
+        public float scaleX = 0, scaleY = 0;
 
         public bool inDock;
 
@@ -85,7 +83,6 @@ namespace PhenoPad.CustomControl
         public TranslateTransform dragTransform;
         public double scale;
 
-        Image snapshot;
         public bool hasImage;
 
 
@@ -215,7 +212,6 @@ namespace PhenoPad.CustomControl
             this.pageId = pageId;
             this._isResizing = false;
             this.hasImage = false;
-
             rootPage = MainPage.Current;
 
             //Timer event handler bindings
@@ -224,14 +220,16 @@ namespace PhenoPad.CustomControl
                 inkCanvas.InkPresenter.StrokeInput.StrokeEnded += StrokeInput_StrokeEnded;
                 inkCanvas.InkPresenter.StrokesErased += InkPresenter_StrokesErased;
                 autosaveDispatcherTimer.Tick += AutoSaveTimer_Tick;
-                //If user has not add new stroke in 3 seconds, tick auto timer
-                autosaveDispatcherTimer.Interval = TimeSpan.FromSeconds(1);
+                //If user has not add new stroke in 0.5 seconds, tick auto timer
+                autosaveDispatcherTimer.Interval = TimeSpan.FromSeconds(0.5);
             }
 
             scaleTransform = new ScaleTransform();
+            scaleTransform.ScaleX = 1;
+            scaleTransform.ScaleY = 1;
             dragTransform = new TranslateTransform();
             TransformGroup tg = new TransformGroup();
-            tg.Children.Add(scaleTransform);
+            //tg.Children.Add(scaleTransform);
             tg.Children.Add(dragTransform);
             this.RenderTransform = tg;
 
@@ -275,10 +273,12 @@ namespace PhenoPad.CustomControl
                 if (yPos < 68)
                 {
                     this._isMoving = true;
+                    this.Opacity = 0.5;
                     this.showMovingGrid();
                 }                
             }
         }
+
         /// <summary>
         /// Apply delta canvas extension based on pre-set direction and pointer movement delta,move strokes accordingly.
         /// </summary>
@@ -344,13 +344,20 @@ namespace PhenoPad.CustomControl
             }
             if (dir == Direction.BOTTOMRIGHT)
             {
+                //only enable photo ratio resizing on this corner
                 if (hasImage)
                 {
-                    Debug.WriteLine($"{this.Height},{ this.MIN_WIDTH / imgratio + 88}");
-                    if (this.Width >= this.MIN_WIDTH && this.Height >= (this.MIN_WIDTH / imgratio + 88)) {
+                    if (this.Width >= this.MIN_WIDTH && this.Height >= (this.MIN_WIDTH / imgratio + 88))
+                    {
+                        float curHeight = (float)this.Height;
+                        float curWeight = (float)this.Width;
+
                         //only resizing based on photo width/height ratio
                         this.Height += e.Delta.Translation.Y;
                         this.Width += e.Delta.Translation.Y * imgratio;
+
+                        
+
                     }
                 }
                 else {
@@ -365,9 +372,10 @@ namespace PhenoPad.CustomControl
             {
                 this.Width = this.Width < this.MIN_WIDTH ? this.MIN_WIDTH : this.Width;
                 this.Height = this.Width <= this.MIN_WIDTH? (this.MIN_WIDTH / imgratio + 88) : this.Height;
-                Debug.WriteLine($"new h={this.Height}");
-                inkCan.Height = this.Height - 88;
-                inkCan.Width = this.Width;
+                //proportionally zoom in/out all inkcanvas
+                scaleTransform.ScaleX = this.Width == this.MIN_WIDTH ? scaleTransform.ScaleY : scaleTransform.ScaleY * imgratio;
+                scaleTransform.ScaleY = this.Width == this.MIN_WIDTH ? scaleTransform.ScaleY : scaleTransform.ScaleY + 
+                    e.Delta.Translation.Y/e.Delta.Translation.Y*0.0001;
             }
             else {
                 if (this.Width > this.inkCan.Width)
@@ -405,6 +413,7 @@ namespace PhenoPad.CustomControl
             this.canvasTop = Canvas.GetTop(this);
             this.height = this.Height;
             this.width = this.Width;
+            this.Opacity = 1;
             this.hideMovingGrid();
             autosaveDispatcherTimer.Start();
         }
@@ -457,7 +466,6 @@ namespace PhenoPad.CustomControl
         {
             this.inDock = true;
             this.Visibility = Visibility.Collapsed;
-            rootPage.curPage.addinBase.Visibility = Visibility.Visible;
             await rootPage.curPage.AutoSaveAddin(this.name);
             rootPage.curPage.refreshAddInList();
         }
@@ -595,19 +603,22 @@ namespace PhenoPad.CustomControl
         {
             isInitialized = true;
             Debug.WriteLine($"hasimage={hasImage}");
-            if (hasImage)
+            if (hasImage || onlyView)
               hideScrollViewer();
 
             scrollViewer.Visibility = Visibility.Visible;
 
-            inkCan.Height = this.Height - 88;
-            inkCan.Width = this.Width;
-            
+
             //this.ControlStackPanel.Visibility = Visibility.Visible;
             //contentGrid.Children.Add(inkCanvas);
+
+
+
             inkCan.Visibility = Visibility.Visible;
             if (!onlyView) // added from note page, need editing
             {
+                inkCan.Height = this.Height - 88;
+                inkCan.Width = this.Width;
                 // Set supported input type to default using both moush and pen
                 inkCanvas.InkPresenter.InputDeviceTypes =
                     Windows.UI.Core.CoreInputDeviceTypes.Mouse |
@@ -624,12 +635,22 @@ namespace PhenoPad.CustomControl
                 inkToolbar.Visibility = Visibility.Visible;
             }
             else // only for viewing on page overview page
-            {               
+            {
+                Rect bound = inkCanvas.InkPresenter.StrokeContainer.BoundingRect;
+                inkCan.Height = bound.Height + bound.Top;
+                inkCan.Width = bound.Width + bound.Left;
+                var strokes = inkCanvas.InkPresenter.StrokeContainer.GetStrokes();
+                resizeIcon.Visibility = Visibility.Collapsed;
+                double ratio = bound.Width / bound.Height;
+                //ScaleSize.ScaleX = 200 / inkCan.Width;
+                //ScaleSize.ScaleY = ScaleSize.ScaleX;
+                //this.Height = 200;
+                //this.Width = 200;
+
                 inkCanvas.InkPresenter.InputDeviceTypes =
                     Windows.UI.Core.CoreInputDeviceTypes.None;
             }
             //await rootPage.curPage.AutoSaveAddin(this.name);
-
 
         }
 
@@ -677,19 +698,11 @@ namespace PhenoPad.CustomControl
                     this.hasImage = true;
                 }
            
-                InitiateInkCanvas(onlyView);
-
                 var annofile = await FileManager.getSharedFileManager().GetNoteFileNotCreate(notebookId, pageId, NoteFileType.ImageAnnotation, name);
                 if (annofile != null)
                     await FileManager.getSharedFileManager().loadStrokes(annofile, inkCanvas);
 
-                if (!onlyView)
-                {
-                    dragTransform.X = transX;
-                    dragTransform.Y = transY;
-                    scaleTransform.ScaleX = transScale;
-                    scaleTransform.ScaleY = transScale;
-                }
+                InitiateInkCanvas(onlyView);
 
             }
             catch (NullReferenceException e) {

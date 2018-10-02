@@ -325,6 +325,7 @@ namespace PhenoPad.CustomControl
             DrawBackgroundLines();
             scrollViewer.ChangeView(null, 100, null, true);
             sideScrollView.ChangeView(null, 100, null, true);
+
         }
        
         // Left button lasso control
@@ -584,6 +585,11 @@ namespace PhenoPad.CustomControl
         {
             UnprocessedInput_PointerMoved(null, args);
         }
+
+        internal void setIconSize(double v)
+        {
+        }
+
         // stroke input handling: mouse pointer released
         private void StrokeInput_PointerReleased(InkStrokeInput sender, PointerEventArgs args)
         {
@@ -1011,24 +1017,36 @@ namespace PhenoPad.CustomControl
 
         public void showAddIn(List<ImageAndAnnotation> images)
         {
-            if (images.Count > 0)
+            try
             {
-                addinlist.Visibility = Visibility.Visible;
-                addinlist.ItemsSource = images;
+                if (images.Count > 0)
+                {
+                    addinlist.Visibility = Visibility.Visible;
+                    addinlist.ItemsSource = images;
+                    NumIcon.Text = $"({images.Count})";
+                }
+                else
+                {
+                    addinlist.ItemsSource = new List<ImageAndAnnotation>();
+                    addinlist.Visibility = Visibility.Collapsed;
+                    NumIcon.Text = "";
+                }
+
             }
-            else
-            {
-                addinlist.ItemsSource = new List<ImageAndAnnotation>();
-                addinlist.Visibility = Visibility.Collapsed;
+            catch (Exception e) {
+                MetroLogger.getSharedLogger().Error($"Failed to refresh addin icon list:{e}{e.Message}");
             }
         }
-
+        /// <summary>
+        /// Toggles the in dock status of an addin and show/hides it from main canvas
+        /// </summary>
         public async void addInIcon_Click(object sender, RoutedEventArgs e)
         {
             //gets the clicked addin name and search for the specific addin
             //in user canvas, then hides its panel
-            AddInControl icon = (AddInControl)((Button)sender).Content;
-            string name = icon.name;
+            Viewbox icon = (Viewbox)((Button)sender).Content;
+            AddInControl icon_addin = (AddInControl)icon.Child;
+            string name = icon_addin.name;
             List<AddInControl> addinlist = await GetAllAddInControls();
             AddInControl addin = addinlist.Where(x => x.name == name).ToList()[0];
             addin.inDock = false;
@@ -2822,6 +2840,7 @@ namespace PhenoPad.CustomControl
         #region for test only
         // FOR TESTING ONLY
         private Dictionary<uint, Rectangle> addedBoundIds = new Dictionary<uint, Rectangle>();
+
         private async void DrawBoundingForTest()
         {
 

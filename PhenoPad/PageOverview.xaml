@@ -222,7 +222,7 @@
                     <TextBlock VerticalAlignment="Center" Grid.Row="0" FontSize="20" Foreground="Black" Margin="10 0 0 0">Photos and annotations</TextBlock>
                 </Border>
 
-                <GridView Name="ImageAnnotationGridView"  Padding="10 10 10 10" Height="400"
+                <GridView Name="ImageAnnotationGridView"  Padding="10 10 10 10" Height="250"
                            ScrollViewer.HorizontalScrollBarVisibility="Auto"  AllowFocusOnInteraction="False" SelectionMode="None"
     ScrollViewer.HorizontalScrollMode="Enabled"
     ScrollViewer.VerticalScrollMode="Disabled">
@@ -235,8 +235,11 @@
 
                     <GridView.ItemTemplate>
                         <DataTemplate x:DataType="fileservice:ImageAndAnnotation">
-                            <customcontrol:AddInControl name="{x:Bind name}" notebookId="{x:Bind notebookId}" viewOnly="True" pageId="{x:Bind pageId}"></customcontrol:AddInControl>
-                        </DataTemplate>
+                                <Viewbox Stretch="Uniform" Width="200">
+                                    <customcontrol:AddInControl name="{x:Bind name}" notebookId="{x:Bind notebookId}" 
+                                                                viewOnly="True" pageId="{x:Bind pageId}"/>
+                                </Viewbox>
+                            </DataTemplate>
                     </GridView.ItemTemplate>
                     
                 </GridView>

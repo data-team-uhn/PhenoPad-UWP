@@ -20,6 +20,11 @@
             <x:Double x:Key="categoryButtonFontSize">27</x:Double>
         </ResourceDictionary>
     </UserControl.Resources>
+    <UserControl.RenderTransform>
+        <ScaleTransform x:Name="resize" />
+    </UserControl.RenderTransform>
+
+
 
     <Grid Background="WhiteSmoke" BorderBrush="LightGray" Name="OutlineGrid">
 
@@ -29,6 +34,7 @@
             <RowDefinition Height="*"></RowDefinition>
             <RowDefinition Height="20"></RowDefinition>
         </Grid.RowDefinitions>
+        
 
         <Grid Name="contentGrid" Grid.Row="2">
             <!--<local:AddInImageControl Canvas.ZIndex="1" Visibility="Collapsed" x:Name="imageControl"/>-->
@@ -38,7 +44,9 @@
                               HorizontalScrollMode="Enabled" 
                               HorizontalScrollBarVisibility="Auto">
                 <Grid x:Name="scrollGrid">
-                    <InkCanvas Visibility="Collapsed" x:Name="inkCanvas" />
+                    <Viewbox Name="canvasViewBox">
+                        <InkCanvas Visibility="Collapsed" x:Name="inkCanvas" Canvas.ZIndex="5"/>
+                    </Viewbox>
                 </Grid>
             </ScrollViewer>
         </Grid>
@@ -90,9 +98,13 @@
         
 
 
-        <Grid Grid.Row="1" Grid.RowSpan="2" Background="White" Opacity="0.5"  Visibility="Collapsed" Name="MovingGrid" >
+        <Grid Grid.Row="0" Grid.RowSpan="4" Background="White" Opacity="0.5"  
+              Name="MovingGrid" Visibility="Collapsed">
         </Grid>
-        <SymbolIcon Grid.Row="3" HorizontalAlignment="Right" VerticalAlignment="Center" Symbol="FullScreen" RenderTransformOrigin="0.5,0.5">
+        <SymbolIcon Grid.Row="3" HorizontalAlignment="Right" 
+                    VerticalAlignment="Center" Symbol="FullScreen" 
+                    Name="resizeIcon"
+                    RenderTransformOrigin="0.5,0.5">
             <SymbolIcon.RenderTransform>
                 <CompositeTransform Rotation="90" ScaleX="0.7" ScaleY="0.7"/>
 
