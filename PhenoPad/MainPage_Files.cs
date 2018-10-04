@@ -177,8 +177,10 @@ namespace PhenoPad
                     //loop to add actual add-in to canvas but hides it depending on its inDock value
                     foreach (var ia in imageAndAnno)
                     {
-                        aPage.addImageAndAnnotationControl(ia.name, ia.canvasLeft, ia.canvasTop, true, null, ia.transX, ia.transY, ia.transScale,
-                            width: ia.width, height: ia.height, indock: ia.inDock);
+                        //aPage.addImageAndAnnotationControl(ia.name, ia.canvasLeft, ia.canvasTop, true, null, 
+                        //    ia.transX, ia.transY, ia.zoomFactor,
+                        //    width: ia.width, height: ia.height, indock: ia.inDock);
+                        aPage.loadAddInControl(ia, true, null);
                     }
                 }
                 //setting initial page to first page and auto-start analyzing strokes

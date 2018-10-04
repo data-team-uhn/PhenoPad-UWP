@@ -19,10 +19,12 @@ namespace PhenoPad.FileService
         public double canvasTop { get; set; }
         public double transX { get; set; }
         public double transY { get; set; }
-        public double transScale { get; set; }
+        public double zoomFactor { get; set; }
         public string date { get; set; }
         public double width { get; set; }
         public double height { get; set; }
+        public double heightOrigin { get; set; }
+        public double widthOrigin { get; set; }
         public bool inDock { get; set; }
 
 
@@ -38,7 +40,10 @@ namespace PhenoPad.FileService
         /// </summary>
         public ImageAndAnnotation(string name, string notebookId, string pageId,
                                     double canvasLeft, double canvasTop,
-                                    double transX, double transY, double transScale, double width, double height,bool inDock)
+                                    double transX, double transY, double zoomFactor,
+                                    double widthOrigin, double heightOrigin,
+                                    double width, double height,
+                                    bool inDock)
         {
             this.name = name;
             this.notebookId = notebookId;
@@ -47,9 +52,11 @@ namespace PhenoPad.FileService
             this.canvasTop = canvasTop;
             this.transX = transX;
             this.transY = transY;
+            this.widthOrigin = widthOrigin;//this is the original width when add-in is first created
+            this.heightOrigin = heightOrigin;//this is the original height when add-in is first created
             this.height = height;
             this.width = width;
-            this.transScale = transScale;
+            this.zoomFactor = zoomFactor;//most recent zoomfactor of inkcanvas
             this.inDock = inDock;
             date = DateTime.Now.ToString("MM/dd/yyyy HH:mm:ss");
         }
