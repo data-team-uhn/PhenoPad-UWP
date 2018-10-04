@@ -888,13 +888,14 @@ namespace PhenoPad.CustomControl
         {
             List<ImageAndAnnotation> olist = new List<ImageAndAnnotation>();
             List<AddInControl> addinlist = await GetAllAddInControls();
-            foreach(var con in addinlist)
+            foreach(var addin in addinlist)
             {
-                ImageAndAnnotation temp = new ImageAndAnnotation(con.name, notebookId, pageId, con.canvasLeft, con.canvasTop,
-                                                                      con.transX, con.transY, con.viewBoxFactor,
-                                                                      con.Width, con.Height, 
-                                                                      con.ActualWidth, con.ActualHeight,
-                                                                      con.inDock);
+                ImageAndAnnotation temp = new ImageAndAnnotation(addin.name, notebookId, pageId,
+                                                                 addin.canvasLeft, addin.canvasTop,
+                                                                 addin.transX, addin.transY, addin.viewFactor, 
+                                                                 addin.widthOrigin, addin.heightOrigin,
+                                                                 addin.Width, addin.Height,
+                                                                 addin.inDock);
                 olist.Add(temp);
             }
 
@@ -914,7 +915,8 @@ namespace PhenoPad.CustomControl
                     byte[] buffer = provider.DetachPixelData();
                     WriteableBitmap bitmap = new WriteableBitmap((int)decoder.PixelWidth, (int)decoder.PixelHeight);
                     await bitmap.PixelBuffer.AsStream().WriteAsync(buffer, 0, buffer.Length);
-                    addImageAndAnnotationControl(FileManager.getSharedFileManager().CreateUniqueName(), 50, 50, false, bitmap);
+                    string name = FileManager.getSharedFileManager().CreateUniqueName();
+                    NewAddinControl(name, false, left:50, top:50,widthOrigin:400,heightOrigin:400,wb:bitmap);
                 }
             }
             catch (Exception e)
@@ -925,64 +927,71 @@ namespace PhenoPad.CustomControl
            
         }
 
-        public void loadAddInControl(ImageAndAnnotation ia, bool loadFromDisk, WriteableBitmap wb = null)
+        /// <summary>
+        /// Loads pre-saved addin controls from disk using deserialized ImageAndAnnotation object.
+        /// </summary>
+        public async void loadAddInControl(ImageAndAnnotation ia)
         {
-            AddInControl canvasAddIn = new AddInControl(ia.name, notebookId, pageId, ia.width, ia.height);
-            //Manually setting pre-saved configuration of the add-in control
-            {
-                canvasAddIn.canvasLeft = ia.canvasLeft;
-                canvasAddIn.canvasTop = ia.canvasTop;
-                canvasAddIn.inDock = ia.inDock;
-                canvasAddIn.widthOrigin = ia.widthOrigin;
-                canvasAddIn.heightOrigin = ia.heightOrigin;
-                canvasAddIn.viewBoxFactor = ia.zoomFactor;
-                Canvas.SetLeft(canvasAddIn, ia.canvasLeft);
-                Canvas.SetTop(canvasAddIn, ia.canvasTop);
-                canvasAddIn.dragTransform.X = ia.transX;
-                canvasAddIn.dragTransform.Y = ia.transY;
-            }
+            AddInControl canvasAddIn = new AddInControl(ia.name, notebookId, pageId, 
+                                                        ia.widthOrigin, ia.heightOrigin);
 
-            userControlCanvas.Children.Add(canvasAddIn);
-            //loading a photo from disk with editing option
-            if (loadFromDisk)
+            await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () => {
+                //Manually setting pre-saved configuration of the add-in control
+                    Debug.WriteLine($"\n\n ia width origin = {ia.widthOrigin}");
+                    canvasAddIn.Height = ia.height;
+                    canvasAddIn.Width = ia.width;
+                    canvasAddIn.widthOrigin = ia.widthOrigin;
+                    canvasAddIn.heightOrigin = ia.heightOrigin;
+                canvasAddIn.inkCan.Height = ia.heightOrigin - 88;
+                canvasAddIn.inkCan.Width = ia.widthOrigin;
+
+                canvasAddIn.canvasLeft = ia.canvasLeft;
+                    canvasAddIn.canvasTop = ia.canvasTop;
+                    canvasAddIn.inDock = ia.inDock;
+                    canvasAddIn.dragTransform.X = ia.transX;
+                    canvasAddIn.dragTransform.Y = ia.transY;
+                    Canvas.SetLeft(canvasAddIn, ia.canvasLeft);
+                    Canvas.SetTop(canvasAddIn, ia.canvasTop);
+                    canvasAddIn.viewFactor.ScaleX = ia.zoomFactorX;
+                    canvasAddIn.viewFactor.ScaleY = ia.zoomFactorY;
+
+            });
+
+                userControlCanvas.Children.Add(canvasAddIn);
                 canvasAddIn.InitializeFromDisk(false);
 
-            if (wb != null)
-                canvasAddIn.InitializeFromImage(wb);
+                //If this addin was hidden during the last edit, auto hides it from initialization
+                canvasAddIn.Visibility = ia.inDock ? Visibility.Collapsed : Visibility.Visible;   
 
-            //If this addin was hidden during the last edit, auto hides it from initialization
-            canvasAddIn.Visibility = ia.inDock ? Visibility.Collapsed : Visibility.Visible;
         }
 
-        public void addImageAndAnnotationControl(string name, double left, double top, bool loadFromDisk, WriteableBitmap wb=null, 
-                                                    double transX=0, double transY=0, 
-                                                    double widthOrigin = -1, double heightOrigin = -1,
+        /// <summary>
+        /// Adds a new addin control to notepage based on given configuration arguments.
+        /// </summary>
+        public void NewAddinControl(string name, bool loadFromDisk,
+                                                    double left, double top,                                                   
+                                                    double widthOrigin, double heightOrigin,
                                                     double width = -1, double height = -1,
-                                                    bool indock = false)
+                                                    WriteableBitmap wb = null                                                   
+                                                    )
         {
-            AddInControl canvasAddIn = new AddInControl(name, notebookId, pageId, 
-                                                        widthOrigin, heightOrigin,
-                                                        width, height);
+            Debug.WriteLine($"creating new addin ....{widthOrigin},{heightOrigin}");
 
-            //Manually setting pre-saved configuration of the add-in control
+            AddInControl canvasAddIn = new AddInControl(name, notebookId, pageId, 
+                                                        widthOrigin, heightOrigin);
+            //Manually setting configuration for new add-in control
             canvasAddIn.canvasLeft = left;
             canvasAddIn.canvasTop = top;
-            canvasAddIn.inDock = indock;
             Canvas.SetLeft(canvasAddIn, left);
             Canvas.SetTop(canvasAddIn, top);
-            canvasAddIn.dragTransform.X = transX;
-            canvasAddIn.dragTransform.Y = transY;
 
             userControlCanvas.Children.Add(canvasAddIn);
+
             //loading a photo from disk with editing option
             if (loadFromDisk)
                 canvasAddIn.InitializeFromDisk(false);
-
             if (wb != null)
                 canvasAddIn.InitializeFromImage(wb);
-
-            //If this addin was hidden during the last edit, auto hides it from initialization
-            canvasAddIn.Visibility = indock ? Visibility.Collapsed : Visibility.Visible;
         }
 
         public void AddImageControl(string imagename, SoftwareBitmapSource source)
@@ -1723,10 +1732,9 @@ namespace PhenoPad.CustomControl
                         {
                             var stroke = inkCanvas.InkPresenter.StrokeContainer.GetStrokeById(dstroke);
                             //adds a new add-in control 
-                            addImageAndAnnotationControl(FileManager.getSharedFileManager().CreateUniqueName(),
-                                                         stroke.BoundingRect.X, stroke.BoundingRect.Y, false,
-                                                         width: stroke.BoundingRect.Width, height: stroke.BoundingRect.Height,
-                                                         widthOrigin: stroke.BoundingRect.Width, heightOrigin: stroke.BoundingRect.Height);
+                            string name = FileManager.getSharedFileManager().CreateUniqueName();
+                            NewAddinControl(name, false, left : stroke.BoundingRect.X, top : stroke.BoundingRect.Y, 
+                                            widthOrigin : stroke.BoundingRect.Width, heightOrigin : stroke.BoundingRect.Height);
                             stroke.Selected = true;
                         }
                         //dispose the strokes as don't need them anymore

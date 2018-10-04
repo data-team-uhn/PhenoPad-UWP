@@ -180,7 +180,7 @@ namespace PhenoPad
                         //aPage.addImageAndAnnotationControl(ia.name, ia.canvasLeft, ia.canvasTop, true, null, 
                         //    ia.transX, ia.transY, ia.zoomFactor,
                         //    width: ia.width, height: ia.height, indock: ia.inDock);
-                        aPage.loadAddInControl(ia, true, null);
+                        aPage.loadAddInControl(ia);
                     }
                 }
                 //setting initial page to first page and auto-start analyzing strokes

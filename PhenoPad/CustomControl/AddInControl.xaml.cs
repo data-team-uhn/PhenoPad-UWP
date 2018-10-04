@@ -66,8 +66,6 @@ namespace PhenoPad.CustomControl
         //public string notebookId { get; }
         //public string pageId { get; }
 
-        public double height;
-        public double width;
         public double canvasLeft;
         public double canvasTop;
         public double imgratio;
@@ -86,7 +84,7 @@ namespace PhenoPad.CustomControl
 
         public double widthOrigin;
         public double heightOrigin;
-        public double viewBoxFactor;
+        public ScaleTransform viewFactor;
         
         public double transX
         {
@@ -209,9 +207,7 @@ namespace PhenoPad.CustomControl
         public AddInControl(string name, 
                             string notebookId, 
                             string pageId,
-                            double widthOrigin, double heightOrigin,
-                            double width = -1, double height = -1,
-                            double zoomFactor = 0)
+                            double widthOrigin, double heightOrigin)
         {
 
             this.InitializeComponent();
@@ -223,16 +219,13 @@ namespace PhenoPad.CustomControl
 
             //setting pre-saved configurations of the control
             {
-                this.widthOrigin = widthOrigin < MIN_WIDTH ? MIN_WIDTH : widthOrigin;
-                this.heightOrigin = heightOrigin < MIN_HEIGHT ? MIN_HEIGHT : heightOrigin;
+                this.widthOrigin = (widthOrigin < DEFAULT_WIDTH || heightOrigin < DEFAULT_HEIGHT) ? DEFAULT_WIDTH : widthOrigin;
+                this.heightOrigin = (widthOrigin < DEFAULT_WIDTH || heightOrigin < DEFAULT_HEIGHT) ? DEFAULT_HEIGHT : heightOrigin;
+                this.Height = (widthOrigin < DEFAULT_WIDTH || heightOrigin < DEFAULT_HEIGHT) ? DEFAULT_WIDTH : widthOrigin;
+                this.Width = (widthOrigin < DEFAULT_WIDTH || heightOrigin < DEFAULT_HEIGHT) ? DEFAULT_HEIGHT : heightOrigin;
 
-                this.Height = heightOrigin;
-                this.Width = widthOrigin;
-
-                this.height = height == -1 ? heightOrigin : height;
-                this.width = width == -1 ? widthOrigin : width;
-
-                this.viewBoxFactor = zoomFactor == 0 ? 1 : zoomFactor;
+                inkCan.Width = this.Width;
+                inkCan.Height = this.Height - 88;
 
                 this.inDock = false;
                 this.name = name;
@@ -255,6 +248,9 @@ namespace PhenoPad.CustomControl
             //control transform group binding
             {
                 TransformGroup tg = new TransformGroup();
+                viewFactor = new ScaleTransform();
+                viewFactor.ScaleX = 1;
+                viewFactor.ScaleY = 1;
                 dragTransform = new TranslateTransform();
                 tg.Children.Add(dragTransform);
                 this.RenderTransform = tg;
@@ -430,16 +426,14 @@ namespace PhenoPad.CustomControl
         }
 
         private void Manipulator_OnManipulationCompleted(object sender, ManipulationCompletedRoutedEventArgs e) {
-
-            this._isMoving = false;
-            this._isResizing = false;
-            this.canvasLeft = Canvas.GetLeft(this);
-            this.canvasTop = Canvas.GetTop(this);
-            this.height = this.Height;
-            this.width = this.Width;
-            this.viewBoxFactor = canvasViewBox.ActualWidth / this.widthOrigin;
-            this.Opacity = 1;
-            this.hideMovingGrid();
+            _isMoving = false;
+            _isResizing = false;
+            canvasLeft = Canvas.GetLeft(this);
+            canvasTop = Canvas.GetTop(this);
+            viewFactor.ScaleX = this.Width / this.widthOrigin;
+            viewFactor.ScaleY = this.Height / (this.heightOrigin);
+            Opacity = 1;
+            hideMovingGrid();
             autosaveDispatcherTimer.Start();
         }
         #endregion
@@ -589,10 +583,10 @@ namespace PhenoPad.CustomControl
                     //Resizing the add-in frame according to the image ratio
                     imgratio = (double)filewidth / fileheight;
                     this.Height = this.Width / imgratio + 88;
+                    this.widthOrigin = this.Width;
+                    this.heightOrigin = this.Height;
                     this.inkCan.Height = this.Height - 88;
                     this.inkCan.Width = this.Width;
-                    this.height = this.Height;
-                    this.width = this.Width;
 
                     imageControl.Source = rawphoto;
                     contentGrid.Children.Add(imageControl);
@@ -627,7 +621,7 @@ namespace PhenoPad.CustomControl
         private void InitiateInkCanvas(bool onlyView = false, double scaleX = 1, double scaleY = 1)
         {
             isInitialized = true;
-            Debug.WriteLine($"hasimage={hasImage}");
+
             if (hasImage || onlyView)
               hideScrollViewer();
 
@@ -637,17 +631,11 @@ namespace PhenoPad.CustomControl
             //this.ControlStackPanel.Visibility = Visibility.Visible;
             //contentGrid.Children.Add(inkCanvas);
 
-            originalHeight = this.Height;
-            originalWidth = this.Width;
-
-            canvasSize.ScaleX = scaleX;
-            canvasSize.ScaleY = scaleY;
-
             inkCan.Visibility = Visibility.Visible;
             if (!onlyView) // added from note page, need editing
             {
-                inkCan.Height = this.Height - 88;
-                inkCan.Width = this.Width;
+
+             
                 // Set supported input type to default using both moush and pen
                 inkCanvas.InkPresenter.InputDeviceTypes =
                     Windows.UI.Core.CoreInputDeviceTypes.Mouse |
@@ -671,10 +659,6 @@ namespace PhenoPad.CustomControl
                 var strokes = inkCanvas.InkPresenter.StrokeContainer.GetStrokes();
                 resizeIcon.Visibility = Visibility.Collapsed;
                 double ratio = bound.Width / bound.Height;
-                //ScaleSize.ScaleX = 200 / inkCan.Width;
-                //ScaleSize.ScaleY = ScaleSize.ScaleX;
-                //this.Height = 200;
-                //this.Width = 200;
 
                 inkCanvas.InkPresenter.InputDeviceTypes =
                     Windows.UI.Core.CoreInputDeviceTypes.None;
@@ -711,11 +695,11 @@ namespace PhenoPad.CustomControl
             this.categoryGrid.Visibility = Visibility.Collapsed;
             try
             {
-                this.Height = this.height;
-                this.Width = this.width;
+                //this.Height = this.height;
+                //this.Width = this.width;
 
-                this.inkCan.Width = this.Width;
-                this.inkCan.Height = this.Height - 88;
+                //this.inkCan.Width = this.Width;
+                //this.inkCan.Height = this.Height - 88;
 
                 var annofile = await FileManager.getSharedFileManager().GetNoteFileNotCreate(notebookId, pageId, NoteFileType.ImageAnnotation, name);
                 if (annofile != null)
@@ -725,38 +709,27 @@ namespace PhenoPad.CustomControl
                 var file = await FileManager.getSharedFileManager().GetNoteFileNotCreate(notebookId, pageId, NoteFileType.Image, name);
                 if (file != null)
                 {
+                    //inkCan.Height = this.Height / viewFactor.ScaleY - 88;
+                    //inkCan.Width = this.Width / viewFactor.ScaleX;
                     var properties = await file.Properties.GetImagePropertiesAsync();
                     imgratio = (double)properties.Width / properties.Height;
-                    BitmapImage img = new BitmapImage(new Uri(file.Path));                    
+                    BitmapImage img = new BitmapImage(new Uri(file.Path));
                     Image photo = new Image();
                     photo.Source = img;
                     photo.Visibility = Visibility.Visible;
                     contentGrid.Children.Add(photo);
                     categoryGrid.Visibility = Visibility.Collapsed;
-                    this.Height = this.Width / imgratio + 88;
                     this.hasImage = true;
-                    ScaleTransform scale = new ScaleTransform();
-                    scale.ScaleX = viewBoxFactor;
-                    scale.ScaleY = viewBoxFactor / imgratio;
-                    canvasViewBox.RenderTransform = scale;
+                    //inkCan.RenderTransform = viewFactor;
+                }
+                else {
+                    inkCan.Height = this.Height - 88;
+                    inkCan.Width = this.Width;
                 }
 
-
-                //canvasViewBox.ActualHeight
-
-
-
-                //Rect bounding = inkCan.Width
-                //float reScaleX = (float)(this.Width / (bounding.Left + bounding.Width));
-                //float reScaleY = (float)(reScaleX / imgratio);
-                //var strokes = inkCan.InkPresenter.StrokeContainer.GetStrokes();
-                //foreach (var strk in strokes)
-                //{
-                //    Debug.WriteLine($"loading strokes x={scaleX},y={scaleY}");
-                //    strk.PointTransform = Matrix3x2.CreateScale(reScaleX, reScaleY);
-                //}
-
                 InitiateInkCanvas(onlyView);
+
+
 
             }
             catch (NullReferenceException e) {
@@ -777,6 +750,15 @@ namespace PhenoPad.CustomControl
                 this.Height = DEFAULT_HEIGHT;
                 TitleRelativePanel.Visibility = Visibility.Collapsed;
                 InitializeFromDisk(true);
+            }
+        }
+
+        public void refreshZoom(double scaleX,double scaleY) {
+            if (hasImage) {
+                ScaleTransform scale = new ScaleTransform();
+                scale.ScaleX = scaleX;
+                scale.ScaleY = scaleY;
+                this.viewFactor = scale;
             }
         }
         #endregion
@@ -853,11 +835,6 @@ namespace PhenoPad.CustomControl
 
         }
 
-        private void canvasViewBox_SizeChanged(object sender, SizeChangedEventArgs e)
-        {
-            FrameworkElement child = ((Viewbox)sender).Child as FrameworkElement;
-            viewBoxFactor = ((Viewbox)sender).ActualWidth / child.ActualWidth;
-        }
     }
 
 }

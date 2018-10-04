@@ -45,11 +45,7 @@
                               HorizontalScrollBarVisibility="Auto">
                 <Grid x:Name="scrollGrid">
                     <Viewbox Name="canvasViewBox">
-                        <InkCanvas Visibility="Collapsed" x:Name="inkCanvas" Canvas.ZIndex="5">
-                            <InkCanvas.RenderTransform>
-                                <ScaleTransform x:Name="canvasSize" />
-                            </InkCanvas.RenderTransform>
-                        </InkCanvas>
+                        <InkCanvas Visibility="Collapsed" x:Name="inkCanvas" Canvas.ZIndex="5"/>
                     </Viewbox>
                 </Grid>
             </ScrollViewer>

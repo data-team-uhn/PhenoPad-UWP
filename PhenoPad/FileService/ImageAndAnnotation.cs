@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Windows.UI.Xaml;
+using Windows.UI.Xaml.Media;
 
 namespace PhenoPad.FileService
 {
@@ -19,7 +20,8 @@ namespace PhenoPad.FileService
         public double canvasTop { get; set; }
         public double transX { get; set; }
         public double transY { get; set; }
-        public double zoomFactor { get; set; }
+        public double zoomFactorX { get; set; }
+        public double zoomFactorY { get; set; }
         public string date { get; set; }
         public double width { get; set; }
         public double height { get; set; }
@@ -40,7 +42,7 @@ namespace PhenoPad.FileService
         /// </summary>
         public ImageAndAnnotation(string name, string notebookId, string pageId,
                                     double canvasLeft, double canvasTop,
-                                    double transX, double transY, double zoomFactor,
+                                    double transX, double transY, ScaleTransform zoomFactor,
                                     double widthOrigin, double heightOrigin,
                                     double width, double height,
                                     bool inDock)
@@ -56,7 +58,8 @@ namespace PhenoPad.FileService
             this.heightOrigin = heightOrigin;//this is the original height when add-in is first created
             this.height = height;
             this.width = width;
-            this.zoomFactor = zoomFactor;//most recent zoomfactor of inkcanvas
+            this.zoomFactorX = zoomFactor.ScaleX;
+            this.zoomFactorY = zoomFactor.ScaleY;
             this.inDock = inDock;
             date = DateTime.Now.ToString("MM/dd/yyyy HH:mm:ss");
         }
