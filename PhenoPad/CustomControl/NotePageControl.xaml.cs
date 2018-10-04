@@ -891,9 +891,7 @@ namespace PhenoPad.CustomControl
             foreach(var con in addinlist)
             {
                 ImageAndAnnotation temp = new ImageAndAnnotation(con.name, notebookId, pageId, con.canvasLeft, con.canvasTop,
-                                                                      con.transX, con.transY, con.viewBoxFactor,
-                                                                      con.Width, con.Height, 
-                                                                      con.ActualWidth, con.ActualHeight,
+                                                                      con.transX, con.transY, con.transScale, con.ActualWidth, con.ActualHeight,
                                                                       con.inDock);
                 olist.Add(temp);
             }
@@ -925,58 +923,19 @@ namespace PhenoPad.CustomControl
            
         }
 
-        public void loadAddInControl(ImageAndAnnotation ia, bool loadFromDisk, WriteableBitmap wb = null)
-        {
-            AddInControl canvasAddIn = new AddInControl(ia.name, notebookId, pageId, ia.width, ia.height);
-            //Manually setting pre-saved configuration of the add-in control
-            {
-                canvasAddIn.canvasLeft = ia.canvasLeft;
-                canvasAddIn.canvasTop = ia.canvasTop;
-                canvasAddIn.inDock = ia.inDock;
-                canvasAddIn.widthOrigin = ia.widthOrigin;
-                canvasAddIn.heightOrigin = ia.heightOrigin;
-                canvasAddIn.viewBoxFactor = ia.zoomFactor;
-                Canvas.SetLeft(canvasAddIn, ia.canvasLeft);
-                Canvas.SetTop(canvasAddIn, ia.canvasTop);
-                canvasAddIn.dragTransform.X = ia.transX;
-                canvasAddIn.dragTransform.Y = ia.transY;
-            }
-
-            userControlCanvas.Children.Add(canvasAddIn);
-            //loading a photo from disk with editing option
-            if (loadFromDisk)
-                canvasAddIn.InitializeFromDisk(false);
-
-            if (wb != null)
-                canvasAddIn.InitializeFromImage(wb);
-
-            //If this addin was hidden during the last edit, auto hides it from initialization
-            canvasAddIn.Visibility = ia.inDock ? Visibility.Collapsed : Visibility.Visible;
-        }
-
-        public void addImageAndAnnotationControl(string name, double left, double top, bool loadFromDisk, WriteableBitmap wb=null, 
-                                                    double transX=0, double transY=0, 
-                                                    double widthOrigin = -1, double heightOrigin = -1,
-                                                    double width = -1, double height = -1,
-                                                    bool indock = false)
-        {
-            AddInControl canvasAddIn = new AddInControl(name, notebookId, pageId, 
-                                                        widthOrigin, heightOrigin,
-                                                        width, height);
-
-            //Manually setting pre-saved configuration of the add-in control
+        public void addImageAndAnnotationControl(string name, double left, double top, bool loadFromDisk, WriteableBitmap wb = null, 
+                                                    double transX = 0, double transY = 0, double transScale = 0, double width = -1, double height = -1,
+                                                    bool indock = false){
+            AddInControl canvasAddIn = new AddInControl(name, notebookId, pageId, width, height);
             canvasAddIn.canvasLeft = left;
             canvasAddIn.canvasTop = top;
             canvasAddIn.inDock = indock;
             Canvas.SetLeft(canvasAddIn, left);
             Canvas.SetTop(canvasAddIn, top);
-            canvasAddIn.dragTransform.X = transX;
-            canvasAddIn.dragTransform.Y = transY;
-
             userControlCanvas.Children.Add(canvasAddIn);
-            //loading a photo from disk with editing option
+
             if (loadFromDisk)
-                canvasAddIn.InitializeFromDisk(false);
+                canvasAddIn.InitializeFromDisk(false, transX, transY, transScale);
 
             if (wb != null)
                 canvasAddIn.InitializeFromImage(wb);
@@ -1059,7 +1018,7 @@ namespace PhenoPad.CustomControl
         public void showAddIn(List<ImageAndAnnotation> images)
         {
             try
-            { 
+            {
                 if (images.Count > 0)
                 {
                     addinlist.Visibility = Visibility.Visible;
@@ -1219,86 +1178,85 @@ namespace PhenoPad.CustomControl
         {
             operationDispathcerTimer.Stop();
             Debug.WriteLine("operationdispatcher tick was called?????????????????????????");
-            return;
-            //if (!inkOperationAnalyzer.IsAnalyzing)
-            //{
-            //    var result = await inkOperationAnalyzer.AnalyzeAsync();
+            if (!inkOperationAnalyzer.IsAnalyzing)
+            {
+                var result = await inkOperationAnalyzer.AnalyzeAsync();
 
-            //    if (result.Status == InkAnalysisStatus.Updated)
-            //    {
-            //        var inkdrawingNodes = inkOperationAnalyzer.AnalysisRoot.FindNodes(InkAnalysisNodeKind.InkDrawing);
-            //        foreach(InkAnalysisInkDrawing drawNode in inkdrawingNodes)
-            //        {
-            //            if (drawNode.DrawingKind == InkAnalysisDrawingKind.Rectangle || drawNode.DrawingKind == InkAnalysisDrawingKind.Square)
-            //            {
-            //                    foreach (var dstroke in drawNode.GetStrokeIds())
-            //                    {
-            //                        var stroke = inkCanvas.InkPresenter.StrokeContainer.GetStrokeById(dstroke);
-            //                        AddInControl canvasAddIn = new AddInControl(FileService.FileManager.getSharedFileManager().CreateUniqueName(), notebookId, pageId);
-            //                        canvasAddIn.Width = stroke.BoundingRect.Width;
-            //                        canvasAddIn.Height = stroke.BoundingRect.Height;
-            //                        Canvas.SetLeft(canvasAddIn, stroke.BoundingRect.X);
-            //                        Canvas.SetTop(canvasAddIn, stroke.BoundingRect.Y);
-            //                        canvasAddIn.CanDrag = true;
-            //                        canvasAddIn.ManipulationMode = ManipulationModes.All;
-            //                        canvasAddIn.ManipulationDelta += delegate (object sdr, ManipulationDeltaRoutedEventArgs args)
-            //                        {
-            //                            if (args.Delta.Expansion == 0)
-            //                            {
-            //                                Canvas.SetLeft(canvasAddIn, Canvas.GetLeft(canvasAddIn) + args.Delta.Translation.X);
-            //                                Canvas.SetTop(canvasAddIn, Canvas.GetTop(canvasAddIn) + args.Delta.Translation.Y);
-            //                            }
-            //                            else
-            //                            {
-            //                                canvasAddIn.Width += args.Delta.Translation.X * 2;
-            //                                canvasAddIn.Height += args.Delta.Translation.Y * 2;
-            //                            }
-            //                            /**
-            //                            if (Math.Abs(args.Delta.Translation.X) > Math.Abs(args.Delta.Translation.Y))
-            //                            {
-            //                                //canvasAddIn.Width += args.Delta.Expansion;
-            //                                Debug.WriteLine(args.Delta.Scale);
-            //                                canvasAddIn.Width *= args.Delta.Scale;
-            //                            }
-            //                            else
-            //                            {
-            //                                //canvasAddIn.Height += args.Delta.Expansion;
-            //                                canvasAddIn.Height *= args.Delta.Scale;
-            //                            }
-            //                            **/
-            //                        };
+                if (result.Status == InkAnalysisStatus.Updated)
+                {
+                    var inkdrawingNodes = inkOperationAnalyzer.AnalysisRoot.FindNodes(InkAnalysisNodeKind.InkDrawing);
+                    foreach(InkAnalysisInkDrawing drawNode in inkdrawingNodes)
+                    {
+                        if (drawNode.DrawingKind == InkAnalysisDrawingKind.Rectangle || drawNode.DrawingKind == InkAnalysisDrawingKind.Square)
+                        {
+                                foreach (var dstroke in drawNode.GetStrokeIds())
+                                {
+                                    var stroke = inkCanvas.InkPresenter.StrokeContainer.GetStrokeById(dstroke);
+                                    AddInControl canvasAddIn = new AddInControl(FileService.FileManager.getSharedFileManager().CreateUniqueName(), notebookId, pageId);
+                                    canvasAddIn.Width = stroke.BoundingRect.Width;
+                                    canvasAddIn.Height = stroke.BoundingRect.Height;
+                                    Canvas.SetLeft(canvasAddIn, stroke.BoundingRect.X);
+                                    Canvas.SetTop(canvasAddIn, stroke.BoundingRect.Y);
+                                    canvasAddIn.CanDrag = true;
+                                    canvasAddIn.ManipulationMode = ManipulationModes.All;
+                                    canvasAddIn.ManipulationDelta += delegate (object sdr, ManipulationDeltaRoutedEventArgs args)
+                                    {
+                                        if (args.Delta.Expansion == 0)
+                                        {
+                                            Canvas.SetLeft(canvasAddIn, Canvas.GetLeft(canvasAddIn) + args.Delta.Translation.X);
+                                            Canvas.SetTop(canvasAddIn, Canvas.GetTop(canvasAddIn) + args.Delta.Translation.Y);
+                                        }
+                                        else
+                                        {
+                                            canvasAddIn.Width += args.Delta.Translation.X * 2;
+                                            canvasAddIn.Height += args.Delta.Translation.Y * 2;
+                                        }
+                                        /**
+                                        if (Math.Abs(args.Delta.Translation.X) > Math.Abs(args.Delta.Translation.Y))
+                                        {
+                                            //canvasAddIn.Width += args.Delta.Expansion;
+                                            Debug.WriteLine(args.Delta.Scale);
+                                            canvasAddIn.Width *= args.Delta.Scale;
+                                        }
+                                        else
+                                        {
+                                            //canvasAddIn.Height += args.Delta.Expansion;
+                                            canvasAddIn.Height *= args.Delta.Scale;
+                                        }
+                                        **/
+                                    };
 
 
-            //                        userControlCanvas.Children.Add(canvasAddIn);
-            //                        stroke.Selected = true;
-            //                    }
-            //                    inkOperationAnalyzer.RemoveDataForStrokes(drawNode.GetStrokeIds());
-            //                    inkCanvas.InkPresenter.StrokeContainer.DeleteSelected();
+                                    userControlCanvas.Children.Add(canvasAddIn);
+                                    stroke.Selected = true;
+                                }
+                                inkOperationAnalyzer.RemoveDataForStrokes(drawNode.GetStrokeIds());
+                                inkCanvas.InkPresenter.StrokeContainer.DeleteSelected();
                             
 
-            //            }
-            //            if (drawNode.DrawingKind == InkAnalysisDrawingKind.Drawing)
-            //            { // straight line for annotation
-            //                //var lineRect = node.BoundingRect;
+                        }
+                        if (drawNode.DrawingKind == InkAnalysisDrawingKind.Drawing)
+                        { // straight line for annotation
+                            //var lineRect = node.BoundingRect;
 
-            //            }
-            //            if (drawNode.DrawingKind == InkAnalysisDrawingKind.Ellipse || drawNode.DrawingKind == InkAnalysisDrawingKind.Circle)
-            //            {
-            //                //Debug.WriteLine("Circle!");
-            //            }
-            //        }
-            //        foreach (var sid in inkOperationAnalyzer.AnalysisRoot.GetStrokeIds())
-            //        {
-            //            inkCanvas.InkPresenter.StrokeContainer.GetStrokeById(sid).Selected = true;
-            //            inkOperationAnalyzer.RemoveDataForStroke(sid);
-            //        }
-            //        inkCanvas.InkPresenter.StrokeContainer.DeleteSelected();
-            //    }
-            //    else
-            //    {
-            //        operationDispathcerTimer.Start();
-            //    }
-            //}
+                        }
+                        if (drawNode.DrawingKind == InkAnalysisDrawingKind.Ellipse || drawNode.DrawingKind == InkAnalysisDrawingKind.Circle)
+                        {
+                            //Debug.WriteLine("Circle!");
+                        }
+                    }
+                    foreach (var sid in inkOperationAnalyzer.AnalysisRoot.GetStrokeIds())
+                    {
+                        inkCanvas.InkPresenter.StrokeContainer.GetStrokeById(sid).Selected = true;
+                        inkOperationAnalyzer.RemoveDataForStroke(sid);
+                    }
+                    inkCanvas.InkPresenter.StrokeContainer.DeleteSelected();
+                }
+                else
+                {
+                    operationDispathcerTimer.Start();
+                }
+            }
         }
 
         /// <summary>
@@ -1719,14 +1677,14 @@ namespace PhenoPad.CustomControl
                     //user has drawn a square/rectangle for adding an add-in
                     if (drawNode.DrawingKind == InkAnalysisDrawingKind.Rectangle || drawNode.DrawingKind == InkAnalysisDrawingKind.Square)
                     {
+                        Debug.WriteLine("stroke cinsidered as rec/squ");
                         foreach (var dstroke in drawNode.GetStrokeIds())
                         {
                             var stroke = inkCanvas.InkPresenter.StrokeContainer.GetStrokeById(dstroke);
                             //adds a new add-in control 
                             addImageAndAnnotationControl(FileManager.getSharedFileManager().CreateUniqueName(),
-                                                         stroke.BoundingRect.X, stroke.BoundingRect.Y, false,
-                                                         width: stroke.BoundingRect.Width, height: stroke.BoundingRect.Height,
-                                                         widthOrigin: stroke.BoundingRect.Width, heightOrigin: stroke.BoundingRect.Height);
+                                stroke.BoundingRect.X, stroke.BoundingRect.Y, false,
+                                width: stroke.BoundingRect.Width, height: stroke.BoundingRect.Height);
                             stroke.Selected = true;
                         }
                         //dispose the strokes as don't need them anymore
