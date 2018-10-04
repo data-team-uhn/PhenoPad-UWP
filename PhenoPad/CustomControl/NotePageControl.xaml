@@ -396,17 +396,17 @@
             </ListView>
         </Grid>
         
-        <Button Grid.Column="0" Grid.ColumnSpan="2" VerticalAlignment="Top" 
+        <Button Grid.Column="0" Grid.ColumnSpan="2" VerticalAlignment="Bottom" 
                 HorizontalAlignment="Right"
                 Style="{StaticResource ButtonStyle1}"
                 Margin="15 15 25 10" ToolTipService.ToolTip="Toggle Add-In Box"
                 Click="AddinsButton_Click">
                 <SymbolIcon Symbol="Pictures"/>
         </Button>
-        
-        <TextBlock Text="" Name="NumIcon" Grid.Column="0" Grid.ColumnSpan="2" 
-                   Margin="50 21 70 50" FontSize="15"
-                   VerticalAlignment="Top" HorizontalAlignment="Right"/>
+
+        <TextBlock Text="" Name="NumIcon" Grid.Column="0" Grid.ColumnSpan="2"
+                   Margin="10 15 75 15" FontSize="15"
+                   VerticalAlignment="Bottom" HorizontalAlignment="Right"/>
 
 
     </Grid>
