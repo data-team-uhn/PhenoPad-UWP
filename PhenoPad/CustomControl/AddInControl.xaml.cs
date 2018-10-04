@@ -46,8 +46,8 @@ namespace PhenoPad.CustomControl
         private double DEFAULT_HEIGHT = 400;
         private double MIN_WIDTH = 350;
         private double MIN_HEIGHT = 350;
-        double curWidth;
-        double curHeight; 
+        public double originalWidth;
+        public double originalHeight; 
         public string type; // photo, drawing
         public InkCanvas inkCan
         {
@@ -71,7 +71,6 @@ namespace PhenoPad.CustomControl
         public double canvasLeft;
         public double canvasTop;
         public double imgratio;
-        public float scaleX = 0, scaleY = 0;
 
         public bool inDock;
 
@@ -81,11 +80,13 @@ namespace PhenoPad.CustomControl
 
         public ScaleTransform scaleTransform;
         public TranslateTransform dragTransform;
-        public double scale;
+        //public double scale;
 
         public bool hasImage;
 
-
+        public double widthOrigin;
+        public double heightOrigin;
+        public double viewBoxFactor;
         
         public double transX
         {
@@ -101,13 +102,20 @@ namespace PhenoPad.CustomControl
                 return dragTransform.Y;
             }
         }
-        public double transScale
+        public double transScaleX
         {
             get
             {
                 return scaleTransform.ScaleX;
             }
         }
+        public double transScaleY
+        {
+            get {
+                return scaleTransform.ScaleY;
+            }
+        }
+        public Matrix3x2 previousTrans;
 
         public String name
         {
@@ -174,6 +182,7 @@ namespace PhenoPad.CustomControl
        );
         #endregion
 
+        //===================================================METHODS BELOW==================================================
         #region constructors
         /// <summary>
         /// Creates a new add-in control with no parameters.
@@ -197,22 +206,41 @@ namespace PhenoPad.CustomControl
         /// <summary>
         /// Creates and initializes a new add-in control with given parameters
         /// </summary>
-        public AddInControl(string name, string notebookId, string pageId, double width = -1, double height = -1)
+        public AddInControl(string name, 
+                            string notebookId, 
+                            string pageId,
+                            double widthOrigin, double heightOrigin,
+                            double width = -1, double height = -1,
+                            double zoomFactor = 0)
         {
-            this.InitializeComponent();
-            this.Height = height < DEFAULT_HEIGHT ? DEFAULT_HEIGHT : height;
-            this.Width = width < DEFAULT_WIDTH ? DEFAULT_WIDTH : width;
-            //by default setting the corner bound to be 10px
 
-            this.inkCan.Width = this.Width;
-            this.inkCan.Height = this.Height - 88;
-            this.inDock = false;
-            this.name = name;
-            this.notebookId = notebookId;
-            this.pageId = pageId;
-            this._isResizing = false;
-            this.hasImage = false;
+            this.InitializeComponent();
             rootPage = MainPage.Current;
+
+            //setting pre-saved configurations of the addin control
+            //this.Height = height < DEFAULT_HEIGHT ? DEFAULT_HEIGHT : height;
+            //this.Width = width < DEFAULT_WIDTH ? DEFAULT_WIDTH : width;
+
+            //setting pre-saved configurations of the control
+            {
+                this.widthOrigin = widthOrigin < MIN_WIDTH ? MIN_WIDTH : widthOrigin;
+                this.heightOrigin = heightOrigin < MIN_HEIGHT ? MIN_HEIGHT : heightOrigin;
+
+                this.Height = heightOrigin;
+                this.Width = widthOrigin;
+
+                this.height = height == -1 ? heightOrigin : height;
+                this.width = width == -1 ? widthOrigin : width;
+
+                this.viewBoxFactor = zoomFactor == 0 ? 1 : zoomFactor;
+
+                this.inDock = false;
+                this.name = name;
+                this.notebookId = notebookId;
+                this.pageId = pageId;
+                this._isResizing = false;
+                this.hasImage = false;
+            }
 
             //Timer event handler bindings
             {
@@ -224,18 +252,17 @@ namespace PhenoPad.CustomControl
                 autosaveDispatcherTimer.Interval = TimeSpan.FromSeconds(0.5);
             }
 
-            scaleTransform = new ScaleTransform();
-            scaleTransform.ScaleX = 1;
-            scaleTransform.ScaleY = 1;
-            dragTransform = new TranslateTransform();
-            TransformGroup tg = new TransformGroup();
-            //tg.Children.Add(scaleTransform);
-            tg.Children.Add(dragTransform);
-            this.RenderTransform = tg;
+            //control transform group binding
+            {
+                TransformGroup tg = new TransformGroup();
+                dragTransform = new TranslateTransform();
+                tg.Children.Add(dragTransform);
+                this.RenderTransform = tg;
+            }
 
             //Add-in dimension/location manipulation
             {
-                this.ManipulationMode = ManipulationModes.TranslateX | ManipulationModes.TranslateY | ManipulationModes.Scale;
+                this.ManipulationMode = ManipulationModes.TranslateX | ManipulationModes.TranslateY |ManipulationModes.Scale;
                 this.ManipulationStarted += Manipulator_OnManipulationStarted;
                 this.ManipulationDelta += Manipulator_OnManipulationDelta;
                 this.ManipulationCompleted += Manipulator_OnManipulationCompleted;
@@ -249,7 +276,10 @@ namespace PhenoPad.CustomControl
         {
             double xPos = e.Position.X;
             double yPos = e.Position.Y;
-            
+            originalHeight = this.Height;
+            originalWidth = this.Width;
+
+
             //setting corner detections for canvas extension
             bool topLeft = xPos < 20  && yPos < 20 ;
             bool topRight = (xPos > this.Width - 20) &&  (yPos < 20);
@@ -260,8 +290,7 @@ namespace PhenoPad.CustomControl
             {
                 this._isResizing = true;
                 this._isMoving = false;
-                curWidth = this.Width;
-                curHeight = this.Height;
+                
                 if (topLeft) this.resizeDir = Direction.TOPLEFT;
                 else if (topRight) this.resizeDir = Direction.TOPRIGHT;
                 else if (bottomLeft) this.resizeDir = Direction.BOTTOMLEFT;
@@ -349,14 +378,10 @@ namespace PhenoPad.CustomControl
                 {
                     if (this.Width >= this.MIN_WIDTH && this.Height >= (this.MIN_WIDTH / imgratio + 88))
                     {
-                        float curHeight = (float)this.Height;
-                        float curWeight = (float)this.Width;
 
                         //only resizing based on photo width/height ratio
                         this.Height += e.Delta.Translation.Y;
                         this.Width += e.Delta.Translation.Y * imgratio;
-
-                        
 
                     }
                 }
@@ -373,9 +398,7 @@ namespace PhenoPad.CustomControl
                 this.Width = this.Width < this.MIN_WIDTH ? this.MIN_WIDTH : this.Width;
                 this.Height = this.Width <= this.MIN_WIDTH? (this.MIN_WIDTH / imgratio + 88) : this.Height;
                 //proportionally zoom in/out all inkcanvas
-                scaleTransform.ScaleX = this.Width == this.MIN_WIDTH ? scaleTransform.ScaleY : scaleTransform.ScaleY * imgratio;
-                scaleTransform.ScaleY = this.Width == this.MIN_WIDTH ? scaleTransform.ScaleY : scaleTransform.ScaleY + 
-                    e.Delta.Translation.Y/e.Delta.Translation.Y*0.0001;
+
             }
             else {
                 if (this.Width > this.inkCan.Width)
@@ -407,12 +430,14 @@ namespace PhenoPad.CustomControl
         }
 
         private void Manipulator_OnManipulationCompleted(object sender, ManipulationCompletedRoutedEventArgs e) {
+
             this._isMoving = false;
             this._isResizing = false;
             this.canvasLeft = Canvas.GetLeft(this);
             this.canvasTop = Canvas.GetTop(this);
             this.height = this.Height;
             this.width = this.Width;
+            this.viewBoxFactor = canvasViewBox.ActualWidth / this.widthOrigin;
             this.Opacity = 1;
             this.hideMovingGrid();
             autosaveDispatcherTimer.Start();
@@ -599,7 +624,7 @@ namespace PhenoPad.CustomControl
         /// <summary>
         /// Initializes inkcanvas attributes for the add-in panel based on  whether item will be editable or not.
         /// </summary>
-        private void InitiateInkCanvas(bool onlyView = false)
+        private void InitiateInkCanvas(bool onlyView = false, double scaleX = 1, double scaleY = 1)
         {
             isInitialized = true;
             Debug.WriteLine($"hasimage={hasImage}");
@@ -612,7 +637,11 @@ namespace PhenoPad.CustomControl
             //this.ControlStackPanel.Visibility = Visibility.Visible;
             //contentGrid.Children.Add(inkCanvas);
 
+            originalHeight = this.Height;
+            originalWidth = this.Width;
 
+            canvasSize.ScaleX = scaleX;
+            canvasSize.ScaleY = scaleY;
 
             inkCan.Visibility = Visibility.Visible;
             if (!onlyView) // added from note page, need editing
@@ -676,14 +705,24 @@ namespace PhenoPad.CustomControl
         /// <summary>
         /// Initializing a photo to add-in through disk and calls InitiateInkCanvas
         /// </summary>
-        public async void InitializeFromDisk(bool onlyView = false, double transX = 0, double transY = 0, double transScale = 0)
+        public async void InitializeFromDisk(bool onlyView)
         {
+
             this.categoryGrid.Visibility = Visibility.Collapsed;
             try
             {
+                this.Height = this.height;
+                this.Width = this.width;
+
+                this.inkCan.Width = this.Width;
+                this.inkCan.Height = this.Height - 88;
+
+                var annofile = await FileManager.getSharedFileManager().GetNoteFileNotCreate(notebookId, pageId, NoteFileType.ImageAnnotation, name);
+                if (annofile != null)
+                    await FileManager.getSharedFileManager().loadStrokes(annofile, inkCanvas);
+
                 // photo file
                 var file = await FileManager.getSharedFileManager().GetNoteFileNotCreate(notebookId, pageId, NoteFileType.Image, name);
-                
                 if (file != null)
                 {
                     var properties = await file.Properties.GetImagePropertiesAsync();
@@ -696,11 +735,26 @@ namespace PhenoPad.CustomControl
                     categoryGrid.Visibility = Visibility.Collapsed;
                     this.Height = this.Width / imgratio + 88;
                     this.hasImage = true;
+                    ScaleTransform scale = new ScaleTransform();
+                    scale.ScaleX = viewBoxFactor;
+                    scale.ScaleY = viewBoxFactor / imgratio;
+                    canvasViewBox.RenderTransform = scale;
                 }
-           
-                var annofile = await FileManager.getSharedFileManager().GetNoteFileNotCreate(notebookId, pageId, NoteFileType.ImageAnnotation, name);
-                if (annofile != null)
-                    await FileManager.getSharedFileManager().loadStrokes(annofile, inkCanvas);
+
+
+                //canvasViewBox.ActualHeight
+
+
+
+                //Rect bounding = inkCan.Width
+                //float reScaleX = (float)(this.Width / (bounding.Left + bounding.Width));
+                //float reScaleY = (float)(reScaleX / imgratio);
+                //var strokes = inkCan.InkPresenter.StrokeContainer.GetStrokes();
+                //foreach (var strk in strokes)
+                //{
+                //    Debug.WriteLine($"loading strokes x={scaleX},y={scaleY}");
+                //    strk.PointTransform = Matrix3x2.CreateScale(reScaleX, reScaleY);
+                //}
 
                 InitiateInkCanvas(onlyView);
 
@@ -799,6 +853,11 @@ namespace PhenoPad.CustomControl
 
         }
 
+        private void canvasViewBox_SizeChanged(object sender, SizeChangedEventArgs e)
+        {
+            FrameworkElement child = ((Viewbox)sender).Child as FrameworkElement;
+            viewBoxFactor = ((Viewbox)sender).ActualWidth / child.ActualWidth;
+        }
     }
 
 }
