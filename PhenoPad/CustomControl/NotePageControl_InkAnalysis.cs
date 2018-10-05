@@ -878,6 +878,7 @@ namespace PhenoPad.CustomControl
                 **/
             }
             curLineWordsStackPanel.Children.Clear();
+            //sets a text block for each recognized word and adds event handler to click event
             foreach (var word in wordlist)
             {
                 TextBlock tb = new TextBlock();
