@@ -233,7 +233,11 @@
                 </Canvas>
                 <!-- Current line result -->
                 <Canvas >
-                    <Grid Name="curLineResultPanel" Visibility="Collapsed" Background="WhiteSmoke" Opacity="0.96" BorderThickness="1" BorderBrush="DarkGray">
+                    <Grid Name="curLineResultPanel" Visibility="Collapsed" 
+                          Background="WhiteSmoke" Opacity="0.96" 
+                          BorderThickness="1" BorderBrush="DarkGray" CornerRadius="10"
+                          Margin="5">
+                        
                         <Grid.Resources>
                             <Storyboard x:Name="curWordPhenoAnimation">
 
@@ -242,6 +246,7 @@
                                         FromVerticalOffset="100"
                                          Duration="0:0:1"/>
                             </Storyboard>
+                            
                             <Storyboard x:Name="curWordPhenoHideAnimation">
 
                                 <RepositionThemeAnimation 
@@ -249,17 +254,19 @@
                                         FromVerticalOffset="-100"
                                          Duration="0:0:1"/>
                             </Storyboard>
+                            
                         </Grid.Resources>
-                        <Grid x:Name="curWordPhenoControlGrid" Height="40" HorizontalAlignment="Right" Background="WhiteSmoke"  Padding="5" BorderBrush="LightGray" BorderThickness="0" >
-                            <!--
-                                <customcontrol:PhenotypeControl   x:Name="curWordPhenoControl"  phenotypeName="" phenotypeId="" phenotypeState="-1" sourceType="Notes"></customcontrol:PhenotypeControl>
-                                -->
+                        
+                        <Grid x:Name="curWordPhenoControlGrid" Height="40" HorizontalAlignment="Right" Background="WhiteSmoke"  
+                              Padding="5" BorderBrush="LightGray" BorderThickness="0" >
+                            
                             <ListView  Padding="0 0 0 0" IsItemClickEnabled="False"
                                       ScrollViewer.HorizontalScrollMode="Enabled"
                                       ScrollViewer.VerticalScrollMode="Disabled"
                                       ScrollViewer.HorizontalScrollBarVisibility="Hidden"
                                       ScrollViewer.IsHorizontalRailEnabled="True"
                                       x:Name="curLineCandidatePhenoListView" ItemsSource="{x:Bind curLineCandidatePheno, Mode=OneWay}">
+                                
                                 <ListView.ItemsPanel>
                                     <ItemsPanelTemplate>
                                         <VirtualizingStackPanel  Orientation="Horizontal"/>
@@ -267,7 +274,9 @@
                                 </ListView.ItemsPanel>
                                 <ListView.ItemTemplate>
                                     <DataTemplate x:DataType="phenotypeservice:Phenotype">
-                                        <customcontrol:PhenotypeBriefControl phenotypeName="{x:Bind name}" phenotypeId="{x:Bind hpId}" phenotypeState="{x:Bind state}" sourceType="{x:Bind sourceType}" presentPosition="Inline" ></customcontrol:PhenotypeBriefControl>
+                                        <customcontrol:PhenotypeBriefControl phenotypeName="{x:Bind name}" phenotypeId="{x:Bind hpId}" 
+                                                                             phenotypeState="{x:Bind state}" sourceType="{x:Bind sourceType}" 
+                                                                             presentPosition="Inline" ></customcontrol:PhenotypeBriefControl>
                                     </DataTemplate>
                                 </ListView.ItemTemplate>
                                 <ListView.ItemContainerStyle>
@@ -318,10 +327,12 @@
                                 </ListView.ItemContainerStyle>
                             </ListView>
                         </Grid>
-                        <StackPanel Orientation="Horizontal" Background="WhiteSmoke" >
+                        
+                        <StackPanel Orientation="Horizontal" Background="WhiteSmoke" Width="auto">
                             <!-- recongtion result of current line -->
-                            <StackPanel Name="curLineWordsStackPanel" Orientation="Horizontal" Spacing="5" Padding="5 0 5 0"></StackPanel>
-                            <ListView Visibility="Collapsed" Padding="5 0 0 0" Height="{x:Bind LINE_HEIGHT}"
+                            <StackPanel Name="curLineWordsStackPanel" Orientation="Horizontal" Spacing="5" Padding="5 0 5 0"/>
+
+                            <ListView Visibility="Collapsed" Padding="10 0 0 0" Height="{x:Bind LINE_HEIGHT}"
                               ScrollViewer.HorizontalScrollMode="Enabled"
                               ScrollViewer.VerticalScrollMode="Disabled"
                               ScrollViewer.HorizontalScrollBarVisibility="Hidden"
@@ -329,6 +340,7 @@
                               x:Name="curLineWordsListView"
                                       IsItemClickEnabled="True"
                               ItemClick="curLineWordsListView_ItemClick">
+                                
                                 <ListView.ItemsPanel>
                                     <ItemsPanelTemplate>
                                         <VirtualizingStackPanel  Orientation="Horizontal"/>
@@ -350,8 +362,14 @@
                                     </Style>
                                 </ListView.ItemContainerStyle>
                             </ListView>
-                            <Button Background="WhiteSmoke" Foreground="PaleVioletRed" Width="{x:Bind LINE_HEIGHT}" Height="{x:Bind LINE_HEIGHT}" Click="curLineResultButtonClick">
-                                <SymbolIcon Symbol="Clear"></SymbolIcon>
+
+                            <Button Background="WhiteSmoke" Foreground="PaleVioletRed" Width="30" 
+                                    Height="30" Click="curLineResultButtonClick" Style="{StaticResource ButtonStyle1}" >
+                                <SymbolIcon Symbol="Clear">
+                                    <SymbolIcon.RenderTransform>
+                                        <ScaleTransform ScaleX="0.5" ScaleY="0.5"/>
+                                    </SymbolIcon.RenderTransform>
+                                </SymbolIcon>
                             </Button>
                         </StackPanel>
                     </Grid>

@@ -57,8 +57,10 @@ namespace PhenoPad.HWRService
                 return sharedHWRManager;
             }
         }
+
         /// <summary>
-        /// Gets the components in InkStrokeContainer and tries to recognize and return text, returns null if no text is recognized.
+        /// Gets the components in InkStrokeContainer and tries to recognize and return string text, 
+        /// returns null if no text is recognized.
         /// </summary>
         public async Task<List<HWRRecognizedText>> OnRecognizeAsync(InkStrokeContainer container, InkRecognitionTarget target)
         {
@@ -82,24 +84,16 @@ namespace PhenoPad.HWRService
                         recogResults.Add(rt);
                         //str += " " + r.GetTextCandidates()[0];
                     }
-                    //this.NotifyUser(str, NotifyType.StatusMessage);
-                    //recognizedResultTextBlock.Text = "Recognized result: " + str;
+
                     return recogResults;
                 }
                 // if no text is recognized, return null
                 else
-                {
-                    //rootPage.NotifyUser("No text recognized.", NotifyType.StatusMessage);
-                    //MessageDialog dialog = new MessageDialog("No text recognized");
-                    //var cmd = await dialog.ShowAsync();
                     return null;
-                }
             }
-            catch (System.Exception e)
+            catch (Exception e)
             {
-                //MessageDialog dialog = new MessageDialog("No storke selected.");
-                //var cmd = await dialog.ShowAsync();
-                Debug.WriteLine("HWR error: " + e.Message);
+                LogService.MetroLogger.getSharedLogger().Error("HWR error: " + e + e.Message);
                 return null;
             }
         }
