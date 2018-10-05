@@ -183,10 +183,7 @@
                 <Canvas x:Name="selectionCanvas">
                     <RelativePanel x:Name="PopupCommandBar" MinWidth="60" Height="30"  Visibility="Collapsed">
                         <Button Foreground="PaleVioletRed" Click="PopupDeleteButton_Click" Background="WhiteSmoke" Padding="0" RelativePanel.AlignLeftWithPanel="True">
-                            
-                                <SymbolIcon Symbol="Delete" Height="30" Width="30"></SymbolIcon>
-                                
-                           
+                            <SymbolIcon Symbol="Delete" Height="30" Width="30"/>
                         </Button>
                         <!--
                         <Button Background="WhiteSmoke" Padding="0" RelativePanel.AlignRightWithPanel="True"  Click="MoreSymbolIcon_Click">
@@ -218,39 +215,33 @@
                 </Canvas>
                
                 <!-- Add in control panel -->
-                <Canvas x:Name="userControlCanvas" >
-                   
-                   <!--
-                    <StackPanel Name="HoverPhenoPanel" BorderBrush="Black" PointerEntered="HoverPhenoPanel_PointerEntered" PointerExited="HoverPhenoPanel_PointerExited" Orientation="Horizontal" FlowDirection="RightToLeft" Background="SkyBlue" Padding="5 3" Opacity="0.5" HorizontalAlignment="Right" Visibility="Collapsed">
-                        <TextBlock Name="HoverPhenoPopupText" Height="{Binding LINE_HEIGHT}" Text="" FontSize="14" Foreground="OrangeRed"></TextBlock>
-                    </StackPanel>
-                    -->
-                </Canvas>
+                <Canvas x:Name="userControlCanvas" />
 
-                <Canvas x:Name="recognizedTextCanvas">
-                   
+                <Canvas x:Name="recognizedTextCanvas"/>
 
-                </Canvas>
                 <!-- Current line result -->
                 <Canvas >
-                    <Grid Name="curLineResultPanel" Visibility="Collapsed" Background="WhiteSmoke" Opacity="0.96" BorderThickness="1" BorderBrush="DarkGray">
+                    <Grid Name="curLineResultPanel" Visibility="Collapsed" Background="White" 
+                          BorderBrush="DarkGray" >
                         <Grid.Resources>
                             <Storyboard x:Name="curWordPhenoAnimation">
 
                                 <RepositionThemeAnimation 
                                         Storyboard.TargetName="curWordPhenoControlGrid"
                                         FromVerticalOffset="100"
-                                         Duration="0:0:1"/>
+                                         Duration="0:0:0.5"/>
                             </Storyboard>
                             <Storyboard x:Name="curWordPhenoHideAnimation">
 
                                 <RepositionThemeAnimation 
                                         Storyboard.TargetName="curWordPhenoControlGrid"
                                         FromVerticalOffset="-100"
-                                         Duration="0:0:1"/>
+                                         Duration="0:0:0.5"/>
                             </Storyboard>
                         </Grid.Resources>
-                        <Grid x:Name="curWordPhenoControlGrid" Height="40" HorizontalAlignment="Right" Background="WhiteSmoke"  Padding="5" BorderBrush="LightGray" BorderThickness="0" >
+                        
+                        <Grid x:Name="curWordPhenoControlGrid" Height="40" HorizontalAlignment="Right" 
+                              Background="WhiteSmoke"  Padding="5" BorderBrush="LightGray" BorderThickness="0" CornerRadius="10">
                             <!--
                                 <customcontrol:PhenotypeControl   x:Name="curWordPhenoControl"  phenotypeName="" phenotypeId="" phenotypeState="-1" sourceType="Notes"></customcontrol:PhenotypeControl>
                                 -->
@@ -318,10 +309,13 @@
                                 </ListView.ItemContainerStyle>
                             </ListView>
                         </Grid>
-                        <StackPanel Orientation="Horizontal" Background="WhiteSmoke" >
+                        
+                        <StackPanel Orientation="Horizontal" Background="WhiteSmoke" CornerRadius="10" 
+                                    BorderThickness="1" BorderBrush="DarkGray">
                             <!-- recongtion result of current line -->
-                            <StackPanel Name="curLineWordsStackPanel" Orientation="Horizontal" Spacing="5" Padding="5 0 5 0"></StackPanel>
-                            <ListView Visibility="Collapsed" Padding="5 0 0 0" Height="{x:Bind LINE_HEIGHT}"
+                            <StackPanel Name="curLineWordsStackPanel" Orientation="Horizontal" Spacing="5" Padding="5 0 5 0" />
+                            
+                            <ListView Visibility="Collapsed" Padding="5 0 0 0" Height="40"
                               ScrollViewer.HorizontalScrollMode="Enabled"
                               ScrollViewer.VerticalScrollMode="Disabled"
                               ScrollViewer.HorizontalScrollBarVisibility="Hidden"
@@ -350,8 +344,10 @@
                                     </Style>
                                 </ListView.ItemContainerStyle>
                             </ListView>
-                            <Button Background="WhiteSmoke" Foreground="PaleVioletRed" Width="{x:Bind LINE_HEIGHT}" Height="{x:Bind LINE_HEIGHT}" Click="curLineResultButtonClick">
-                                <SymbolIcon Symbol="Clear"></SymbolIcon>
+                            <Button Background="WhiteSmoke" Foreground="PaleVioletRed" Width="{x:Bind LINE_HEIGHT}" 
+                                    Height="40" Click="curLineResultButtonClick" Style="{StaticResource ButtonStyle1}"
+                                    HorizontalAlignment="Right">
+                                <SymbolIcon Symbol="Clear"/>
                             </Button>
                         </StackPanel>
                     </Grid>

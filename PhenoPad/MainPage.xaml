@@ -709,7 +709,8 @@
 
 
                     <!-- pheotypes user are looking for -->
-                    <Grid  Name="CandidateGrid" HorizontalAlignment="Stretch" RelativePanel.AlignRightWithPanel="True" RelativePanel.RightOf="MultimediaPreviewGrid" 
+                    <Grid  Name="CandidateGrid" HorizontalAlignment="Stretch" 
+                           RelativePanel.AlignRightWithPanel="True" RelativePanel.RightOf="MultimediaPreviewGrid" 
                            RelativePanel.AlignTopWithPanel="True">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="40" />
@@ -723,7 +724,8 @@
                             <ToggleButton HorizontalAlignment="Center" Background="Transparent" Style="{StaticResource MyToggleButtonStyle}" IsChecked="false" 
                                           VerticalAlignment="Center"  Name="OpenCandidatePanelButton" Click="OpenCandidate_Click" Height="40">
                                 <Grid>
-                                    <FontIcon Visibility="Collapsed" Name="OpenCandidatePanelButtonIcon" Foreground="Gold" FontWeight="ExtraBlack"  FontFamily="Segoe MDL2 Assets" Glyph="&#xE82F;"/>
+                                    <FontIcon Visibility="Collapsed" Name="OpenCandidatePanelButtonIcon" 
+                                              Foreground="Gold" FontWeight="ExtraBlack"  FontFamily="Segoe MDL2 Assets" Glyph="&#xE82F;"/>
                                     <Image Source="ms-appx:///Assets/idea.png" Name="OpenCandidateIcon"></Image>
                                     <Image Source="ms-appx:///Assets/back_black.png" Opacity="0.4" Name="CloseCandidateIcon" Visibility="Collapsed"></Image>
                                 </Grid>
@@ -732,7 +734,7 @@
 
                         <StackPanel Orientation="Vertical" Grid.Column="1" 
                                     Name="CandidatePanelStackPanel" 
-                                    Background="White" Visibility="Collapsed" >
+                                    Background="WhiteSmoke" Visibility="Collapsed" >
                             
                             <ListView Grid.Column="2"
                               ScrollViewer.HorizontalScrollMode="Enabled"

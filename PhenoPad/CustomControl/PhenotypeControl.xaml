@@ -24,10 +24,10 @@
     <Grid Padding="0 1 0 1">
         <Grid.Resources>
             <Storyboard x:Name="DeletePhenotypeSB">
-                <FadeOutThemeAnimation Storyboard.TargetName="YNSwitch" />
+                <!--<FadeOutThemeAnimation Storyboard.TargetName="YNSwitch" Duration="0:0:0.1"/>-->
             </Storyboard>
             <Storyboard x:Name="AddPhenotypeSB">
-                <FadeInThemeAnimation Storyboard.TargetName="YNSwitch" />
+                <!--<FadeInThemeAnimation Storyboard.TargetName="YNSwitch" Duration="0:0:0.1" />-->
             </Storyboard>
         </Grid.Resources>
         <Grid.ColumnDefinitions>
@@ -41,7 +41,8 @@
         </Button>
 
 
-        <Grid x:Name="YNSwitch"  BorderThickness="1" Padding="0" Grid.Column="0" Visibility="Collapsed" Background="{ThemeResource BUTTON_GRAY}" Width="50" MinWidth="50" MinHeight="25" Height="25">
+        <Grid x:Name="YNSwitch"  BorderThickness="1" Padding="0" Grid.Column="0" Visibility="Collapsed" 
+              Background="{ThemeResource BUTTON_GRAY}" Width="50" MinWidth="50" MinHeight="25" Height="25">
             <!--
             <Grid.Transitions>
                 <TransitionCollection>
