@@ -50,7 +50,7 @@ namespace PhenoPad.CustomControl
         // ================================= INK RECOGNITION ==============================================                      
         
         /// <summary>
-        /// select and recognize a line by its id,return null if error
+        /// select and recognize a line by its id
         /// </summary>
         private async Task<List<HWRRecognizedText>> RecognizeLine(uint lineid)
         {
@@ -58,10 +58,12 @@ namespace PhenoPad.CustomControl
             await selectAndRecognizeSemaphoreSlim.WaitAsync();
             try
             {
-                // clear all previous selection
+                // clear selection
                 var strokes = inkCanvas.InkPresenter.StrokeContainer.GetStrokes();
                 foreach (var stroke in strokes)
+                {
                     stroke.Selected = false;
+                }
 
                 // select storkes of this line
                 var lines = inkAnalyzer.AnalysisRoot.FindNodes(InkAnalysisNodeKind.Line);
@@ -69,14 +71,14 @@ namespace PhenoPad.CustomControl
                 if (thisline != null)
                 {
                     foreach (var sid in thisline.GetStrokeIds())
+                    {
                         inkCanvas.InkPresenter.StrokeContainer.GetStrokeById(sid).Selected = true;
+                    }
                 }
 
                 //recognize selection
-                List<HWRRecognizedText> recognitionResults = 
-                    await HWRManager.getSharedHWRManager().OnRecognizeAsync(inkCanvas.InkPresenter.StrokeContainer,
-                                                                            InkRecognitionTarget.Selected);
-
+                List<HWRRecognizedText> recognitionResults = await HWRManager.getSharedHWRManager().OnRecognizeAsync(inkCanvas.InkPresenter.StrokeContainer,
+                    InkRecognitionTarget.Selected);
                 return recognitionResults;
             }
             catch (Exception ex)
@@ -218,6 +220,9 @@ namespace PhenoPad.CustomControl
             }
         }
 
+
+
+
         /// <summary>
         /// Recognize a set of strokes as whether a shape or just drawing and handles each case
         /// accordingly.
@@ -347,7 +352,6 @@ namespace PhenoPad.CustomControl
             if (line == null)
                 return;
             // set current line id
-
             // switch to another line, clear result of current line
             if (line.Id != showingResultOfLine)
             {
@@ -359,14 +363,13 @@ namespace PhenoPad.CustomControl
                 curLineObject = line;
             }
 
-            // recognize existing line
+
             if (idToNoteLine.ContainsKey(line.Id))
-            {  
+            {  // existing line
                 NoteLine nl = idToNoteLine[line.Id];
                 var hwrresult = await RecognizeLine(line.Id);
                 nl.HwrResult = hwrresult;
             }
-
             else
             {
                 //new line
@@ -397,6 +400,8 @@ namespace PhenoPad.CustomControl
                 selectionCanvas.Children.Add(PopupCommandBar);
                 selectionCanvas.Children.Add(recognizedPhenoBriefPanel);
 
+
+
                 selectionRectangle.Width = boundingRect.Width;
                 selectionRectangle.Height = boundingRect.Height;
                 //selectionRectangleTranform = new TranslateTransform();
@@ -420,83 +425,6 @@ namespace PhenoPad.CustomControl
             if (line < 0)
                 return;
             SelectAndAnnotateByLineNum(line);
-        }
-
-        /// <summary>
-        /// Sets up the UI display of a recognized line
-        /// </summary>
-        private void setUpCurrentLineResultUI(InkAnalysisLine line)
-        {
-            var wordlist = idToNoteLine.GetValueOrDefault(line.Id).WordStrings;
-            {
-                // align wordlist and textblocks in curLineResultPanel
-                /***
-                var oldWordList = new List<string>();
-                foreach (TextBlock tb in curLineWordsStackPanel.Children)
-                    oldWordList.Add(tb.Text);
-
-                var alignResult = alignTwoStringList(wordlist, oldWordList);
-                var newIndex = alignResult.Item1;
-                var oldIndex = alignResult.Item2;
-
-                int insertIndex = oldWordList.Count();
-
-                for (int i = oldIndex.Count() - 1; i >= 0; --i)
-                {
-                    // gap
-                    if (oldIndex[i] == -1)
-                    {
-                        TextBlock tb = new TextBlock();
-                        tb.VerticalAlignment = VerticalAlignment.Center;
-                        tb.FontSize = 16;
-                        tb.Text = wordlist[newIndex[i]];
-                        if (insertIndex >= curLineWordsStackPanel.Children.Count())
-                            curLineWordsStackPanel.Children.Add(tb);
-                        else
-                            curLineWordsStackPanel.Children.Insert(insertIndex, tb);
-                    }
-                    // aligment
-                    else if (newIndex[i] != -1) 
-                    {
-                        insertIndex--;
-                        if (oldWordList[oldIndex[i]] != wordlist[newIndex[i]])
-                            (curLineWordsStackPanel.Children[oldIndex[i]] as TextBlock).Text = wordlist[newIndex[i]];
-                    }
-                }
-                for (int i = oldIndex.Count() - 1; i >= 0; --i)
-                {
-                    // delete
-                    if (newIndex[i] == -1) 
-                    {
-                        curLineWordsStackPanel.Children.RemoveAt(oldIndex[i]);
-                    }
-                }
-                **/
-            }
-            curLineWordsStackPanel.Children.Clear();
-            foreach (var word in wordlist)
-            {
-                TextBlock tb = new TextBlock();
-                tb.VerticalAlignment = VerticalAlignment.Center;
-                tb.FontSize = 16;
-                tb.Text = word;
-                curLineWordsStackPanel.Children.Add(tb);
-                //adding event handler for when user manully selects the word alternative
-                tb.Tapped += ((object sender, TappedRoutedEventArgs e) => 
-                {
-                    int wi = curLineWordsStackPanel.Children.IndexOf((TextBlock)sender);
-                    var alterFlyout = (Flyout)this.Resources["ChangeAlternativeFlyout"];
-                    showAlterOfWord = wi;
-                    alternativeListView.ItemsSource = idToNoteLine[showingResultOfLine].HwrResult[wi].candidateList;
-                    alterFlyout.ShowAt((FrameworkElement)sender);
-
-                });
-            }
-            curLineResultPanel.Visibility = Visibility.Visible;
-            Canvas.SetLeft(curLineResultPanel, line.BoundingRect.Left);
-            int lineNum = getLineNumByRect(line.BoundingRect);
-            Canvas.SetTop(curLineResultPanel, (lineNum - 1) * LINE_HEIGHT);
-
         }
 
         public async void SelectAndAnnotateByLineNum(int line)
@@ -688,38 +616,6 @@ namespace PhenoPad.CustomControl
                 }
             }
             return null;
-        }
-        private void TapAPosition(Point position)
-        {
-            ClearSelectionAsync();
-
-            var line = FindHitLine(position);
-            if (line != null)
-            {
-                // Show the selection rect at the paragraph's bounding rect.
-                //boundingRect.Union(line.BoundingRect);
-                boundingRect = line.BoundingRect;
-                IReadOnlyList<uint> strokeIds = line.GetStrokeIds();
-                foreach (var strokeId in strokeIds)
-                {
-                    var stroke = inkCanvas.InkPresenter.StrokeContainer.GetStrokeById(strokeId);
-                    stroke.Selected = true;
-                    SetSelectedStrokeStyle(stroke);
-                }
-
-                // flyout 
-                // RecognizeSelection();
-
-                // pop up panel
-                recognizeAndSetUpUIForLine(line, true);
-
-            }
-        }
-
-        private void InkCanvas_Tapped(object sender, TappedRoutedEventArgs e)
-        {
-            var position = e.GetPosition(inkCanvas);
-            TapAPosition(position);
         }
 
 
@@ -933,6 +829,83 @@ namespace PhenoPad.CustomControl
 
         }
 
+        private void setUpCurrentLineResultUI(InkAnalysisLine line)
+        {
+            var wordlist = idToNoteLine.GetValueOrDefault(line.Id).WordStrings;
+            {
+                // align wordlist and textblocks in curLineResultPanel
+                /***
+                var oldWordList = new List<string>();
+                foreach (TextBlock tb in curLineWordsStackPanel.Children)
+                    oldWordList.Add(tb.Text);
+
+                var alignResult = alignTwoStringList(wordlist, oldWordList);
+                var newIndex = alignResult.Item1;
+                var oldIndex = alignResult.Item2;
+
+                int insertIndex = oldWordList.Count();
+
+                for (int i = oldIndex.Count() - 1; i >= 0; --i)
+                {
+                    // gap
+                    if (oldIndex[i] == -1)
+                    {
+                        TextBlock tb = new TextBlock();
+                        tb.VerticalAlignment = VerticalAlignment.Center;
+                        tb.FontSize = 16;
+                        tb.Text = wordlist[newIndex[i]];
+                        if (insertIndex >= curLineWordsStackPanel.Children.Count())
+                            curLineWordsStackPanel.Children.Add(tb);
+                        else
+                            curLineWordsStackPanel.Children.Insert(insertIndex, tb);
+                    }
+                    // aligment
+                    else if (newIndex[i] != -1) 
+                    {
+                        insertIndex--;
+                        if (oldWordList[oldIndex[i]] != wordlist[newIndex[i]])
+                            (curLineWordsStackPanel.Children[oldIndex[i]] as TextBlock).Text = wordlist[newIndex[i]];
+                    }
+                }
+                for (int i = oldIndex.Count() - 1; i >= 0; --i)
+                {
+                    // delete
+                    if (newIndex[i] == -1) 
+                    {
+                        curLineWordsStackPanel.Children.RemoveAt(oldIndex[i]);
+                    }
+                }
+                **/
+            }
+            curLineWordsStackPanel.Children.Clear();
+            foreach (var word in wordlist)
+            {
+                TextBlock tb = new TextBlock();
+                tb.VerticalAlignment = VerticalAlignment.Center;
+                tb.FontSize = 16;
+                tb.Text = word;
+                curLineWordsStackPanel.Children.Add(tb);
+                tb.Tapped += ((object sender, TappedRoutedEventArgs e) => {
+                    int wi = curLineWordsStackPanel.Children.IndexOf((TextBlock)sender);
+                    var alterFlyout = (Flyout)this.Resources["ChangeAlternativeFlyout"];
+                    showAlterOfWord = wi;
+                    alternativeListView.ItemsSource = idToNoteLine[showingResultOfLine].HwrResult[wi].candidateList;
+                    alterFlyout.ShowAt((FrameworkElement)sender);
+
+                });
+            }
+            curLineResultPanel.Visibility = Visibility.Visible;
+            Canvas.SetLeft(curLineResultPanel, line.BoundingRect.Left);
+            int lineNum = getLineNumByRect(line.BoundingRect);
+            Canvas.SetTop(curLineResultPanel, (lineNum - 1) * LINE_HEIGHT);
+            /***
+            await Dispatcher.RunAsync(Windows.UI.Core.CoreDispatcherPriority.High, () => {
+                
+            });
+            ***/
+
+
+        }
 
         private async void annotateCurrentLineAndUpdateUI(InkAnalysisLine line)
         {

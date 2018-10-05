@@ -61,7 +61,6 @@ namespace PhenoPad.CustomControl
         /***** configurable settings *****/
         // Distance between two neighboring note lines
         public  float LINE_HEIGHT = 50;
-        public float lineHeightDispaly = 30;
         // Max hight for writing, those with hight exceeding this values will be deleted.
         public  float MAX_WRITING = (float)2.5 * 50;
         // Style of "unprocessed stroke" or right dragging stroke.
@@ -278,7 +277,7 @@ namespace PhenoPad.CustomControl
 
         #region UI Display
         // ============================== UI DISPLAYS HANDLER ==============================================//
-
+        // draw background lines for notes
         public void DrawBackgroundLines()
         {
             for (int i = 1; i <= backgroundCanvas.RenderSize.Height / LINE_HEIGHT; ++i)
@@ -296,7 +295,6 @@ namespace PhenoPad.CustomControl
                 backgroundCanvas.Children.Add(line);
             }
         }
-
         private void DropShadowOf(StackPanel uie)
         {
             // Drop shadow of current line result panel
@@ -399,6 +397,7 @@ namespace PhenoPad.CustomControl
             Canvas.SetTop(panel, Canvas.GetTop(panel) + e.Delta.Translation.Y);
         }
 
+
         #endregion
 
 
@@ -408,6 +407,7 @@ namespace PhenoPad.CustomControl
         {
 
         }
+
         // FIXME
         public void showTextEditGrid()
         {
@@ -863,7 +863,7 @@ namespace PhenoPad.CustomControl
         }
 
         #region add-in controls 
-        // ============================== ADD-INS IMAGES / ANNOTATIONS ==============================================//
+        // ============================== ADD-INS Images/Annotations ==============================================//
 
         public async Task<List<AddInControl>> GetAllAddInControls()
         {
@@ -1581,6 +1581,39 @@ namespace PhenoPad.CustomControl
            
        }
        **/
+        private void TapAPosition(Point position)
+        {
+            ClearSelectionAsync();
+
+
+            var line = FindHitLine(position);
+            if (line != null)
+            {
+                // Show the selection rect at the paragraph's bounding rect.
+                //boundingRect.Union(line.BoundingRect);
+                boundingRect = line.BoundingRect;
+                IReadOnlyList<uint> strokeIds = line.GetStrokeIds();
+                foreach (var strokeId in strokeIds)
+                {
+                    var stroke = inkCanvas.InkPresenter.StrokeContainer.GetStrokeById(strokeId);
+                    stroke.Selected = true;
+                    SetSelectedStrokeStyle(stroke);
+                }
+
+                // flyout 
+                // RecognizeSelection();
+
+                // pop up panel
+                recognizeAndSetUpUIForLine(line, true);
+
+            }
+        }
+
+        private void InkCanvas_Tapped(object sender, TappedRoutedEventArgs e)
+        {
+            var position = e.GetPosition(inkCanvas);
+            TapAPosition(position);
+        }
 
         private void InkCanvas_DoubleTapped(object sender, DoubleTappedRoutedEventArgs e)
         {
@@ -1779,6 +1812,8 @@ namespace PhenoPad.CustomControl
             toast.ExpirationTime = DateTime.Now.AddSeconds(4);
             ToastNotifier.Show(toast);
         }
+
+
 
         private void recognizedResultTextBlock_KeyDown(object sender, KeyRoutedEventArgs e)
         {
