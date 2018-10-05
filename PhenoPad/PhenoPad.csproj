@@ -130,6 +130,7 @@
     <Compile Include="CustomControl\NotePageControl.xaml.cs">
       <DependentUpon>NotePageControl.xaml</DependentUpon>
     </Compile>
+    <Compile Include="CustomControl\NotePageControl_InkAnalysis.cs" />
     <Compile Include="CustomControl\NotePageControl_Notetext.cs" />
     <Compile Include="CustomControl\PhenotypeBriefControl.xaml.cs">
       <DependentUpon>PhenotypeBriefControl.xaml</DependentUpon>

@@ -18,7 +18,8 @@
         <ResourceDictionary>
             <Flyout x:Key="PhenotypeSelectionFlyout" Placement="Bottom"  Closed="PhenotypeSelectionFlyoutClosed">
             <StackPanel>
-                <TextBox Name="recognizedResultTextBlock" KeyDown="recognizedResultTextBlock_KeyDown" GotFocus ="recognizedResultTextBlock_GotFocus" SelectionChanged="recognizedResultTextBlock_SelectionChanged"></TextBox>
+                <TextBox Name="recognizedResultTextBlock" KeyDown="recognizedResultTextBlock_KeyDown" 
+                         GotFocus ="recognizedResultTextBlock_GotFocus" SelectionChanged="recognizedResultTextBlock_SelectionChanged"></TextBox>
 
                 <!--
                 <ListView x:Name="recognizedResultListView" ItemsSource="{x:Bind recognizedText}" 
@@ -161,10 +162,9 @@
             <Grid x:Name="outputGrid" Padding="0 100 0 0" Background="{ThemeResource SystemControlBackgroundChromeWhiteBrush}" Height="{x:Bind PAGE_HEIGHT}" Width="{x:Bind PAGE_WIDTH}">
                 <!-- Inking area -->
 
-                <Canvas x:Name="backgroundCanvas" >
-                    
-                </Canvas>
-                
+                <Canvas x:Name="backgroundCanvas" />
+
+
                 <Grid x:Name="textEditGrid" Visibility="Collapsed">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="*"/>
