@@ -237,7 +237,7 @@ namespace PhenoPad.CustomControl
             textNoteDispatcherTimer.Interval = TimeSpan.FromSeconds(0.1);
             operationDispathcerTimer.Interval = TimeSpan.FromMilliseconds(500);
             unprocessedDispatcherTimer.Interval = TimeSpan.FromMilliseconds(100);
-            recognizeTimer.Interval = TimeSpan.FromSeconds(5);// recognize through server side every 5 seconds
+            recognizeTimer.Interval = TimeSpan.FromSeconds(3);// recognize through server side every 3 seconds
             autosaveDispatcherTimer.Interval = TimeSpan.FromSeconds(1); //setting stroke auto save interval to be 1 sec
 
             linesToUpdate = new Queue<int>();
@@ -1989,19 +1989,6 @@ namespace PhenoPad.CustomControl
             }
         }
 
-        private void alternativeListView_ItemClick(object sender, ItemClickEventArgs e)
-        {
-                var citem = (string)e.ClickedItem;
-                int ind = alternativeListView.Items.IndexOf(citem);
-                idToNoteLine[showingResultOfLine].updateHwrResult(showAlterOfWord, ind);
-
-                // HWR result UI
-                setUpCurrentLineResultUI(curLineObject);
-
-                curLineCandidatePheno.Clear();
-                // annotation and UI
-                annotateCurrentLineAndUpdateUI(curLineObject);
-            }
 
 
 

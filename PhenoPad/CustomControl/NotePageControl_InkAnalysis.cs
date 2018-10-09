@@ -883,7 +883,17 @@ namespace PhenoPad.CustomControl
                 TextBlock tb = new TextBlock();
                 tb.VerticalAlignment = VerticalAlignment.Center;
                 tb.FontSize = 16;
-                tb.Text = word;
+                //for detecting abbreviations
+                if (HWRManager.getSharedHWRManager().abbreviations != null && HWRManager.getSharedHWRManager().abbreviations.Contains(word))
+                {
+                    tb.Text = $"({word})"; 
+                    tb.Foreground = new SolidColorBrush(Colors.DarkOrange);
+                }
+                else {
+                    tb.Text = word;
+                }
+
+
                 curLineWordsStackPanel.Children.Add(tb);
                 tb.Tapped += ((object sender, TappedRoutedEventArgs e) => {
                     int wi = curLineWordsStackPanel.Children.IndexOf((TextBlock)sender);
@@ -899,6 +909,22 @@ namespace PhenoPad.CustomControl
             int lineNum = getLineNumByRect(line.BoundingRect);
             Canvas.SetTop(curLineResultPanel, (lineNum - 1) * LINE_HEIGHT);
         }
+
+        private void alternativeListView_ItemClick(object sender, ItemClickEventArgs e)
+        {
+            var citem = (string)e.ClickedItem;
+            int ind = alternativeListView.Items.IndexOf(citem);
+
+            int previous = idToNoteLine[showingResultOfLine].HwrResult[showAlterOfWord].selectedIndex;
+            idToNoteLine[showingResultOfLine].updateHwrResult(showAlterOfWord, ind, previous);
+
+            // HWR result UI
+            setUpCurrentLineResultUI(curLineObject);
+            curLineCandidatePheno.Clear();
+            // annotation and UI
+            annotateCurrentLineAndUpdateUI(curLineObject);
+        }
+
 
         private async void annotateCurrentLineAndUpdateUI(InkAnalysisLine line)
         {

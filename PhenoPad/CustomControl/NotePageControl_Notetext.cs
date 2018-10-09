@@ -252,10 +252,19 @@ namespace PhenoPad.CustomControl
             // annotationByWord.Add(Tuple.Create(p, windex.Item1, windex.Item2));
         }
 
-        public void updateHwrResult(int wordind, int selectind)
+        public void updateHwrResult(int wordind, int selectind, int previousInd)
         {
             this.HwrResult[wordind].selectedIndex = selectind;
-            this.HwrResult[wordind].selectedCandidate = this.HwrResult[wordind].candidateList[selectind];
+            string previous = this.HwrResult[wordind].candidateList[previousInd];
+            string selected = this.HwrResult[wordind].candidateList[selectind];
+            int index = HWRManager.getSharedHWRManager().abbreviations.IndexOf(previous);
+            if (index != -1) {
+                HWRManager.getSharedHWRManager().abbreviations[index] = selected;
+
+            }
+            this.HwrResult[wordind].selectedCandidate = selected;
+
+            Debug.WriteLine($"\n new alter:{this.HwrResult[wordind].selectedCandidate}");
 
             // update 
             _wordStrings[wordind] = this.HwrResult[wordind].selectedCandidate;

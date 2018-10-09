@@ -46,6 +46,7 @@ namespace PhenoPad.HWRService
         List <string> sentence;
         List<List<string>> alternatives;
         bool newRequest;
+        public List<string> abbreviations;
 
 
         /// <summary>
@@ -57,6 +58,7 @@ namespace PhenoPad.HWRService
             sentence = new List<string>();
             alternatives = new List<List<string>>();
             newRequest = true;
+            abbreviations = null;
 
         }
 
@@ -247,13 +249,15 @@ namespace PhenoPad.HWRService
         public List<HWRRecognizedText> processAbbr(List<Abbreviation> abbrs, List<HWRRecognizedText> recog)
         {
             List<HWRRecognizedText> recogAb = recog;
+            abbreviations = new List<string>();
             foreach (Abbreviation ab in abbrs) {
                 int index = Convert.ToInt32(ab.word_pos);
                 HWRRecognizedText rt = new HWRRecognizedText();
                 List<string> res = ab.abbr_list;
                 rt.candidateList = res;
                 rt.selectedIndex = 0;
-                rt.selectedCandidate = $"({res.ElementAt(0)})";
+                rt.selectedCandidate = res.ElementAt(0);
+                abbreviations.Add(res.ElementAt(0));
                 recog.Insert(index + 1, rt);
                 Debug.WriteLine("new abbreviation inserted\n.");
             }
