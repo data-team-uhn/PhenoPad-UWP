@@ -99,6 +99,7 @@ namespace PhenoPad.CustomControl
         DispatcherTimer autosaveDispatcherTimer; //For stroke auto saves
         DispatcherTimer lineAnalysisDispatcherTimer;
 
+
         Queue<int> linesToUpdate;
         object lineUpdateLock = new object();
         Dictionary<int, string> stringsOfLines;
@@ -128,6 +129,7 @@ namespace PhenoPad.CustomControl
                 return inkCanvas;
             }
         }
+        public InkStroke curStroke;
         private IReadOnlyList<InkStroke> leftLossoStroke;
         public List<AddInImageControl> imagesWithAnnotations
         {
@@ -217,10 +219,13 @@ namespace PhenoPad.CustomControl
             operationDispathcerTimer = new DispatcherTimer();
             textNoteDispatcherTimer = new DispatcherTimer();
             autosaveDispatcherTimer = new DispatcherTimer();
+            recognizeTimer = new DispatcherTimer();
+
             dispatcherTimer.Tick += InkAnalysisDispatcherTimer_Tick;  // Ink Analysis time tick
             autosaveDispatcherTimer.Tick += on_stroke_changed; // When timer ticks after user input, auto saves stroke
             operationDispathcerTimer.Tick += OperationDispatcherTimer_Tick;
             textNoteDispatcherTimer.Tick += TextNoteDispatcherTimer_Tick;
+            recognizeTimer.Tick += TriggerRecogServer;
 
             unprocessedDispatcherTimer = new DispatcherTimer();
             unprocessedDispatcherTimer.Tick += UnprocessedDispathcerTimer_Tick;
@@ -232,6 +237,7 @@ namespace PhenoPad.CustomControl
             textNoteDispatcherTimer.Interval = TimeSpan.FromSeconds(0.1);
             operationDispathcerTimer.Interval = TimeSpan.FromMilliseconds(500);
             unprocessedDispatcherTimer.Interval = TimeSpan.FromMilliseconds(100);
+            recognizeTimer.Interval = TimeSpan.FromSeconds(5);// recognize through server side every 5 seconds
             autosaveDispatcherTimer.Interval = TimeSpan.FromSeconds(1); //setting stroke auto save interval to be 1 sec
 
             linesToUpdate = new Queue<int>();
@@ -517,6 +523,7 @@ namespace PhenoPad.CustomControl
                 //operationDispathcerTimer.Stop();
                 inkOperationAnalyzer.ClearDataForAllStrokes();
                 autosaveDispatcherTimer.Stop();
+                recognizeTimer.Stop();
                 /***
                 core.PointerHovering -= Core_PointerHovering;
                 core.PointerExiting -= Core_PointerExiting;
@@ -528,6 +535,7 @@ namespace PhenoPad.CustomControl
         private void StrokeInput_StrokeEnded(InkStrokeInput sender, PointerEventArgs args)
         {
             autosaveDispatcherTimer.Start();
+            recognizeTimer.Start();
         }
      
         private async void InkPresenter_StrokesCollectedAsync(InkPresenter sender, InkStrokesCollectedEventArgs args)
@@ -558,9 +566,10 @@ namespace PhenoPad.CustomControl
                     {
                         inkAnalyzer.AddDataForStroke(s);
                         inkAnalyzer.SetStrokeDataKind(s.Id, InkAnalysisStrokeKind.Writing);
+                        //marking the current stroke for later server recognition
+                        curStroke = s;
                         //here we need instant call to analyze ink for the specified line input
-                        await analyzeInk(s);
-                      
+                        await analyzeInk(s);                    
                     }
                 }                
             }
@@ -629,35 +638,6 @@ namespace PhenoPad.CustomControl
             //lasso.Points.Add(lasso.Points.ElementAt(0));
             isBoundRect = false;
             RecognizeSelection();
-            ///**
-            //if (lasso.Points.Count() < 20)
-            //{
-            //    TapAPosition(lasso.Points.ElementAt(0));
-            //}
-            //else
-            //{
-            //    boundingRect = inkCanvas.InkPresenter.StrokeContainer.SelectWithPolyLine(lasso.Points);
-            //    if (boundingRect.Equals(new Rect(0, 0, 0, 0)))
-            //    {
-            //        boundingRect = Rect.Empty;
-            //        selectionCanvas.Children.Clear();
-            //        SelectByUnderLine(new Rect(
-            //            new Point(lasso.Points.Min(p => p.X), lasso.Points.Min(p => p.Y)),
-            //            new Point(lasso.Points.Max(p => p.X), lasso.Points.Max(p => p.Y))
-            //            ));
-            //    }
-            //    else
-            //    {
-            //        foreach (var s in inkCanvas.InkPresenter.StrokeContainer.GetStrokes())
-            //        {
-            //            if(s.Selected == true)
-            //                SetSelectedStrokeStyle(s);
-            //        }
-            //    }
-            //    isBoundRect = false;
-            //    DrawBoundingRect();
-            //}
-            //**/
         }
 
         public void SelectByUnderLine(Rect strokeRect)
@@ -1321,24 +1301,7 @@ namespace PhenoPad.CustomControl
             await analyzeInk();
         }
 
-        /// <summary>
-        /// Analyze the currently hovering line
-        /// </summary>
-        private void LineAnalysisDispatcherTimer_Tick(object sender, object e)
-        {
-            var pointerPosition = Windows.UI.Core.CoreWindow.GetForCurrentThread().PointerPosition;
-            var x = pointerPosition.X - Window.Current.Bounds.X;
-            var y = pointerPosition.Y - Window.Current.Bounds.Y;
-            int curLine = (int)y / (int)LINE_HEIGHT;
-            if (curLine != hoveringLine)
-            {
-                hoveringLine = curLine;
-                //await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () =>
-                //{
-                recognizeLine(hoveringLine);
-                //});
-            }
-        }
+
 
         #endregion
 
@@ -1581,10 +1544,11 @@ namespace PhenoPad.CustomControl
            
        }
        **/
-        private void TapAPosition(Point position)
-        {
-            ClearSelectionAsync();
 
+        private void InkCanvas_Tapped(object sender, TappedRoutedEventArgs e)
+        {
+            var position = e.GetPosition(inkCanvas);
+            ClearSelectionAsync();
 
             var line = FindHitLine(position);
             if (line != null)
@@ -1604,15 +1568,9 @@ namespace PhenoPad.CustomControl
                 // RecognizeSelection();
 
                 // pop up panel
-                recognizeAndSetUpUIForLine(line, true);
+                recognizeAndSetUpUIForLine(line, true, serverRecog: true);
 
             }
-        }
-
-        private void InkCanvas_Tapped(object sender, TappedRoutedEventArgs e)
-        {
-            var position = e.GetPosition(inkCanvas);
-            TapAPosition(position);
         }
 
         private void InkCanvas_DoubleTapped(object sender, DoubleTappedRoutedEventArgs e)

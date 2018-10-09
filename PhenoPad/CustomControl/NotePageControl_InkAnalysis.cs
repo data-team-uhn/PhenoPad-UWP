@@ -46,13 +46,41 @@ using MetroLog;
 namespace PhenoPad.CustomControl
 {
     public sealed partial class NotePageControl : UserControl
-    {   
+    {
+        DispatcherTimer recognizeTimer;
         // ================================= INK RECOGNITION ==============================================                      
-        
+        /// <summary>
+        /// PS:10/9/2018 this method is currently not used as the timer tick is commented out
+        /// </summary>
+        private void recognizeLine(int line, bool serverRecog = false)
+        {
+            if (line < 0)
+                return;
+            SelectAndAnnotateByLineNum(line, serverRecog);
+        }
+
+        /// <summary>
+        /// Analyze the currently hovering line.
+        /// PS:10/9/2018 this method is currently not used as the timer tick is commented out
+        /// </summary>
+        private void LineAnalysisDispatcherTimer_Tick(object sender, object e)
+        {
+            var pointerPosition = Windows.UI.Core.CoreWindow.GetForCurrentThread().PointerPosition;
+            var x = pointerPosition.X - Window.Current.Bounds.X;
+            var y = pointerPosition.Y - Window.Current.Bounds.Y;
+            int curLine = (int)y / (int)LINE_HEIGHT;
+            if (curLine != hoveringLine)
+            {
+                hoveringLine = curLine;
+                recognizeLine(hoveringLine);
+            }
+        }
+
+
         /// <summary>
         /// select and recognize a line by its id
         /// </summary>
-        private async Task<List<HWRRecognizedText>> RecognizeLine(uint lineid)
+        private async Task<List<HWRRecognizedText>> RecognizeLine(uint lineid, bool serverFlag)
         {
             // only one thread is allowed to use select and recognize
             await selectAndRecognizeSemaphoreSlim.WaitAsync();
@@ -78,7 +106,7 @@ namespace PhenoPad.CustomControl
 
                 //recognize selection
                 List<HWRRecognizedText> recognitionResults = await HWRManager.getSharedHWRManager().OnRecognizeAsync(inkCanvas.InkPresenter.StrokeContainer,
-                    InkRecognitionTarget.Selected);
+                    InkRecognitionTarget.Selected, serverFlag);
                 return recognitionResults;
             }
             catch (Exception ex)
@@ -93,31 +121,111 @@ namespace PhenoPad.CustomControl
         }
 
         /// <summary>
-        /// Handwrting recognition on selected strokes.
+        /// PS:10/9/2018 this method is currently not used as the timer tick is commented out
         /// </summary>
-        private async Task<string> recognizeSelection()
+        public async void SelectAndAnnotateByLineNum(int line, bool server)
         {
-            IReadOnlyList<InkStroke> currentStrokes = inkCanvas.InkPresenter.StrokeContainer.GetStrokes();
-            if (currentStrokes.Count > 0)
+            await deleteSemaphoreSlim.WaitAsync();
+            try
             {
-                List<HWRRecognizedText> recognitionResults = await HWRManager.getSharedHWRManager().OnRecognizeAsync
-                    (inkCanvas.InkPresenter.StrokeContainer, InkRecognitionTarget.Selected);
+                var xFrom = 0;
+                var xTo = inkCanvas.ActualWidth;
+                var yFrom = line * LINE_HEIGHT - 0.2 * LINE_HEIGHT;
+                yFrom = yFrom < 0 ? 0 : yFrom;
+                var yTo = (line + 1) * LINE_HEIGHT + 1.0 * LINE_HEIGHT;
+                Polyline lasso = new Polyline();
+                lasso.Points.Add(new Point(xFrom, yFrom));
+                lasso.Points.Add(new Point(xFrom, yTo));
+                lasso.Points.Add(new Point(xTo, yTo));
+                lasso.Points.Add(new Point(xTo, yFrom));
+                lasso.Points.Add(new Point(xFrom, yFrom));
+                Rect selectRect = Rect.Empty;
 
-                string str = "";
-                if (recognitionResults != null)
+                selectRect = inkCanvas.InkPresenter.StrokeContainer.SelectWithPolyLine(lasso.Points);
+
+                //double panelLeft = 0;
+                if (!selectRect.Equals(Rect.Empty))
                 {
-                    recognizedText.Clear();
-                    recognitionResults.ToList().ForEach(recognizedText.Add);
-
-                    foreach (var rt in recognitionResults)
+                    var shouldRecognize = false;
+                    foreach (var ss in inkCanvas.InkPresenter.StrokeContainer.GetStrokes())
+                        if (ss.Selected)
+                        {
+                            if (ss.BoundingRect.Top > (line + 1) * LINE_HEIGHT || ss.BoundingRect.Bottom < line * LINE_HEIGHT)
+                            {
+                                ss.Selected = false;
+                            }
+                            else
+                            {
+                                shouldRecognize = true;
+                                //panelLeft = panelLeft > (ss.BoundingRect.X + ss.BoundingRect.Width) ? panelLeft : (ss.BoundingRect.X + ss.BoundingRect.Width);
+                            }
+                        }
+                    if (shouldRecognize)
                     {
-                        str += rt.selectedCandidate + " ";
+                        List<HWRRecognizedText> recognitionResults = await HWRManager.getSharedHWRManager().OnRecognizeAsync(
+                                                                        inkCanvas.InkPresenter.StrokeContainer, InkRecognitionTarget.Selected, server);
+
+                        //ClearSelection();
+                        if (recognitionResults != null)
+                        {
+                            string str = "";
+                            foreach (var rt in recognitionResults)
+                            {
+                                str += rt.selectedCandidate + " ";
+                            }
+
+                            if (!str.Equals(String.Empty))
+                            {
+                                string pname = "";
+                                if (stringsOfLines.ContainsKey(line) && stringsOfLines[line].Equals(str) && phenotypesOfLines.ContainsKey(line))
+                                {
+                                    pname = phenotypesOfLines[line].ElementAt(0).name;
+                                    // if (PhenotypeManager.getSharedPhenotypeManager().checkIfSaved(phenotypesOfLines[line].ElementAt(0)))
+                                    //ifSaved = true;
+                                }
+                                else
+                                {
+                                    List<Phenotype> result = await PhenotypeManager.getSharedPhenotypeManager().searchPhenotypeByPhenotipsAsync(str);
+                                    if (result != null && result.Count > 0)
+                                    {
+                                        phenotypesOfLines[line] = result;
+                                        stringsOfLines[line] = str;
+                                        pname = result.ElementAt(0).name;
+                                        // if (PhenotypeManager.getSharedPhenotypeManager().checkIfSaved(result.ElementAt(0)))
+                                        // ifSaved = true;
+                                    }
+                                    else
+                                        return;
+                                }
+                                /**
+                                HoverPhenoPanel.Visibility = Visibility.Visible;
+                                HoverPhenoPopupText.Text = pname;
+                                Canvas.SetTop(HoverPhenoPanel, ((double)line-0.4) * LINE_HEIGHT);
+                                Canvas.SetLeft(HoverPhenoPanel, 10);
+                                HoverPhenoPopupText.Tapped += HoverPhenoPopupText_Tapped;
+
+                                if (ifSaved)
+                                    HoverPhenoPanel.BorderThickness = new Thickness(2);
+                                else
+                                    HoverPhenoPanel.BorderThickness = new Thickness(0);
+                                **/
+
+                            }
+                        }
+                    }
+                    else
+                    {
+                        if (stringsOfLines.ContainsKey(line))
+                            stringsOfLines.Remove(line);
+                        if (phenotypesOfLines.ContainsKey(line))
+                            phenotypesOfLines.Remove(line);
                     }
                 }
-
-                return str;
             }
-            return String.Empty;
+            finally
+            {
+                deleteSemaphoreSlim.Release();
+            }
         }
 
         /// <summary>
@@ -159,34 +267,47 @@ namespace PhenoPad.CustomControl
         }
 
         /// <summary>
-        /// Recognize strokes selected 
+        /// Handwrting recognition on all selected strokes and returns string results.
+        /// </summary>
+        private async Task<string> recognizeSelection()
+        {
+            Debug.WriteLine("\n recognizeSelection triggered\n");
+            IReadOnlyList<InkStroke> currentStrokes = inkCanvas.InkPresenter.StrokeContainer.GetStrokes();
+            if (currentStrokes.Count > 0)
+            {
+                List<HWRRecognizedText> recognitionResults = await HWRManager.getSharedHWRManager().OnRecognizeAsync
+                    (inkCanvas.InkPresenter.StrokeContainer, InkRecognitionTarget.Selected);
+
+                string str = "";
+                if (recognitionResults != null)
+                {
+                    recognizedText.Clear();
+                    recognitionResults.ToList().ForEach(recognizedText.Add);
+
+                    foreach (var rt in recognitionResults)
+                    {
+                        str += rt.selectedCandidate + " ";
+                    }
+                }
+
+                return str;
+            }
+            return String.Empty;
+        }
+
+        /// <summary>
+        /// Recognize selected strokes within the selected bounding rectangle and searches for possible phenotypes.
         /// </summary>
         private async void RecognizeSelection()
         {
             selectionCanvas.Children.Clear();
 
             if (boundingRect.Width <= 0 || boundingRect.Height <= 0)
-            {
                 return;
-            }
-
-            /***
-            var rectangle = new Rectangle()
-            {
-                Stroke = new SolidColorBrush(Windows.UI.Colors.Blue),
-                StrokeThickness = 1,
-                StrokeDashArray = new DoubleCollection() { 5, 2 },
-                Width = boundingRect.Width,
-                Height = boundingRect.Height
-            };
-
-            Canvas.SetLeft(rectangle, boundingRect.X);
-            Canvas.SetTop(rectangle, boundingRect.Y);
-            selectionCanvas.Children.Add(rectangle);
-            ***/
 
             //recogPhenoFlyout.ShowAt(rectangle);
             string str = await recognizeSelection();
+
             if (!str.Equals(String.Empty) && !str.Equals(""))
             {
                 PopupCommandBar.Visibility = Visibility.Visible;
@@ -200,8 +321,6 @@ namespace PhenoPad.CustomControl
                 selectionCanvas.Children.Add(PopupCommandBar);
                 selectionCanvas.Children.Add(recognizedPhenoBriefPanel);
 
-
-
                 selectionRectangle.Width = boundingRect.Width;
                 selectionRectangle.Height = boundingRect.Height;
                 //selectionRectangleTranform = new TranslateTransform();
@@ -212,7 +331,6 @@ namespace PhenoPad.CustomControl
                 Canvas.SetTop(selectionRectangle, boundingRect.Top);
                 //TestC.Children.Add(selectionRectangle);
 
-
                 var recogPhenoFlyout = (Flyout)this.Resources["PhenotypeSelectionFlyout"];
                 recognizedResultTextBlock.Text = str;
                 recogPhenoFlyout.ShowAt(selectionRectangle);
@@ -221,6 +339,38 @@ namespace PhenoPad.CustomControl
         }
 
 
+        private async void TriggerRecogServer(object sender, object e)
+        {
+            Debug.WriteLine("\n TRIGGER TICKED, WILL ANALYZE THROUGH SERVER...\n");
+            recognizeTimer.Stop();
+            if (inkAnalyzer.IsAnalyzing)
+            {
+                // inkAnalyzer is being used 
+                // try again after some time by dispatcherTimer 
+                recognizeTimer.Start();
+                return;
+            }
+            // analyze 
+            var result = await inkAnalyzer.AnalyzeAsync();
+
+            if (result.Status == InkAnalysisStatus.Updated)
+            {
+                //int line = linesToAnnotate.Dequeue();
+                IReadOnlyList<IInkAnalysisNode> lineNodes = inkAnalyzer.AnalysisRoot.FindNodes(InkAnalysisNodeKind.Line);
+
+                foreach (InkAnalysisLine line in lineNodes)
+                {
+                    // current line
+                    if (line.GetStrokeIds().Contains(curStroke.Id))
+                    {
+                        Debug.WriteLine("\nfound line.");
+                        // set up for current line
+                        recognizeAndSetUpUIForLine(line, false, serverRecog:true);
+                    }
+
+                }
+            }
+        }
 
 
         /// <summary>
@@ -347,10 +497,13 @@ namespace PhenoPad.CustomControl
         /// <summary>
         /// set up for current line, i.e. hwr, show recognition results and show recognized phenotypes
         /// </summary>
-        private async void recognizeAndSetUpUIForLine(InkAnalysisLine line, bool indetails = false)
+        private async void recognizeAndSetUpUIForLine(InkAnalysisLine line, bool indetails = false, bool serverRecog = false)
         {
             if (line == null)
                 return;
+
+
+
             // set current line id
             // switch to another line, clear result of current line
             if (line.Id != showingResultOfLine)
@@ -363,28 +516,26 @@ namespace PhenoPad.CustomControl
                 curLineObject = line;
             }
 
-
             if (idToNoteLine.ContainsKey(line.Id))
             {  // existing line
                 NoteLine nl = idToNoteLine[line.Id];
-                var hwrresult = await RecognizeLine(line.Id);
-                nl.HwrResult = hwrresult;
+                nl.HwrResult = await RecognizeLine(line.Id, serverRecog);
             }
             else
             {
                 //new line
                 NoteLine nl = new NoteLine(line);
                 // hwr
-                var hwrresult = await RecognizeLine(line.Id);
-                nl.HwrResult = hwrresult;
+                nl.HwrResult = await RecognizeLine(line.Id, serverRecog);
                 idToNoteLine[line.Id] = nl;
             }
 
+
             // HWR result UI
             setUpCurrentLineResultUI(line);
-
             // annotation and UI
             annotateCurrentLineAndUpdateUI(line);
+
 
             if (indetails)
             {
@@ -420,116 +571,7 @@ namespace PhenoPad.CustomControl
             }
         }
 
-        private void recognizeLine(int line)
-        {
-            if (line < 0)
-                return;
-            SelectAndAnnotateByLineNum(line);
-        }
 
-        public async void SelectAndAnnotateByLineNum(int line)
-        {
-            await deleteSemaphoreSlim.WaitAsync();
-            try
-            {
-                var xFrom = 0;
-                var xTo = inkCanvas.ActualWidth;
-                var yFrom = line * LINE_HEIGHT - 0.2 * LINE_HEIGHT;
-                yFrom = yFrom < 0 ? 0 : yFrom;
-                var yTo = (line + 1) * LINE_HEIGHT + 1.0 * LINE_HEIGHT;
-                Polyline lasso = new Polyline();
-                lasso.Points.Add(new Point(xFrom, yFrom));
-                lasso.Points.Add(new Point(xFrom, yTo));
-                lasso.Points.Add(new Point(xTo, yTo));
-                lasso.Points.Add(new Point(xTo, yFrom));
-                lasso.Points.Add(new Point(xFrom, yFrom));
-                Rect selectRect = Rect.Empty;
-
-                selectRect = inkCanvas.InkPresenter.StrokeContainer.SelectWithPolyLine(lasso.Points);
-
-                //double panelLeft = 0;
-                if (!selectRect.Equals(Rect.Empty))
-                {
-                    var shouldRecognize = false;
-                    foreach (var ss in inkCanvas.InkPresenter.StrokeContainer.GetStrokes())
-                        if (ss.Selected)
-                        {
-                            if (ss.BoundingRect.Top > (line + 1) * LINE_HEIGHT || ss.BoundingRect.Bottom < line * LINE_HEIGHT)
-                            {
-                                ss.Selected = false;
-                            }
-                            else
-                            {
-                                shouldRecognize = true;
-                                //panelLeft = panelLeft > (ss.BoundingRect.X + ss.BoundingRect.Width) ? panelLeft : (ss.BoundingRect.X + ss.BoundingRect.Width);
-                            }
-                        }
-                    if (shouldRecognize)
-                    {
-                        List<HWRRecognizedText> recognitionResults = await HWRService.HWRManager.getSharedHWRManager().OnRecognizeAsync(inkCanvas.InkPresenter.StrokeContainer, InkRecognitionTarget.Selected);
-
-                        //ClearSelection();
-                        if (recognitionResults != null)
-                        {
-                            string str = "";
-                            foreach (var rt in recognitionResults)
-                            {
-                                str += rt.selectedCandidate + " ";
-                            }
-
-                            if (!str.Equals(String.Empty))
-                            {
-                                string pname = "";
-                                if (stringsOfLines.ContainsKey(line) && stringsOfLines[line].Equals(str) && phenotypesOfLines.ContainsKey(line))
-                                {
-                                    pname = phenotypesOfLines[line].ElementAt(0).name;
-                                    // if (PhenotypeManager.getSharedPhenotypeManager().checkIfSaved(phenotypesOfLines[line].ElementAt(0)))
-                                    //ifSaved = true;
-                                }
-                                else
-                                {
-                                    List<Phenotype> result = await PhenotypeManager.getSharedPhenotypeManager().searchPhenotypeByPhenotipsAsync(str);
-                                    if (result != null && result.Count > 0)
-                                    {
-                                        phenotypesOfLines[line] = result;
-                                        stringsOfLines[line] = str;
-                                        pname = result.ElementAt(0).name;
-                                        // if (PhenotypeManager.getSharedPhenotypeManager().checkIfSaved(result.ElementAt(0)))
-                                        // ifSaved = true;
-                                    }
-                                    else
-                                        return;
-                                }
-                                /**
-                                HoverPhenoPanel.Visibility = Visibility.Visible;
-                                HoverPhenoPopupText.Text = pname;
-                                Canvas.SetTop(HoverPhenoPanel, ((double)line-0.4) * LINE_HEIGHT);
-                                Canvas.SetLeft(HoverPhenoPanel, 10);
-                                HoverPhenoPopupText.Tapped += HoverPhenoPopupText_Tapped;
-
-                                if (ifSaved)
-                                    HoverPhenoPanel.BorderThickness = new Thickness(2);
-                                else
-                                    HoverPhenoPanel.BorderThickness = new Thickness(0);
-                                **/
-
-                            }
-                        }
-                    }
-                    else
-                    {
-                        if (stringsOfLines.ContainsKey(line))
-                            stringsOfLines.Remove(line);
-                        if (phenotypesOfLines.ContainsKey(line))
-                            phenotypesOfLines.Remove(line);
-                    }
-                }
-            }
-            finally
-            {
-                deleteSemaphoreSlim.Release();
-            }
-        }
 
         // Draw a polygon on the recognitionCanvas.
         private void DrawPolygon(InkAnalysisInkDrawing shape)
@@ -633,7 +675,7 @@ namespace PhenoPad.CustomControl
             inkAnalyzer.AddDataForStrokes(inkCan.InkPresenter.StrokeContainer.GetStrokes());
             bool result = false;
             while (!result)
-                result = await analyzeInk();
+                result = await analyzeInk(serverFlag:true);//will be using server side HWR upon page load
             Debug.WriteLine("done initial analyze, result = " + result);
         }
 
@@ -641,7 +683,7 @@ namespace PhenoPad.CustomControl
         ///  Analyze ink strokes contained in inkAnalyzer and add phenotype candidates
         ///  from fetching API
         /// </summary>
-        private async Task<bool> analyzeInk(InkStroke lastStroke = null)
+        private async Task<bool> analyzeInk(InkStroke lastStroke = null,bool serverFlag = false)
         {
             //if (lastStroke == null) { 
             //    PhenoMana.phenotypesCandidates.Clear();
@@ -650,7 +692,6 @@ namespace PhenoPad.CustomControl
             Debug.WriteLine("analyzing...");
             if (inkAnalyzer.IsAnalyzing)
             {
-                Debug.WriteLine("already analyzing...");
                 // inkAnalyzer is being used 
                 // try again after some time by dispatcherTimer 
                 dispatcherTimer.Start();
@@ -673,7 +714,7 @@ namespace PhenoPad.CustomControl
                         if (line.GetStrokeIds().Contains(lastStroke.Id))
                         {
                             // set up for current line
-                            recognizeAndSetUpUIForLine(line);
+                            recognizeAndSetUpUIForLine(line, serverFlag);
                         }
                     }
                     // recognize all lines
@@ -685,7 +726,7 @@ namespace PhenoPad.CustomControl
                             //new line
                             NoteLine nl = new NoteLine(line);
                             // hwr
-                            var hwrresult = await RecognizeLine(line.Id);
+                            var hwrresult = await RecognizeLine(line.Id, serverFlag);
                             nl.HwrResult = hwrresult;
                             idToNoteLine[line.Id] = nl;
                             Debug.WriteLine("fetching from API...");
@@ -832,50 +873,8 @@ namespace PhenoPad.CustomControl
         private void setUpCurrentLineResultUI(InkAnalysisLine line)
         {
             var wordlist = idToNoteLine.GetValueOrDefault(line.Id).WordStrings;
-            {
-                // align wordlist and textblocks in curLineResultPanel
-                /***
-                var oldWordList = new List<string>();
-                foreach (TextBlock tb in curLineWordsStackPanel.Children)
-                    oldWordList.Add(tb.Text);
-
-                var alignResult = alignTwoStringList(wordlist, oldWordList);
-                var newIndex = alignResult.Item1;
-                var oldIndex = alignResult.Item2;
-
-                int insertIndex = oldWordList.Count();
-
-                for (int i = oldIndex.Count() - 1; i >= 0; --i)
-                {
-                    // gap
-                    if (oldIndex[i] == -1)
-                    {
-                        TextBlock tb = new TextBlock();
-                        tb.VerticalAlignment = VerticalAlignment.Center;
-                        tb.FontSize = 16;
-                        tb.Text = wordlist[newIndex[i]];
-                        if (insertIndex >= curLineWordsStackPanel.Children.Count())
-                            curLineWordsStackPanel.Children.Add(tb);
-                        else
-                            curLineWordsStackPanel.Children.Insert(insertIndex, tb);
-                    }
-                    // aligment
-                    else if (newIndex[i] != -1) 
-                    {
-                        insertIndex--;
-                        if (oldWordList[oldIndex[i]] != wordlist[newIndex[i]])
-                            (curLineWordsStackPanel.Children[oldIndex[i]] as TextBlock).Text = wordlist[newIndex[i]];
-                    }
-                }
-                for (int i = oldIndex.Count() - 1; i >= 0; --i)
-                {
-                    // delete
-                    if (newIndex[i] == -1) 
-                    {
-                        curLineWordsStackPanel.Children.RemoveAt(oldIndex[i]);
-                    }
-                }
-                **/
+            foreach (string word in wordlist) {
+                Debug.WriteLine(word);
             }
             curLineWordsStackPanel.Children.Clear();
             //sets a text block for each recognized word and adds event handler to click event
@@ -899,13 +898,6 @@ namespace PhenoPad.CustomControl
             Canvas.SetLeft(curLineResultPanel, line.BoundingRect.Left);
             int lineNum = getLineNumByRect(line.BoundingRect);
             Canvas.SetTop(curLineResultPanel, (lineNum - 1) * LINE_HEIGHT);
-            /***
-            await Dispatcher.RunAsync(Windows.UI.Core.CoreDispatcherPriority.High, () => {
-                
-            });
-            ***/
-
-
         }
 
         private async void annotateCurrentLineAndUpdateUI(InkAnalysisLine line)
