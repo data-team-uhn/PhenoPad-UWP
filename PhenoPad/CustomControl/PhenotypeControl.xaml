@@ -23,12 +23,12 @@
 
     <Grid Padding="0 1 0 1">
         <Grid.Resources>
-            <Storyboard x:Name="DeletePhenotypeSB">
-                <!--<FadeOutThemeAnimation Storyboard.TargetName="YNSwitch" Duration="0:0:0.1"/>-->
+            <!--<Storyboard x:Name="DeletePhenotypeSB">
+                --><!--<FadeOutThemeAnimation Storyboard.TargetName="YNSwitch" Duration="0:0:0.1"/>--><!--
             </Storyboard>
             <Storyboard x:Name="AddPhenotypeSB">
-                <!--<FadeInThemeAnimation Storyboard.TargetName="YNSwitch" Duration="0:0:0.1" />-->
-            </Storyboard>
+                --><!--<FadeInThemeAnimation Storyboard.TargetName="YNSwitch" Duration="0:0:0.1" />--><!--
+            </Storyboard>-->
         </Grid.Resources>
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="50"/>

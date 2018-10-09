@@ -183,10 +183,12 @@ namespace PhenoPad.CustomControl
             else
             {
                 //NameGrid.Background = new SolidColorBrush(Colors.LightCoral);
+                this.Visibility = Visibility.Collapsed;
                 phenotypeNameTextBlock.Foreground = new SolidColorBrush(Colors.White);
                 NameGrid.Background = new SolidColorBrush(Colors.PaleVioletRed);
                 phenotypeNameTextBlock.Text = "No " + phenotypeName;
                 //NameCrossLine.Visibility = Visibility.Visible;
+                this.Visibility = Visibility.Visible;
             }
             
         }

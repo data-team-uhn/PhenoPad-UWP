@@ -110,14 +110,14 @@
             </StackPanel>
             </Flyout>
             <Flyout x:Key="ChangeAlternativeFlyout" Placement="Top">
-                <StackPanel Padding="0">
-                    <ListView x:Name="alternativeListView"  Margin="0, 10" IsItemClickEnabled="True"
-                              ItemClick="alternativeListView_ItemClick">
+                <StackPanel Padding="0" Margin="3" Width="auto">
+                    <ListView x:Name="alternativeListView" IsItemClickEnabled="True"
+                              ItemClick="alternativeListView_ItemClick" Width="auto">
                         <ListView.ItemContainerStyle>
                             <Style TargetType="ListViewItem">
                                 <Setter Property="HorizontalContentAlignment" Value="Stretch" />
                                 <Setter Property="VerticalContentAlignment" Value="Center" />
-                                <Setter Property="Margin" Value="0,0,0,0" />
+                                <Setter Property="Margin" Value="0,1,0,1" />
                                 <Setter Property="Padding" Value="0,0,0,0" />
                                 <Setter Property="MinHeight" Value="20" />
                             </Style>
