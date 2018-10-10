@@ -109,6 +109,7 @@
                 </RelativePanel>
             </StackPanel>
             </Flyout>
+            
             <Flyout x:Key="ChangeAlternativeFlyout" Placement="Top">
                 <StackPanel Padding="0" Margin="3" Width="auto">
                     <ListView x:Name="alternativeListView" IsItemClickEnabled="True"
@@ -127,6 +128,7 @@
             </Flyout>
         </ResourceDictionary>
     </UserControl.Resources>
+    
     <Grid >
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="15"></ColumnDefinition>
@@ -225,23 +227,23 @@
                           BorderBrush="DarkGray" >
                         <Grid.Resources>
                             <Storyboard x:Name="curWordPhenoAnimation">
-
                                 <RepositionThemeAnimation 
                                         Storyboard.TargetName="curWordPhenoControlGrid"
                                         FromVerticalOffset="100"
-                                         Duration="0:0:0.5"/>
+                                         Duration="0:0:0.1"/>
                             </Storyboard>
                             <Storyboard x:Name="curWordPhenoHideAnimation">
 
                                 <RepositionThemeAnimation 
                                         Storyboard.TargetName="curWordPhenoControlGrid"
                                         FromVerticalOffset="-100"
-                                         Duration="0:0:0.5"/>
+                                         Duration="0:0:0.1"/>
                             </Storyboard>
                         </Grid.Resources>
                         
                         <Grid x:Name="curWordPhenoControlGrid" Height="40" HorizontalAlignment="Right" 
-                              Background="WhiteSmoke"  Padding="5" BorderBrush="LightGray" BorderThickness="0" CornerRadius="10">
+                              Background="WhiteSmoke"  Padding="5" BorderBrush="LightGray" BorderThickness="0" 
+                              CornerRadius="10">
                             <!--
                                 <customcontrol:PhenotypeControl   x:Name="curWordPhenoControl"  phenotypeName="" phenotypeId="" phenotypeState="-1" sourceType="Notes"></customcontrol:PhenotypeControl>
                                 -->
@@ -258,12 +260,13 @@
                                 </ListView.ItemsPanel>
                                 <ListView.ItemTemplate>
                                     <DataTemplate x:DataType="phenotypeservice:Phenotype">
-                                        <customcontrol:PhenotypeBriefControl phenotypeName="{x:Bind name}" phenotypeId="{x:Bind hpId}" phenotypeState="{x:Bind state}" sourceType="{x:Bind sourceType}" presentPosition="Inline" ></customcontrol:PhenotypeBriefControl>
+                                        <customcontrol:PhenotypeBriefControl phenotypeName="{x:Bind name}" 
+                                                                             phenotypeId="{x:Bind hpId}" phenotypeState="{x:Bind state}" 
+                                                                             sourceType="{x:Bind sourceType}" presentPosition="Inline" />
                                     </DataTemplate>
                                 </ListView.ItemTemplate>
                                 <ListView.ItemContainerStyle>
                                     <Style TargetType="ListViewItem">
-
                                         <Setter Property="HorizontalContentAlignment" Value="Stretch" />
                                         <Setter Property="VerticalContentAlignment" Value="Stretch" />
                                         <Setter Property="Margin" Value="5,0,5,0" />

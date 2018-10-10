@@ -26,7 +26,7 @@
             <Grid Grid.Column="0" Grid.Row="0" VerticalAlignment="Center">
               
                 <TextBlock  Tapped="phenotypeNameTextBlock_Tapped" 
-                        VerticalAlignment="Center" FontSize="15" 
+                        VerticalAlignment="Center" FontSize="15"
                         Grid.Column="1" x:Name="phenotypeNameTextBlock" 
                         Text="" Margin="3" Padding="5 0 0 0"
                         Foreground="Black" Opacity="0.6"/>

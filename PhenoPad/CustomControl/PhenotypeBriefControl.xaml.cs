@@ -15,6 +15,7 @@ using Windows.UI.Xaml.Navigation;
 using PhenoPad.PhenotypeService;
 using Windows.UI;
 using PhenoPad.Styles;
+using System.Diagnostics;
 
 // The User Control item template is documented at https://go.microsoft.com/fwlink/?LinkId=234236
 
@@ -114,7 +115,7 @@ namespace PhenoPad.CustomControl
             phenotypeId = p.hpId;
             phenotypeState = p.state;
             sourceType = p.sourceType;
-            //setPhenotypeState(phenotypeState);
+            setPhenotypeState(phenotypeState);
         }
 
         // Add a phenotype
@@ -183,12 +184,10 @@ namespace PhenoPad.CustomControl
             else
             {
                 //NameGrid.Background = new SolidColorBrush(Colors.LightCoral);
-                this.Visibility = Visibility.Collapsed;
                 phenotypeNameTextBlock.Foreground = new SolidColorBrush(Colors.White);
                 NameGrid.Background = new SolidColorBrush(Colors.PaleVioletRed);
                 phenotypeNameTextBlock.Text = "No " + phenotypeName;
                 //NameCrossLine.Visibility = Visibility.Visible;
-                this.Visibility = Visibility.Visible;
             }
             
         }
@@ -196,56 +195,61 @@ namespace PhenoPad.CustomControl
 
       
 
-        private void phenotypeNameTextBlock_Tapped(object sender, TappedRoutedEventArgs e)
-        {
-            if (localState == -1)
-            {
-                // we only update UI for phenotype control that appears in notes
-                if (presentPosition == PresentPosition.Inline)
-                    setPhenotypeState(1);
-                PhenotypeManager.getSharedPhenotypeManager().addPhenotype(new Phenotype(phenotypeId, phenotypeName, 1), sourceType);
-            }
-            else if (localState == 0)
-            {
-                localState = 1;
-                if (presentPosition == PresentPosition.Inline)
-                    setPhenotypeState(1);
-                PhenotypeManager.getSharedPhenotypeManager().updatePhenoStateById(phenotypeId, 1, sourceType);
-            }
-            else {
-                localState = 0;
-                if (presentPosition == PresentPosition.Inline)
-                    setPhenotypeState(0);               
-                PhenotypeManager.getSharedPhenotypeManager().updatePhenoStateById(phenotypeId, 0, sourceType);
-            }
-        }
         //private void phenotypeNameTextBlock_Tapped(object sender, TappedRoutedEventArgs e)
         //{
-        //    switch (localState)
+        //    Debug.WriteLine("current state: "+ localState.ToString());
+        //    if (localState == -1)
         //    {
-        //        case -1:
-        //            localState = 1;
-        //            // we only update UI for phenotype control that appears in notes
-        //            if (presentPosition == PresentPosition.Inline)
-        //                setPhenotypeState(1);
-        //            PhenotypeManager.getSharedPhenotypeManager().addPhenotype(new Phenotype(phenotypeId, phenotypeName, 1), sourceType);
-        //            break;
-        //        case 0:
-        //            //PhenotypeManager.getSharedPhenotypeManager().removeById(phenotypeId, SourceType.Saved);
-        //            // PhenotypeManager.getSharedPhenotypeManager().removeById(phenotypeId, sourceType);
-        //            localState = 1;
-        //            if (presentPosition == PresentPosition.Inline)
-        //                setPhenotypeState(1);
-        //            PhenotypeManager.getSharedPhenotypeManager().updatePhenoStateById(phenotypeId, 1, sourceType);
-        //            break;
-        //        case 1:
-        //            localState = 0;
-        //            if (presentPosition == PresentPosition.Inline)
-        //                setPhenotypeState(0);
-        //            PhenotypeManager.getSharedPhenotypeManager().updatePhenoStateById(phenotypeId, 0, sourceType);
-        //            break;
+        //        // we only update UI for phenotype control that appears in notes
+        //        if (presentPosition == PresentPosition.Inline)
+        //            setPhenotypeState(1);
+        //        PhenotypeManager.getSharedPhenotypeManager().addPhenotype(new Phenotype(phenotypeId, phenotypeName, 1), sourceType);
+        //    }
+        //    else if (localState == 0)
+        //    {
+        //        localState = 1;
+        //        if (presentPosition == PresentPosition.Inline)
+        //            setPhenotypeState(1);
+        //        PhenotypeManager.getSharedPhenotypeManager().updatePhenoStateById(phenotypeId, 1, sourceType);
+
+
+        //    }
+        //    else {
+        //        localState = 0;
+        //        if (presentPosition == PresentPosition.Inline)
+        //            setPhenotypeState(0);
+        //        PhenotypeManager.getSharedPhenotypeManager().updatePhenoStateById(phenotypeId, 0, sourceType);
+
         //    }
         //}
+
+        private void phenotypeNameTextBlock_Tapped(object sender, TappedRoutedEventArgs e)
+        {
+            switch (localState)
+            {
+                case -1:
+                    localState = 1;
+                    // we only update UI for phenotype control that appears in notes
+                    if (presentPosition == PresentPosition.Inline)
+                        setPhenotypeState(1);
+                    PhenotypeManager.getSharedPhenotypeManager().addPhenotype(new Phenotype(phenotypeId, phenotypeName, 1), sourceType);
+                    break;
+                case 0:
+                    //PhenotypeManager.getSharedPhenotypeManager().removeById(phenotypeId, SourceType.Saved);
+                    // PhenotypeManager.getSharedPhenotypeManager().removeById(phenotypeId, sourceType);
+                    localState = 1;
+                    if (presentPosition == PresentPosition.Inline)
+                        setPhenotypeState(1);
+                    PhenotypeManager.getSharedPhenotypeManager().updatePhenoStateById(phenotypeId, 1, sourceType);
+                    break;
+                case 1:
+                    localState = 0;
+                    if (presentPosition == PresentPosition.Inline)
+                        setPhenotypeState(0);
+                    PhenotypeManager.getSharedPhenotypeManager().updatePhenoStateById(phenotypeId, 0, sourceType);
+                    break;
+            }
+        }
 
         private void UserControl_Loaded(object sender, RoutedEventArgs e)
         {

@@ -366,6 +366,7 @@ namespace PhenoPad.PhenotypeService
 
         public void updatePhenoStateById(string pid, int state, SourceType type)
         {
+            Debug.WriteLine("***update by id is called ***"+type.ToString());
             int ind = -1;
             Phenotype temp = savedPhenotypes.Where(x => x.hpId == pid).FirstOrDefault();
             if (temp != null)
@@ -402,6 +403,7 @@ namespace PhenoPad.PhenotypeService
                     ind = phenotypesInNote.IndexOf(temp);
                     phenotypesInNote.Remove(temp);
                     phenotypesInNote.Insert(ind, pp);
+                    MainPage.Current.curPage.updatePhenotypeLine(pp,ind);
                 }
             }
             temp = phenotypesInSpeech.Where(x => x.hpId == pid).FirstOrDefault();
@@ -434,6 +436,8 @@ namespace PhenoPad.PhenotypeService
 
         public void updatePhenoStateByIdFromCandidate(string pid, int state, SourceType type)
         {
+            Debug.WriteLine("***update by id from candidate is called ***");
+
             int ind = -1;
             Phenotype temp = savedPhenotypes.Where(x => x.hpId == pid).FirstOrDefault();
             if (temp != null)

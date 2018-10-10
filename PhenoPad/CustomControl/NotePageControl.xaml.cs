@@ -237,7 +237,7 @@ namespace PhenoPad.CustomControl
             textNoteDispatcherTimer.Interval = TimeSpan.FromSeconds(0.1);
             operationDispathcerTimer.Interval = TimeSpan.FromMilliseconds(500);
             unprocessedDispatcherTimer.Interval = TimeSpan.FromMilliseconds(100);
-            recognizeTimer.Interval = TimeSpan.FromSeconds(0.3);// recognize through server side every 3 seconds
+            recognizeTimer.Interval = TimeSpan.FromSeconds(0.1);// recognize through server side every 3 seconds
             autosaveDispatcherTimer.Interval = TimeSpan.FromSeconds(1); //setting stroke auto save interval to be 1 sec
 
             linesToUpdate = new Queue<int>();
