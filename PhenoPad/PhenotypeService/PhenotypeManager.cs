@@ -162,8 +162,10 @@ namespace PhenoPad.PhenotypeService
             {
                 //savedPhenotypes.Add(pheno);
                 savedPhenotypes.Insert(0, pheno);
+
                 rootPage.NotifyUser(pheno.name + " is added.", NotifyType.StatusMessage, 2);
             }
+
 
             if(from == SourceType.Notes)
             {
@@ -195,6 +197,7 @@ namespace PhenoPad.PhenotypeService
             
 
             updateSuggestionAndDifferential();
+            updatePhenoStateById(pheno.hpId, 1, SourceType.Suggested);
         }
 
         public int getStateByHpid(string hpid)
@@ -403,7 +406,8 @@ namespace PhenoPad.PhenotypeService
                     ind = phenotypesInNote.IndexOf(temp);
                     phenotypesInNote.Remove(temp);
                     phenotypesInNote.Insert(ind, pp);
-                    MainPage.Current.curPage.updatePhenotypeLine(pp,ind);
+                    MainPage.Current.curPage.updatePhenotypeLine(pp, ind);
+
                 }
             }
             temp = phenotypesInSpeech.Where(x => x.hpId == pid).FirstOrDefault();
