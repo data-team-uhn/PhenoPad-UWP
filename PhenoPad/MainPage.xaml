@@ -700,13 +700,17 @@
                             <SymbolIcon Symbol="Add" Foreground="{StaticResource Button_Background}" />
                         </Button>
                     </StackPanel>
-                    
-                    <Border CornerRadius="10" x:Name="StatusBorder" Margin="0,20,0,0" RelativePanel.AlignTopWithPanel="True" RelativePanel.AlignHorizontalCenterWithPanel="True" MinWidth="500" Height="40">
 
-                        <TextBlock x:Name="StatusBlock" FontWeight="Bold" Foreground="White" TextAlignment="Center"
+                    <Grid Canvas.ZIndex="99999" RelativePanel.AlignTopWithPanel="True" RelativePanel.AlignHorizontalCenterWithPanel="True" >
+                        <Border CornerRadius="10" x:Name="StatusBorder" Margin="0,20,0,0" 
+                            RelativePanel.AlignTopWithPanel="True" RelativePanel.AlignHorizontalCenterWithPanel="True" 
+                            MinWidth="500" Height="40">
+
+                            <TextBlock x:Name="StatusBlock" FontWeight="Bold" Foreground="White" TextAlignment="Center"
+                                   Canvas.ZIndex="9999"
                                    MaxWidth="{Binding ElementName=Splitter, Path=ActualWidth}" Margin="10,10,10,10" TextWrapping="Wrap"  />
-                    </Border>
-
+                        </Border>
+                    </Grid>
 
                     <!-- pheotypes user are looking for -->
                     <Grid  Name="CandidateGrid" HorizontalAlignment="Stretch" 
@@ -778,7 +782,7 @@
                         </StackPanel>
 
                     </Grid>
-
+                    
 
                     <Grid Name="MultimediaPreviewGrid" Background="{StaticResource TITLE_BAR_WHITE}"
                           Visibility="Collapsed"

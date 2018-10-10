@@ -237,7 +237,7 @@ namespace PhenoPad.CustomControl
             textNoteDispatcherTimer.Interval = TimeSpan.FromSeconds(0.1);
             operationDispathcerTimer.Interval = TimeSpan.FromMilliseconds(500);
             unprocessedDispatcherTimer.Interval = TimeSpan.FromMilliseconds(100);
-            recognizeTimer.Interval = TimeSpan.FromSeconds(3);// recognize through server side every 3 seconds
+            recognizeTimer.Interval = TimeSpan.FromSeconds(0.3);// recognize through server side every 3 seconds
             autosaveDispatcherTimer.Interval = TimeSpan.FromSeconds(1); //setting stroke auto save interval to be 1 sec
 
             linesToUpdate = new Queue<int>();
@@ -269,8 +269,6 @@ namespace PhenoPad.CustomControl
             textNoteEditBox.FontSize = 22;
             format.SetLineSpacing(LineSpacingRule.Exactly, 33.7f);
             textNoteEditBox.Document.SetDefaultParagraphFormat(format);
-
-            
 
             // disable moving strokes for now
             //selectionRectangle.ManipulationMode = ManipulationModes.TranslateX | ManipulationModes.TranslateY;

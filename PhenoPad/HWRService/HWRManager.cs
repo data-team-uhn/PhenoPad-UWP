@@ -46,7 +46,7 @@ namespace PhenoPad.HWRService
         List <string> sentence;
         List<List<string>> alternatives;
         bool newRequest;
-        public List<string> abbreviations;
+        Dictionary<string, List<string>> abbrDict;
 
 
         /// <summary>
@@ -58,8 +58,7 @@ namespace PhenoPad.HWRService
             sentence = new List<string>();
             alternatives = new List<List<string>>();
             newRequest = true;
-            abbreviations = null;
-
+            abbrDict = new Dictionary<string, List<string>>();
         }
 
 
@@ -75,6 +74,15 @@ namespace PhenoPad.HWRService
                 return sharedHWRManager;
             }
         }
+
+        public void setRequestType(bool type) {
+            this.newRequest = type;
+        }
+
+        public Dictionary<string,List<string>> getDictionary() {
+            return abbrDict;
+        }
+
         /// <summary>
         /// Gets the components in InkStrokeContainer and tries to recognize and return text, returns null if no text is recognized.
         /// </summary>
@@ -108,7 +116,8 @@ namespace PhenoPad.HWRService
                     if (server) {
                         string fullsentence = listToString(this.sentence);
                         HTTPRequest unprocessed = new HTTPRequest(fullsentence, this.alternatives, this.newRequest.ToString());
-                        recogResults = await UpdateResultFromServer(unprocessed);
+                        List<HWRRecognizedText> processed = await UpdateResultFromServer(unprocessed);
+                        recogResults = processed == null ? recogResults : processed;
                     }
                     return recogResults;
                 }
@@ -141,57 +150,6 @@ namespace PhenoPad.HWRService
             sentence = sentence.Substring(0, sentence.Length - 1);
             return sentence;
         }
-
-        //public async Task<List<HWRRecognizedText>> RecognizeOnServer(InkStrokeContainer container, InkRecognitionTarget target)
-        //{
-        //    try
-        //    {
-        //        var recognitionResults = await inkRecognizerContainer.RecognizeAsync(container, target);
-        //        //if there are avilable recognition results, add to recognized text list    
-        //        if (recognitionResults.Count > 0)
-        //        {
-        //            List<HWRRecognizedText> recogResults = new List<HWRRecognizedText>();
-        //            sentence = new List<string>();
-        //            alternatives = new List<List<string>>();
-
-        //            // Display recognition result by words
-        //            foreach (var r in recognitionResults)
-        //            {
-        //                List<string> unprocessedRes = new List<string>(r.GetTextCandidates());
-        //                alternatives.Add(unprocessedRes);
-        //                //by default selects the most match candidate word 
-        //                sentence.Add(unprocessedRes.ElementAt(0));
-        //                HWRRecognizedText rt = new HWRRecognizedText();
-        //                List<string> res = new List<string>();
-        //                res = new List<String>(r.GetTextCandidates());
-        //                rt.candidateList = res;
-        //                rt.selectedIndex = 0;
-        //                rt.selectedCandidate = res.ElementAt(0);
-        //                recogResults.Add(rt);
-        //            }
-        //            string fullsentence = listToString(this.sentence);
-        //            HTTPRequest unprocessed = new HTTPRequest(fullsentence, this.alternatives, this.newRequest.ToString());
-        //            await UpdateResultFromServer(unprocessed, recogResults);
-        //            return recogResults;
-        //        }
-        //        // if no text is recognized, return null
-        //        else
-        //        {
-        //            //rootPage.NotifyUser("No text recognized.", NotifyType.StatusMessage);
-        //            //MessageDialog dialog = new MessageDialog("No text recognized");
-        //            //var cmd = await dialog.ShowAsync();
-        //            return null;
-        //        }
-        //    }
-        //    catch (System.Exception e)
-        //    {
-        //        //MessageDialog dialog = new MessageDialog("No storke selected.");
-        //        //var cmd = await dialog.ShowAsync();
-        //        Debug.WriteLine("HWR error: " + e.Message);
-        //        return null;
-        //    }
-        //}
-
 
         public async Task<List<HWRRecognizedText>> UpdateResultFromServer(HTTPRequest rawdata)
         {
@@ -248,8 +206,10 @@ namespace PhenoPad.HWRService
 
         public List<HWRRecognizedText> processAbbr(List<Abbreviation> abbrs, List<HWRRecognizedText> recog)
         {
-            List<HWRRecognizedText> recogAb = recog;
-            abbreviations = new List<string>();
+            abbrDict.Clear();
+
+            int offset = 0;
+            List<HWRRecognizedText> recogAb = recog == null? new List<HWRRecognizedText>() : recog;
             foreach (Abbreviation ab in abbrs) {
                 int index = Convert.ToInt32(ab.word_pos);
                 HWRRecognizedText rt = new HWRRecognizedText();
@@ -257,14 +217,17 @@ namespace PhenoPad.HWRService
                 rt.candidateList = res;
                 rt.selectedIndex = 0;
                 rt.selectedCandidate = res.ElementAt(0);
-                abbreviations.Add(res.ElementAt(0));
-                recog.Insert(index + 1, rt);
-                Debug.WriteLine("new abbreviation inserted\n.");
+                recogAb.Insert(index + offset + 1, rt);
+                //adding the abbreviation and its alternatives to a dictionary for later references.
+                abbrDict.Add($"{sentence[index].ToLower()}",ab.abbr_list);
+                offset++;
             }
-            return recog;
+            return recogAb;
         }
         public List<HWRRecognizedText> processAlternative(List<List<string>> alter)
         {
+            if (alter == null)
+                return null;
             List<HWRRecognizedText> recogResults = new List<HWRRecognizedText>();
 
             foreach (List<string> lst in alter)

@@ -338,7 +338,12 @@ namespace PhenoPad.CustomControl
             }
         }
 
-
+        /// <summary>
+        /// After timer ticks, trigger server side HWR for abbreviation detection
+        /// note this method will be sending with request type = new.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private async void TriggerRecogServer(object sender, object e)
         {
             Debug.WriteLine("\n TRIGGER TICKED, WILL ANALYZE THROUGH SERVER...\n");
@@ -365,6 +370,7 @@ namespace PhenoPad.CustomControl
                     {
                         Debug.WriteLine("\nfound line.");
                         // set up for current line
+                        HWRManager.getSharedHWRManager().setRequestType(true);
                         recognizeAndSetUpUIForLine(line, false, serverRecog:true);
                     }
 
@@ -872,6 +878,7 @@ namespace PhenoPad.CustomControl
 
         private void setUpCurrentLineResultUI(InkAnalysisLine line)
         {
+
             var wordlist = idToNoteLine.GetValueOrDefault(line.Id).WordStrings;
             foreach (string word in wordlist) {
                 Debug.WriteLine(word);
@@ -880,28 +887,30 @@ namespace PhenoPad.CustomControl
             //sets a text block for each recognized word and adds event handler to click event
             foreach (var word in wordlist)
             {
+                int index = wordlist.IndexOf(word);
+                Dictionary<string, List<string>> dict = HWRManager.getSharedHWRManager().getDictionary();
                 TextBlock tb = new TextBlock();
                 tb.VerticalAlignment = VerticalAlignment.Center;
                 tb.FontSize = 16;
                 //for detecting abbreviations
-                if (HWRManager.getSharedHWRManager().abbreviations != null && HWRManager.getSharedHWRManager().abbreviations.Contains(word))
-                {
-                    tb.Text = $"({word})"; 
+                if ( index != 0 && dict.ContainsKey(wordlist[index-1].ToLower()) && dict[wordlist[index - 1].ToLower()].Contains(word))
+                { 
+                    tb.Text = $"({word})";
                     tb.Foreground = new SolidColorBrush(Colors.DarkOrange);
                 }
-                else {
+                else
+                {
                     tb.Text = word;
                 }
 
-
                 curLineWordsStackPanel.Children.Add(tb);
+                //Binding event listener to each text block
                 tb.Tapped += ((object sender, TappedRoutedEventArgs e) => {
                     int wi = curLineWordsStackPanel.Children.IndexOf((TextBlock)sender);
                     var alterFlyout = (Flyout)this.Resources["ChangeAlternativeFlyout"];
                     showAlterOfWord = wi;
                     alternativeListView.ItemsSource = idToNoteLine[showingResultOfLine].HwrResult[wi].candidateList;
                     alterFlyout.ShowAt((FrameworkElement)sender);
-
                 });
             }
             curLineResultPanel.Visibility = Visibility.Visible;
@@ -910,19 +919,38 @@ namespace PhenoPad.CustomControl
             Canvas.SetTop(curLineResultPanel, (lineNum - 1) * LINE_HEIGHT);
         }
 
-        private void alternativeListView_ItemClick(object sender, ItemClickEventArgs e)
+
+        private async void alternativeListView_ItemClick(object sender, ItemClickEventArgs e)
         {
+            NoteLine curLine = idToNoteLine[showingResultOfLine];
+            Dictionary<string, List<string>> dict = HWRManager.getSharedHWRManager().getDictionary();
+
             var citem = (string)e.ClickedItem;
             int ind = alternativeListView.Items.IndexOf(citem);
+            int previous = -1;
+            //When changing the alternative of an abbreviation, just change result UI and re-annotate
+            //note that all words in an extended form of an abbereviation will contains at least one space
+            //this is a faster way of identifying an abbreviation, but feel free to change if there's better way of
+            //doing so.
+            if (citem.Contains(" "))
+            {
+                Debug.WriteLine("\nchanging alternative of an abbreviation.\n");
+                previous = curLine.HwrResult[showAlterOfWord].selectedIndex;
+            }
+            if (previous == -1) {
+                Debug.WriteLine("\nchanging a normal word in dispaly.\n");
+                //HWRManager.getSharedHWRManager().setRequestType(false);
+                curLine.HwrResult = await RecognizeLine(curLine.id, serverFlag:true);
+            }
+            curLine.updateHwrResult(showAlterOfWord, ind, previous);
 
-            int previous = idToNoteLine[showingResultOfLine].HwrResult[showAlterOfWord].selectedIndex;
-            idToNoteLine[showingResultOfLine].updateHwrResult(showAlterOfWord, ind, previous);
 
             // HWR result UI
             setUpCurrentLineResultUI(curLineObject);
+            // re-annotation and UI set-up after all HWR has been updated
             curLineCandidatePheno.Clear();
-            // annotation and UI
             annotateCurrentLineAndUpdateUI(curLineObject);
+
         }
 
 

@@ -252,23 +252,39 @@ namespace PhenoPad.CustomControl
             // annotationByWord.Add(Tuple.Create(p, windex.Item1, windex.Item2));
         }
 
-        public void updateHwrResult(int wordind, int selectind, int previousInd)
+        public void updateHwrResult(int wordind, int selectind, int previousInd = -1)
         {
+            Dictionary<string, List<string>> dict = HWRManager.getSharedHWRManager().getDictionary();
             this.HwrResult[wordind].selectedIndex = selectind;
-            string previous = this.HwrResult[wordind].candidateList[previousInd];
-            string selected = this.HwrResult[wordind].candidateList[selectind];
-            int index = HWRManager.getSharedHWRManager().abbreviations.IndexOf(previous);
-            if (index != -1) {
-                HWRManager.getSharedHWRManager().abbreviations[index] = selected;
-
+            //Updating an alternative of an abbreviation
+            if (previousInd != -1)
+            {
+                string previous = this.HwrResult[wordind].candidateList[previousInd];//previously selected alternative
+                Debug.WriteLine($"previous key: {(HwrResult[wordind - 1].selectedCandidate).ToLower()}");
+                int index = dict[HwrResult[wordind-1].selectedCandidate.ToLower()].IndexOf(previous);
+                if (index != -1)
+                {
+                    string selected = this.HwrResult[wordind].candidateList[selectind]; //currently selected alternative
+                    this.HwrResult[wordind].selectedCandidate = selected;
+                    Debug.WriteLine($"\n new alter:{this.HwrResult[wordind].selectedCandidate}");
+                    // update 
+                    _wordStrings[wordind] = this.HwrResult[wordind].selectedCandidate;
+                    _text = String.Join(" ", _wordStrings);
+                }
             }
-            this.HwrResult[wordind].selectedCandidate = selected;
+            //Updating a normal word or the short form of abbreviation
+            else {
+                string selected = this.HwrResult[wordind].candidateList[selectind]; //currently selected alternative
+                //if currently selected an abbreviation short form, need to delete the previous abbreviation.
+                if (wordind + 1 != this.HwrResult.Count && dict.ContainsKey(this.HwrResult[wordind].selectedCandidate.ToLower())) {
+                    this.HwrResult.RemoveAt(wordind + 1);
+                    _wordStrings.RemoveAt(wordind + 1);
+                }
 
-            Debug.WriteLine($"\n new alter:{this.HwrResult[wordind].selectedCandidate}");
-
-            // update 
-            _wordStrings[wordind] = this.HwrResult[wordind].selectedCandidate;
-            _text = String.Join(" ", _wordStrings);
+                this.HwrResult[wordind].selectedCandidate = selected;
+                _wordStrings[wordind] = this.HwrResult[wordind].selectedCandidate;
+                _text = String.Join(" ", _wordStrings);
+            }
         }
 
         private (int, int) convertStringIndexToWordIndex(int start, int end)
