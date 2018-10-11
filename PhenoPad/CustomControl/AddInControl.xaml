@@ -18,15 +18,40 @@
         <ResourceDictionary>
             <x:Double x:Key="categoryButtonHeight">60</x:Double>
             <x:Double x:Key="categoryButtonFontSize">27</x:Double>
+            <Storyboard x:Name="addinPanelHideAnimation">
+                <DoubleAnimation Storyboard.TargetName="addinSlide" 
+                                 Storyboard.TargetProperty="X"
+                                 By="250"  
+                                 Duration="0:0:0.1">
+                    <DoubleAnimation.EasingFunction>
+                        <CircleEase EasingMode="EaseOut" />
+                    </DoubleAnimation.EasingFunction>
+                </DoubleAnimation>
+                <DoubleAnimation Storyboard.TargetName="OutlineGrid" 
+                                 Storyboard.TargetProperty="Opacity"
+                                 From="1.0" To="0.0"
+                                 Duration="0:0:0.2">
+                </DoubleAnimation>
+            </Storyboard>
+            <Storyboard x:Name="addinPanelShowAnimation">
+                <DoubleAnimation Storyboard.TargetName="addinSlide" 
+                                 Storyboard.TargetProperty="X"
+                                 By="-250"  
+                                 Duration="0:0:0.1">
+                    <DoubleAnimation.EasingFunction>
+                        <CircleEase EasingMode="EaseOut" />
+                    </DoubleAnimation.EasingFunction>
+                </DoubleAnimation>
+                <DoubleAnimation Storyboard.TargetName="OutlineGrid" 
+                                 Storyboard.TargetProperty="Opacity"
+                                 From="0.0" To="1.0"
+                                 Duration="0:0:0.2">
+                </DoubleAnimation>
+            </Storyboard>
         </ResourceDictionary>
     </UserControl.Resources>
-    <!--<UserControl.RenderTransform>
-        <ScaleTransform x:Name="resize" />
-    </UserControl.RenderTransform>-->
 
-
-
-    <Grid Background="WhiteSmoke" BorderBrush="LightGray" Name="OutlineGrid">
+    <Grid Background="WhiteSmoke" BorderBrush="LightGray" Name="OutlineGrid" Opacity="1">
 
         <Grid.RowDefinitions>
             <RowDefinition Height="20"></RowDefinition>
@@ -34,7 +59,11 @@
             <RowDefinition Height="*"></RowDefinition>
             <RowDefinition Height="20"></RowDefinition>
         </Grid.RowDefinitions>
-        
+
+        <Grid.RenderTransform>
+            <TranslateTransform x:Name="addinSlide" />
+        </Grid.RenderTransform>
+
 
         <Grid Name="contentGrid" Grid.Row="2">
             <!--<local:AddInImageControl Canvas.ZIndex="1" Visibility="Collapsed" x:Name="imageControl"/>-->

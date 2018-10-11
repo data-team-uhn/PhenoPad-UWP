@@ -42,6 +42,8 @@ using Windows.UI.Xaml.Hosting;
 using Windows.Graphics.Display;
 using PhenoPad.LogService;
 using MetroLog;
+using Microsoft.Toolkit.Uwp.UI.Animations;
+using Windows.UI.Xaml.Media.Animation;
 
 namespace PhenoPad.CustomControl
 {
@@ -1077,19 +1079,26 @@ namespace PhenoPad.CustomControl
             string name = icon_addin.name;
             List<AddInControl> addinlist = await GetAllAddInControls();
             AddInControl addin = addinlist.Where(x => x.name == name).ToList()[0];
-            addin.inDock = false;
-            addin.Visibility = Visibility.Visible;
-            addin.autosaveDispatcherTimer.Start();
-            addinBase.Visibility = Visibility.Collapsed;
+            addin.Maximize_Addin();
         }
 
         /// <summary>
         /// Refreshes and show the list of addins within a notepage
         /// </summary>
-        public void AddinsButton_Click(object sender, RoutedEventArgs e)
+        public async void AddinsButton_Click(object sender, RoutedEventArgs e)
         {
-            addinBase.Visibility = addinBase.Visibility == Visibility.Visible ? Visibility.Collapsed : Visibility.Visible;
+            if (addinBase.Visibility == Visibility.Visible)
+            {
+                await addinHideAnimation.BeginAsync();
+                addinBase.Visibility = Visibility.Collapsed;
+            }
+            else
+            {
+                addinBase.Visibility = Visibility.Visible;
+                await addinShowAnimation.BeginAsync();
+            }
         }
+
 
         public async void refreshAddInList() {
             List<ImageAndAnnotation> imageAndAnno = await FileManager.getSharedFileManager().GetImgageAndAnnotationObjectFromXML(notebookId, pageId);

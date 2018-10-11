@@ -1125,9 +1125,9 @@ namespace PhenoPad.CustomControl
         public void updatePhenotypeLine(Phenotype pheno, int index) {
             var temp = curLineCandidatePheno.Where(x => x == pheno).FirstOrDefault();
             pheno.state = PhenotypeManager.getSharedPhenotypeManager().getStateByHpid(pheno.hpId);
-                var ind = curLineCandidatePheno.IndexOf(temp);
-                curLineCandidatePheno.Remove(temp);
-                curLineCandidatePheno.Insert(ind, pheno);
+            var ind = curLineCandidatePheno.IndexOf(temp);
+            curLineCandidatePheno.Remove(temp);
+            curLineCandidatePheno.Insert(ind, pheno);
         }
     }
 }

@@ -195,13 +195,13 @@ namespace PhenoPad
             }
             catch (NullReferenceException)
             {
-                //NullReferenceException is very likely to happen when things aren't saved properlly
-                NotifyUser("Notebook files are corrupted, creating a new note ...", NotifyType.ErrorMessage, 2);
-                MetroLogger.getSharedLogger().Error("Notebook files are corrupted and cannot be read, will create a new one instead.");
-                //Since something wrong happened with notebook, for sake of cleaness will delete the corrupted directory for now
-                //FUTURE WORK: if wanted, can implement partial load and ignore loading the corrupted part.
-                await FileManager.getSharedFileManager().DeleteNotebookById(notebookId);
-                this.InitializeNotebook();
+                ////NullReferenceException is very likely to happen when things aren't saved properlly
+                //NotifyUser("Notebook files are corrupted, creating a new note ...", NotifyType.ErrorMessage, 2);
+                //MetroLogger.getSharedLogger().Error("Notebook files are corrupted and cannot be read, will create a new one instead.");
+                ////Since something wrong happened with notebook, for sake of cleaness will delete the corrupted directory for now
+                ////FUTURE WORK: if wanted, can implement partial load and ignore loading the corrupted part.
+                //await FileManager.getSharedFileManager().DeleteNotebookById(notebookId);
+                //this.InitializeNotebook();
                 return;
             }
             catch (Exception e)

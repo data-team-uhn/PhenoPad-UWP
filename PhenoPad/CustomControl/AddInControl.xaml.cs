@@ -1,4 +1,5 @@
-﻿using PhenoPad.FileService;
+﻿using Microsoft.Toolkit.Uwp.UI.Animations;
+using PhenoPad.FileService;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -484,9 +485,19 @@ namespace PhenoPad.CustomControl
         private async void Minimize_Click(object sender, RoutedEventArgs e)
         {
             this.inDock = true;
+            await addinPanelHideAnimation.BeginAsync();
             this.Visibility = Visibility.Collapsed;
             await rootPage.curPage.AutoSaveAddin(this.name);
             rootPage.curPage.refreshAddInList();
+        }
+
+        public async void Maximize_Addin() {
+            if (this.inDock) {
+                this.inDock = false;
+                this.Visibility = Visibility.Visible;
+                await addinPanelShowAnimation.BeginAsync();
+                await rootPage.curPage.AutoSaveAddin(this.name);
+            }
         }
 
         private void DrawingButton_Click(object sender, RoutedEventArgs e)

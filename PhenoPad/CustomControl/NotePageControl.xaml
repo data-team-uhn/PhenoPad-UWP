@@ -108,6 +108,7 @@
                         <ProgressRing x:Name="phenoProgressRing" Height="100" Width="100" IsActive="True" RelativePanel.AlignHorizontalCenterWithPanel="True" RelativePanel.AlignVerticalCenterWithPanel="True"/>
                 </RelativePanel>
             </StackPanel>
+                
             </Flyout>
             
             <Flyout x:Key="ChangeAlternativeFlyout" Placement="Top">
@@ -126,6 +127,28 @@
                     </ListView>
                 </StackPanel>
             </Flyout>
+
+            <Storyboard x:Name="addinHideAnimation">
+                <DoubleAnimation Storyboard.TargetName="slide" 
+                                 Storyboard.TargetProperty="X"
+                                 By="250"  
+                                 Duration="0:0:0.1">
+                    <DoubleAnimation.EasingFunction>
+                        <CircleEase EasingMode="EaseOut" />
+                    </DoubleAnimation.EasingFunction>
+                </DoubleAnimation>
+            </Storyboard>
+            <Storyboard x:Name="addinShowAnimation">
+                <DoubleAnimation Storyboard.TargetName="slide" 
+                                 Storyboard.TargetProperty="X"
+                                 By="-250"  
+                                 Duration="0:0:0.1">
+                    <DoubleAnimation.EasingFunction>
+                        <CircleEase EasingMode="EaseIn" />
+                    </DoubleAnimation.EasingFunction>
+                </DoubleAnimation>
+            </Storyboard>
+
         </ResourceDictionary>
     </UserControl.Resources>
     
@@ -236,7 +259,7 @@
 
                                 <RepositionThemeAnimation 
                                         Storyboard.TargetName="curWordPhenoControlGrid"
-                                        FromVerticalOffset="-100"
+                                        FromVerticalOffset="100"
                                          Duration="0:0:0.1"/>
                             </Storyboard>
                         </Grid.Resources>
@@ -359,14 +382,19 @@
             </Grid>
         </ScrollViewer>
 
-        <Grid x:Name="addinBase" x:FieldModifier="public" Grid.Column="0" Grid.ColumnSpan="2" 
-              Visibility="Collapsed" Padding="0 50 0 0"
-              Background="{StaticResource TITLE_BAR_WHITE}" HorizontalAlignment="Right"
-              >
+        <Grid x:Name="addinBase" x:FieldModifier="public" Grid.Column="1"
+              Visibility="Collapsed" Padding="0 50 0 0" Width="250"
+              Background="{StaticResource TITLE_BAR_WHITE}" HorizontalAlignment="Right">
+
+            
+            <Grid.RenderTransform>
+                <TranslateTransform x:Name="slide" X="250"/>
+            </Grid.RenderTransform>
+
             <TextBlock VerticalAlignment="Top" Grid.Row="0" HorizontalAlignment="Right"                     
                        FontSize="25" Foreground="Black" Margin="20 10 20 10">Collections</TextBlock>
             <ListView Name="addinlist" ScrollViewer.VerticalScrollBarVisibility="Hidden"
-                      Margin="0 50 0 0">
+                      Margin="0 50 0 0" Width="250">
                 <ListView.ItemTemplate>
                     <DataTemplate x:DataType="fileservice:ImageAndAnnotation">
                         <Button Click="addInIcon_Click" HorizontalAlignment="Center" Width="200"
@@ -375,7 +403,6 @@
                                 <customcontrol:AddInControl name="{x:Bind name}" notebookId="{x:Bind notebookId}" 
                                                         viewOnly="True" pageId="{x:Bind pageId}" />
                             </Viewbox>
-
                         </Button>
                     </DataTemplate>
                 </ListView.ItemTemplate>
