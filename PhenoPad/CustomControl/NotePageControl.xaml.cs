@@ -59,7 +59,7 @@ namespace PhenoPad.CustomControl
         #region class properties
         public string pageId;
         public string notebookId;
-
+        public double windowHeight;
         /***** configurable settings *****/
         // Distance between two neighboring note lines
         public  float LINE_HEIGHT = 50;
@@ -177,7 +177,7 @@ namespace PhenoPad.CustomControl
         public NotePageControl(string notebookid,string pageid)
         {  
             rootPage = MainPage.Current;
-            
+            windowHeight = rootPage.Height;
 
             this.InitializeComponent();
 
@@ -916,23 +916,32 @@ namespace PhenoPad.CustomControl
 
             await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () => {
                 //Manually setting pre-saved configuration of the add-in control
-                    Debug.WriteLine($"\n\n ia width origin = {ia.widthOrigin}");
-                    canvasAddIn.Height = ia.height;
-                    canvasAddIn.Width = ia.width;
-                    canvasAddIn.widthOrigin = ia.widthOrigin;
-                    canvasAddIn.heightOrigin = ia.heightOrigin;
+                Debug.WriteLine($"\n\n ia width origin = {ia.widthOrigin}");
+                canvasAddIn.Height = ia.height;
+                canvasAddIn.Width = ia.width;
+                canvasAddIn.widthOrigin = ia.widthOrigin;
+                canvasAddIn.heightOrigin = ia.heightOrigin;
                 canvasAddIn.inkCan.Height = ia.heightOrigin - 88;
                 canvasAddIn.inkCan.Width = ia.widthOrigin;
-
                 canvasAddIn.canvasLeft = ia.canvasLeft;
-                    canvasAddIn.canvasTop = ia.canvasTop;
-                    canvasAddIn.inDock = ia.inDock;
-                    canvasAddIn.dragTransform.X = ia.transX;
-                    canvasAddIn.dragTransform.Y = ia.transY;
+                canvasAddIn.canvasTop = ia.canvasTop;
+                Canvas.SetTop(canvasAddIn, ia.canvasTop);
+
+                canvasAddIn.inDock = ia.inDock;
+                if (ia.inDock)
+                {
+                    Canvas.SetLeft(canvasAddIn, rootPage.ActualWidth);
+                    canvasAddIn.slideOffset = -1 * (rootPage.ActualWidth - ia.canvasLeft);
+                }
+                else
+                {
                     Canvas.SetLeft(canvasAddIn, ia.canvasLeft);
-                    Canvas.SetTop(canvasAddIn, ia.canvasTop);
-                    canvasAddIn.viewFactor.ScaleX = ia.zoomFactorX;
-                    canvasAddIn.viewFactor.ScaleY = ia.zoomFactorY;
+                    canvasAddIn.slideOffset = rootPage.ActualWidth - ia.canvasLeft;
+                }
+                canvasAddIn.dragTransform.X = ia.transX;
+                canvasAddIn.dragTransform.Y = ia.transY;
+                canvasAddIn.viewFactor.ScaleX = ia.zoomFactorX;
+                canvasAddIn.viewFactor.ScaleY = ia.zoomFactorY;
 
             });
 
@@ -954,8 +963,6 @@ namespace PhenoPad.CustomControl
                                                     WriteableBitmap wb = null                                                   
                                                     )
         {
-            Debug.WriteLine($"creating new addin ....{widthOrigin},{heightOrigin}");
-
             AddInControl canvasAddIn = new AddInControl(name, notebookId, pageId, 
                                                         widthOrigin, heightOrigin);
             //Manually setting configuration for new add-in control
@@ -963,6 +970,8 @@ namespace PhenoPad.CustomControl
             canvasAddIn.canvasTop = top;
             Canvas.SetLeft(canvasAddIn, left);
             Canvas.SetTop(canvasAddIn, top);
+            canvasAddIn.slideOffset = rootPage.ActualWidth - left;
+
 
             userControlCanvas.Children.Add(canvasAddIn);
 
@@ -1052,13 +1061,15 @@ namespace PhenoPad.CustomControl
                 {
                     addinlist.Visibility = Visibility.Visible;
                     addinlist.ItemsSource = images;
-                    NumIcon.Text = $"({images.Count})";
+                    NumIcon.Text = $"{images.Count}";
+                    badgeGrid.Visibility = Visibility.Visible;
                 }
                 else
                 {
                     addinlist.ItemsSource = new List<ImageAndAnnotation>();
                     addinlist.Visibility = Visibility.Collapsed;
                     NumIcon.Text = "";
+                    badgeGrid.Visibility = Visibility.Collapsed;
                 }
 
             }

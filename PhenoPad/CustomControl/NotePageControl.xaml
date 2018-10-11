@@ -10,6 +10,7 @@
 
      xmlns:hwrservice="using:PhenoPad.HWRService"
     xmlns:fileservice="using:PhenoPad.FileService"
+    xmlns:media="using:Microsoft.Toolkit.Uwp.UI.Media"
     mc:Ignorable="d"
     VerticalAlignment="Stretch" 
     HorizontalAlignment="Stretch"
@@ -137,7 +138,24 @@
                         <CircleEase EasingMode="EaseOut" />
                     </DoubleAnimation.EasingFunction>
                 </DoubleAnimation>
+                <DoubleAnimation Storyboard.TargetName="Buttonslide" 
+                                 Storyboard.TargetProperty="X"
+                                 By="250"  
+                                 Duration="0:0:0.1">
+                    <DoubleAnimation.EasingFunction>
+                        <CircleEase EasingMode="EaseOut" />
+                    </DoubleAnimation.EasingFunction>
+                </DoubleAnimation>
+                <DoubleAnimation Storyboard.TargetName="textslide" 
+                                 Storyboard.TargetProperty="X"
+                                 By="250"  
+                                 Duration="0:0:0.1">
+                    <DoubleAnimation.EasingFunction>
+                        <CircleEase EasingMode="EaseOut" />
+                    </DoubleAnimation.EasingFunction>
+                </DoubleAnimation>
             </Storyboard>
+            
             <Storyboard x:Name="addinShowAnimation">
                 <DoubleAnimation Storyboard.TargetName="slide" 
                                  Storyboard.TargetProperty="X"
@@ -147,7 +165,24 @@
                         <CircleEase EasingMode="EaseIn" />
                     </DoubleAnimation.EasingFunction>
                 </DoubleAnimation>
+                <DoubleAnimation Storyboard.TargetName="Buttonslide" 
+                                 Storyboard.TargetProperty="X"
+                                 By="-250"  
+                                 Duration="0:0:0.1">
+                    <DoubleAnimation.EasingFunction>
+                        <CircleEase EasingMode="EaseIn" />
+                    </DoubleAnimation.EasingFunction>
+                </DoubleAnimation>
+                <DoubleAnimation Storyboard.TargetName="textslide" 
+                                 Storyboard.TargetProperty="X"
+                                 By="-250"  
+                                 Duration="0:0:0.1">
+                    <DoubleAnimation.EasingFunction>
+                        <CircleEase EasingMode="EaseIn" />
+                    </DoubleAnimation.EasingFunction>
+                </DoubleAnimation>
             </Storyboard>
+
 
         </ResourceDictionary>
     </UserControl.Resources>
@@ -157,7 +192,14 @@
             <ColumnDefinition Width="15"></ColumnDefinition>
             <ColumnDefinition Width="*"></ColumnDefinition>
         </Grid.ColumnDefinitions>
-        <ScrollViewer Name="sideScrollView" Visibility="Collapsed" ViewChanged="ScrollView_ViewChanged" VerticalScrollBarVisibility="Hidden" >
+
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*"></RowDefinition>
+        </Grid.RowDefinitions>
+
+        <ScrollViewer Name="sideScrollView" Visibility="Collapsed" 
+                      ViewChanged="ScrollView_ViewChanged" 
+                      VerticalScrollBarVisibility="Hidden" >
             <Grid Padding="0 100 0 0">
             <Canvas  Height="{x:Bind PAGE_HEIGHT}" Name="sideCanvas">
 
@@ -174,9 +216,9 @@
                           ZoomMode="Enabled" 
                           MinZoomFactor="0.3" 
                           VerticalScrollMode="Enabled" 
-                          VerticalScrollBarVisibility="Auto" 
+                          VerticalScrollBarVisibility="Hidden" 
                           HorizontalScrollMode="Enabled" 
-                          HorizontalScrollBarVisibility="Auto"
+                          HorizontalScrollBarVisibility="Hidden"
                       
                    ViewChanged="ScrollView_ViewChanged" 
                      
@@ -382,26 +424,31 @@
             </Grid>
         </ScrollViewer>
 
-        <Grid x:Name="addinBase" x:FieldModifier="public" Grid.Column="1"
-              Visibility="Collapsed" Padding="0 50 0 0" Width="250"
-              Background="{StaticResource TITLE_BAR_WHITE}" HorizontalAlignment="Right">
+            <Grid x:Name="addinBase" Grid.Column="1"  x:FieldModifier="public"
+            Visibility="Collapsed" Padding="5" Width="250"
+            Background="{StaticResource TITLE_BAR_WHITE}" HorizontalAlignment="Right"
+            VerticalAlignment="Stretch">
 
-            
             <Grid.RenderTransform>
                 <TranslateTransform x:Name="slide" X="250"/>
             </Grid.RenderTransform>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="50"/>
+                    <RowDefinition Height="*"/>
 
-            <TextBlock VerticalAlignment="Top" Grid.Row="0" HorizontalAlignment="Right"                     
-                       FontSize="25" Foreground="Black" Margin="20 10 20 10">Collections</TextBlock>
+                </Grid.RowDefinitions>
+
+            <TextBlock VerticalAlignment="Top" Grid.Row="0" HorizontalAlignment="Left"                     
+                    FontSize="25" Foreground="Black" Margin="5" >Collections</TextBlock>
             <ListView Name="addinlist" ScrollViewer.VerticalScrollBarVisibility="Hidden"
-                      Margin="0 50 0 0" Width="250">
+                    Margin="0" Grid.Row="1">
                 <ListView.ItemTemplate>
                     <DataTemplate x:DataType="fileservice:ImageAndAnnotation">
                         <Button Click="addInIcon_Click" HorizontalAlignment="Center" Width="200"
-                                Style="{StaticResource ButtonStyle1}">
+                            Style="{StaticResource ButtonStyle1}">
                             <Viewbox Name="AddInIcon" Stretch="Uniform" CanDrag="False">
                                 <customcontrol:AddInControl name="{x:Bind name}" notebookId="{x:Bind notebookId}" 
-                                                        viewOnly="True" pageId="{x:Bind pageId}" />
+                                                    viewOnly="True" pageId="{x:Bind pageId}" />
                             </Viewbox>
                         </Button>
                     </DataTemplate>
@@ -410,29 +457,54 @@
                     <Style TargetType="ListViewItem">
                         <Setter Property="Padding" Value="0"/>
                         <Setter Property="Margin" Value="10"/>
+                        <Setter Property="HorizontalAlignment" Value="Center" />
                         <!--<Setter Property="Template">
-                            <Setter.Value>
-                                <ControlTemplate>
-                                    <ContentPresenter/>
-                                </ControlTemplate>
-                            </Setter.Value>
-                        </Setter>-->
+                        <Setter.Value>
+                            <ControlTemplate>
+                                <ContentPresenter/>
+                            </ControlTemplate>
+                        </Setter.Value>
+                    </Setter>-->
                     </Style>
                 </ListView.ItemContainerStyle>
             </ListView>
         </Grid>
         
-        <Button Grid.Column="0" Grid.ColumnSpan="2" VerticalAlignment="Bottom" 
-                HorizontalAlignment="Right"
-                Style="{StaticResource ButtonStyle1}"
-                Margin="15 15 25 10" ToolTipService.ToolTip="Toggle Add-In Box"
-                Click="AddinsButton_Click">
-                <SymbolIcon Symbol="Pictures"/>
-        </Button>
+        <RelativePanel Grid.Column="1" HorizontalAlignment="Right" VerticalAlignment="Stretch">
 
-        <TextBlock Text="" Name="NumIcon" Grid.Column="0" Grid.ColumnSpan="2"
-                   Margin="10 15 75 15" FontSize="15"
-                   VerticalAlignment="Bottom" HorizontalAlignment="Right"/>
+            <Button 
+            Name="addinButton"
+            Grid.Column="1"
+            RelativePanel.AlignVerticalCenterWithPanel="True"
+            RelativePanel.AlignRightWithPanel="True"
+            Style="{StaticResource ButtonStyle1}"
+            ToolTipService.ToolTip="Toggle Add-In Box"
+            Click="AddinsButton_Click">
+                <Button.Template>
+                    <ControlTemplate>
+                        <Border CornerRadius="20 0 0 20" Background="{StaticResource TITLE_BAR_WHITE}">
+                            <SymbolIcon Symbol="Pictures" Margin="10"/>
+                        </Border>
+                    </ControlTemplate>
+                </Button.Template>
+                <Button.RenderTransform>
+                    <TranslateTransform x:Name="Buttonslide" X="0"/>
+                </Button.RenderTransform>
+            </Button>
+        </RelativePanel>
+
+        <Grid x:Name="badgeGrid" Grid.Column="1" HorizontalAlignment="Right" VerticalAlignment="Center" Visibility="Collapsed">
+            <Border CornerRadius="14" BorderThickness="2.5" BorderBrush="{StaticResource TITLE_BAR_WHITE}">
+                <Grid Background="White" Width="20" Height="20"
+                      >
+                    <TextBlock Text="" Name="NumIcon" VerticalAlignment="Center" HorizontalAlignment="Center"                    
+                           FontSize="12"/>
+                </Grid>
+            </Border>
+            <Grid.RenderTransform>
+                <TranslateTransform x:Name="textslide" Y="-20" X="-20"/>
+            </Grid.RenderTransform>
+        </Grid>
 
 
     </Grid>

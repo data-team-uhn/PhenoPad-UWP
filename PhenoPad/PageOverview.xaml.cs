@@ -96,7 +96,7 @@ namespace PhenoPad
 
         private async void notebookList_ItemClick(object sender, ItemClickEventArgs e)
         {
-            LogService.MetroLogger.getSharedLogger().Info("Selecting a notebook for quick view");
+            MetroLogger.getSharedLogger().Info("Selecting a notebook for quick view");
             NoteGridView.ItemsSource = new List<NotePage>();
             var clickNotebook = e.ClickedItem as Notebook;
             List<NotePage> pages = await FileManager.getSharedFileManager().GetAllNotePageObjects(clickNotebook.id);

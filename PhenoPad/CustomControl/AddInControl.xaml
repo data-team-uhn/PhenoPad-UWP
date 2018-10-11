@@ -21,31 +21,19 @@
             <Storyboard x:Name="addinPanelHideAnimation">
                 <DoubleAnimation Storyboard.TargetName="addinSlide" 
                                  Storyboard.TargetProperty="X"
-                                 By="250"  
-                                 Duration="0:0:0.1">
+                                 Duration="0:0:0.5">
                     <DoubleAnimation.EasingFunction>
                         <CircleEase EasingMode="EaseOut" />
                     </DoubleAnimation.EasingFunction>
-                </DoubleAnimation>
-                <DoubleAnimation Storyboard.TargetName="OutlineGrid" 
-                                 Storyboard.TargetProperty="Opacity"
-                                 From="1.0" To="0.0"
-                                 Duration="0:0:0.2">
                 </DoubleAnimation>
             </Storyboard>
             <Storyboard x:Name="addinPanelShowAnimation">
                 <DoubleAnimation Storyboard.TargetName="addinSlide" 
                                  Storyboard.TargetProperty="X"
-                                 By="-250"  
-                                 Duration="0:0:0.1">
+                                 Duration="0:0:0.5">
                     <DoubleAnimation.EasingFunction>
-                        <CircleEase EasingMode="EaseOut" />
+                        <CircleEase EasingMode="EaseIn" />
                     </DoubleAnimation.EasingFunction>
-                </DoubleAnimation>
-                <DoubleAnimation Storyboard.TargetName="OutlineGrid" 
-                                 Storyboard.TargetProperty="Opacity"
-                                 From="0.0" To="1.0"
-                                 Duration="0:0:0.2">
                 </DoubleAnimation>
             </Storyboard>
         </ResourceDictionary>

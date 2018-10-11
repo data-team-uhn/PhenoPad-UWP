@@ -21,6 +21,7 @@ using Windows.UI.Xaml.Controls.Primitives;
 using Windows.UI.Xaml.Data;
 using Windows.UI.Xaml.Input;
 using Windows.UI.Xaml.Media;
+using Windows.UI.Xaml.Media.Animation;
 using Windows.UI.Xaml.Media.Imaging;
 using Windows.UI.Xaml.Navigation;
 using Windows.UI.Xaml.Shapes;
@@ -72,6 +73,7 @@ namespace PhenoPad.CustomControl
         public double imgratio;
 
         public bool inDock;
+        public double slideOffset = 250;
 
         private MainPage rootPage;
 
@@ -227,7 +229,6 @@ namespace PhenoPad.CustomControl
 
                 inkCan.Width = this.Width;
                 inkCan.Height = this.Height - 88;
-
                 this.inDock = false;
                 this.name = name;
                 this.notebookId = notebookId;
@@ -485,9 +486,14 @@ namespace PhenoPad.CustomControl
         private async void Minimize_Click(object sender, RoutedEventArgs e)
         {
             this.inDock = true;
+            DoubleAnimation da = (DoubleAnimation)addinPanelHideAnimation.Children.ElementAt(0);
+            da.By = rootPage.ActualWidth - this.canvasLeft;
             await addinPanelHideAnimation.BeginAsync();
+            Debug.WriteLine($"min offSet = {da.By}");
+
             this.Visibility = Visibility.Collapsed;
             await rootPage.curPage.AutoSaveAddin(this.name);
+
             rootPage.curPage.refreshAddInList();
         }
 
@@ -495,6 +501,9 @@ namespace PhenoPad.CustomControl
             if (this.inDock) {
                 this.inDock = false;
                 this.Visibility = Visibility.Visible;
+                DoubleAnimation da = (DoubleAnimation) addinPanelShowAnimation.Children.ElementAt(0);
+                da.By = -1 * (rootPage.ActualWidth - this.canvasLeft);
+                Debug.WriteLine($"max offSet = {da.By}");
                 await addinPanelShowAnimation.BeginAsync();
                 await rootPage.curPage.AutoSaveAddin(this.name);
             }
