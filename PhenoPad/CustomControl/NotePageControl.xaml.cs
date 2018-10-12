@@ -1120,10 +1120,15 @@ namespace PhenoPad.CustomControl
             this.showAddIn(imageAndAnno);
         }
 
+        /// <summary>
+        /// Quickly expands the addin preview dock then hides it for user experiences
+        /// </summary>
         public async void quickShowDock() {
-            AddinsButton_Click(null, null);
-            await Task.Delay(TimeSpan.FromSeconds(0.5));
-            AddinsButton_Click(null, null);
+            if (addinBase.Visibility == Visibility.Collapsed) {
+                AddinsButton_Click(null, null);
+                await Task.Delay(TimeSpan.FromSeconds(0.5));
+                AddinsButton_Click(null, null);
+            }
         }
 
         #endregion
@@ -1556,24 +1561,7 @@ namespace PhenoPad.CustomControl
             }
         }
 
-        /**
-       private void InkCanvas_PointerMoved(object sender, PointerRoutedEventArgs e)
-       {
-           var position = e.GetCurrentPoint(inkCanvas).Position;
-           TapAPosition(position);
-       }
-       private void InkCanvas_PointerEntered(object sender, PointerRoutedEventArgs e)
-       {
-           var position = e.GetCurrentPoint(inkCanvas).Position;
-           TapAPosition(position);
-       }
-       private void InkCanvas_PointerExited(object sender, PointerRoutedEventArgs e)
-       {
-           
-       }
-       **/
-
-        private void InkCanvas_Tapped(object sender, TappedRoutedEventArgs e)
+        private async void InkCanvas_Tapped(object sender, TappedRoutedEventArgs e)
         {
             var position = e.GetPosition(inkCanvas);
             ClearSelectionAsync();
@@ -1591,6 +1579,20 @@ namespace PhenoPad.CustomControl
                     stroke.Selected = true;
                     SetSelectedStrokeStyle(stroke);
                 }
+                ProgressRing loading = new ProgressRing();
+                loading.IsActive = true;
+                curLineCandidatePheno.Clear();
+                curLineWordsStackPanel.Children.Clear();
+                //adding a progress ring to show loading progress
+                await Dispatcher.RunAsync(CoreDispatcherPriority.High, () => {
+                    int lineNum = getLineNumByRect(line.BoundingRect);
+                    curLineWordsStackPanel.Children.Add(loading);
+                    Canvas.SetLeft(curLineResultPanel, line.BoundingRect.Left);
+                    Canvas.SetTop(curLineResultPanel, (lineNum - 1) * LINE_HEIGHT + 10);
+                    Debug.WriteLine("progress ring");
+                });
+                curLineResultPanel.Visibility = Visibility.Visible;
+
 
                 // flyout 
                 // RecognizeSelection();

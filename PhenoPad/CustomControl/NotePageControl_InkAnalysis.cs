@@ -880,9 +880,6 @@ namespace PhenoPad.CustomControl
         {
 
             var wordlist = idToNoteLine.GetValueOrDefault(line.Id).WordStrings;
-            foreach (string word in wordlist) {
-                Debug.WriteLine(word);
-            }
             curLineWordsStackPanel.Children.Clear();
             //sets a text block for each recognized word and adds event handler to click event
             foreach (var word in wordlist)
@@ -914,11 +911,10 @@ namespace PhenoPad.CustomControl
                 });
             }
             curLineResultPanel.Visibility = Visibility.Visible;
-            Canvas.SetLeft(curLineResultPanel, line.BoundingRect.Left);
             int lineNum = getLineNumByRect(line.BoundingRect);
+            Canvas.SetLeft(curLineResultPanel, line.BoundingRect.Left);
             Canvas.SetTop(curLineResultPanel, (lineNum - 1) * LINE_HEIGHT);
         }
-
 
         private async void alternativeListView_ItemClick(object sender, ItemClickEventArgs e)
         {
@@ -975,23 +971,11 @@ namespace PhenoPad.CustomControl
                 // update current line annotation
                 idToNoteLine.GetValueOrDefault(line.Id).phenotypes = annoResult.Values.ToList();
 
-                /**
-                foreach (TextBlock tb in curLineWordsStackPanel.Children)
-                {
-                    var match = cachedAnnotation.Keys.Where(x => x.Split(' ').Contains(tb.Text)).FirstOrDefault();
-                    if (match != null)
-                    {
-                        tb.Foreground = Application.Current.Resources["WORD_DARK"] as SolidColorBrush;
-                    }
-                }
-                **/
-
                 if (curLineCandidatePheno.Count == 0 || curWordPhenoControlGrid.Margin.Top == 0)
                 {
                     curWordPhenoControlGrid.Margin = new Thickness(0, -100, 0, 0);
                     curWordPhenoAnimation.Begin();
                 }
-
 
                 foreach (var pheno in annoResult.Values.ToList())
                 {
@@ -1021,7 +1005,6 @@ namespace PhenoPad.CustomControl
                         annotatedLines.Add(lineNum);
                         if (!lineToRect.ContainsKey(lineNum))
                         {
-
                             Rectangle rect = new Rectangle
                             {
                                 Fill = Application.Current.Resources["Button_Background"] as SolidColorBrush,
@@ -1123,11 +1106,11 @@ namespace PhenoPad.CustomControl
         }
 
         public void updatePhenotypeLine(Phenotype pheno, int index) {
-            var temp = curLineCandidatePheno.Where(x => x == pheno).FirstOrDefault();
-            pheno.state = PhenotypeManager.getSharedPhenotypeManager().getStateByHpid(pheno.hpId);
-            var ind = curLineCandidatePheno.IndexOf(temp);
-            curLineCandidatePheno.Remove(temp);
-            curLineCandidatePheno.Insert(ind, pheno);
+            //var temp = curLineCandidatePheno.Where(x => x == pheno).FirstOrDefault();
+            //pheno.state = PhenotypeManager.getSharedPhenotypeManager().getStateByHpid(pheno.hpId);
+            //var ind = curLineCandidatePheno.IndexOf(temp);
+            //curLineCandidatePheno.Remove(temp);
+            //curLineCandidatePheno.Insert(ind, pheno);
         }
     }
 }
