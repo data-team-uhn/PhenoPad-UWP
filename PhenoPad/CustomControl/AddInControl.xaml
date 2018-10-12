@@ -18,24 +18,43 @@
         <ResourceDictionary>
             <x:Double x:Key="categoryButtonHeight">60</x:Double>
             <x:Double x:Key="categoryButtonFontSize">27</x:Double>
+            
             <Storyboard x:Name="addinPanelHideAnimation">
                 <DoubleAnimation Storyboard.TargetName="addinSlide" 
                                  Storyboard.TargetProperty="X"
-                                 Duration="0:0:0.5">
+                                 Duration="0:0:0.4">
+                    <DoubleAnimation.EasingFunction>
+                        <CircleEase EasingMode="EaseOut" />
+                    </DoubleAnimation.EasingFunction>
+                </DoubleAnimation>
+                <DoubleAnimation Storyboard.TargetName="OutlineGrid" 
+                                 Storyboard.TargetProperty="Opacity"
+                                 From="1.0" To="0.3"
+                                 Duration="0:0:0.4">
                     <DoubleAnimation.EasingFunction>
                         <CircleEase EasingMode="EaseOut" />
                     </DoubleAnimation.EasingFunction>
                 </DoubleAnimation>
             </Storyboard>
+            
             <Storyboard x:Name="addinPanelShowAnimation">
                 <DoubleAnimation Storyboard.TargetName="addinSlide" 
                                  Storyboard.TargetProperty="X"
-                                 Duration="0:0:0.5">
+                                 Duration="0:0:0.4">
+                    <DoubleAnimation.EasingFunction>
+                        <CircleEase EasingMode="EaseIn" />
+                    </DoubleAnimation.EasingFunction>
+                </DoubleAnimation>
+                <DoubleAnimation Storyboard.TargetName="OutlineGrid" 
+                                 Storyboard.TargetProperty="Opacity"
+                                 From="0.0" To="1.0"
+                                 Duration="0:0:0.4">
                     <DoubleAnimation.EasingFunction>
                         <CircleEase EasingMode="EaseIn" />
                     </DoubleAnimation.EasingFunction>
                 </DoubleAnimation>
             </Storyboard>
+            
         </ResourceDictionary>
     </UserControl.Resources>
 

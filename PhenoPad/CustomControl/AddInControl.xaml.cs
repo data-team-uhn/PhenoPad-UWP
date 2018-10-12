@@ -488,13 +488,12 @@ namespace PhenoPad.CustomControl
             this.inDock = true;
             DoubleAnimation da = (DoubleAnimation)addinPanelHideAnimation.Children.ElementAt(0);
             da.By = rootPage.ActualWidth - this.canvasLeft;
-            await addinPanelHideAnimation.BeginAsync();
             Debug.WriteLine($"min offSet = {da.By}");
-
             this.Visibility = Visibility.Collapsed;
             await rootPage.curPage.AutoSaveAddin(this.name);
-
+            addinPanelHideAnimation.BeginAsync();
             rootPage.curPage.refreshAddInList();
+            rootPage.curPage.quickShowDock();
         }
 
         public async void Maximize_Addin() {

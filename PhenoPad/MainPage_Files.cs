@@ -176,12 +176,7 @@ namespace PhenoPad
                         aPage.showAddIn(imageAndAnno);
                     //loop to add actual add-in to canvas but hides it depending on its inDock value
                     foreach (var ia in imageAndAnno)
-                    {
-                        //aPage.addImageAndAnnotationControl(ia.name, ia.canvasLeft, ia.canvasTop, true, null, 
-                        //    ia.transX, ia.transY, ia.zoomFactor,
-                        //    width: ia.width, height: ia.height, indock: ia.inDock);
                         aPage.loadAddInControl(ia);
-                    }
                 }
                 //setting initial page to first page and auto-start analyzing strokes
                 inkCanvas = notePages[0].inkCan;
@@ -193,11 +188,10 @@ namespace PhenoPad
                 curPage.initialAnalyze();
                 curPage.Visibility = Visibility.Visible;
             }
-            catch (NullReferenceException)
+            catch (NullReferenceException ne)
             {
-                ////NullReferenceException is very likely to happen when things aren't saved properlly
-                //NotifyUser("Notebook files are corrupted, creating a new note ...", NotifyType.ErrorMessage, 2);
-                //MetroLogger.getSharedLogger().Error("Notebook files are corrupted and cannot be read, will create a new one instead.");
+                ////NullReferenceException is very likely to happen when things aren't saved properlly during debugging state due to force quit
+                MetroLogger.getSharedLogger().Error(ne+ne.Message);
                 ////Since something wrong happened with notebook, for sake of cleaness will delete the corrupted directory for now
                 ////FUTURE WORK: if wanted, can implement partial load and ignore loading the corrupted part.
                 //await FileManager.getSharedFileManager().DeleteNotebookById(notebookId);

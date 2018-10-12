@@ -1053,6 +1053,9 @@ namespace PhenoPad.CustomControl
     **/
         }
 
+        /// <summary>
+        /// Refreshes the listitem source of current page add-ins in the addin preview dock 
+        /// </summary>
         public void showAddIn(List<ImageAndAnnotation> images)
         {
             try
@@ -1071,7 +1074,6 @@ namespace PhenoPad.CustomControl
                     NumIcon.Text = "";
                     badgeGrid.Visibility = Visibility.Collapsed;
                 }
-
             }
             catch (Exception e) {
                 MetroLogger.getSharedLogger().Error($"Failed to refresh addin icon list:{e}{e.Message}");
@@ -1110,10 +1112,18 @@ namespace PhenoPad.CustomControl
             }
         }
 
-
-        public async void refreshAddInList() {
+        /// <summary>
+        /// Refetch updated meta XML data for addins and uses showAddIn() to refresh preview dock.
+        /// </summary>
+        public async Task refreshAddInList() {
             List<ImageAndAnnotation> imageAndAnno = await FileManager.getSharedFileManager().GetImgageAndAnnotationObjectFromXML(notebookId, pageId);
             this.showAddIn(imageAndAnno);
+        }
+
+        public async void quickShowDock() {
+            AddinsButton_Click(null, null);
+            await Task.Delay(TimeSpan.FromSeconds(0.5));
+            AddinsButton_Click(null, null);
         }
 
         #endregion

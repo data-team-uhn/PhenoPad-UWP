@@ -41,8 +41,6 @@ namespace PhenoPad
             this.InitializeComponent();
             //Binding event handlers to handle app status
             {
-                this.Suspending += OnSuspending;
-                this.UnhandledException += OnUnhandledException;
 
                 // Subscribe to key lifecyle events to know when the app
                 // transitions to and from foreground and background.
@@ -68,23 +66,21 @@ namespace PhenoPad
         /// <summary>
         /// Invoked when Application receives an unhandled exception
         /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
         private static async void OnUnhandledException(object sender, Windows.UI.Xaml.UnhandledExceptionEventArgs e)
         {           
-            await Windows.ApplicationModel.Core.CoreApplication.MainView.CoreWindow.Dispatcher.RunAsync(CoreDispatcherPriority.Normal,
+            await CoreApplication.MainView.CoreWindow.Dispatcher.RunAsync(CoreDispatcherPriority.Normal,
                 async () =>
                 {
                     await ShowErrorDialog(e.Message);
-                    MetroLogger.getSharedLogger().Error($"Unhandled exception at {sender.ToString()}:\n {e.Message}");
+                    MetroLogger.getSharedLogger().Error($"APP Unhandled exception at {sender.ToString()}:\n {e.Message}");
                     e.Handled = true;
                 });          
         }
 
-
         private static async Task<bool> ShowErrorDialog(string message)
         {
             var dialog = new MessageDialog("Error: " + message);
+            dialog.Commands.Add(new UICommand("OK") { Id = 0 });
             await dialog.ShowAsync();
             return false;
         }
@@ -96,6 +92,9 @@ namespace PhenoPad
         /// <param name="e">Details about the launch request and process.</param>
         protected override void OnLaunched(LaunchActivatedEventArgs e)
         {
+            this.Suspending += OnSuspending;
+            this.UnhandledException += OnUnhandledException;
+
             Frame rootFrame = Window.Current.Content as Frame;
 
             // Do not repeat app initialization when the Window already has content,

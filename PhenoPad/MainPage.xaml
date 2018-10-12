@@ -872,6 +872,7 @@
         <Popup x:Name="OverviewPopUp">
             <local:OverviewPage x:Name="OverivePopUpPage"/>
         </Popup>
+        
         <Popup x:Name="SpeechPopUp" >
             <local:SpeechPage x:Name="SpeechPopUpPage"/>
         </Popup>

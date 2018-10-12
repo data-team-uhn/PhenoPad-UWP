@@ -155,14 +155,37 @@ namespace PhenoPad
             async (sender, args) =>
             {
                 args.Handled = true;
-                logger.Info("Exiting app ...");
-                if (notebookId != null)
-                    await this.saveNoteToDisk();
-                App.Current.Exit();
+                await confirmOnExit_Clicked();
             };
         }
 
-
+        /// <summary>
+        /// Prompts the user for exiting confirmation and saves the most recently edited notebook
+        /// if user attempts to exit while editing, exit apps after
+        /// </summary>
+        private async Task confirmOnExit_Clicked() {
+            var messageDialog = new MessageDialog("Save and exit?");
+            messageDialog.Title = "PhenoPad";
+            messageDialog.Commands.Add(new UICommand("Save") { Id = 0 });
+            messageDialog.Commands.Add(new UICommand("Cancel") { Id = 1 });
+            // Set the command that will be invoked by default
+            messageDialog.DefaultCommandIndex = 0;
+            // Set the command to be invoked when escape is pressed
+            messageDialog.CancelCommandIndex = 1;
+            // Show the message dialog
+            var result = await messageDialog.ShowAsync();
+            if ((int)result.Id == 0)
+            {
+                logger.Info("Saving and exiting app ...");
+                //only saves the notes if in editing stage
+                if (notebookId != null)
+                    await this.saveNoteToDisk();
+                Application.Current.Exit();
+            }
+            else {
+                logger.Info("Canceled Exiting app");
+            }
+        }
 
         /// <summary>
         /// Initializes display for the loaded page
@@ -193,7 +216,6 @@ namespace PhenoPad
             // Draw background lines
             if (curPage != null)
                 curPage.DrawBackgroundLines();
-
         }
 
         /// <summary>
