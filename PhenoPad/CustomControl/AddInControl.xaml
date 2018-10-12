@@ -22,15 +22,7 @@
             <Storyboard x:Name="addinPanelHideAnimation">
                 <DoubleAnimation Storyboard.TargetName="addinSlide" 
                                  Storyboard.TargetProperty="X"
-                                 Duration="0:0:0.4">
-                    <DoubleAnimation.EasingFunction>
-                        <CircleEase EasingMode="EaseOut" />
-                    </DoubleAnimation.EasingFunction>
-                </DoubleAnimation>
-                <DoubleAnimation Storyboard.TargetName="OutlineGrid" 
-                                 Storyboard.TargetProperty="Opacity"
-                                 From="1.0" To="0.3"
-                                 Duration="0:0:0.4">
+                                 Duration="0:0:0.5">
                     <DoubleAnimation.EasingFunction>
                         <CircleEase EasingMode="EaseOut" />
                     </DoubleAnimation.EasingFunction>

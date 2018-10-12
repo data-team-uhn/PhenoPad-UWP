@@ -480,7 +480,7 @@ namespace PhenoPad.CustomControl
             LogService.MetroLogger.getSharedLogger().Info($"Deleting addin {this.name} from notepage.");
             ((Panel)this.Parent).Children.Remove(this);
             await rootPage.curPage.AutoSaveAddin(null);
-            rootPage.curPage.refreshAddInList();
+            await rootPage.curPage.refreshAddInList();
         }
 
         private async void Minimize_Click(object sender, RoutedEventArgs e)
@@ -489,11 +489,11 @@ namespace PhenoPad.CustomControl
             DoubleAnimation da = (DoubleAnimation)addinPanelHideAnimation.Children.ElementAt(0);
             da.By = rootPage.ActualWidth - this.canvasLeft;
             Debug.WriteLine($"min offSet = {da.By}");
-            this.Visibility = Visibility.Collapsed;
             await rootPage.curPage.AutoSaveAddin(this.name);
-            addinPanelHideAnimation.BeginAsync();
-            rootPage.curPage.refreshAddInList();
-            rootPage.curPage.quickShowDock();
+            await rootPage.curPage.refreshAddInList();
+                rootPage.curPage.quickShowDock();
+            await addinPanelHideAnimation.BeginAsync();
+            this.Visibility = Visibility.Collapsed;
         }
 
         public async void Maximize_Addin() {
@@ -503,8 +503,9 @@ namespace PhenoPad.CustomControl
                 DoubleAnimation da = (DoubleAnimation) addinPanelShowAnimation.Children.ElementAt(0);
                 da.By = -1 * (rootPage.ActualWidth - this.canvasLeft);
                 Debug.WriteLine($"max offSet = {da.By}");
-                await addinPanelShowAnimation.BeginAsync();
                 await rootPage.curPage.AutoSaveAddin(this.name);
+                await addinPanelShowAnimation.BeginAsync();
+                rootPage.curPage.quickShowDock();
             }
         }
 

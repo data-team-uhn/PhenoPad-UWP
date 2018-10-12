@@ -200,9 +200,13 @@ namespace PhenoPad.HWRService
             catch (Exception e)
             {
                 LogService.MetroLogger.getSharedLogger().Error(e + e.Message);
+                sentence.Clear();
+                alternatives.Clear();
+                abbrDict.Clear();
             }
             return null;
         }
+
 
         public List<HWRRecognizedText> processAbbr(List<Abbreviation> abbrs, List<HWRRecognizedText> recog)
         {
@@ -219,7 +223,13 @@ namespace PhenoPad.HWRService
                 rt.selectedCandidate = res.ElementAt(0);
                 recogAb.Insert(index + offset + 1, rt);
                 //adding the abbreviation and its alternatives to a dictionary for later references.
-                abbrDict.Add($"{sentence[index].ToLower()}",ab.abbr_list);
+                if (abbrDict.ContainsKey($"{sentence[index].ToLower()}"))
+                {
+                    abbrDict[$"{sentence[index].ToLower()}"] = ab.abbr_list;
+                }
+                else {
+                    abbrDict.Add($"{sentence[index].ToLower()}", ab.abbr_list);
+                }
                 offset++;
             }
             return recogAb;

@@ -1121,9 +1121,13 @@ namespace PhenoPad.CustomControl
         }
 
         public async void quickShowDock() {
-            AddinsButton_Click(null, null);
-            await Task.Delay(TimeSpan.FromSeconds(0.5));
-            AddinsButton_Click(null, null);
+            if (addinBase.Visibility == Visibility.Collapsed) {
+                AddinsButton_Click(null, null);
+                await Task.Delay(TimeSpan.FromSeconds(0.5));
+                AddinsButton_Click(null, null);
+            }
+            else
+                AddinsButton_Click(null, null);
         }
 
         #endregion
@@ -1591,6 +1595,13 @@ namespace PhenoPad.CustomControl
                     stroke.Selected = true;
                     SetSelectedStrokeStyle(stroke);
                 }
+                curWordPhenoControlGrid.Visibility = Visibility.Collapsed;
+                Canvas.SetLeft(curLineResultPanel, line.BoundingRect.Left);
+                int lineNum = getLineNumByRect(line.BoundingRect);
+                Canvas.SetTop(curLineResultPanel, (lineNum - 1) * LINE_HEIGHT);
+                curLineWordsStackPanel.Visibility = Visibility.Collapsed;
+                loading.Visibility = Visibility.Visible;
+                curLineResultPanel.Visibility = Visibility.Visible;
 
                 // flyout 
                 // RecognizeSelection();

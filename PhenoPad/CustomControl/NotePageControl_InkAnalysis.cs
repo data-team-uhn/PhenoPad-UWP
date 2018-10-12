@@ -366,7 +366,7 @@ namespace PhenoPad.CustomControl
                 foreach (InkAnalysisLine line in lineNodes)
                 {
                     // current line
-                    if (line.GetStrokeIds().Contains(curStroke.Id))
+                    if (curStroke != null && line.GetStrokeIds().Contains(curStroke.Id))
                     {
                         Debug.WriteLine("\nfound line.");
                         // set up for current line
@@ -535,7 +535,6 @@ namespace PhenoPad.CustomControl
                 nl.HwrResult = await RecognizeLine(line.Id, serverRecog);
                 idToNoteLine[line.Id] = nl;
             }
-
 
             // HWR result UI
             setUpCurrentLineResultUI(line);
@@ -883,6 +882,7 @@ namespace PhenoPad.CustomControl
             foreach (string word in wordlist) {
                 Debug.WriteLine(word);
             }
+
             curLineWordsStackPanel.Children.Clear();
             //sets a text block for each recognized word and adds event handler to click event
             foreach (var word in wordlist)
@@ -913,6 +913,8 @@ namespace PhenoPad.CustomControl
                     alterFlyout.ShowAt((FrameworkElement)sender);
                 });
             }
+            loading.Visibility = Visibility.Collapsed;
+            curLineWordsStackPanel.Visibility = Visibility.Visible;
             curLineResultPanel.Visibility = Visibility.Visible;
             Canvas.SetLeft(curLineResultPanel, line.BoundingRect.Left);
             int lineNum = getLineNumByRect(line.BoundingRect);
@@ -986,9 +988,11 @@ namespace PhenoPad.CustomControl
                 }
                 **/
 
+                curWordPhenoControlGrid.Visibility = Visibility.Visible;
+
                 if (curLineCandidatePheno.Count == 0 || curWordPhenoControlGrid.Margin.Top == 0)
                 {
-                    curWordPhenoControlGrid.Margin = new Thickness(0, -100, 0, 0);
+                    curWordPhenoControlGrid.Margin = new Thickness(0, -120, 0, 0);
                     curWordPhenoAnimation.Begin();
                 }
 

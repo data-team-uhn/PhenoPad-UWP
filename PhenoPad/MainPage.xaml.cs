@@ -1317,6 +1317,9 @@ namespace PhenoPad
             //calling auto-saving handler to save erased result
             LogService.MetroLogger.getSharedLogger().Info("Cleared all ink strokes of this note page.");
             this.curPage.on_stroke_changed();
+            PhenotypeManager.getSharedPhenotypeManager().phenotypesCandidates.Clear();
+            //more clearing caches
+
         }
 
 
