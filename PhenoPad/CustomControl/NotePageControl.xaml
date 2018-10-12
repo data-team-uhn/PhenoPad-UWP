@@ -7,6 +7,7 @@
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:customcontrol="using:PhenoPad.CustomControl"
     xmlns:phenotypeservice="using:PhenoPad.PhenotypeService"
+
      xmlns:hwrservice="using:PhenoPad.HWRService"
     xmlns:fileservice="using:PhenoPad.FileService"
     xmlns:media="using:Microsoft.Toolkit.Uwp.UI.Media"
@@ -200,8 +201,10 @@
                       ViewChanged="ScrollView_ViewChanged" 
                       VerticalScrollBarVisibility="Hidden" >
             <Grid Padding="0 100 0 0">
-                <Canvas  Height="{x:Bind PAGE_HEIGHT}" Name="sideCanvas">
-                </Canvas>
+            <Canvas  Height="{x:Bind PAGE_HEIGHT}" Name="sideCanvas">
+
+                
+            </Canvas>
             </Grid>
         </ScrollViewer>
         
@@ -215,11 +218,15 @@
                           VerticalScrollMode="Enabled" 
                           VerticalScrollBarVisibility="Hidden" 
                           HorizontalScrollMode="Enabled" 
-                          HorizontalScrollBarVisibility="Hidden"                     
-                   ViewChanged="ScrollView_ViewChanged">
-            
-            <Grid x:Name="outputGrid" Padding="0 100 0 0" Background="{ThemeResource SystemControlBackgroundChromeWhiteBrush}" 
-                  Height="{x:Bind PAGE_HEIGHT}" Width="{x:Bind PAGE_WIDTH}">
+                          HorizontalScrollBarVisibility="Hidden"
+                      
+                   ViewChanged="ScrollView_ViewChanged" 
+                     
+                      >
+            <!--
+            <Grid x:Name="outputGrid" Background="{ThemeResource SystemControlBackgroundChromeWhiteBrush}" Height="{Binding Path=ViewportHeight, ElementName=scrollViewer}" Width="{Binding Path=ViewportWidth, ElementName=scrollViewer}">
+            -->
+            <Grid x:Name="outputGrid" Padding="0 100 0 0" Background="{ThemeResource SystemControlBackgroundChromeWhiteBrush}" Height="{x:Bind PAGE_HEIGHT}" Width="{x:Bind PAGE_WIDTH}">
                 <!-- Inking area -->
 
                 <Canvas x:Name="backgroundCanvas" />
@@ -281,30 +288,33 @@
 
                 <!-- Current line result -->
                 <Canvas >
-                    <Grid Name="curLineResultPanel" Visibility="Collapsed" BorderBrush="DarkGray" HorizontalAlignment="Left">
+                    <Grid Name="curLineResultPanel" Visibility="Collapsed" Background="White" 
+                          BorderBrush="DarkGray" >
                         <Grid.Resources>
                             <Storyboard x:Name="curWordPhenoAnimation">
                                 <RepositionThemeAnimation 
                                         Storyboard.TargetName="curWordPhenoControlGrid"
                                         FromVerticalOffset="100"
-                                         Duration="0:0:0.2"/>
+                                         Duration="0:0:0.1"/>
                             </Storyboard>
                             <Storyboard x:Name="curWordPhenoHideAnimation">
 
                                 <RepositionThemeAnimation 
                                         Storyboard.TargetName="curWordPhenoControlGrid"
                                         FromVerticalOffset="100"
-                                         Duration="0:0:0.2"/>
+                                         Duration="0:0:0.1"/>
                             </Storyboard>
                         </Grid.Resources>
                         
-                        <!--Phenotype Tag Bar-->
-                        <Grid x:Name="curWordPhenoControlGrid" HorizontalAlignment="Left"
-                              Padding="0" BorderBrush="White" BorderThickness="0" Margin="3" Background="White" CornerRadius="10">
+                        <Grid x:Name="curWordPhenoControlGrid" Height="40" HorizontalAlignment="Right" 
+                              Background="WhiteSmoke"  Padding="5" BorderBrush="LightGray" BorderThickness="0" 
+                              CornerRadius="10">
+                            <!--
+                                <customcontrol:PhenotypeControl   x:Name="curWordPhenoControl"  phenotypeName="" phenotypeId="" phenotypeState="-1" sourceType="Notes"></customcontrol:PhenotypeControl>
+                                -->
                             <ListView  Padding="0 0 0 0" IsItemClickEnabled="False"
                                       ScrollViewer.HorizontalScrollMode="Enabled"
                                       ScrollViewer.VerticalScrollMode="Disabled"
-                                      ScrollViewer.VerticalScrollBarVisibility="Hidden"
                                       ScrollViewer.HorizontalScrollBarVisibility="Hidden"
                                       ScrollViewer.IsHorizontalRailEnabled="True"
                                       x:Name="curLineCandidatePhenoListView" ItemsSource="{x:Bind curLineCandidatePheno, Mode=OneWay}">
@@ -315,7 +325,7 @@
                                 </ListView.ItemsPanel>
                                 <ListView.ItemTemplate>
                                     <DataTemplate x:DataType="phenotypeservice:Phenotype">
-                                            <customcontrol:PhenotypeBriefControl phenotypeName="{x:Bind name}" 
+                                        <customcontrol:PhenotypeBriefControl phenotypeName="{x:Bind name}" 
                                                                              phenotypeId="{x:Bind hpId}" phenotypeState="{x:Bind state}" 
                                                                              sourceType="{x:Bind sourceType}" presentPosition="Inline" />
                                     </DataTemplate>
@@ -324,19 +334,22 @@
                                     <Style TargetType="ListViewItem">
                                         <Setter Property="HorizontalContentAlignment" Value="Stretch" />
                                         <Setter Property="VerticalContentAlignment" Value="Stretch" />
-                                        <Setter Property="Padding" Value="0"/>
-                                        <Setter Property="Margin" Value="0,0,3,0" />
-                                        <Setter Property="MinHeight" Value="30" />
+                                        <Setter Property="Margin" Value="5,0,5,0" />
+                                        <Setter Property="Padding" Value="0,0,0,0" />
+                                        <Setter Property="MinHeight" Value="20" />
                                         <Setter Property="MinWidth" Value="20" />
-                                            <Setter Property="Template">
+                                        <Setter Property="Template">
                                             <Setter.Value>
                                                 <ControlTemplate TargetType="ListViewItem">
-                                                    <ListViewItemPresenter CornerRadius="15"/>
-                                                    <!--<ListViewItemPresenter CheckBrush="{ThemeResource ListViewItemCheckBrush}"
-                                       CornerRadius="15"
+                                                    <ListViewItemPresenter CheckBrush="{ThemeResource ListViewItemCheckBrush}"
+                                       ContentMargin="{TemplateBinding Padding}"
                                        CheckMode="{ThemeResource ListViewItemCheckMode}"
                                        ContentTransitions="{TemplateBinding ContentTransitions}"
                                        CheckBoxBrush="{ThemeResource ListViewItemCheckBoxBrush}"
+                                       DragForeground="{ThemeResource ListViewItemDragForeground}"
+                                       DragOpacity="{ThemeResource ListViewItemDragThemeOpacity}"
+                                       DragBackground="{ThemeResource ListViewItemDragBackground}"
+                                       DisabledOpacity="{ThemeResource ListViewItemDisabledThemeOpacity}"
                                        FocusVisualPrimaryBrush="{TemplateBinding FocusVisualPrimaryBrush}"
                                        FocusVisualSecondaryThickness="{TemplateBinding FocusVisualSecondaryThickness}"
                                        FocusBorderBrush="{ThemeResource ListViewItemFocusBorderBrush}"
@@ -347,13 +360,16 @@
                                        HorizontalContentAlignment="{TemplateBinding HorizontalContentAlignment}"
                                        Control.IsTemplateFocusTarget="True"
                                        PointerOverForeground="{ThemeResource ListViewItemForegroundPointerOver}"
-                                       PressedBackground="Transparent"
+                                       PressedBackground="{StaticResource Button_Background}"
                                        PlaceholderBackground="{ThemeResource ListViewItemPlaceholderBackground}"
+                                       PointerOverBackground="{StaticResource Button_Background}"
                                        ReorderHintOffset="{ThemeResource ListViewItemReorderHintThemeOffset}"
                                        SelectedPressedBackground="{StaticResource Button_Background}"
                                        SelectionCheckMarkVisualEnabled="{ThemeResource ListViewItemSelectionCheckMarkVisualEnabled}"
+                                       SelectedForeground="LightBlue"
                                        SelectedPointerOverBackground="{StaticResource Button_Background}"
-                                       VerticalContentAlignment="{TemplateBinding VerticalContentAlignment}" />-->
+                                       SelectedBackground="WhiteSmoke"
+                                       VerticalContentAlignment="{TemplateBinding VerticalContentAlignment}" />
                                                 </ControlTemplate>
                                             </Setter.Value>
                                         </Setter>
@@ -361,75 +377,66 @@
                                 </ListView.ItemContainerStyle>
                             </ListView>
                         </Grid>
-                        <!--HWR Result Bar-->
-                            <StackPanel Orientation="Horizontal" Background="WhiteSmoke" CornerRadius="10" 
-                                    BorderThickness="1" BorderBrush="DarkGray" HorizontalAlignment="Left" Margin="0">
-
-                                <!-- recongtion result of current line -->
-                            <StackPanel Name="curLineWordsStackPanel" Orientation="Horizontal" Height="40" Margin="0" 
-                                            Spacing="5" Padding="10 0 5 0" HorizontalAlignment="Left">
-                                <ProgressRing x:Name="loading" IsActive="True" Visibility="Collapsed"/>
-                            </StackPanel>
-
-                            <!--candidate fly out list-->
-                                <ListView Visibility="Collapsed" Padding="5 0 0 0" Height="40"
-                                          ScrollViewer.HorizontalScrollMode="Enabled"
-                                          ScrollViewer.VerticalScrollMode="Disabled"
-                                          ScrollViewer.HorizontalScrollBarVisibility="Hidden"
-                                          ScrollViewer.IsHorizontalRailEnabled="True"
-                                          x:Name="curLineWordsListView"
-                                          IsItemClickEnabled="True"
-                                          ItemClick="curLineWordsListView_ItemClick">
-                                    <ListView.ItemsPanel>
-                                        <ItemsPanelTemplate>
-                                            <VirtualizingStackPanel  Orientation="Horizontal"/>
-                                        </ItemsPanelTemplate>
-                                    </ListView.ItemsPanel>
-                                    <ListView.ItemTemplate>
-                                        <DataTemplate >
-                                            <TextBlock Text="{Binding}" VerticalAlignment="Center"></TextBlock>
-                                        </DataTemplate>
-                                    </ListView.ItemTemplate>
-                                    <ListView.ItemContainerStyle>
-                                        <Style TargetType="ListViewItem">
-                                            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
-                                            <Setter Property="VerticalContentAlignment" Value="Stretch" />
-                                            <Setter Property="Margin" Value="0,0,5,0" />
-                                            <Setter Property="Padding" Value="0,0,0,0" />
-                                            <Setter Property="MinHeight" Value="20" />
-                                            <Setter Property="MinWidth" Value="20" />
-                                        </Style>
-                                    </ListView.ItemContainerStyle>
-                                </ListView>
-
-                                <Button Background="WhiteSmoke" Foreground="PaleVioletRed" Width="{x:Bind LINE_HEIGHT}" 
+                        
+                        <StackPanel Orientation="Horizontal" Background="WhiteSmoke" CornerRadius="10" 
+                                    BorderThickness="1" BorderBrush="DarkGray">
+                            <!-- recongtion result of current line -->
+                            <StackPanel Name="curLineWordsStackPanel" Orientation="Horizontal" Spacing="5" Padding="5 0 5 0" />
+                            
+                            <ListView Visibility="Collapsed" Padding="5 0 0 0" Height="40"
+                              ScrollViewer.HorizontalScrollMode="Enabled"
+                              ScrollViewer.VerticalScrollMode="Disabled"
+                              ScrollViewer.HorizontalScrollBarVisibility="Hidden"
+                              ScrollViewer.IsHorizontalRailEnabled="True"
+                              x:Name="curLineWordsListView"
+                                      IsItemClickEnabled="True"
+                              ItemClick="curLineWordsListView_ItemClick">
+                                <ListView.ItemsPanel>
+                                    <ItemsPanelTemplate>
+                                        <VirtualizingStackPanel  Orientation="Horizontal"/>
+                                    </ItemsPanelTemplate>
+                                </ListView.ItemsPanel>
+                                <ListView.ItemTemplate>
+                                    <DataTemplate >
+                                        <TextBlock Text="{Binding}" VerticalAlignment="Center"></TextBlock>
+                                    </DataTemplate>
+                                </ListView.ItemTemplate>
+                                <ListView.ItemContainerStyle>
+                                    <Style TargetType="ListViewItem">
+                                        <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                                        <Setter Property="VerticalContentAlignment" Value="Stretch" />
+                                        <Setter Property="Margin" Value="0,0,5,0" />
+                                        <Setter Property="Padding" Value="0,0,0,0" />
+                                        <Setter Property="MinHeight" Value="20" />
+                                        <Setter Property="MinWidth" Value="20" />
+                                    </Style>
+                                </ListView.ItemContainerStyle>
+                            </ListView>
+                            <Button Background="WhiteSmoke" Foreground="PaleVioletRed" Width="{x:Bind LINE_HEIGHT}" 
                                     Height="40" Click="curLineResultButtonClick" Style="{StaticResource ButtonStyle1}"
                                     HorizontalAlignment="Right">
-                                    <SymbolIcon Symbol="Clear"/>
-                                </Button>
-
-                            </StackPanel>
+                                <SymbolIcon Symbol="Clear"/>
+                            </Button>
+                        </StackPanel>
                     </Grid>
 
                 </Canvas>
             </Grid>
         </ScrollViewer>
-        
 
-        <Grid x:Name="addinBase" Grid.Column="1"  x:FieldModifier="public"
-        Visibility="Collapsed" Padding="5" Width="250"
-        Background="{StaticResource TITLE_BAR_WHITE}" HorizontalAlignment="Right"
-        VerticalAlignment="Stretch">
+            <Grid x:Name="addinBase" Grid.Column="1"  x:FieldModifier="public"
+            Visibility="Collapsed" Padding="5" Width="250"
+            Background="{StaticResource TITLE_BAR_WHITE}" HorizontalAlignment="Right"
+            VerticalAlignment="Stretch">
 
             <Grid.RenderTransform>
                 <TranslateTransform x:Name="slide" X="250"/>
             </Grid.RenderTransform>
-            
-            <Grid.RowDefinitions>
-                <RowDefinition Height="50"/>
-                <RowDefinition Height="*"/>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="50"/>
+                    <RowDefinition Height="*"/>
 
-            </Grid.RowDefinitions>
+                </Grid.RowDefinitions>
 
             <TextBlock VerticalAlignment="Top" Grid.Row="0" HorizontalAlignment="Left"                     
                     FontSize="25" Foreground="Black" Margin="5" >Collections</TextBlock>
@@ -439,7 +446,7 @@
                     <DataTemplate x:DataType="fileservice:ImageAndAnnotation">
                         <Button Click="addInIcon_Click" HorizontalAlignment="Center" Width="200"
                             Style="{StaticResource ButtonStyle1}">
-                            <Viewbox Name="AddInIcon" Stretch="Uniform" AllowFocusOnInteraction="False">
+                            <Viewbox Name="AddInIcon" Stretch="Uniform" CanDrag="False">
                                 <customcontrol:AddInControl name="{x:Bind name}" notebookId="{x:Bind notebookId}" 
                                                     viewOnly="True" pageId="{x:Bind pageId}" />
                             </Viewbox>
@@ -461,7 +468,7 @@
                     </Style>
                 </ListView.ItemContainerStyle>
             </ListView>
-    </Grid>
+        </Grid>
         
         <RelativePanel Grid.Column="1" HorizontalAlignment="Right" VerticalAlignment="Stretch">
 

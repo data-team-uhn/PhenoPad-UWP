@@ -491,8 +491,8 @@ namespace PhenoPad.CustomControl
             Debug.WriteLine($"min offSet = {da.By}");
             this.Visibility = Visibility.Collapsed;
             await rootPage.curPage.AutoSaveAddin(this.name);
-            await rootPage.curPage.refreshAddInList();
             addinPanelHideAnimation.BeginAsync();
+            rootPage.curPage.refreshAddInList();
             rootPage.curPage.quickShowDock();
         }
 
