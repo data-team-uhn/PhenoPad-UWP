@@ -226,7 +226,7 @@
             <!--
             <Grid x:Name="outputGrid" Background="{ThemeResource SystemControlBackgroundChromeWhiteBrush}" Height="{Binding Path=ViewportHeight, ElementName=scrollViewer}" Width="{Binding Path=ViewportWidth, ElementName=scrollViewer}">
             -->
-            <Grid x:Name="outputGrid" Padding="0 100 0 0" Background="{ThemeResource SystemControlBackgroundChromeWhiteBrush}" Height="{x:Bind PAGE_HEIGHT}" Width="{x:Bind PAGE_WIDTH}">
+            <Grid x:Name="outputGrid" Padding="0 0 0 0" Background="{ThemeResource SystemControlBackgroundChromeWhiteBrush}" Height="{x:Bind PAGE_HEIGHT}" Width="{x:Bind PAGE_WIDTH}">
                 <!-- Inking area -->
 
                 <Canvas x:Name="backgroundCanvas" />
@@ -245,6 +245,8 @@
 
                 <!-- Note taking ink canvas -->
                 <InkCanvas  x:Name="inkCanvas"/>
+                
+                
                 
                 <!-- pop up after selection-->
                 <Canvas x:Name="selectionCanvas">
@@ -280,9 +282,10 @@
 
                     <Rectangle StrokeDashArray="2 2"  Name="selectionRectangle" Stroke="DarkBlue" StrokeThickness="2"></Rectangle>
                 </Canvas>
-               
+
                 <!-- Add in control panel -->
                 <Canvas x:Name="userControlCanvas" />
+
 
                 <Canvas x:Name="recognizedTextCanvas"/>
 
@@ -305,7 +308,7 @@
                                          Duration="0:0:0.1"/>
                             </Storyboard>
                         </Grid.Resources>
-                        
+
                         <Grid x:Name="curWordPhenoControlGrid" Height="40" HorizontalAlignment="Right" 
                               Background="WhiteSmoke"  Padding="5" BorderBrush="LightGray" BorderThickness="0" 
                               CornerRadius="10">
@@ -378,14 +381,14 @@
                                 </ListView.ItemContainerStyle>
                             </ListView>
                         </Grid>
-                        
+
                         <StackPanel Orientation="Horizontal" Background="WhiteSmoke" CornerRadius="10" 
                                     BorderThickness="1" BorderBrush="DarkGray">
                             <!-- recongtion result of current line -->
                             <ProgressRing x:Name="loading" IsActive="True" Margin="10 0 10 0" Visibility="Collapsed"/>
                             <StackPanel Name="curLineWordsStackPanel" Orientation="Horizontal" Spacing="5" HorizontalAlignment="Left"
                                         Height="45" Padding="5 0 5 0" />
-                            
+
                             <ListView Visibility="Collapsed" Padding="5 0 0 0" Height="40"
                               ScrollViewer.HorizontalScrollMode="Enabled"
                               ScrollViewer.VerticalScrollMode="Disabled"
@@ -422,12 +425,14 @@
                             </Button>
                         </StackPanel>
                     </Grid>
-
                 </Canvas>
             </Grid>
+            
         </ScrollViewer>
+        
 
-            <Grid x:Name="addinBase" Grid.Column="1"  x:FieldModifier="public"
+
+        <Grid x:Name="addinBase" Grid.Column="1"  x:FieldModifier="public"
             Visibility="Collapsed" Padding="5" Width="250"
             Background="{StaticResource TITLE_BAR_WHITE}" HorizontalAlignment="Right"
             VerticalAlignment="Stretch">

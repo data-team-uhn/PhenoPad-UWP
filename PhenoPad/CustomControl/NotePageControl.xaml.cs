@@ -535,7 +535,7 @@ namespace PhenoPad.CustomControl
         private void StrokeInput_StrokeEnded(InkStrokeInput sender, PointerEventArgs args)
         {
             autosaveDispatcherTimer.Start();
-            recognizeTimer.Start();
+            //recognizeTimer.Start();
         }
      
         private async void InkPresenter_StrokesCollectedAsync(InkPresenter sender, InkStrokesCollectedEventArgs args)
@@ -901,7 +901,6 @@ namespace PhenoPad.CustomControl
             catch (Exception e)
             {
                 logger.Error("Failed to add image control from BitmapImage: " + e.Message);
-                Debug.WriteLine(e.Message);
             }
            
         }

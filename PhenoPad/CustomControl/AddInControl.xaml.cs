@@ -270,6 +270,9 @@ namespace PhenoPad.CustomControl
         #endregion
 
         #region Corner drag for size changes
+        private void ResizeButtonOnHolding(object sender, HoldingRoutedEventArgs args) {
+
+        }
         private void Manipulator_OnManipulationStarted(object sender, ManipulationStartedRoutedEventArgs e)
         {
             double xPos = e.Position.X;
@@ -279,16 +282,16 @@ namespace PhenoPad.CustomControl
 
 
             //setting corner detections for canvas extension
-            bool topLeft = xPos < 20  && yPos < 20 ;
-            bool topRight = (xPos > this.Width - 20) &&  (yPos < 20);
-            bool bottomLeft = xPos < 20  && yPos > this.Height - 20;
-            bool bottomRight = (xPos > this.Width - 20) && (yPos > this.Height - 20);
+            bool topLeft = xPos < 50  && yPos < 50 ;
+            bool topRight = (xPos > this.Width - 50) &&  (yPos < 50);
+            bool bottomLeft = xPos < 50  && yPos > this.Height - 50;
+            bool bottomRight = (xPos > this.Width - 50) && (yPos > this.Height - 50);
             //the pointer is in one of the resizing corners
             if (topLeft || topRight || bottomLeft || bottomRight)
             {
                 this._isResizing = true;
                 this._isMoving = false;
-                
+                Debug.WriteLine("resizing");
                 if (topLeft) this.resizeDir = Direction.TOPLEFT;
                 else if (topRight) this.resizeDir = Direction.TOPRIGHT;
                 else if (bottomLeft) this.resizeDir = Direction.BOTTOMLEFT;
@@ -296,6 +299,7 @@ namespace PhenoPad.CustomControl
             }
             //pointer is within title bar for X,Y translation
             else {
+                Debug.WriteLine("moving");
                 this._isResizing = false;
                 if (yPos < 68)
                 {
@@ -528,61 +532,6 @@ namespace PhenoPad.CustomControl
             PhotoButton.Visibility = Visibility.Visible;
         }
 
-        private void EditButton_Click(object sender, RoutedEventArgs e)
-        {
-            throw new NotImplementedException("editbutton_click not implemented");
-        }
-
-        private async void InsertPhotoButton_Click(object sender, RoutedEventArgs e)
-        {
-            type = "photo";
-            isInitialized = true;
-            //this.ControlStackPanel.Visibility = Visibility.Visible;
-            // Let users choose their ink file using a file picker.
-            // Initialize the picker.
-            Windows.Storage.Pickers.FileOpenPicker openPicker =
-                new Windows.Storage.Pickers.FileOpenPicker();
-            openPicker.SuggestedStartLocation =
-                Windows.Storage.Pickers.PickerLocationId.DocumentsLibrary;
-            openPicker.FileTypeFilter.Add(".gif");
-            openPicker.FileTypeFilter.Add(".png");
-            openPicker.FileTypeFilter.Add(".jpg");
-            openPicker.FileTypeFilter.Add(".tif");
-            // Show the file picker.
-            Windows.Storage.StorageFile file = await openPicker.PickSingleFileAsync();
-            // User selects a file and picker returns a reference to the selected file.
-            if (file != null)
-            {
-                await FileService.FileManager.getSharedFileManager().CopyPhotoToLocal(file, notebookId, pageId, name);
-
-                // Open a file stream for reading.
-                IRandomAccessStream stream = await file.OpenAsync(Windows.Storage.FileAccessMode.Read);
-                // Read from file.
-                using (var inputStream = stream.GetInputStreamAt(0))
-                {
-                    BitmapDecoder decoder = await BitmapDecoder.CreateAsync(stream);
-                    SoftwareBitmap softwareBitmap = await decoder.GetSoftwareBitmapAsync();
-                    SoftwareBitmap softwareBitmapBGR8 = SoftwareBitmap.Convert(softwareBitmap,
-                    BitmapPixelFormat.Bgra8,
-                    BitmapAlphaMode.Premultiplied);
-                    SoftwareBitmapSource bitmapSource = new SoftwareBitmapSource();
-                    await bitmapSource.SetBitmapAsync(softwareBitmapBGR8);
-                    Image imageControl = new Image();
-                    imageControl.Source = bitmapSource;
-                    contentGrid.Children.Add(imageControl);
-                    categoryGrid.Visibility = Visibility.Collapsed;
-                    InitiateInkCanvas();
-                }
-                stream.Dispose();
-                await rootPage.curPage.AutoSaveAddin(this.name);
-            }
-            // User selects Cancel and picker returns null.
-            else
-            {
-                // Operation cancelled.
-            }
-        }
-
         private async void PhotoButton_Click(object sender, RoutedEventArgs e)
         {
             try
@@ -612,7 +561,7 @@ namespace PhenoPad.CustomControl
                     contentGrid.Children.Add(imageControl);
                     categoryGrid.Visibility = Visibility.Collapsed;
                     this.PhotoButton.Visibility = Visibility.Collapsed;
-                    this.CameraCanvas.Visibility = Visibility.Collapsed;                   
+                    this.CameraCanvas.Visibility = Visibility.Collapsed;
                     captureControl.unSetUp();
                     this.hasImage = true;
                     InitiateInkCanvas();
@@ -631,6 +580,59 @@ namespace PhenoPad.CustomControl
             CameraCanvas.Visibility = Visibility.Collapsed;
             captureControl.unSetUp();
         }
+
+        private async void InsertPhotoButton_Click(object sender, RoutedEventArgs e)
+        {
+            type = "photo";
+            isInitialized = true;
+            //this.ControlStackPanel.Visibility = Visibility.Visible;
+            // Let users choose their ink file using a file picker.
+            // Initialize the picker.
+            Windows.Storage.Pickers.FileOpenPicker openPicker = new Windows.Storage.Pickers.FileOpenPicker();
+            openPicker.SuggestedStartLocation = Windows.Storage.Pickers.PickerLocationId.DocumentsLibrary;
+            openPicker.FileTypeFilter.Add(".gif");
+            openPicker.FileTypeFilter.Add(".png");
+            openPicker.FileTypeFilter.Add(".jpg");
+            openPicker.FileTypeFilter.Add(".tif");
+            // Show the file picker.
+            Windows.Storage.StorageFile file = await openPicker.PickSingleFileAsync();
+            // User selects a file and picker returns a reference to the selected file.
+            if (file != null)
+            {
+                await FileManager.getSharedFileManager().CopyPhotoToLocal(file, notebookId, pageId, name);
+                var localfile = await FileManager.getSharedFileManager().GetNoteFileNotCreate(notebookId, pageId, NoteFileType.Image, name);
+
+                Image imageControl = new Image();
+                BitmapImage rawphoto = new BitmapImage(new Uri(localfile.Path));
+
+                //setting the photo width to be current frame's width
+                var properties = await localfile.Properties.GetImagePropertiesAsync();
+                var filewidth = properties.Width;
+                var fileheight = properties.Height;
+                //Resizing the add-in frame according to the image ratio
+                imgratio = (double)filewidth / fileheight;
+                this.Height = this.Width / imgratio + 88;
+                this.widthOrigin = this.Width;
+                this.heightOrigin = this.Height;
+                this.inkCan.Height = this.Height - 88;
+                this.inkCan.Width = this.Width;
+
+                imageControl.Source = rawphoto;
+                contentGrid.Children.Add(imageControl);
+                categoryGrid.Visibility = Visibility.Collapsed;
+                this.hasImage = true;
+                InitiateInkCanvas();
+
+                await rootPage.curPage.AutoSaveAddin(this.name);
+            }
+            // User selects Cancel and picker returns null.
+            else
+            {
+                // Operation cancelled.
+            }
+        }
+
+
         #endregion
 
         #region initializations
@@ -677,7 +679,7 @@ namespace PhenoPad.CustomControl
                 inkCan.Height = bound.Height + bound.Top;
                 inkCan.Width = bound.Width + bound.Left;
                 var strokes = inkCanvas.InkPresenter.StrokeContainer.GetStrokes();
-                resizeIcon.Visibility = Visibility.Collapsed;
+                //resizeIcon.Visibility = Visibility.Collapsed;
                 double ratio = bound.Width / bound.Height;
 
                 inkCanvas.InkPresenter.InputDeviceTypes =
@@ -715,12 +717,6 @@ namespace PhenoPad.CustomControl
             this.categoryGrid.Visibility = Visibility.Collapsed;
             try
             {
-                //this.Height = this.height;
-                //this.Width = this.width;
-
-                //this.inkCan.Width = this.Width;
-                //this.inkCan.Height = this.Height - 88;
-
                 var annofile = await FileManager.getSharedFileManager().GetNoteFileNotCreate(notebookId, pageId, NoteFileType.ImageAnnotation, name);
                 if (annofile != null)
                     await FileManager.getSharedFileManager().loadStrokes(annofile, inkCanvas);

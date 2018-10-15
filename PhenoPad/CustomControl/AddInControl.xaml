@@ -129,15 +129,16 @@
         <Grid Grid.Row="0" Grid.RowSpan="4" Background="White" Opacity="0.5"  
               Name="MovingGrid" Visibility="Collapsed">
         </Grid>
-        <SymbolIcon Grid.Row="3" HorizontalAlignment="Right" 
-                    VerticalAlignment="Center" Symbol="FullScreen" 
-                    Name="resizeIcon"
-                    RenderTransformOrigin="0.5,0.5">
-            <SymbolIcon.RenderTransform>
-                <CompositeTransform Rotation="90" ScaleX="0.7" ScaleY="0.7"/>
+        <Button Grid.Row="3" HorizontalAlignment="Right" Height="20"
+                    VerticalAlignment="Center" Holding="ResizeButtonOnHolding">
+            <!--<SymbolIcon  Symbol="FullScreen" 
+                    Name="resizeIcon" HorizontalAlignment="Center" VerticalAlignment="Center">
+                <SymbolIcon.RenderTransform>
+                    <CompositeTransform Rotation="90" ScaleX="0.7" ScaleY="0.7"/>
 
-            </SymbolIcon.RenderTransform>
-        </SymbolIcon>
+                </SymbolIcon.RenderTransform>
+            </SymbolIcon>-->
+        </Button>
 
     </Grid>
 </UserControl>

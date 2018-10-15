@@ -142,7 +142,7 @@ namespace PhenoPad
                     }
                     else
                     {
-                        MetroLogger.getSharedLogger().Info($"Loaded transcript_{i}.");
+                        Debug.WriteLine($"Loaded transcript_{i}.");
                         this.conversations.AddRange(messages);
                     }
                 }
