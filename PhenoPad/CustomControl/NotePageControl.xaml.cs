@@ -744,6 +744,11 @@ namespace PhenoPad.CustomControl
 
         #endregion
 
+        public double getPageWindowRatio() {
+            Debug.WriteLine("zoom factor = " + scrollViewer.ZoomFactor);
+            return (inkCanvas.ActualWidth * scrollViewer.ZoomFactor)  / outputGrid.Width;
+        }
+
         private void SelectionRectangle_ManipulationCompleted(object sender, ManipulationCompletedRoutedEventArgs e)
         {
             scrollViewer.HorizontalScrollMode = ScrollMode.Enabled;

@@ -46,7 +46,7 @@ namespace PhenoPad.CustomControl
 
         private double DEFAULT_WIDTH = 400;
         private double DEFAULT_HEIGHT = 400;
-        private double MIN_WIDTH = 350;
+        private double MIN_WIDTH = 370;
         private double MIN_HEIGHT = 350;
         public double originalWidth;
         public double originalHeight; 
@@ -129,6 +129,12 @@ namespace PhenoPad.CustomControl
 
         private bool _isResizing;
         private bool _isMoving;
+        private bool _topSide;
+        private bool _bottomSide;
+        private bool _leftSide;
+        private bool _rightSide;
+        private double _curWidthRatio;
+
 
         private Direction resizeDir;
         public static readonly DependencyProperty nameProperty = DependencyProperty.Register(
@@ -228,7 +234,7 @@ namespace PhenoPad.CustomControl
                 this.Width = (widthOrigin < DEFAULT_WIDTH || heightOrigin < DEFAULT_HEIGHT) ? DEFAULT_HEIGHT : heightOrigin;
 
                 inkCan.Width = this.Width;
-                inkCan.Height = this.Height - 88;
+                inkCan.Height = this.Height - 48;
                 this.inDock = false;
                 this.name = name;
                 this.notebookId = notebookId;
@@ -260,89 +266,126 @@ namespace PhenoPad.CustomControl
 
             //Add-in dimension/location manipulation
             {
-                this.ManipulationMode = ManipulationModes.TranslateX | ManipulationModes.TranslateY |ManipulationModes.Scale;
-                this.ManipulationStarted += Manipulator_OnManipulationStarted;
-                this.ManipulationDelta += Manipulator_OnManipulationDelta;
-                this.ManipulationCompleted += Manipulator_OnManipulationCompleted;
+                //this.ManipulationMode = ManipulationModes.TranslateX | ManipulationModes.TranslateY |ManipulationModes.Scale;
+                //this.ManipulationStarted += Manipulator_OnManipulationStarted;
+                //this.ManipulationDelta += Manipulator_OnManipulationDelta;
+                //this.ManipulationCompleted += Manipulator_OnManipulationCompleted;
             }
 
         }
         #endregion
 
         #region Corner drag for size changes
-        private void ResizeButtonOnHolding(object sender, HoldingRoutedEventArgs args) {
 
-        }
-        private void Manipulator_OnManipulationStarted(object sender, ManipulationStartedRoutedEventArgs e)
-        {
+        private void AddInManipulate_Started(object sender, ManipulationStartedRoutedEventArgs e) {
+
             double xPos = e.Position.X;
             double yPos = e.Position.Y;
             originalHeight = this.Height;
             originalWidth = this.Width;
 
+            _curWidthRatio = MainPage.Current.curPage.getPageWindowRatio();
 
-            //setting corner detections for canvas extension
-            bool topLeft = xPos < 50  && yPos < 50 ;
-            bool topRight = (xPos > this.Width - 50) &&  (yPos < 50);
-            bool bottomLeft = xPos < 50  && yPos > this.Height - 50;
-            bool bottomRight = (xPos > this.Width - 50) && (yPos > this.Height - 50);
-            //the pointer is in one of the resizing corners
-            if (topLeft || topRight || bottomLeft || bottomRight)
+            _topSide = yPos < 48;
+            _bottomSide = yPos > this.ActualHeight - 48;
+            _leftSide = xPos < 48;
+            _rightSide = (xPos > this.ActualWidth - 48);
+
+            //the pointer is in one of the resizing detection area
+            if (_topSide || _bottomSide || _leftSide || _rightSide)
             {
                 this._isResizing = true;
                 this._isMoving = false;
                 Debug.WriteLine("resizing");
-                if (topLeft) this.resizeDir = Direction.TOPLEFT;
-                else if (topRight) this.resizeDir = Direction.TOPRIGHT;
-                else if (bottomLeft) this.resizeDir = Direction.BOTTOMLEFT;
-                else if (bottomRight) this.resizeDir = Direction.BOTTOMRIGHT;
             }
-            //pointer is within title bar for X,Y translation
             else {
-                Debug.WriteLine("moving");
-                this._isResizing = false;
-                if (yPos < 68)
-                {
-                    this._isMoving = true;
-                    this.Opacity = 0.5;
-                    this.showMovingGrid();
-                }                
+                hideMovingGrid();
             }
+
+
         }
-
-        /// <summary>
-        /// Apply delta canvas extension based on pre-set direction and pointer movement delta,move strokes accordingly.
-        /// </summary>
-        private void ResizePanel(ManipulationDeltaRoutedEventArgs e, Direction dir) {
-
+        private void AddInManipulate_Delta(object sender, ManipulationDeltaRoutedEventArgs e) {
             double left = Canvas.GetLeft(this);
             double top = Canvas.GetTop(this);
-            
+            this.Opacity = 0.5;
+            double deltaModifier = _curWidthRatio <= 0.6 ? 2.0 : 1.2;
+            Debug.WriteLine($"cur_ratio = {_curWidthRatio} modifier magnitute = {deltaModifier}");
 
-            if (dir == Direction.TOPLEFT)
+            //corner dealings
+            if (_topSide && _leftSide)
             {
-                if (! hasImage) {
-                    this.Width -= e.Delta.Translation.X;
-                    this.Height -= e.Delta.Translation.Y;
+                if (!hasImage)
+                {
+                    this.Width -= e.Delta.Translation.X * deltaModifier;
+                    this.Height -= e.Delta.Translation.Y * deltaModifier;
                     if (this.Width >= this.MIN_WIDTH && this.Height >= this.MIN_HEIGHT)
                     {
-                        Canvas.SetLeft(this, left + e.Delta.Translation.X);
-                        Canvas.SetTop(this, top + e.Delta.Translation.Y);
+                        Canvas.SetLeft(this, left + e.Delta.Translation.X * deltaModifier);
+                        Canvas.SetTop(this, top + e.Delta.Translation.Y * deltaModifier);
 
                         this.canvasTop = Canvas.GetTop(this.inkCan);
                         this.canvasLeft = Canvas.GetLeft(this.inkCan);
                         //when extending from the top/left, shift the current strokes accordingly.
                         foreach (InkStroke st in inkCanvas.InkPresenter.StrokeContainer.GetStrokes())
                             st.Selected = true;
-                        inkCanvas.InkPresenter.StrokeContainer.MoveSelected(new Point(-e.Delta.Translation.X, -e.Delta.Translation.Y));
+                        inkCanvas.InkPresenter.StrokeContainer.MoveSelected(new Point(-e.Delta.Translation.X * deltaModifier, 
+                                                                                      -e.Delta.Translation.Y * deltaModifier));
                     }
-                }               
-
+                }
             }
-            if (dir == Direction.TOPRIGHT) {
-                if (! hasImage)
+            else if (_topSide && _rightSide) {
+                if (!hasImage)
+                {
+                    this.Width += e.Delta.Translation.X * deltaModifier;
+                    this.Height -= e.Delta.Translation.Y * deltaModifier;
+                    //resetting canvas topleft corner after resizing
+                    if (this.Height >= this.MIN_HEIGHT)
+                    {
+                        Canvas.SetTop(this, top + e.Delta.Translation.Y * deltaModifier);
+                        this.canvasTop = Canvas.GetTop(this.inkCan);
+                    }
+                }
+            }
+            else if (_bottomSide && _leftSide) {
+                //photo resizing will be only available for bottomright corner detection
+                if (!hasImage)
+                {
+                    this.Width -= e.Delta.Translation.X * deltaModifier;
+                    this.Height += e.Delta.Translation.Y * deltaModifier;
+                    if (this.Width >= this.MIN_WIDTH)
+                    {
+                        Canvas.SetLeft(this, left + e.Delta.Translation.X * deltaModifier);
+                        this.canvasLeft = Canvas.GetLeft(this.inkCan);
+                        //when extending from the top/left, shift the current strokes accordingly.
+                        foreach (InkStroke st in inkCanvas.InkPresenter.StrokeContainer.GetStrokes())
+                            st.Selected = true;
+                        inkCanvas.InkPresenter.StrokeContainer.MoveSelected(new Point(-e.Delta.Translation.X, 0));
+                    }
+                }
+            }
+            else if (_bottomSide && _rightSide) {
+                //only enable photo ratio resizing on this corner
+                if (hasImage)
+                {
+                    if (this.Width >= this.MIN_WIDTH && this.Height >= (this.MIN_WIDTH / imgratio + 48))
+                    {
+
+                        //only resizing based on photo width/height ratio
+                        this.Height += e.Delta.Translation.Y;
+                        this.Width += e.Delta.Translation.Y * imgratio;
+
+                    }
+                }
+                else
                 {
                     this.Width += e.Delta.Translation.X;
+                    this.Height += e.Delta.Translation.Y;
+                }
+            }
+            else if (_topSide)
+            {
+                if (!hasImage)
+                {
                     this.Height -= e.Delta.Translation.Y;
                     //resetting canvas topleft corner after resizing
                     if (this.Height >= this.MIN_HEIGHT)
@@ -351,15 +394,19 @@ namespace PhenoPad.CustomControl
                         this.canvasTop = Canvas.GetTop(this.inkCan);
                     }
                 }
-
-            }            
-            if (dir == Direction.BOTTOMLEFT)
+            }
+            else if (_bottomSide)
+            {
+                if (!hasImage) {
+                    this.Height += e.Delta.Translation.X;
+                }
+            }
+            else if (_leftSide)
             {
                 //photo resizing will be only available for bottomright corner detection
-                if (! hasImage)
+                if (!hasImage)
                 {
                     this.Width -= e.Delta.Translation.X;
-                    this.Height += e.Delta.Translation.Y;
                     if (this.Width >= this.MIN_WIDTH)
                     {
                         Canvas.SetLeft(this, left + e.Delta.Translation.X);
@@ -370,68 +417,42 @@ namespace PhenoPad.CustomControl
                         inkCanvas.InkPresenter.StrokeContainer.MoveSelected(new Point(-e.Delta.Translation.X, 0));
                     }
                 }
-
-
             }
-            if (dir == Direction.BOTTOMRIGHT)
+            else if (_rightSide)
             {
-                //only enable photo ratio resizing on this corner
-                if (hasImage)
-                {
-                    if (this.Width >= this.MIN_WIDTH && this.Height >= (this.MIN_WIDTH / imgratio + 88))
-                    {
-
-                        //only resizing based on photo width/height ratio
-                        this.Height += e.Delta.Translation.Y;
-                        this.Width += e.Delta.Translation.Y * imgratio;
-
-                    }
-                }
-                else {
+                if (! hasImage)
                     this.Width += e.Delta.Translation.X;
-                    this.Height += e.Delta.Translation.Y;
-                }
             }
 
+            else
+            {
+                this.dragTransform.X += e.Delta.Translation.X;
+                this.dragTransform.Y += e.Delta.Translation.Y;
+            }
 
             //setting minimal resizing sizes
             if (hasImage)
             {
                 this.Width = this.Width < this.MIN_WIDTH ? this.MIN_WIDTH : this.Width;
-                this.Height = this.Width <= this.MIN_WIDTH? (this.MIN_WIDTH / imgratio + 88) : this.Height;
+                this.Height = this.Width <= this.MIN_WIDTH ? (this.MIN_WIDTH / imgratio + 48) : this.Height;
                 //proportionally zoom in/out all inkcanvas
 
             }
-            else {
+            else
+            {
                 if (this.Width > this.inkCan.Width)
                 {
                     inkCan.Width = this.Width;
                 }
-                if (this.Height - 88 > this.inkCan.Height)
+                if (this.Height - 48 > this.inkCan.Height)
                 {
-                    inkCan.Height = this.Height - 88;
+                    inkCan.Height = this.Height - 48;
                 }
                 this.Width = this.Width < this.MIN_WIDTH ? this.MIN_WIDTH : this.Width;
                 this.Height = this.Height < this.MIN_HEIGHT ? this.MIN_HEIGHT : this.Height;
             }
-
         }
-
-        private void Manipulator_OnManipulationDelta(object sender, ManipulationDeltaRoutedEventArgs e)
-        {
-            if (_isResizing) {
-                ResizePanel(e, this.resizeDir);
-            }
-                
-            else if (_isMoving)
-            {
-                this.dragTransform.X += e.Delta.Translation.X;
-                this.dragTransform.Y += e.Delta.Translation.Y;           
-            }
-
-        }
-
-        private void Manipulator_OnManipulationCompleted(object sender, ManipulationCompletedRoutedEventArgs e) {
+        private void AddInManipulate_Completed(object sender, ManipulationCompletedRoutedEventArgs e) {
             _isMoving = false;
             _isResizing = false;
             canvasLeft = Canvas.GetLeft(this);
@@ -439,9 +460,206 @@ namespace PhenoPad.CustomControl
             viewFactor.ScaleX = this.Width / this.widthOrigin;
             viewFactor.ScaleY = this.Height / (this.heightOrigin);
             Opacity = 1;
-            hideMovingGrid();
             autosaveDispatcherTimer.Start();
         }
+
+        private void Moving_Started(object sender, ManipulationStartedRoutedEventArgs e) {
+            this._isResizing = false;
+            this._isMoving = true;
+            _curWidthRatio = MainPage.Current.curPage.getPageWindowRatio();
+            manipulateButton.IsEnabled = false;
+            Opacity = 0.5;
+        }
+        private void Moving_Delta(object sender, ManipulationDeltaRoutedEventArgs e) {
+            if (!_isResizing)
+            {
+                double deltaModifier = _curWidthRatio <= 0.6 ? 2.0 : 1.3;
+                Debug.WriteLine($"cur_ratio = {_curWidthRatio} modifier magnitute = {deltaModifier}");
+                this.dragTransform.X += e.Delta.Translation.X * deltaModifier;
+                this.dragTransform.Y += e.Delta.Translation.Y * deltaModifier;
+            }
+        }
+        private void Moving_Completed(object sender, ManipulationCompletedRoutedEventArgs e) {
+            this._isResizing = false;
+            this._isMoving = false;
+            canvasLeft = Canvas.GetLeft(this);
+            canvasTop = Canvas.GetTop(this);
+            Opacity = 1;
+            autosaveDispatcherTimer.Start();
+            manipulateButton.IsEnabled = true;
+
+        }
+
+        //=======================================================================================================================
+        //private void Manipulator_OnManipulationStarted(object sender, ManipulationStartedRoutedEventArgs e)
+        //{
+        //    double xPos = e.Position.X;
+        //    double yPos = e.Position.Y;
+        //    originalHeight = this.Height;
+        //    originalWidth = this.Width;
+
+
+        //    //setting corner detections for canvas extension
+        //    bool topLeft = xPos < 50  && yPos < 50 ;
+        //    bool topRight = (xPos > this.Width - 50) &&  (yPos < 50);
+        //    bool bottomLeft = xPos < 50  && yPos > this.Height - 50;
+        //    bool bottomRight = (xPos > this.Width - 50) && (yPos > this.Height - 50);
+        //    //the pointer is in one of the resizing corners
+        //    if (topLeft || topRight || bottomLeft || bottomRight)
+        //    {
+        //        this._isResizing = true;
+        //        this._isMoving = false;
+        //        Debug.WriteLine("resizing");
+        //        if (topLeft) this.resizeDir = Direction.TOPLEFT;
+        //        else if (topRight) this.resizeDir = Direction.TOPRIGHT;
+        //        else if (bottomLeft) this.resizeDir = Direction.BOTTOMLEFT;
+        //        else if (bottomRight) this.resizeDir = Direction.BOTTOMRIGHT;
+        //    }
+        //    //pointer is within title bar for X,Y translation
+        //    else {
+        //        Debug.WriteLine("moving");
+        //        this._isResizing = false;
+        //        if (yPos < 68)
+        //        {
+        //            this._isMoving = true;
+        //            this.Opacity = 0.5;
+        //            this.showMovingGrid(null,null);
+        //        }                
+        //    }
+        //}
+
+        ///// <summary>
+        ///// Apply delta canvas extension based on pre-set direction and pointer movement delta,move strokes accordingly.
+        ///// </summary>
+        //private void ResizePanel(ManipulationDeltaRoutedEventArgs e, Direction dir) {
+
+        //    double left = Canvas.GetLeft(this);
+        //    double top = Canvas.GetTop(this);
+
+
+        //    if (dir == Direction.TOPLEFT)
+        //    {
+        //        if (! hasImage) {
+        //            this.Width -= e.Delta.Translation.X;
+        //            this.Height -= e.Delta.Translation.Y;
+        //            if (this.Width >= this.MIN_WIDTH && this.Height >= this.MIN_HEIGHT)
+        //            {
+        //                Canvas.SetLeft(this, left + e.Delta.Translation.X);
+        //                Canvas.SetTop(this, top + e.Delta.Translation.Y);
+
+        //                this.canvasTop = Canvas.GetTop(this.inkCan);
+        //                this.canvasLeft = Canvas.GetLeft(this.inkCan);
+        //                //when extending from the top/left, shift the current strokes accordingly.
+        //                foreach (InkStroke st in inkCanvas.InkPresenter.StrokeContainer.GetStrokes())
+        //                    st.Selected = true;
+        //                inkCanvas.InkPresenter.StrokeContainer.MoveSelected(new Point(-e.Delta.Translation.X, -e.Delta.Translation.Y));
+        //            }
+        //        }               
+
+        //    }
+        //    if (dir == Direction.TOPRIGHT) {
+        //        if (! hasImage)
+        //        {
+        //            this.Width += e.Delta.Translation.X;
+        //            this.Height -= e.Delta.Translation.Y;
+        //            //resetting canvas topleft corner after resizing
+        //            if (this.Height >= this.MIN_HEIGHT)
+        //            {
+        //                Canvas.SetTop(this, top + e.Delta.Translation.Y);
+        //                this.canvasTop = Canvas.GetTop(this.inkCan);
+        //            }
+        //        }
+
+        //    }            
+        //    if (dir == Direction.BOTTOMLEFT)
+        //    {
+        //        //photo resizing will be only available for bottomright corner detection
+        //        if (! hasImage)
+        //        {
+        //            this.Width -= e.Delta.Translation.X;
+        //            this.Height += e.Delta.Translation.Y;
+        //            if (this.Width >= this.MIN_WIDTH)
+        //            {
+        //                Canvas.SetLeft(this, left + e.Delta.Translation.X);
+        //                this.canvasLeft = Canvas.GetLeft(this.inkCan);
+        //                //when extending from the top/left, shift the current strokes accordingly.
+        //                foreach (InkStroke st in inkCanvas.InkPresenter.StrokeContainer.GetStrokes())
+        //                    st.Selected = true;
+        //                inkCanvas.InkPresenter.StrokeContainer.MoveSelected(new Point(-e.Delta.Translation.X, 0));
+        //            }
+        //        }
+
+
+        //    }
+        //    if (dir == Direction.BOTTOMRIGHT)
+        //    {
+        //        //only enable photo ratio resizing on this corner
+        //        if (hasImage)
+        //        {
+        //            if (this.Width >= this.MIN_WIDTH && this.Height >= (this.MIN_WIDTH / imgratio + 88))
+        //            {
+
+        //                //only resizing based on photo width/height ratio
+        //                this.Height += e.Delta.Translation.Y;
+        //                this.Width += e.Delta.Translation.Y * imgratio;
+
+        //            }
+        //        }
+        //        else {
+        //            this.Width += e.Delta.Translation.X;
+        //            this.Height += e.Delta.Translation.Y;
+        //        }
+        //    }
+
+
+        //    //setting minimal resizing sizes
+        //    if (hasImage)
+        //    {
+        //        this.Width = this.Width < this.MIN_WIDTH ? this.MIN_WIDTH : this.Width;
+        //        this.Height = this.Width <= this.MIN_WIDTH? (this.MIN_WIDTH / imgratio + 88) : this.Height;
+        //        //proportionally zoom in/out all inkcanvas
+
+        //    }
+        //    else {
+        //        if (this.Width > this.inkCan.Width)
+        //        {
+        //            inkCan.Width = this.Width;
+        //        }
+        //        if (this.Height - 88 > this.inkCan.Height)
+        //        {
+        //            inkCan.Height = this.Height - 88;
+        //        }
+        //        this.Width = this.Width < this.MIN_WIDTH ? this.MIN_WIDTH : this.Width;
+        //        this.Height = this.Height < this.MIN_HEIGHT ? this.MIN_HEIGHT : this.Height;
+        //    }
+
+        //}
+
+        //private void Manipulator_OnManipulationDelta(object sender, ManipulationDeltaRoutedEventArgs e)
+        //{
+        //    if (_isResizing) {
+        //        ResizePanel(e, this.resizeDir);
+        //    }
+
+        //    else if (_isMoving)
+        //    {
+        //        this.dragTransform.X += e.Delta.Translation.X;
+        //        this.dragTransform.Y += e.Delta.Translation.Y;           
+        //    }
+
+        //}
+
+        //private void Manipulator_OnManipulationCompleted(object sender, ManipulationCompletedRoutedEventArgs e) {
+        //    _isMoving = false;
+        //    _isResizing = false;
+        //    canvasLeft = Canvas.GetLeft(this);
+        //    canvasTop = Canvas.GetTop(this);
+        //    viewFactor.ScaleX = this.Width / this.widthOrigin;
+        //    viewFactor.ScaleY = this.Height / (this.heightOrigin);
+        //    Opacity = 1;
+        //    hideMovingGrid();
+        //    autosaveDispatcherTimer.Start();
+        //}
         #endregion
 
 
@@ -551,10 +769,10 @@ namespace PhenoPad.CustomControl
                     var fileheight = properties.Height;
                     //Resizing the add-in frame according to the image ratio
                     imgratio = (double)filewidth / fileheight;
-                    this.Height = this.Width / imgratio + 88;
+                    this.Height = this.Width / imgratio + 48;
                     this.widthOrigin = this.Width;
                     this.heightOrigin = this.Height;
-                    this.inkCan.Height = this.Height - 88;
+                    this.inkCan.Height = this.Height - 48;
                     this.inkCan.Width = this.Width;
 
                     imageControl.Source = rawphoto;
@@ -611,10 +829,10 @@ namespace PhenoPad.CustomControl
                 var fileheight = properties.Height;
                 //Resizing the add-in frame according to the image ratio
                 imgratio = (double)filewidth / fileheight;
-                this.Height = this.Width / imgratio + 88;
+                this.Height = this.Width / imgratio + 48;
                 this.widthOrigin = this.Width;
                 this.heightOrigin = this.Height;
-                this.inkCan.Height = this.Height - 88;
+                this.inkCan.Height = this.Height - 48;
                 this.inkCan.Width = this.Width;
 
                 imageControl.Source = rawphoto;
@@ -739,7 +957,7 @@ namespace PhenoPad.CustomControl
                     //inkCan.RenderTransform = viewFactor;
                 }
                 else {
-                    inkCan.Height = this.Height - 88;
+                    inkCan.Height = this.Height - 48;
                     inkCan.Width = this.Width;
                 }
 
@@ -817,13 +1035,30 @@ namespace PhenoPad.CustomControl
             if (isInitialized) ;
             //this.ControlStackPanel.Visibility = Visibility.Collapsed;
         }
-        public void showMovingGrid()
+        public void showMovingGrid(object sender, RoutedEventArgs e)
         {
             MovingGrid.Visibility = Visibility.Visible;
+            //only showing the bottom right resize arrow symbol for resizing
+            if (hasImage) {
+                topA.Visibility = Visibility.Collapsed;
+                bottomA.Visibility = Visibility.Collapsed;
+                leftA.Visibility = Visibility.Collapsed;
+                rightA.Visibility = Visibility.Collapsed;
+                tlA.Visibility = Visibility.Collapsed;
+                trA.Visibility = Visibility.Collapsed;
+                blA.Visibility = Visibility.Collapsed;                 
+            }
         }
         public void hideMovingGrid()
         {
             MovingGrid.Visibility = Visibility.Collapsed;
+            topA.Visibility = Visibility.Visible;
+            bottomA.Visibility = Visibility.Visible;
+            leftA.Visibility = Visibility.Visible;
+            rightA.Visibility = Visibility.Visible;
+            tlA.Visibility = Visibility.Visible;
+            trA.Visibility = Visibility.Visible;
+            blA.Visibility = Visibility.Visible;
         }
         public void hideControlUI()
         {
@@ -851,6 +1086,19 @@ namespace PhenoPad.CustomControl
 
         }
 
+        private void manipulateButton_Holding(object sender, HoldingRoutedEventArgs e)
+        {
+            this._isResizing = false;
+            this._isMoving = true;
+        }
+
+        private void noImageManipulation_Tapped(object sender, TappedRoutedEventArgs e)
+        {
+            Debug.WriteLine("tapped");
+            if (!_isResizing) {
+                hideMovingGrid();
+            }
+        }
     }
 
 }
