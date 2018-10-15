@@ -113,7 +113,7 @@ namespace PhenoPad
         public async void InitializeNotebookFromDisk()
         {
             NotifyUser("Loading Notebook ...", NotifyType.StatusMessage, 3);
-            MetroLogger.getSharedLogger().Info("Initializing notebook from disk ...");
+            Debug.WriteLine("Initializing notebook from disk ...");
             PhenoMana.clearCache();
             try
             {

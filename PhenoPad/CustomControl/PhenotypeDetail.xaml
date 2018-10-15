@@ -11,7 +11,8 @@
     <Grid>
         <WebView Name="webView" Width="666" Height="777" />
         <Grid Name="ProgressRingGrid" Background="WhiteSmoke">
-            <ProgressRing VerticalAlignment="Center" HorizontalAlignment="Center" Height="100" Width="100" x:Name="aProgressRing" IsActive="True"></ProgressRing>
+            <ProgressRing VerticalAlignment="Center" HorizontalAlignment="Center" Height="100" Width="100" 
+                          x:Name="aProgressRing" IsActive="True"></ProgressRing>
         </Grid>
     </Grid>
     <!--

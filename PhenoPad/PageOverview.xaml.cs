@@ -41,13 +41,11 @@ namespace PhenoPad
 
         public PageOverview()
         {
-            LogService.MetroLogger.getSharedLogger().Info("Initilize PageOverview");
 
             this.InitializeComponent();
             Windows.ApplicationModel.Core.CoreApplication.GetCurrentView().TitleBar.ExtendViewIntoTitleBar = false;
 
             LoadAllNotes();
-            LogService.MetroLogger.getSharedLogger(typeof(PageOverview)).Info("Note list loaded.");
 
             //hide_titlebar();
 
@@ -96,7 +94,6 @@ namespace PhenoPad
 
         private async void notebookList_ItemClick(object sender, ItemClickEventArgs e)
         {
-            MetroLogger.getSharedLogger().Info("Selecting a notebook for quick view");
             NoteGridView.ItemsSource = new List<NotePage>();
             var clickNotebook = e.ClickedItem as Notebook;
             List<NotePage> pages = await FileManager.getSharedFileManager().GetAllNotePageObjects(clickNotebook.id);
@@ -203,12 +200,10 @@ namespace PhenoPad
                 titleBar.ButtonInactiveBackgroundColor = Colors.Black;
             });
             //await Dispatcher.RunAsync(CoreDispatcherPriority.High, hide_titlebar);
-            MetroLogger.getSharedLogger().Info("Navigated to PageOverview");          
             reloadNotebookList();    
         }
         protected override void OnNavigatedFrom(NavigationEventArgs e)
         {
-            MetroLogger.getSharedLogger().Info("Navigated from PageOverview");
             this.Frame.BackStack.Clear();
         }
         #endregion

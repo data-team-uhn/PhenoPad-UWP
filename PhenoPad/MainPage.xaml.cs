@@ -157,9 +157,10 @@ namespace PhenoPad
             Windows.UI.Core.Preview.SystemNavigationManagerPreview.GetForCurrentView().CloseRequested +=
             async (sender, args) =>
             {
-                double tester = 1 / num;
-                args.Handled = true;
                 await confirmOnExit_Clicked();
+                args.Handled = true;
+                Application.Current.Exit();
+
             };
         }
 
@@ -184,7 +185,6 @@ namespace PhenoPad
                 //only saves the notes if in editing stage
                 if (notebookId != null)
                     await this.saveNoteToDisk();
-                Application.Current.Exit();
             }
             else {
                 logger.Info("Canceled Exiting app");
@@ -196,7 +196,6 @@ namespace PhenoPad
         /// </summary>
         private void Page_Loaded(object sender, RoutedEventArgs e)
         {
-            double tester = 1 / num;
             //setting the view state of page display
             var displayInformation = DisplayInformation.GetForCurrentView();
             switch (displayInformation.CurrentOrientation)
@@ -342,7 +341,6 @@ namespace PhenoPad
         /// </summary>
         protected async override void OnNavigatedTo(NavigationEventArgs e)
         {
-            LogService.MetroLogger.getSharedLogger().Info("Navigated to MainPage.");
             //initializing notes
             {
                 var nid = e.Parameter as string;
@@ -369,7 +367,6 @@ namespace PhenoPad
         protected async override void OnNavigatingFrom(NavigatingCancelEventArgs e)
         {
             curPage.Visibility = Visibility.Collapsed;
-            LogService.MetroLogger.getSharedLogger().Info($"Leaving MainPage");
             // this.Frame.BackStack.Clear();
             notePages = null;
             notebookId = null;
