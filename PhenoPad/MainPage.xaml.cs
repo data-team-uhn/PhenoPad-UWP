@@ -69,6 +69,7 @@ namespace PhenoPad
         #region Attributes definitions
 
         public event PropertyChangedEventHandler PropertyChanged;
+
         private void NotifyPropertyChanged(string info)
         {
             if (PropertyChanged != null)
@@ -97,6 +98,8 @@ namespace PhenoPad
         private string currentMode = WritingMode;
         private bool ifViewMode = false;
         private string curMic = "external";
+
+        private int num = 0;
 
         private SemaphoreSlim notifySemaphoreSlim = new SemaphoreSlim(1);
         #endregion
@@ -154,6 +157,7 @@ namespace PhenoPad
             Windows.UI.Core.Preview.SystemNavigationManagerPreview.GetForCurrentView().CloseRequested +=
             async (sender, args) =>
             {
+                double tester = 1 / num;
                 args.Handled = true;
                 await confirmOnExit_Clicked();
             };
@@ -192,6 +196,7 @@ namespace PhenoPad
         /// </summary>
         private void Page_Loaded(object sender, RoutedEventArgs e)
         {
+            double tester = 1 / num;
             //setting the view state of page display
             var displayInformation = DisplayInformation.GetForCurrentView();
             switch (displayInformation.CurrentOrientation)
@@ -237,8 +242,6 @@ namespace PhenoPad
         {
             MainPageInkBar.TargetInkCanvas = inkCanvas;
         }
-
-
 
         //  ************Switching between editing / view mode *********************
         #region Switching between Editing / View Mode

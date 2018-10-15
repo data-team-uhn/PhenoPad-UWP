@@ -702,7 +702,7 @@
                     </StackPanel>
 
                     <Grid Canvas.ZIndex="99999" RelativePanel.AlignTopWithPanel="True" RelativePanel.AlignHorizontalCenterWithPanel="True" >
-                        <Border CornerRadius="10" x:Name="StatusBorder" Margin="0,20,0,0" 
+                        <Border CornerRadius="10" x:Name="StatusBorder" Margin="0,50,0,0" 
                             RelativePanel.AlignTopWithPanel="True" RelativePanel.AlignHorizontalCenterWithPanel="True" 
                             MinWidth="500" Height="40">
 

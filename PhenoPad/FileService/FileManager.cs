@@ -131,7 +131,7 @@ namespace PhenoPad.FileService
         /// </summary>
         public async Task<Notebook> GetNotebookObjectFromXML(string notebookId)
         {
-            LogService.MetroLogger.getSharedLogger().Info($"Fetching notebook meta file object of {notebookId}");
+            Debug.WriteLine($"Fetching notebook meta file object of {notebookId}");
             // meta data
             var metafile = await GetNoteFile(notebookId, "", NoteFileType.Meta);
             object obj = await LoadObjectFromSerilization(metafile, typeof(Notebook));
@@ -431,7 +431,7 @@ namespace PhenoPad.FileService
                 Debug.WriteLine("Failed to crate notebook");
                 return false;
             }
-            LogService.MetroLogger.getSharedLogger().Info($"Successfully created notebook {notebookId}");
+            Debug.WriteLine($"Successfully created notebook {notebookId}");
             return result;
         }
 
@@ -441,7 +441,7 @@ namespace PhenoPad.FileService
         /// </summary>
         public async Task<bool> CreateNotePage(Notebook note, string pageId)
         {
-            LogService.MetroLogger.getSharedLogger().Info($"Creating note page {pageId} for notebook {note.id}");
+            Debug.WriteLine($"Creating note page {pageId} for notebook {note.id}");
             if (note == null)
                 return false;
 
@@ -533,7 +533,7 @@ namespace PhenoPad.FileService
         /// </summary>
         public async Task<bool> SaveToMetaFile(Notebook notebook)
         {
-            LogService.MetroLogger.getSharedLogger().Info($"Saving notebook meta file object of {notebook.id}");
+            Debug.WriteLine($"Saving notebook meta file object of {notebook.id}");
             try
             {
                 var metafile = GetNoteFilePath(notebook.id, "", NoteFileType.Meta);
@@ -703,7 +703,6 @@ namespace PhenoPad.FileService
             catch (Exception ex)
             {
                 isSuccess = false;
-                Debug.WriteLine("Failed to save image");
                 LogService.MetroLogger.getSharedLogger().Error($"Failed to save BitmapImage: notebook: {notebookId}, page: {notebookId}, name: {name}, details: {ex.Message}");
 
             }
@@ -762,7 +761,6 @@ namespace PhenoPad.FileService
             catch (Exception e)
             {
                 //rootPage.NotifyUser(e.Message, NotifyType.ErrorMessage, 2);
-                Debug.WriteLine("Failed to load note page stroke from disk: " + e.Message);
                 LogService.MetroLogger.getSharedLogger().Error("Failed to load note page stroke from disk: "
                     + e.Message);
                 return false;
@@ -805,7 +803,7 @@ namespace PhenoPad.FileService
         /// </summary>
         public async Task<bool> loadStrokes(StorageFile strokesFile, InkCanvas inkcancas)
         {
-            LogService.MetroLogger.getSharedLogger().Info($"Loading strokes from disk...");
+            Debug.WriteLine($"Loading strokes from disk...");
             // User selects a file and picker returns a reference to the selected file.
             try
             {
@@ -815,7 +813,7 @@ namespace PhenoPad.FileService
                 using (var inputStream = stream.GetInputStreamAt(0))
                 {
                     await inkcancas.InkPresenter.StrokeContainer.LoadAsync(inputStream);
-                    LogService.MetroLogger.getSharedLogger().Info($"Strokes have been loaded.");
+                    Debug.WriteLine($"Strokes have been loaded.");
                 }
                 stream.Dispose();
                 return true;

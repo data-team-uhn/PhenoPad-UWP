@@ -23,6 +23,7 @@ using Windows.System;
 using Windows.ApplicationModel.Core;
 using Windows.UI.ViewManagement;
 using Windows.UI;
+using System.Diagnostics;
 
 namespace PhenoPad
 {
@@ -48,7 +49,11 @@ namespace PhenoPad
                 // because the app may need to restore UI.
                 EnteredBackground += AppEnteredBackground;
                 LeavingBackground += AppLeavingBackground;
+                Suspending += OnSuspending;
+                Current.UnhandledException += OnUnhandledExceptionUI;
+                TaskScheduler.UnobservedTaskException += OnUnobservedException;
             }
+
         }
 
         private void AppLeavingBackground(object sender, LeavingBackgroundEventArgs e)
@@ -63,18 +68,23 @@ namespace PhenoPad
             _isinBackground = true;
         }
 
+        private static void OnUnobservedException(object sender, UnobservedTaskExceptionEventArgs e)
+        {
+            // Occurs when an exception is not handled on a background thread.
+            // ie. A task is fired and forgotten Task.Run(() => {...})
+            MetroLogger.getSharedLogger().Error($"APP has handled an Unobserved exception:{e.Exception.Message}\n");
+
+            // suppress and handle it manually.
+            e.SetObserved();
+        }
+
         /// <summary>
         /// Invoked when Application receives an unhandled exception
         /// </summary>
-        private static async void OnUnhandledException(object sender, Windows.UI.Xaml.UnhandledExceptionEventArgs e)
-        {           
-            await CoreApplication.MainView.CoreWindow.Dispatcher.RunAsync(CoreDispatcherPriority.Normal,
-                async () =>
-                {
-                    await ShowErrorDialog(e.Message);
-                    MetroLogger.getSharedLogger().Error($"APP Unhandled exception at {sender.ToString()}:\n {e.Message}");
-                    e.Handled = true;
-                });          
+        private static void OnUnhandledExceptionUI(object sender, Windows.UI.Xaml.UnhandledExceptionEventArgs e)
+        {
+            MetroLogger.getSharedLogger().Error($"APP has handled an Unhandled exception:{e.Exception}\n");
+            e.Handled = true;
         }
 
         private static async Task<bool> ShowErrorDialog(string message)
@@ -92,8 +102,6 @@ namespace PhenoPad
         /// <param name="e">Details about the launch request and process.</param>
         protected override void OnLaunched(LaunchActivatedEventArgs e)
         {
-            this.Suspending += OnSuspending;
-            this.UnhandledException += OnUnhandledException;
 
             Frame rootFrame = Window.Current.Content as Frame;
 
@@ -132,12 +140,13 @@ namespace PhenoPad
 
 
 
-        /// <summary>
-        /// Invoked when Navigation to a certain page fails
-        /// </summary>
-        /// <param name="sender">The Frame which failed navigation</param>
-        /// <param name="e">Details about the navigation failure</param>
-        void OnNavigationFailed(object sender, NavigationFailedEventArgs e)
+
+            /// <summary>
+            /// Invoked when Navigation to a certain page fails
+            /// </summary>
+            /// <param name="sender">The Frame which failed navigation</param>
+            /// <param name="e">Details about the navigation failure</param>
+            void OnNavigationFailed(object sender, NavigationFailedEventArgs e)
         {
             throw new Exception("Failed to load Page " + e.SourcePageType.FullName);
         }

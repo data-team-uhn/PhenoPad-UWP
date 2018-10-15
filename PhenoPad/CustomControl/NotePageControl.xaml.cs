@@ -1509,11 +1509,11 @@ namespace PhenoPad.CustomControl
                 StorageFile file = await FileManager.getSharedFileManager().GetNoteFile(notebookId, pageId, NoteFileType.Strokes);
                 if (file == null)
                 {
-                    MetroLogger.getSharedLogger().Error($"Failed to get note file.");
+                    MetroLogger.getSharedLogger().Error($"Failed to get note file for note {notebookId} at page {pageId},file is null.");
                 }
                 // save handwritings
                 await FileManager.getSharedFileManager().SaveNotePageStrokes(notebookId, pageId, this);
-                logger.Info("Autosaved current strokes.");
+                Debug.WriteLine("Autosaved current strokes.");
 
             }
             catch (Exception ex)
