@@ -507,16 +507,13 @@ namespace PhenoPad.CustomControl
         {
             if (line == null)
                 return;
-
-
-
             // set current line id
             // switch to another line, clear result of current line
             if (line.Id != showingResultOfLine)
             {
                 curLineCandidatePheno.Clear();
                 curLineWordsStackPanel.Children.Clear();
-                curWordPhenoControlGrid.Margin = new Thickness(0);
+                //curWordPhenoControlGrid.Margin = new Thickness(0);
                 phenoCtrlSlide.Y = 0;
                 showingResultOfLine = line.Id;
                 curLineObject = line;
@@ -531,8 +528,12 @@ namespace PhenoPad.CustomControl
             {
                 //new line
                 NoteLine nl = new NoteLine(line);
-                // hwr
                 phenoCtrlSlide.Y = 0;
+                curLineWordsStackPanel.Children.Clear();
+                curLineCandidatePheno.Clear();
+
+
+                // hwr
                 nl.HwrResult = await RecognizeLine(line.Id, serverRecog);
                 idToNoteLine[line.Id] = nl;
             }
@@ -950,6 +951,7 @@ namespace PhenoPad.CustomControl
             // HWR result UI
             setUpCurrentLineResultUI(curLineObject);
             // re-annotation and UI set-up after all HWR has been updated
+            phenoCtrlSlide.Y = 0;
             curLineCandidatePheno.Clear();
             annotateCurrentLineAndUpdateUI(curLineObject);
 

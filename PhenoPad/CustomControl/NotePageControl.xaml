@@ -7,9 +7,7 @@
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:customcontrol="using:PhenoPad.CustomControl"
     xmlns:phenotypeservice="using:PhenoPad.PhenotypeService"
-    xmlns:hwrservice="using:PhenoPad.HWRService"
     xmlns:fileservice="using:PhenoPad.FileService"
-    xmlns:media="using:Microsoft.Toolkit.Uwp.UI.Media"
     mc:Ignorable="d"
     VerticalAlignment="Stretch" 
     HorizontalAlignment="Stretch"
@@ -20,7 +18,7 @@
                 <DoubleAnimation Storyboard.TargetName="phenoCtrlSlide" 
                                  Storyboard.TargetProperty="Y"
                                  By="-45"
-                                 Duration="0:0:0.3" />
+                                 Duration="0:0:0.1" />
             </Storyboard>
             <Storyboard x:Name="curWordPhenoHideAnimation">
                 <DoubleAnimation Storyboard.TargetName="phenoCtrlSlide" 

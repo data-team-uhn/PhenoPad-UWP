@@ -160,7 +160,6 @@ namespace PhenoPad
             {
                 args.Handled = true;
                 await confirmOnExit_Clicked();
-                Application.Current.Exit();
             };
         }
 
@@ -185,6 +184,7 @@ namespace PhenoPad
                 //only saves the notes if in editing stage
                 if (notebookId != null)
                     await this.saveNoteToDisk();
+                Application.Current.Exit();
             }
             else {
                 logger.Info("Canceled Exiting app");
