@@ -324,14 +324,13 @@ namespace PhenoPad.CustomControl
         {
             DrawBackgroundLines();
         }
+
         private void Page_Loaded(object sender, RoutedEventArgs e)
         {
             // Draw background lines
-
             DrawBackgroundLines();
             scrollViewer.ChangeView(null, 100, null, true);
             sideScrollView.ChangeView(null, 100, null, true);
-
         }
        
         // Left button lasso control
@@ -405,7 +404,6 @@ namespace PhenoPad.CustomControl
 
 
         #endregion
-
 
         #region Typing mode
         //============================= TYPING MODE ===================================/
@@ -551,14 +549,13 @@ namespace PhenoPad.CustomControl
                     //Process strokes that excess maximum height for recognition
                     if (s.BoundingRect.Height > MAX_WRITING)
                     {
-                        Debug.WriteLine("this stroke exceeded max_writing.");
                         inkOperationAnalyzer.AddDataForStroke(s);
                         try
                         {
                             await RecognizeInkOperation();
                         }
                         catch (Exception e) {
-                            Debug.WriteLine($"InkPresenter_StrokesCollectedAsync in NotePageControl:{e}|{e.Message}");
+                            MetroLogger.getSharedLogger().Error($"InkPresenter_StrokesCollectedAsync in NotePageControl:{e}|{e.Message}");
                         }
                     }
                     //Instantly analyze ink inputs
@@ -593,10 +590,6 @@ namespace PhenoPad.CustomControl
         private void StrokeInput_PointerMoved(InkStrokeInput sender, PointerEventArgs args)
         {
             UnprocessedInput_PointerMoved(null, args);
-        }
-
-        internal void setIconSize(double v)
-        {
         }
 
         // stroke input handling: mouse pointer released
@@ -744,6 +737,9 @@ namespace PhenoPad.CustomControl
 
         #endregion
 
+        /// <summary>
+        /// Returns the current note page's zoomed width in relation to control window frame
+        /// </summary>
         public double getPageWindowRatio() {
             Debug.WriteLine("zoom factor = " + scrollViewer.ZoomFactor);
             return (inkCanvas.ActualWidth * scrollViewer.ZoomFactor)  / outputGrid.Width;
@@ -802,17 +798,15 @@ namespace PhenoPad.CustomControl
 
         }
         
-        private void ClearSelectionAsync()
+        public void ClearSelectionAsync()
         {
             var strokes = inkCanvas.InkPresenter.StrokeContainer.GetStrokes();
             foreach (var stroke in strokes)
             {
                 stroke.Selected = false;
                 SetDefaultStrokeStyle(stroke);
-            }
-            
+            }         
             ClearDrawnBoundingRect();
-            
         }
 
         private void ClearDrawnBoundingRect()
@@ -920,7 +914,6 @@ namespace PhenoPad.CustomControl
 
             await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () => {
                 //Manually setting pre-saved configuration of the add-in control
-                Debug.WriteLine($"\n\n ia width origin = {ia.widthOrigin}");
                 canvasAddIn.Height = ia.height;
                 canvasAddIn.Width = ia.width;
                 canvasAddIn.widthOrigin = ia.widthOrigin;
@@ -929,21 +922,21 @@ namespace PhenoPad.CustomControl
                 canvasAddIn.inkCan.Width = ia.widthOrigin;
                 canvasAddIn.canvasLeft = ia.canvasLeft;
                 canvasAddIn.canvasTop = ia.canvasTop;
+                canvasAddIn.dragTransform.X = ia.transX;
+                canvasAddIn.dragTransform.Y = ia.transY;
                 Canvas.SetTop(canvasAddIn, ia.canvasTop);
 
                 canvasAddIn.inDock = ia.inDock;
                 if (ia.inDock)
                 {
-                    Canvas.SetLeft(canvasAddIn, rootPage.ActualWidth);
-                    canvasAddIn.slideOffset = -1 * (rootPage.ActualWidth - ia.canvasLeft);
+                    canvasAddIn.Visibility = Visibility.Collapsed;
+                    Canvas.SetLeft(canvasAddIn, ia.canvasLeft);
+                    canvasAddIn.Minimize_Click(this, null);
                 }
                 else
                 {
                     Canvas.SetLeft(canvasAddIn, ia.canvasLeft);
-                    canvasAddIn.slideOffset = rootPage.ActualWidth - ia.canvasLeft;
                 }
-                canvasAddIn.dragTransform.X = ia.transX;
-                canvasAddIn.dragTransform.Y = ia.transY;
                 canvasAddIn.viewFactor.ScaleX = ia.zoomFactorX;
                 canvasAddIn.viewFactor.ScaleY = ia.zoomFactorY;
 
@@ -1487,11 +1480,11 @@ namespace PhenoPad.CustomControl
                 result2 = await FileManager.getSharedFileManager().SaveObjectSerilization(metapath, imageList, typeof(List<ImageAndAnnotation>));
 
                 if (result1 && result2)
-                    logger.Info($"Auto-saving add-in completed.");
+                    Debug.WriteLine($"Auto-saving add-in completed.");
                 
             }
             catch (Exception e) {
-                MetroLogger.getSharedLogger().Error($"Failed to auto-save addin: {e.Message}");
+                MetroLogger.getSharedLogger().Error($"Failed to auto-save addin: {e + e.Message}");
             }
 
             return result2 && result1;

@@ -113,7 +113,7 @@ namespace PhenoPad
         public async void InitializeNotebookFromDisk()
         {
             NotifyUser("Loading Notebook ...", NotifyType.StatusMessage, 3);
-            Debug.WriteLine("Initializing notebook from disk ...");
+            MetroLogger.getSharedLogger().Info("Initializing notebook from disk ...");
             PhenoMana.clearCache();
             try
             {
@@ -247,7 +247,7 @@ namespace PhenoPad
                         CoreDispatcherPriority.Normal,
                         async () =>
                         {
-                            MetroLogger.getSharedLogger().Info($"Saving page {page.pageId} ...");
+                            Debug.WriteLine($"Saving page {page.pageId} ...");
                             flag = await page.SaveToDisk();
                             if (!flag)
                             {
@@ -264,7 +264,7 @@ namespace PhenoPad
                     MetroLogger.getSharedLogger().Error($"Failed to save collected phenotypes");
 
                 if (pgResult && result2) {
-                    MetroLogger.getSharedLogger().Info($"Successfully saved notebook {notebookId} to disk.");
+                    Debug.WriteLine($"Successfully saved notebook {notebookId} to disk.");
                 }
                 else
                     MetroLogger.getSharedLogger().Info($"Some parts of notebook {notebookId} failed to save.");
@@ -292,15 +292,9 @@ namespace PhenoPad
         /// </summary>
         public async Task<bool> AutoSavePhenotypes()
         {
-
             bool complete = await FileManager.getSharedFileManager().saveCollectedPhenotypesToFile(notebookId);
             if (!complete)
-            {
                 MetroLogger.getSharedLogger().Error("Failed to auto-save collected phenotypes.");
-            }
-            else
-                MetroLogger.getSharedLogger().Info("Auto-saving collected phenotypes done.");
-
             return complete;
         }
 

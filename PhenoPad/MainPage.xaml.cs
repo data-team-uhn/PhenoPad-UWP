@@ -48,6 +48,7 @@ using Windows.Storage;
 using Windows.Media.Editing;
 using System.Runtime.InteropServices.WindowsRuntime;
 using MetroLog;
+using Microsoft.Toolkit.Uwp.UI.Animations;
 
 namespace PhenoPad
 {
@@ -157,10 +158,9 @@ namespace PhenoPad
             Windows.UI.Core.Preview.SystemNavigationManagerPreview.GetForCurrentView().CloseRequested +=
             async (sender, args) =>
             {
-                await confirmOnExit_Clicked();
                 args.Handled = true;
+                await confirmOnExit_Clicked();
                 Application.Current.Exit();
-
             };
         }
 
@@ -367,6 +367,8 @@ namespace PhenoPad
         protected async override void OnNavigatingFrom(NavigatingCancelEventArgs e)
         {
             curPage.Visibility = Visibility.Collapsed;
+            curPage.ClearSelectionAsync();
+            CloseCandidate();
             // this.Frame.BackStack.Clear();
             notePages = null;
             notebookId = null;
@@ -376,8 +378,6 @@ namespace PhenoPad
             curPage = null;
             PhenotypeManager.getSharedPhenotypeManager().phenotypesCandidates.Clear();
             SpeechManager.getSharedSpeechManager().cleanUp();
-
-            CloseCandidate();
 
             //dispatcherTimer.Stop();
             // Microsoft ASR, not used for now
@@ -476,7 +476,6 @@ namespace PhenoPad
             setNotePageIndex(index);
 
         }
-
 
         /**
         private void CoreTitleBar_LayoutMetricsChanged(CoreApplicationViewTitleBar sender, object args)
@@ -837,6 +836,7 @@ namespace PhenoPad
             else
                 NotifyUser("Failed to load note", NotifyType.ErrorMessage, 2);
         }
+
         /// <summary>
         /// Invoked when user clicks "load an image".
         /// </summary>
@@ -1372,10 +1372,10 @@ namespace PhenoPad
                 switch (type)
                 {
                     case NotifyType.StatusMessage:
-                        StatusBorder.Background = new SolidColorBrush(Windows.UI.Colors.Turquoise);
+                        StatusBorder.Background = new SolidColorBrush(Colors.Turquoise);
                         break;
                     case NotifyType.ErrorMessage:
-                        StatusBorder.Background = new SolidColorBrush(Windows.UI.Colors.Tomato);
+                        StatusBorder.Background = new SolidColorBrush(Colors.Tomato);
                         break;
                 }
 
@@ -1385,22 +1385,24 @@ namespace PhenoPad
                 // StatusBorder.Visibility = (StatusBlock.Text != String.Empty) ? Visibility.Visible : Visibility.Collapsed;
                 if (StatusBlock.Text != String.Empty)
                 {
-                    //StatusBorder.Visibility = Visibility.Visible;
-                    StatusBorderEnterStoryboard.Begin();
+
+                    StatusBorder.Visibility = Visibility.Visible;
+                    await StatusBorderEnterStoryboard.BeginAsync();
                 }
                 else
                 {
-                    //StatusBorder.Visibility = Visibility.Collapsed;
-                    StatusBorderExitStoryboard.Begin();
+                    await StatusBorderExitStoryboard.BeginAsync();
+                    StatusBorder.Visibility = Visibility.Collapsed;
                 }
 
                 await Task.Delay(1000 * seconds);
-                //StatusBorder.Visibility = Visibility.Collapsed;
-                StatusBorderExitStoryboard.Begin();
+                await StatusBorderExitStoryboard.BeginAsync();
+                StatusBorder.Visibility = Visibility.Collapsed;
+
             }
             catch (Exception e)
             {
-                Debug.WriteLine(e.Message);
+                LogService.MetroLogger.getSharedLogger().Error(e+e.Message);
             }
             finally
             {

@@ -228,10 +228,11 @@ namespace PhenoPad.CustomControl
 
             //setting pre-saved configurations of the control
             {
-                this.widthOrigin = (widthOrigin < DEFAULT_WIDTH || heightOrigin < DEFAULT_HEIGHT) ? DEFAULT_WIDTH : widthOrigin;
-                this.heightOrigin = (widthOrigin < DEFAULT_WIDTH || heightOrigin < DEFAULT_HEIGHT) ? DEFAULT_HEIGHT : heightOrigin;
-                this.Height = (widthOrigin < DEFAULT_WIDTH || heightOrigin < DEFAULT_HEIGHT) ? DEFAULT_WIDTH : widthOrigin;
-                this.Width = (widthOrigin < DEFAULT_WIDTH || heightOrigin < DEFAULT_HEIGHT) ? DEFAULT_HEIGHT : heightOrigin;
+                this.widthOrigin = (widthOrigin < DEFAULT_WIDTH) ? DEFAULT_WIDTH : widthOrigin;
+                this.heightOrigin = (heightOrigin < DEFAULT_HEIGHT) ? DEFAULT_HEIGHT : heightOrigin;
+                Debug.WriteLine($"ORIGIN = {this.widthOrigin},{this.heightOrigin}");
+                this.Width = this.widthOrigin;
+                this.Height = this.heightOrigin;
 
                 inkCan.Width = this.Width;
                 inkCan.Height = this.Height - 48;
@@ -398,7 +399,7 @@ namespace PhenoPad.CustomControl
             else if (_bottomSide)
             {
                 if (!hasImage) {
-                    this.Height += e.Delta.Translation.X;
+                    this.Height += e.Delta.Translation.Y;
                 }
             }
             else if (_leftSide)
@@ -440,6 +441,7 @@ namespace PhenoPad.CustomControl
             }
             else
             {
+                //updating the inkcanvas's width/height based on how much user has extended the frame
                 if (this.Width > this.inkCan.Width)
                 {
                     inkCan.Width = this.Width;
@@ -484,6 +486,8 @@ namespace PhenoPad.CustomControl
             this._isMoving = false;
             canvasLeft = Canvas.GetLeft(this);
             canvasTop = Canvas.GetTop(this);
+            Debug.WriteLine($"\n After Manipulation: {canvasLeft},{canvasTop}, \n" +
+                $"dragX={this.dragTransform.X}");
             Opacity = 1;
             autosaveDispatcherTimer.Start();
             manipulateButton.IsEnabled = true;
@@ -705,12 +709,13 @@ namespace PhenoPad.CustomControl
             await rootPage.curPage.refreshAddInList();
         }
 
-        private async void Minimize_Click(object sender, RoutedEventArgs e)
+        public async void Minimize_Click(object sender, RoutedEventArgs e)
         {
             this.inDock = true;
             DoubleAnimation da = (DoubleAnimation)addinPanelHideAnimation.Children.ElementAt(0);
-            da.By = rootPage.ActualWidth - this.canvasLeft;
-            Debug.WriteLine($"min offSet = {da.By}");
+            da.By = rootPage.ActualWidth - (this.canvasLeft + this.dragTransform.X);
+            Debug.WriteLine($"\n\n minimizing = {da.By}");
+
             await rootPage.curPage.AutoSaveAddin(this.name);
             await rootPage.curPage.refreshAddInList();
                 rootPage.curPage.quickShowDock();
@@ -723,8 +728,8 @@ namespace PhenoPad.CustomControl
                 this.inDock = false;
                 this.Visibility = Visibility.Visible;
                 DoubleAnimation da = (DoubleAnimation) addinPanelShowAnimation.Children.ElementAt(0);
-                da.By = -1 * (rootPage.ActualWidth - this.canvasLeft);
-                Debug.WriteLine($"max offSet = {da.By}");
+                da.By = -1 * (rootPage.ActualWidth - (this.canvasLeft +  this.dragTransform.X));
+                Debug.WriteLine($"\n\n maximizing = {da.By}");
                 await rootPage.curPage.AutoSaveAddin(this.name);
                 await addinPanelShowAnimation.BeginAsync();
                 rootPage.curPage.quickShowDock();
@@ -935,7 +940,8 @@ namespace PhenoPad.CustomControl
             this.categoryGrid.Visibility = Visibility.Collapsed;
             try
             {
-                var annofile = await FileManager.getSharedFileManager().GetNoteFileNotCreate(notebookId, pageId, NoteFileType.ImageAnnotation, name);
+                var annofile = await FileManager.getSharedFileManager().GetNoteFileNotCreate(notebookId, pageId, 
+                                                                                             NoteFileType.ImageAnnotation, name);
                 if (annofile != null)
                     await FileManager.getSharedFileManager().loadStrokes(annofile, inkCanvas);
 
@@ -956,10 +962,8 @@ namespace PhenoPad.CustomControl
                     this.hasImage = true;
                     //inkCan.RenderTransform = viewFactor;
                 }
-                else {
-                    inkCan.Height = this.Height - 48;
-                    inkCan.Width = this.Width;
-                }
+                inkCan.Height = this.Height - 48;
+                inkCan.Width = this.Width;
 
                 InitiateInkCanvas(onlyView);
 

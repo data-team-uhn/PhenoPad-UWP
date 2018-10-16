@@ -517,7 +517,7 @@ namespace PhenoPad.CustomControl
                 curLineCandidatePheno.Clear();
                 curLineWordsStackPanel.Children.Clear();
                 curWordPhenoControlGrid.Margin = new Thickness(0);
-
+                phenoCtrlSlide.Y = 0;
                 showingResultOfLine = line.Id;
                 curLineObject = line;
             }
@@ -532,6 +532,7 @@ namespace PhenoPad.CustomControl
                 //new line
                 NoteLine nl = new NoteLine(line);
                 // hwr
+                phenoCtrlSlide.Y = 0;
                 nl.HwrResult = await RecognizeLine(line.Id, serverRecog);
                 idToNoteLine[line.Id] = nl;
             }
@@ -921,7 +922,6 @@ namespace PhenoPad.CustomControl
             Canvas.SetTop(curLineResultPanel, (lineNum - 1) * LINE_HEIGHT);
         }
 
-
         private async void alternativeListView_ItemClick(object sender, ItemClickEventArgs e)
         {
             NoteLine curLine = idToNoteLine[showingResultOfLine];
@@ -962,6 +962,7 @@ namespace PhenoPad.CustomControl
             Dictionary<string, Phenotype> annoResult = await PhenoMana.annotateByNCRAsync(idToNoteLine.GetValueOrDefault(line.Id).Text);
             if (annoResult != null && annoResult.Count != 0)
             {
+                Debug.WriteLine("has annoResult");
                 // update global annotations
                 foreach (var anno in annoResult.ToList())
                 {
@@ -990,9 +991,9 @@ namespace PhenoPad.CustomControl
 
                 curWordPhenoControlGrid.Visibility = Visibility.Visible;
 
-                if (curLineCandidatePheno.Count == 0 || curWordPhenoControlGrid.Margin.Top == 0)
+                if (curLineCandidatePheno.Count == 0 || phenoCtrlSlide.Y == 0)
                 {
-                    curWordPhenoControlGrid.Margin = new Thickness(0, -120, 0, 0);
+                    Debug.WriteLine($"current Y offset is at {phenoCtrlSlide.Y}, visibility is {curWordPhenoControlGrid.Visibility}");
                     curWordPhenoAnimation.Begin();
                 }
 
@@ -1043,7 +1044,8 @@ namespace PhenoPad.CustomControl
             }
             else
             {
-                curWordPhenoControlGrid.Margin = new Thickness(0, 0, 0, 0);
+                //curWordPhenoControlGrid.Margin = new Thickness(0, 0, 0, 0);
+                // phenoCtrlSlide.Y = 0;
                 int lineNum = getLineNumByRect(line.BoundingRect);
                 if (lineToRect.ContainsKey(lineNum))
                 {
