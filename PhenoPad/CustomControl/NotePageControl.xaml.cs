@@ -918,7 +918,7 @@ namespace PhenoPad.CustomControl
                 canvasAddIn.Width = ia.width;
                 canvasAddIn.widthOrigin = ia.widthOrigin;
                 canvasAddIn.heightOrigin = ia.heightOrigin;
-                canvasAddIn.inkCan.Height = ia.heightOrigin - 88;
+                canvasAddIn.inkCan.Height = ia.heightOrigin - 48;
                 canvasAddIn.inkCan.Width = ia.widthOrigin;
                 canvasAddIn.canvasLeft = ia.canvasLeft;
                 canvasAddIn.canvasTop = ia.canvasTop;

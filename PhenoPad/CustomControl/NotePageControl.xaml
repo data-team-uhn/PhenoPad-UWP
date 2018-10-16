@@ -17,21 +17,12 @@
     <UserControl.Resources>
         <ResourceDictionary>
             <Storyboard x:Name="curWordPhenoAnimation">
-                <!--<RepositionThemeAnimation 
-                                        Storyboard.TargetName="curWordPhenoControlGrid"
-                                        FromVerticalOffset="120"
-                                         Duration="0:0:0.1"/>-->
                 <DoubleAnimation Storyboard.TargetName="phenoCtrlSlide" 
                                  Storyboard.TargetProperty="Y"
                                  By="-45"
                                  Duration="0:0:0.3" />
             </Storyboard>
             <Storyboard x:Name="curWordPhenoHideAnimation">
-
-                <!--<RepositionThemeAnimation 
-                                        Storyboard.TargetName="curWordPhenoControlGrid"
-                                        FromVerticalOffset="100"
-                                         Duration="0:0:0.1"/>-->
                 <DoubleAnimation Storyboard.TargetName="phenoCtrlSlide" 
                                  Storyboard.TargetProperty="Y"
                                  By="45"
