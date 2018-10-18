@@ -147,11 +147,15 @@ namespace PhenoPad.FileService
         /// </summary>
         public async Task<List<ImageAndAnnotation>> GetImgageAndAnnotationObjectFromXML(string notebookId, string pageId)
         {
-            var metafile = await GetNoteFile(notebookId, pageId, NoteFileType.ImageAnnotationMeta);
-            object obj = await LoadObjectFromSerilization(metafile, typeof(List<ImageAndAnnotation>));
-            if (obj != null)
+            try
             {
-                return obj as List<ImageAndAnnotation>;
+                var metafile = await GetNoteFile(notebookId, pageId, NoteFileType.ImageAnnotationMeta);
+                object obj = await LoadObjectFromSerilization(metafile, typeof(List<ImageAndAnnotation>));
+                if (obj != null)
+                    return obj as List<ImageAndAnnotation>;
+            }
+            catch (Exception e) {
+                LogService.MetroLogger.getSharedLogger().Error($"{notebookId}-{pageId}:{e}:{e.Message}");
             }
             return null;
         }
@@ -361,18 +365,26 @@ namespace PhenoPad.FileService
         /// </summary>
         public async Task<List<ImageAndAnnotation>> GetAllImageAndAnnotationObjects(string notebookId)
         {
-            List<string> pageIds = await GetPageIdsByNotebook(notebookId);
-            if (pageIds == null)
-                return null;
+            try {
 
-            List<ImageAndAnnotation> result = new List<ImageAndAnnotation>();
-            foreach (var pid in pageIds)
-            {
-                List<ImageAndAnnotation> imageAndAnno = await FileManager.getSharedFileManager().GetImgageAndAnnotationObjectFromXML(notebookId, pid);
-                if (imageAndAnno != null && imageAndAnno.Count != 0)
-                    result.AddRange(imageAndAnno);
+                List<string> pageIds = await GetPageIdsByNotebook(notebookId);
+                if (pageIds == null)
+                    return null;
+
+                List<ImageAndAnnotation> result = new List<ImageAndAnnotation>();
+                foreach (var pid in pageIds)
+                {
+                    List<ImageAndAnnotation> imageAndAnno = await FileManager.getSharedFileManager().GetImgageAndAnnotationObjectFromXML(notebookId, pid);
+                    if (imageAndAnno != null && imageAndAnno.Count != 0)
+                        result.AddRange(imageAndAnno);
+                }
+                return result;
+
             }
-            return result;
+            catch (Exception e) {
+                LogService.MetroLogger.getSharedLogger().Error($"{notebookId}:{e}:{e.Message}");
+            }
+            return null;
         }
 
         /// <summary>
@@ -541,7 +553,7 @@ namespace PhenoPad.FileService
             }
             catch (Exception e)
             {
-                LogService.MetroLogger.getSharedLogger().Error($"Failed to save to meta file:{e.Message}");
+                LogService.MetroLogger.getSharedLogger().Error($"{notebook.id}:Failed to save to meta file:{e.Message}");
                 return false;
             }
         }
@@ -559,11 +571,10 @@ namespace PhenoPad.FileService
             {
                 List<ImageAndAnnotation> imageList = await notePage.GetAllAddInObjects();
                 throw new Exception("SaveNotePageDrawingAndPhotos need to be implemented, you might want to try CreateImageFileForPage");
-
             }
             catch (Exception e)
             {
-                Debug.WriteLine(e.Message);
+                LogService.MetroLogger.getSharedLogger().Error($"{notebookId}-{pageId}:Failed to save to meta file:{e}:{e.Message}");
                 isSuccessful = false;
             }
 
