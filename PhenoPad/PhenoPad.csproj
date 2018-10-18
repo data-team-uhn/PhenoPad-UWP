@@ -21,8 +21,8 @@
     <AppxAutoIncrementPackageRevision>False</AppxAutoIncrementPackageRevision>
     <AppxBundle>Always</AppxBundle>
     <AppxBundlePlatforms>x64</AppxBundlePlatforms>
-    <PackageCertificateThumbprint>80F52011B650AFF265AC529BAEF1FE91DDD05F56</PackageCertificateThumbprint>
-    <AppxPackageDir>C:\Users\test\Downloads\</AppxPackageDir>
+    <PackageCertificateThumbprint>654032A70CC4B9AECAFB9C3DDC3313B8C5706395</PackageCertificateThumbprint>
+    <AppxPackageDir>C:\Users\helen\Downloads\</AppxPackageDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x86'">
     <DebugSymbols>true</DebugSymbols>

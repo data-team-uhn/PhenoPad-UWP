@@ -59,8 +59,8 @@
             </StackPanel>
 
             <CommandBar Grid.Column="1" HorizontalAlignment="Right" Margin="0 0 30 0"  Name="topCmdBar" OverflowButtonVisibility="Collapsed" Background="{StaticResource TITLE_BAR_WHITE}">
-                <AppBarButton Icon="GlobalNavigationButton">
-                    <AppBarButton.Flyout>
+                <AppBarButton ToolTipService.ToolTip="Toggle Abbreviation Detection" Click="AppBarButton_Click_1">
+                    <!--<AppBarButton.Flyout>
                         <MenuFlyout>
                             <MenuFlyoutItem Text="Open file folder" Click="OpenFileFolder_Click"/>
                             <MenuFlyoutItem Text="Create new note" Tag="rating"/>
@@ -69,7 +69,7 @@
                             <MenuFlyoutItem Text="Open saved note" Tag="Open a saved note." Click="LoadNote_Click"/>
                             <MenuFlyoutItem Text="Change a server" Tag="Open a saved note." Click="ChangeServer_Click"/>
                         </MenuFlyout>
-                    </AppBarButton.Flyout>
+                    </AppBarButton.Flyout>-->
                 </AppBarButton>
                 <AppBarToggleButton Style="{StaticResource MyAppBarToggleButtonStyle}" IsChecked="True" Label="Notes" Name="NotesButton" Click="NotesButton_Click">
                     <ToolTipService.ToolTip>

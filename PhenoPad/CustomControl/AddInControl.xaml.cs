@@ -47,7 +47,7 @@ namespace PhenoPad.CustomControl
         private double DEFAULT_WIDTH = 400;
         private double DEFAULT_HEIGHT = 400;
         private double MIN_WIDTH = 370;
-        private double MIN_HEIGHT = 350;
+        private double MIN_HEIGHT = 370;
         public double originalWidth;
         public double originalHeight; 
         public string type; // photo, drawing
@@ -698,9 +698,7 @@ namespace PhenoPad.CustomControl
 
             inkCan.Visibility = Visibility.Visible;
             if (!onlyView) // added from note page, need editing
-            {
-
-             
+            {           
                 // Set supported input type to default using both moush and pen
                 inkCanvas.InkPresenter.InputDeviceTypes =
                     Windows.UI.Core.CoreInputDeviceTypes.Mouse |
@@ -782,10 +780,12 @@ namespace PhenoPad.CustomControl
                     this.hasImage = true;
                     //inkCan.RenderTransform = viewFactor;
                 }
+                //stroke-only addin, resetting canvas dimension to bound saved storkes
                 else
                 {
-                    inkCan.Height = this.Height - 48;
-                    inkCan.Width = this.Width;
+                    Rect bound = inkCanvas.InkPresenter.StrokeContainer.BoundingRect;
+                    inkCan.Height = bound.Height + bound.Top + 20;
+                    inkCan.Width = bound.Width + bound.Left + 20;
                 }
 
                 InitiateInkCanvas(onlyView);

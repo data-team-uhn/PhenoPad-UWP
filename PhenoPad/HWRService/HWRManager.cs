@@ -113,12 +113,15 @@ namespace PhenoPad.HWRService
                         rt.selectedCandidate = res.ElementAt(0);
                         recogResults.Add(rt);
                     }
-                    //if (server) {
-                    //    string fullsentence = listToString(this.sentence);
-                    //    HTTPRequest unprocessed = new HTTPRequest(fullsentence, this.alternatives, this.newRequest.ToString());
-                    //    List<HWRRecognizedText> processed = await UpdateResultFromServer(unprocessed);
-                    //    recogResults = processed == null ? recogResults : processed;
-                    //}
+                    
+                    if (server && MainPage.Current.curPage.abbreviation_enabled)
+                    {
+                        string fullsentence = listToString(this.sentence);
+                        HTTPRequest unprocessed = new HTTPRequest(fullsentence, this.alternatives, this.newRequest.ToString());
+                        List<HWRRecognizedText> processed = await UpdateResultFromServer(unprocessed);
+                        recogResults = processed == null ? recogResults : processed;
+                    }
+                    
                     return recogResults;
                 }
                 // if no text is recognized, return null

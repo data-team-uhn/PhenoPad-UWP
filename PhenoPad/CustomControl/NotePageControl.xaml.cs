@@ -510,32 +510,26 @@ namespace PhenoPad.CustomControl
             //dispatcherTimer.Start();
             autosaveDispatcherTimer.Start();
         }
-        //stroke input handling: a stroke input has started
+
         private void StrokeInput_StrokeStarted(InkStrokeInput sender, PointerEventArgs args)
         {
             if (!leftLasso)
             {
                 //ClearSelection();
-
                 // dispatcherTimer.Stop();
                 //operationDispathcerTimer.Stop();
                 inkOperationAnalyzer.ClearDataForAllStrokes();
-                autosaveDispatcherTimer.Stop();
-                recognizeTimer.Stop();
-                /***
-                core.PointerHovering -= Core_PointerHovering;
-                core.PointerExiting -= Core_PointerExiting;
-                core.PointerEntering -= Core_PointerHovering;
-                ***/
             }
+            autosaveDispatcherTimer.Stop();
+            recognizeTimer.Stop();
         }
-        //stroke input handling: a stroke input has stopped
+
         private void StrokeInput_StrokeEnded(InkStrokeInput sender, PointerEventArgs args)
         {
             autosaveDispatcherTimer.Start();
-            //recognizeTimer.Start();
+            recognizeTimer.Start();
         }
-     
+    
         private async void InkPresenter_StrokesCollectedAsync(InkPresenter sender, InkStrokesCollectedEventArgs args)
         {          
             if (!leftLasso)

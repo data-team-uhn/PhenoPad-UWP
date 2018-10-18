@@ -1497,37 +1497,20 @@ namespace PhenoPad
             throw new NotImplementedException("MultimediaPreviewFlyout_Opened");
         }
 
+
+
         #endregion
 
-
-        /*private void TakePhoto_Click(object sender, RoutedEventArgs e)
+        #region FOR TESTING/DEMO ONLY
+        /// <summary>
+        /// Temporarily disables/enables abbreviation detection for HWR
+        /// </summary>
+        private void AppBarButton_Click_1(object sender, RoutedEventArgs e)
         {
-            CameraCanvas.Visibility = Visibility.Visible;
-            captureControl.setUp();
+            curPage.abbreviation_enabled = curPage.abbreviation_enabled == true ? false : true;
+            Debug.WriteLine($"Abbreviation is now on {curPage.abbreviation_enabled}");
         }
-
-        private async void PhotoButton_Click(object sender, RoutedEventArgs e)
-        {
-            string imagename = FileManager.getSharedFileManager().CreateUniqueName();
-            var imageSource = await captureControl.TakePhotoAsync(notebookId, curPageIndex.ToString(), imagename + ".jpg");
-            if(imageSource != null)
-            {
-                curPage.AddImageControl(imagename, imageSource);
-
-            }
-        }
-
-        private void CameraClose_Click(object sender, RoutedEventArgs e)
-        {
-            CameraCanvas.Visibility = Visibility.Collapsed;
-            captureControl.unSetUp();
-        }*/
-
-        /*private void BluetoothButton_Click(object sender, RoutedEventArgs e)
-        {
-            this.bluetoothService = BluetoothService.BluetoothService.getBluetoothService();
-            this.bluetoothService.Initialize();
-        }*/
+        #endregion
 
 
     }
