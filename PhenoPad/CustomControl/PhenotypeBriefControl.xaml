@@ -24,12 +24,15 @@
 
 
             <Grid Grid.Column="0" Grid.Row="0" VerticalAlignment="Center">
-              
-                <TextBlock  Tapped="phenotypeNameTextBlock_Tapped" 
+                <Button Background="Transparent" Height="auto" Width="auto" 
+                        Style="{StaticResource ButtonStyle1}"
+                        Click="phenotypeNameTextBlock_Tapped">
+                    <TextBlock  
                         VerticalAlignment="Center" FontSize="15"
                         Grid.Column="1" x:Name="phenotypeNameTextBlock" 
-                        Text="" Margin="3" Padding="5 0 0 0"
+                        Text="" Margin="0" Padding="1 0 1 0"
                         Foreground="Black" Opacity="0.6"/>
+                </Button>
                 <!--<Line Stretch="Fill" Stroke="LightCoral" StrokeThickness="2" X1="1" Y1="0" 
                       HorizontalAlignment="Stretch" VerticalAlignment="Center" Name="NameCrossLine" />-->
             </Grid>

@@ -223,7 +223,7 @@ namespace PhenoPad.CustomControl
         //    }
         //}
 
-        private void phenotypeNameTextBlock_Tapped(object sender, TappedRoutedEventArgs e)
+        private void phenotypeNameTextBlock_Tapped(object sender, RoutedEventArgs e)
         {
             switch (localState)
             {
