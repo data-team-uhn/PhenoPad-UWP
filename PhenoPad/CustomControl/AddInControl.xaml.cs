@@ -360,9 +360,7 @@ namespace PhenoPad.CustomControl
             }
         }
 
-        private void AddInManipulate_Completed(object sender, ManipulationCompletedRoutedEventArgs e) {
-
-
+        private async void AddInManipulate_Completed(object sender, ManipulationCompletedRoutedEventArgs e) {
             _isMoving = false;
             _isResizing = false;
             canvasLeft = Canvas.GetLeft(this);
@@ -370,7 +368,7 @@ namespace PhenoPad.CustomControl
             viewFactor.ScaleX = this.Width / this.widthOrigin;
             viewFactor.ScaleY = this.Height / (this.heightOrigin);
             Opacity = 1;
-            autosaveDispatcherTimer.Start();
+            await rootPage.curPage.AutoSaveAddin(this.name);
         }
 
         private void Moving_Started(object sender, ManipulationStartedRoutedEventArgs e) {
@@ -394,8 +392,6 @@ namespace PhenoPad.CustomControl
             this._isMoving = false;
             canvasLeft = Canvas.GetLeft(this);
             canvasTop = Canvas.GetTop(this);
-            Debug.WriteLine($"\n After Manipulation: {canvasLeft},{canvasTop}, \n" +
-                $"dragX={this.dragTransform.X}");
             Opacity = 1;
             await rootPage.curPage.AutoSaveAddin(this.name);
             manipulateButton.IsEnabled = true;
@@ -422,6 +418,14 @@ namespace PhenoPad.CustomControl
             await rootPage.curPage.AutoSaveAddin(this.name);
             await rootPage.curPage.refreshAddInList();
                 rootPage.curPage.quickShowDock();
+            await addinPanelHideAnimation.BeginAsync();
+            this.Visibility = Visibility.Collapsed;
+        }
+
+        public async void OnOpenShowDock() {
+            DoubleAnimation da = (DoubleAnimation)addinPanelHideAnimation.Children.ElementAt(0);
+            da.By = rootPage.ActualWidth - (this.canvasLeft + this.dragTransform.X);
+            rootPage.curPage.quickShowDock();
             await addinPanelHideAnimation.BeginAsync();
             this.Visibility = Visibility.Collapsed;
         }
@@ -601,7 +605,10 @@ namespace PhenoPad.CustomControl
                 Rect bound = inkCanvas.InkPresenter.StrokeContainer.BoundingRect;
                 inkCan.Height = bound.Height;
                 inkCan.Width = bound.Width;
-                var strokes = inkCanvas.InkPresenter.StrokeContainer.GetStrokes();
+                foreach (InkStroke st in inkCanvas.InkPresenter.StrokeContainer.GetStrokes())
+                    st.Selected = true;
+                inkCanvas.InkPresenter.StrokeContainer.MoveSelected(new Point(-bound.Left,-bound.Top));
+
                 //resizeIcon.Visibility = Visibility.Collapsed;
                 double ratio = bound.Width / bound.Height;
 
@@ -665,10 +672,8 @@ namespace PhenoPad.CustomControl
                 //stroke-only addin, resetting canvas dimension to bound saved storkes
                 else
                 {
-                    if (!onlyView) {
-                        inkCan.Height = this.Height - 48;
-                        inkCan.Width = this.Width;
-                    }
+                    inkCan.Height = this.Height - 48;
+                    inkCan.Width = this.Width;
                 }
 
                 InitiateInkCanvas(onlyView);

@@ -925,7 +925,8 @@ namespace PhenoPad.CustomControl
                 {
                     canvasAddIn.Visibility = Visibility.Collapsed;
                     Canvas.SetLeft(canvasAddIn, ia.canvasLeft);
-                    canvasAddIn.Minimize_Click(this, null);
+                    //canvasAddIn.Minimize_Click(this, null);
+                    canvasAddIn.OnOpenShowDock();
                 }
                 else
                 {
