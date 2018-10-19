@@ -124,7 +124,7 @@ namespace PhenoPad.HWRService
                         lastServerRecog = recogResults;
                     }
 
-                    //recogResults = CompareAndUpdateWithServer(recogResults);
+                    recogResults = CompareAndUpdateWithServer(recogResults);
                     
                     return recogResults;
                 }
@@ -155,23 +155,35 @@ namespace PhenoPad.HWRService
             int indexServer = 0;
             while (indexNew < Math.Max(recogResults.Count, lastServerRecog.Count) && indexServer < Math.Max(recogResults.Count, lastServerRecog.Count)) {
                 //in this if block, we are sure index will be parallel among the two lists
-                if (indexNew < Math.Min(recogResults.Count, lastServerRecog.Count) && indexNew < Math.Min(recogResults.Count, lastServerRecog.Count)) {
+                if (indexNew < Math.Min(recogResults.Count, lastServerRecog.Count) && indexNew < Math.Min(recogResults.Count, lastServerRecog.Count))
+                {
                     string newresult = recogResults[indexNew].selectedCandidate;
                     string lastResult = lastServerRecog[indexServer].selectedCandidate;
-                    if (newresult == lastResult)
+
+                    if (abbrDict.ContainsKey(lastResult))
+                    {
+                        newRecog.Add(lastServerRecog[indexServer]);
+                        indexServer++;
+                    }
+                    else
                     {
                         newRecog.Add(lastServerRecog[indexNew]);
                         indexNew++;
                         indexServer++;
                     }
-                    else if (abbrDict.ContainsKey(lastResult)) {
-                        newRecog.Add(lastServerRecog[indexServer]);
-                        indexServer++;
-                  }
+
                 }
-                //all the left over elements are newly added words
+                //all the left over elements only belong to one list
+                else {
+                    Debug.WriteLine("adding left overs");
+                    if (indexNew < newRecog.Count) {
+                        newRecog.Add(newRecog[indexNew]);
+                        indexNew++;
+                    }
+
+                }
             }
-            return null;
+            return newRecog;
         }
 
         public string listToString(List<string> lst)

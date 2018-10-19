@@ -324,7 +324,9 @@ namespace PhenoPad.CustomControl
             if (_bottomSide && _rightSide && hasImage)
             {
                 //only enable photo ratio resizing on this corner
-                if (this.Width >= this.MIN_WIDTH && this.Height >= (this.MIN_WIDTH / imgratio + 48))
+                bool resizeX = Width + e.Delta.Translation.Y * deltaModifier * imgratio >= MIN_WIDTH;
+                bool resizeY = Height + e.Delta.Translation.Y * deltaModifier >= MIN_WIDTH / imgratio + 48;
+                if ( resizeX && resizeY )
                 {
                     //only resizing based on photo width/height ratio
                     this.Height += e.Delta.Translation.Y * deltaModifier;
