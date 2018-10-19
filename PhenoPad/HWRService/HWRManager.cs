@@ -153,7 +153,8 @@ namespace PhenoPad.HWRService
                 return recogResults;
             int indexNew = 0;
             int indexServer = 0;
-            while (indexNew < Math.Max(recogResults.Count, lastServerRecog.Count) && indexServer < Math.Max(recogResults.Count, lastServerRecog.Count)) {
+            for (int step = 0; step < Math.Max(recogResults.Count,lastServerRecog.Count);step++)
+            { 
                 //in this if block, we are sure index will be parallel among the two lists
                 if (indexNew < Math.Min(recogResults.Count, lastServerRecog.Count) && indexNew < Math.Min(recogResults.Count, lastServerRecog.Count))
                 {
@@ -175,10 +176,18 @@ namespace PhenoPad.HWRService
                 }
                 //all the left over elements only belong to one list
                 else {
-                    Debug.WriteLine("adding left overs");
-                    if (indexNew < newRecog.Count) {
-                        newRecog.Add(newRecog[indexNew]);
-                        indexNew++;
+                    if (indexNew < newRecog.Count)
+                    {
+                        Debug.WriteLine($"adding left overs, newRecog count={newRecog.Count}");
+                        for (int i = indexNew; i < newRecog.Count; i++)
+                            newRecog.Add(newRecog[i]);
+                        break;
+                    }
+                    else if (indexServer < lastServerRecog.Count) {
+                        Debug.WriteLine($"adding left overs, server count={lastServerRecog.Count}");
+                        for (int i = indexServer; i < lastServerRecog.Count; i++)
+                            newRecog.Add(lastServerRecog[i]);
+                        break;
                     }
 
                 }
