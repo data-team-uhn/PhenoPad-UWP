@@ -366,8 +366,10 @@ namespace PhenoPad
         /// </summary>
         protected async override void OnNavigatingFrom(NavigatingCancelEventArgs e)
         {
-            curPage.Visibility = Visibility.Collapsed;
-            curPage.ClearSelectionAsync();
+            if (curPage != null) {
+                curPage.Visibility = Visibility.Collapsed;
+                curPage.ClearSelectionAsync();
+            }
             CloseCandidate();
             // this.Frame.BackStack.Clear();
             notePages = null;

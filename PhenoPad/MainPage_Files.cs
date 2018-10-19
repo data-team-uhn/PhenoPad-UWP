@@ -118,11 +118,17 @@ namespace PhenoPad
             PhenoMana.clearCache();
             try
             {
-                //Gets all stored pages and notebook object from the disk
-                List<string> pageIds = await FileManager.getSharedFileManager().GetPageIdsByNotebook(notebookId);
 
                 //If notebook file exists, continues with loading...
                 notebookObject = await FileManager.getSharedFileManager().GetNotebookObjectFromXML(notebookId);
+
+                if (notebookObject == null) {
+                    Debug.WriteLine("notebook Object is null");
+                }
+
+                //Gets all stored pages and notebook object from the disk
+                List<string> pageIds = await FileManager.getSharedFileManager().GetPageIdsByNotebook(notebookId);
+
                 SurfaceMicRadioButton_Checked(null, null);
                 //if (notebookObject != null)
                 noteNameTextBox.Text = notebookObject.name;
@@ -204,19 +210,15 @@ namespace PhenoPad
         }
 
         public async Task PromptRemakeNote(string notebookId) {
-            var messageDialog = new MessageDialog("This Notebook seems to be corrupted, a new notebook will be created.");
-            messageDialog.Title = "Notice";
+            var messageDialog = new MessageDialog("This Notebook seems to be corrupted and cannot be loaded, please recreate a new note.");
+            messageDialog.Title = "Error";
             messageDialog.Commands.Add(new UICommand("OK") { Id = 0 });
             // Set the command that will be invoked by default
             messageDialog.DefaultCommandIndex = 0;
             // Show the message dialog
             await messageDialog.ShowAsync();
             await FileManager.getSharedFileManager().DeleteNotebookById(notebookId);
-            foreach (Button b in pageIndexButtons) {
-                pageIndexPanel.Children.Remove(b);
-            }
-                
-            InitializeNotebook();
+            Frame.Navigate(typeof(PageOverview));
         }
 
         ///// <summary>
@@ -261,7 +263,6 @@ namespace PhenoPad
                         CoreDispatcherPriority.Normal,
                         async () =>
                         {
-                            Debug.WriteLine($"Saving page {page.pageId} ...");
                             flag = await page.SaveToDisk();
                             if (!flag)
                             {
@@ -271,18 +272,13 @@ namespace PhenoPad
                         }
                     );
                 }
-                MetroLogger.getSharedLogger().Info($"Saving phenotypes ...");
                 // collected phenotypes
                 result2 = await FileManager.getSharedFileManager().saveCollectedPhenotypesToFile(notebookId);
                 if (!result2)
                     MetroLogger.getSharedLogger().Error($"Failed to save collected phenotypes");
 
-                if (pgResult && result2) {
-                    Debug.WriteLine($"Successfully saved notebook {notebookId} to disk.");
-                }
-                else
+                if (! (pgResult && result2))
                     MetroLogger.getSharedLogger().Info($"Some parts of notebook {notebookId} failed to save.");
-                
             }
             catch (NullReferenceException)
             {

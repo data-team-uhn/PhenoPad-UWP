@@ -425,7 +425,7 @@ namespace PhenoPad.CustomControl
         public async void OnOpenShowDock() {
             DoubleAnimation da = (DoubleAnimation)addinPanelHideAnimation.Children.ElementAt(0);
             da.By = rootPage.ActualWidth - (this.canvasLeft + this.dragTransform.X);
-            rootPage.curPage.quickShowDock();
+            MainPage.Current.curPage.quickShowDock();
             await addinPanelHideAnimation.BeginAsync();
             this.Visibility = Visibility.Collapsed;
         }

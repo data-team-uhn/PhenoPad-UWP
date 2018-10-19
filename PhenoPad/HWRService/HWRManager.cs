@@ -174,7 +174,8 @@ namespace PhenoPad.HWRService
                 throw new Exception("Invalid header value: " + header);
             }
 
-            Uri requestUri = new Uri("http://phenopad.ccm.sickkids.ca:8000/");
+            //Uri requestUri = new Uri("http://phenopad.ccm.sickkids.ca:8000/");
+            Uri requestUri = new Uri("http://104.41.139.54:8000/");
 
             //Send the GET request asynchronously and retrieve the response as a string.
             HttpResponseMessage httpResponse = new HttpResponseMessage();
