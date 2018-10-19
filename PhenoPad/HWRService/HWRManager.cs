@@ -47,6 +47,7 @@ namespace PhenoPad.HWRService
         List<List<string>> alternatives;
         bool newRequest;
         Dictionary<string, List<string>> abbrDict;
+        List<HWRRecognizedText> lastServerRecog;
 
 
         /// <summary>
@@ -120,7 +121,10 @@ namespace PhenoPad.HWRService
                         HTTPRequest unprocessed = new HTTPRequest(fullsentence, this.alternatives, this.newRequest.ToString());
                         List<HWRRecognizedText> processed = await UpdateResultFromServer(unprocessed);
                         recogResults = processed == null ? recogResults : processed;
+                        lastServerRecog = recogResults;
                     }
+
+                    //recogResults = CompareAndUpdateWithServer(recogResults);
                     
                     return recogResults;
                 }
@@ -140,6 +144,34 @@ namespace PhenoPad.HWRService
                 Debug.WriteLine("HWR error: " + e.Message);
                 return null;
             }
+        }
+
+        private List<HWRRecognizedText> CompareAndUpdateWithServer(List<HWRRecognizedText> recogResults)
+        {
+            List<HWRRecognizedText> newRecog = new List<HWRRecognizedText>();
+            if (lastServerRecog == null)
+                return recogResults;
+            int indexNew = 0;
+            int indexServer = 0;
+            while (indexNew < Math.Max(recogResults.Count, lastServerRecog.Count) && indexServer < Math.Max(recogResults.Count, lastServerRecog.Count)) {
+                //in this if block, we are sure index will be parallel among the two lists
+                if (indexNew < Math.Min(recogResults.Count, lastServerRecog.Count) && indexNew < Math.Min(recogResults.Count, lastServerRecog.Count)) {
+                    string newresult = recogResults[indexNew].selectedCandidate;
+                    string lastResult = lastServerRecog[indexServer].selectedCandidate;
+                    if (newresult == lastResult)
+                    {
+                        newRecog.Add(lastServerRecog[indexNew]);
+                        indexNew++;
+                        indexServer++;
+                    }
+                    else if (abbrDict.ContainsKey(lastResult)) {
+                        newRecog.Add(lastServerRecog[indexServer]);
+                        indexServer++;
+                  }
+                }
+                //all the left over elements are newly added words
+            }
+            return null;
         }
 
         public string listToString(List<string> lst)

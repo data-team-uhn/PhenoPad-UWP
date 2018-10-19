@@ -49,6 +49,7 @@ namespace PhenoPad.CustomControl
     {
         public bool abbreviation_enabled = false;
         DispatcherTimer recognizeTimer;
+        List<HWRRecognizedText> cur_result;
         // ================================= INK RECOGNITION ==============================================                      
         /// <summary>
         /// PS:10/9/2018 this method is currently not used as the timer tick is commented out
@@ -395,6 +396,7 @@ namespace PhenoPad.CustomControl
             // switch to another line, clear result of current line
             if (line.Id != showingResultOfLine)
             {
+                Debug.WriteLine("Switching to a different line.");
                 curLineCandidatePheno.Clear();
                 curLineWordsStackPanel.Children.Clear();
                 //curWordPhenoControlGrid.Margin = new Thickness(0);
@@ -405,11 +407,14 @@ namespace PhenoPad.CustomControl
 
             if (idToNoteLine.ContainsKey(line.Id))
             {  // existing line
+                Debug.WriteLine("Existing line");
                 NoteLine nl = idToNoteLine[line.Id];
+                cur_result = nl.HwrResult;
                 nl.HwrResult = await RecognizeLine(line.Id, serverRecog);
             }
             else
             {
+                Debug.WriteLine("Creating a new line");
                 //new line
                 NoteLine nl = new NoteLine(line);
                 phenoCtrlSlide.Y = 0;
@@ -887,42 +892,45 @@ namespace PhenoPad.CustomControl
 
         private void setUpCurrentLineResultUI(InkAnalysisLine line)
         {
-
+            Dictionary<string, List<string>> dict = HWRManager.getSharedHWRManager().getDictionary();
             var wordlist = idToNoteLine.GetValueOrDefault(line.Id).WordStrings;
             foreach (string word in wordlist) {
                 Debug.WriteLine(word);
             }
-
+            List<HWRRecognizedText> newResult = idToNoteLine.GetValueOrDefault(line.Id).HwrResult;
             curLineWordsStackPanel.Children.Clear();
-            //sets a text block for each recognized word and adds event handler to click event
+
             foreach (var word in wordlist)
             {
                 int index = wordlist.IndexOf(word);
-                Dictionary<string, List<string>> dict = HWRManager.getSharedHWRManager().getDictionary();
-                TextBlock tb = new TextBlock();
-                tb.VerticalAlignment = VerticalAlignment.Center;
-                tb.FontSize = 16;
-                //for detecting abbreviations
-                if ( index != 0 && dict.ContainsKey(wordlist[index-1].ToLower()) && dict[wordlist[index - 1].ToLower()].Contains(word))
-                { 
-                    tb.Text = $"({word})";
-                    tb.Foreground = new SolidColorBrush(Colors.DarkOrange);
-                }
-                else
-                {
-                    tb.Text = word;
-                }
+                //words that are new to the line
 
-                curLineWordsStackPanel.Children.Add(tb);
-                //Binding event listener to each text block
-                tb.Tapped += ((object sender, TappedRoutedEventArgs e) => {
-                    int wi = curLineWordsStackPanel.Children.IndexOf((TextBlock)sender);
-                    var alterFlyout = (Flyout)this.Resources["ChangeAlternativeFlyout"];
-                    showAlterOfWord = wi;
-                    alternativeListView.ItemsSource = idToNoteLine[showingResultOfLine].HwrResult[wi].candidateList;
-                    alterFlyout.ShowAt((FrameworkElement)sender);
-                });
+                    TextBlock tb = new TextBlock();
+                    tb.VerticalAlignment = VerticalAlignment.Center;
+                    tb.FontSize = 16;
+                    //for detecting abbreviations
+                    if (index != 0 && dict.ContainsKey(wordlist[index - 1].ToLower()) && dict[wordlist[index - 1].ToLower()].Contains(word))
+                    {
+                        tb.Text = $"({word})";
+                        tb.Foreground = new SolidColorBrush(Colors.DarkOrange);
+                    }
+                    else
+                    {
+                        tb.Text = word;
+                    }
+
+                    curLineWordsStackPanel.Children.Add(tb);
+                    //Binding event listener to each text block
+                    tb.Tapped += ((object sender, TappedRoutedEventArgs e) => {
+                        int wi = curLineWordsStackPanel.Children.IndexOf((TextBlock)sender);
+                        var alterFlyout = (Flyout)this.Resources["ChangeAlternativeFlyout"];
+                        showAlterOfWord = wi;
+                        alternativeListView.ItemsSource = idToNoteLine[showingResultOfLine].HwrResult[wi].candidateList;
+                        alterFlyout.ShowAt((FrameworkElement)sender);
+                    });
+
             }
+
             loading.Visibility = Visibility.Collapsed;
             curLineWordsStackPanel.Visibility = Visibility.Visible;
             curLineResultPanel.Visibility = Visibility.Visible;
