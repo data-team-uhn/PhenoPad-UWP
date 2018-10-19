@@ -88,6 +88,7 @@ namespace PhenoPad
 
             notePages = new List<NotePageControl>();
             pageIndexButtons = new List<Button>();
+
             NotePageControl aPage = new NotePageControl(notebookId,"0");
             notePages.Add(aPage);
             inkCanvas = aPage.inkCan;
@@ -192,10 +193,7 @@ namespace PhenoPad
             {
                 ////NullReferenceException is very likely to happen when things aren't saved properlly during debugging state due to force quit
                 MetroLogger.getSharedLogger().Error(ne+ne.Message);
-                ////Since something wrong happened with notebook, for sake of cleaness will delete the corrupted directory for now
-                ////FUTURE WORK: if wanted, can implement partial load and ignore loading the corrupted part.
-                //await FileManager.getSharedFileManager().DeleteNotebookById(notebookId);
-                //this.InitializeNotebook();
+                await PromptRemakeNote(notebookId);
                 return;
             }
             catch (Exception e)
@@ -203,6 +201,22 @@ namespace PhenoPad
                 MetroLogger.getSharedLogger().Error($"Failed to Initialize Notebook From Disk:{e}:{e.Message}");
             }
 
+        }
+
+        public async Task PromptRemakeNote(string notebookId) {
+            var messageDialog = new MessageDialog("This Notebook seems to be corrupted, a new notebook will be created.");
+            messageDialog.Title = "Notice";
+            messageDialog.Commands.Add(new UICommand("OK") { Id = 0 });
+            // Set the command that will be invoked by default
+            messageDialog.DefaultCommandIndex = 0;
+            // Show the message dialog
+            await messageDialog.ShowAsync();
+            await FileManager.getSharedFileManager().DeleteNotebookById(notebookId);
+            foreach (Button b in pageIndexButtons) {
+                pageIndexPanel.Children.Remove(b);
+            }
+                
+            InitializeNotebook();
         }
 
         ///// <summary>

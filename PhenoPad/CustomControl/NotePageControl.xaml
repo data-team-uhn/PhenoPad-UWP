@@ -477,11 +477,12 @@
             </ListView>
         </Grid>
         
-        <RelativePanel Grid.Column="1" HorizontalAlignment="Right" VerticalAlignment="Stretch">
+        <RelativePanel Grid.Column="1" HorizontalAlignment="Right" VerticalAlignment="Stretch" Visibility="Visible">
 
             <Button 
             Name="addinButton"
             Grid.Column="1"
+            Visibility="Visible"
             RelativePanel.AlignVerticalCenterWithPanel="True"
             RelativePanel.AlignRightWithPanel="True"
             Style="{StaticResource ButtonStyle1}"

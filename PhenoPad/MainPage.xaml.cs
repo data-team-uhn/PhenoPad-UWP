@@ -474,7 +474,6 @@ namespace PhenoPad
             if (pageIndexPanel.Children.Count >= 1)
                 pageIndexPanel.Children.Insert(pageIndexPanel.Children.Count - 1, btn);
             setNotePageIndex(index);
-
         }
 
         /**

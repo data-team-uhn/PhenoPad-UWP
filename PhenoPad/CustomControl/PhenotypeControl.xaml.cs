@@ -206,14 +206,12 @@ namespace PhenoPad.CustomControl
             var recogPhenoFlyout = (Flyout)this.Resources["PhenotypeDetailFlyout"];
             recogPhenoFlyout.ShowAt((Button)sender);
             //Row pinfo = await PhenotypeManager.getSharedPhenotypeManager().getDetailById(phenotypeId);
-
-
             //phenotypeDetailControl.setByPhenotypeInfo(pinfo);
             phenotypeDetailControl.navigateTo(phenotypeId);
 
         }
 
-        private void NameGrid_Tapped(object sender, TappedRoutedEventArgs e)
+        private void NameGrid_Tapped(object sender, RoutedEventArgs e)
         {
             switch (localState)
             {

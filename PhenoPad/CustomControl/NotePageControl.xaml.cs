@@ -1115,7 +1115,7 @@ namespace PhenoPad.CustomControl
         public async void quickShowDock() {
             if (addinBase.Visibility == Visibility.Collapsed) {
                 AddinsButton_Click(null, null);
-                await Task.Delay(TimeSpan.FromSeconds(0.5));
+                await Task.Delay(TimeSpan.FromSeconds(1));
                 AddinsButton_Click(null, null);
             }
             else
