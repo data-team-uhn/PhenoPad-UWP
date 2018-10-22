@@ -48,6 +48,8 @@ namespace PhenoPad.HWRService
         bool newRequest;
         Dictionary<string, List<string>> abbrDict;
         List<HWRRecognizedText> lastServerRecog;
+        //default Abbreviation detection IP Address
+        Uri ipAddr = new Uri("http://104.41.139.54:8000/");
 
 
         /// <summary>
@@ -60,6 +62,7 @@ namespace PhenoPad.HWRService
             alternatives = new List<List<string>>();
             newRequest = true;
             abbrDict = new Dictionary<string, List<string>>();
+            lastServerRecog = new List<HWRRecognizedText>();
         }
 
 
@@ -82,6 +85,10 @@ namespace PhenoPad.HWRService
 
         public Dictionary<string,List<string>> getDictionary() {
             return abbrDict;
+        }
+
+        public void setIPAddr(Uri newAddr) {
+            ipAddr = newAddr; 
         }
 
         /// <summary>
@@ -114,82 +121,100 @@ namespace PhenoPad.HWRService
                         rt.selectedCandidate = res.ElementAt(0);
                         recogResults.Add(rt);
                     }
-                    
+                    //triggers server side abbreviation detection
                     if (server && MainPage.Current.curPage.abbreviation_enabled)
                     {
-                        string fullsentence = listToString(this.sentence);
+                        string fullsentence = listToString(sentence);
                         HTTPRequest unprocessed = new HTTPRequest(fullsentence, this.alternatives, this.newRequest.ToString());
                         List<HWRRecognizedText> processed = await UpdateResultFromServer(unprocessed);
                         recogResults = processed == null ? recogResults : processed;
                         lastServerRecog = recogResults;
+
                     }
 
                     recogResults = CompareAndUpdateWithServer(recogResults);
-                    
+
                     return recogResults;
                 }
                 // if no text is recognized, return null
-                else
-                {
-                    //rootPage.NotifyUser("No text recognized.", NotifyType.StatusMessage);
-                    //MessageDialog dialog = new MessageDialog("No text recognized");
-                    //var cmd = await dialog.ShowAsync();
-                    return null;
-                }
+                return null;
+
             }
-            catch (System.Exception e)
+            catch (Exception e)
             {
                 //MessageDialog dialog = new MessageDialog("No storke selected.");
                 //var cmd = await dialog.ShowAsync();
-                Debug.WriteLine("HWR error: " + e.Message);
+                LogService.MetroLogger.getSharedLogger().Error("HWR error: " + e.Message);
                 return null;
             }
         }
 
+        public void clearCache() {
+            lastServerRecog.Clear();
+            abbrDict.Clear();
+        }
+
+        /// <summary>
+        /// Compares the current HWR result with last server retrieved result and updates words
+        /// </summary>
         private List<HWRRecognizedText> CompareAndUpdateWithServer(List<HWRRecognizedText> recogResults)
         {
             List<HWRRecognizedText> newRecog = new List<HWRRecognizedText>();
-            if (lastServerRecog == null)
+            //if nothing has been stored yet, just return original recog results
+            if (lastServerRecog.Count == 0)
                 return recogResults;
+
             int indexNew = 0;
             int indexServer = 0;
-            for (int step = 0; step < Math.Max(recogResults.Count,lastServerRecog.Count);step++)
-            { 
-                //in this if block, we are sure index will be parallel among the two lists
-                if (indexNew < Math.Min(recogResults.Count, lastServerRecog.Count) && indexNew < Math.Min(recogResults.Count, lastServerRecog.Count))
-                {
-                    string newresult = recogResults[indexNew].selectedCandidate;
-                    string lastResult = lastServerRecog[indexServer].selectedCandidate;
 
-                    if (abbrDict.ContainsKey(lastResult))
-                    {
+            while (indexNew < recogResults.Count && indexServer < lastServerRecog.Count)
+            {//loop through indexes to compare word to word until one of the list reaches end of index
+                string newResult = recogResults[indexNew].selectedCandidate;
+                string preResult = lastServerRecog[indexServer].selectedCandidate;
+
+                if (newResult == preResult)
+                {//if the current word matches
+
+                    if (abbrDict.ContainsKey(preResult.ToLower()))
+                    {//the match is an abbreviation
                         newRecog.Add(lastServerRecog[indexServer]);
-                        indexServer++;
+                        List<string> abbrs = abbrDict[preResult.ToLower()];
+                        if (!abbrs.Contains(recogResults[indexNew + 1].selectedCandidate))
+                        {//only add the extended form if it doesn't exist 
+                            newRecog.Add(lastServerRecog[indexServer + 1]);
+                            indexServer++;
+                        }
                     }
                     else
-                    {
-                        newRecog.Add(lastServerRecog[indexNew]);
-                        indexNew++;
-                        indexServer++;
+                    {//normal matching word,just add from new recog result
+                        newRecog.Add(recogResults[indexNew]);
                     }
-
                 }
-                //all the left over elements only belong to one list
-                else {
-                    if (indexNew < newRecog.Count)
-                    {
-                        Debug.WriteLine($"adding left overs, newRecog count={newRecog.Count}");
-                        for (int i = indexNew; i < newRecog.Count; i++)
-                            newRecog.Add(newRecog[i]);
-                        break;
-                    }
-                    else if (indexServer < lastServerRecog.Count) {
-                        Debug.WriteLine($"adding left overs, server count={lastServerRecog.Count}");
-                        for (int i = indexServer; i < lastServerRecog.Count; i++)
-                            newRecog.Add(lastServerRecog[i]);
-                        break;
-                    }
+                else
+                {//if no matches
+                    if (abbrDict.ContainsKey(newResult.ToLower()))
+                    {//if the non-match word is a known abbreviation, just re add its extended form
+                        HWRRecognizedText newAbbr = new HWRRecognizedText();
+                        newAbbr.candidateList = abbrDict[newResult.ToLower()];
+                        newAbbr.selectedIndex = 0;
+                        newAbbr.selectedCandidate = newAbbr.candidateList[0];
 
+                        newRecog.Add(recogResults[indexNew]);
+                        newRecog.Add(newAbbr);
+                    }
+                    else
+                    {//normal non-match word, just replace with new recog result
+                        newRecog.Add(recogResults[indexNew]);
+                    }
+                }
+                indexServer++;
+                indexNew++;
+            }
+            Debug.WriteLine($"current recog count={recogResults.Count},index={indexNew}");
+            if (indexServer == lastServerRecog.Count)
+            {//only care if there are new words to be added from new recog result
+                for (int i = indexNew; i < recogResults.Count; i++) {
+                    newRecog.Add(recogResults[i]);
                 }
             }
             return newRecog;
@@ -227,8 +252,7 @@ namespace PhenoPad.HWRService
                 throw new Exception("Invalid header value: " + header);
             }
 
-            //Uri requestUri = new Uri("http://phenopad.ccm.sickkids.ca:8000/");
-            Uri requestUri = new Uri("http://104.41.139.54:8000/");
+            Uri requestUri = ipAddr;
 
             //Send the GET request asynchronously and retrieve the response as a string.
             HttpResponseMessage httpResponse = new HttpResponseMessage();
@@ -257,9 +281,6 @@ namespace PhenoPad.HWRService
             catch (Exception e)
             {
                 LogService.MetroLogger.getSharedLogger().Error(e + e.Message);
-                sentence.Clear();
-                alternatives.Clear();
-                abbrDict.Clear();
             }
             return null;
         }
