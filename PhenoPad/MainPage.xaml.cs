@@ -220,6 +220,12 @@ namespace PhenoPad
             // Draw background lines
             if (curPage != null)
                 curPage.DrawBackgroundLines();
+
+            HWRAddrInput.Text = HWRService.HWRManager.getSharedHWRManager().getIPAddr();
+            string serverPath = SpeechManager.getSharedSpeechManager().getServerAddress() + ":" + 
+                                SpeechManager.getSharedSpeechManager().getServerPort();
+            ASRAddrInput.Text = serverPath;
+
         }
 
         /// <summary>
@@ -866,28 +872,86 @@ namespace PhenoPad
             }
         }
 
-        private async void ChangeServer_Click(object sender, RoutedEventArgs e)
-        {
-            //string text = await InputTextDialogAsync("Change a server: ", "");
-            /*
-            if(text != "" && text != string.Empty)
-                SpeechManager.getSharedSpeechManager().setServerAddress(text);
-            */
+        //private async void ChangeServer_Click(object sender, RoutedEventArgs e)
+        //{
+        //    //string text = await InputTextDialogAsync("Change a server: ", "");
+        //    /*
+        //    if(text != "" && text != string.Empty)
+        //        SpeechManager.getSharedSpeechManager().setServerAddress(text);
+        //    */
 
-            string serverPath = SpeechManager.getSharedSpeechManager().getServerAddress() + ":" + SpeechManager.getSharedSpeechManager().getServerPort();
+        //    string serverPath = SpeechManager.getSharedSpeechManager().getServerAddress() + ":" + SpeechManager.getSharedSpeechManager().getServerPort();
 
-            if (serverPath == "")
-                serverPath = "phenopad.ccm.sickkids.ca";
+        //    if (serverPath == "")
+        //        serverPath = "phenopad.ccm.sickkids.ca";
 
-            string text = await InputTextDialogAsync("Change a server. Server Address (or sickkids): ", serverPath);
+        //    string text = await InputTextDialogAsync("Change a server. Server Address (or sickkids): ", serverPath);
+
+        //    string ipResult = "";
+        //    string portResult = "";
+
+        //    if (text.ToLower().IndexOf("sickkid") != -1)
+        //    {
+        //        //SpeechManager.getSharedSpeechManager().setServerAddress("speechengine.ccm.sickkids.ca");
+        //        //SpeechManager.getSharedSpeechManager().setServerPort("8888");
+        //        if (text.ToLower().IndexOf("speechengine") != -1)
+        //        {
+        //            ipResult = "speechengine.ccm.sickkids.ca";
+        //            portResult = "8888";
+        //        }
+        //        else
+        //        {
+        //            ipResult = "phenopad.ccm.sickkids.ca";
+        //            portResult = "8888";
+        //        }
+
+        //    }
+        //    else
+        //    {
+        //        if (text != "" && text != string.Empty)
+        //        {
+        //            int colonIndex = text.IndexOf(':');
+
+        //            // Only entered server address
+        //            if (colonIndex == -1)
+        //            {
+        //                //SpeechManager.getSharedSpeechManager().setServerAddress(text.Trim());
+
+        //                ipResult = text.Trim();
+        //                portResult = "8888";
+        //            }
+        //            // address and port both here
+        //            else
+        //            {
+        //                //SpeechManager.getSharedSpeechManager().setServerAddress(text.Substring(0, colonIndex).Trim());
+        //                //SpeechManager.getSharedSpeechManager().setServerPort(text.Substring(colonIndex + 1).Trim());
+
+        //                ipResult = text.Substring(0, colonIndex).Trim();
+        //                portResult = text.Substring(colonIndex + 1).Trim();
+        //            }
+        //        }
+        //    }
+
+        //    SpeechManager.getSharedSpeechManager().setServerAddress(ipResult);
+        //    SpeechManager.getSharedSpeechManager().setServerPort(portResult);
+
+        //    AppConfigurations.saveSetting("serverIP", ipResult);
+        //    AppConfigurations.saveSetting("serverPort", portResult);
+        //}
+
+        private void ChangeServerHWR_Click(object sender, RoutedEventArgs e) {
+            string newAddr = HWRAddrInput.Text;
+            HWRService.HWRManager.getSharedHWRManager().setIPAddr(new Uri(newAddr));
+        }
+
+        private void ChangeServerASR_Click(object sender, RoutedEventArgs e) {
+            string text = HWRAddrInput.Text;
 
             string ipResult = "";
             string portResult = "";
 
             if (text.ToLower().IndexOf("sickkid") != -1)
             {
-                //SpeechManager.getSharedSpeechManager().setServerAddress("speechengine.ccm.sickkids.ca");
-                //SpeechManager.getSharedSpeechManager().setServerPort("8888");
                 if (text.ToLower().IndexOf("speechengine") != -1)
                 {
                     ipResult = "speechengine.ccm.sickkids.ca";
@@ -917,15 +981,11 @@ namespace PhenoPad
                     // address and port both here
                     else
                     {
-                        //SpeechManager.getSharedSpeechManager().setServerAddress(text.Substring(0, colonIndex).Trim());
-                        //SpeechManager.getSharedSpeechManager().setServerPort(text.Substring(colonIndex + 1).Trim());
-
                         ipResult = text.Substring(0, colonIndex).Trim();
                         portResult = text.Substring(colonIndex + 1).Trim();
                     }
                 }
             }
-
             SpeechManager.getSharedSpeechManager().setServerAddress(ipResult);
             SpeechManager.getSharedSpeechManager().setServerPort(portResult);
 

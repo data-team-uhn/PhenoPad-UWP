@@ -11,11 +11,6 @@ using Windows.Media.Render;
 
 using System.Runtime.InteropServices;
 using Windows.Media.MediaProperties;
-using Windows.UI;
-using Windows.UI.Xaml;
-using Windows.UI.Xaml.Controls;
-using Windows.UI.Xaml.Media;
-using Windows.UI.Xaml.Navigation;
 //using Google.Cloud.Speech.V1;
 using System.Threading;
 using PhenoPad.WebSocketService;
@@ -25,7 +20,6 @@ using System.IO;
 using Windows.Web;
 using Windows.Storage.Pickers;
 using Windows.Storage;
-using Windows.Media.Transcoding;
 
 // To parse JSON we received from speech engine server
 using Newtonsoft.Json;

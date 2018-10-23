@@ -136,6 +136,7 @@
 
 
             </CommandBar>
+            
             <StackPanel Orientation="Horizontal" Grid.Column="2">
                 <CommandBar  OverflowButtonVisibility="Collapsed" Background="{StaticResource TITLE_BAR_WHITE}">
 
@@ -820,11 +821,19 @@
                             <TextBlock Text="ASR server:" Grid.Row="3" Grid.Column="0"
                            VerticalAlignment="Center" HorizontalAlignment="Right"/>
                             <StackPanel Orientation="Horizontal" Grid.Row="3" Grid.Column="1" Spacing="10" HorizontalAlignment="Center">
-                                <Button Content="Change server" Click="ChangeServer_Click"/>
+                                <TextBox x:Name="ASRAddrInput" PlaceholderText="Server Address:Port" Width="220" Margin="5" />
+                                <Button Content="Change server" Click="ChangeServerASR_Click"/>
+                            </StackPanel>
+                            <TextBlock Text="HWR server:" Grid.Row="4" Grid.Column="0"
+                           VerticalAlignment="Center" HorizontalAlignment="Right"/>
+                            
+                            <StackPanel Orientation="Horizontal" Grid.Row="4" Grid.Column="1" Spacing="10" HorizontalAlignment="Center">
+                                <TextBox x:Name="HWRAddrInput" PlaceholderText="Server Address:Port" Width="220" Margin="5" />
+                                <Button Content="Change server" Click="ChangeServerHWR_Click"/>
                             </StackPanel>
 
-                            <TextBlock Text="Video" Grid.Row="4" Grid.Column="0" FontWeight="Bold"
-                           VerticalAlignment="Center" HorizontalAlignment="Left"/>
+                            <TextBlock Text="Video" Grid.Row="5" Grid.Column="0" FontWeight="Bold"
+                           VerticalAlignment="Top" HorizontalAlignment="Left"/>
 
                             <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center"  Grid.Row="5" Grid.Column="0" >
 

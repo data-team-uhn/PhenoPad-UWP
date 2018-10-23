@@ -91,6 +91,10 @@ namespace PhenoPad.HWRService
             ipAddr = newAddr; 
         }
 
+        public string getIPAddr() {
+            return ipAddr.ToString();
+        }
+
         /// <summary>
         /// Gets the components in InkStrokeContainer and tries to recognize and return text, returns null if no text is recognized.
         /// </summary>
@@ -107,6 +111,7 @@ namespace PhenoPad.HWRService
                     alternatives = new List<List<string>>();
 
                     // Display recognition result by words
+                    int ind = 0;
                     foreach (var r in recognitionResults)
                     {
                         List<string> unprocessedRes = new List<string>(r.GetTextCandidates());
@@ -120,6 +125,7 @@ namespace PhenoPad.HWRService
                         rt.selectedIndex = 0;
                         rt.selectedCandidate = res.ElementAt(0);
                         recogResults.Add(rt);
+                        ind++;
                     }
                     //triggers server side abbreviation detection
                     if (server && MainPage.Current.curPage.abbreviation_enabled)
@@ -129,10 +135,11 @@ namespace PhenoPad.HWRService
                         List<HWRRecognizedText> processed = await UpdateResultFromServer(unprocessed);
                         recogResults = processed == null ? recogResults : processed;
                         lastServerRecog = recogResults;
-
                     }
 
                     recogResults = CompareAndUpdateWithServer(recogResults);
+                    lastServerRecog = recogResults;
+
 
                     return recogResults;
                 }
@@ -152,6 +159,35 @@ namespace PhenoPad.HWRService
         public void clearCache() {
             lastServerRecog.Clear();
             abbrDict.Clear();
+            sentence.Clear();
+        }
+
+        public async Task<List<HWRRecognizedText>> ReRecognizeAsync(List<HWRRecognizedText> newLine) {
+            try {
+                //triggers server side abbreviation detection
+                if (MainPage.Current.curPage.abbreviation_enabled)
+                {
+                    string fullsentence = "";
+                    for (int i = 0; i < newLine.Count; i++) {
+                        HWRRecognizedText rt = newLine[i];
+                        string key = rt.selectedCandidate.ToLower();
+                        fullsentence += key+" ";
+                        if (abbrDict.ContainsKey(key)) {
+                            i++;
+                        }
+                    }
+                    HTTPRequest unprocessed = new HTTPRequest(fullsentence, this.alternatives, false.ToString());
+                    List<HWRRecognizedText> processed = await UpdateResultFromServer(unprocessed,newLine);
+                    lastServerRecog = processed;
+                    return processed;
+                }
+                return newLine;
+            }
+            catch (Exception e) {
+                LogService.MetroLogger.getSharedLogger().Error($"{e}:{e.Message}");
+                return newLine;
+            }
+
         }
 
         /// <summary>
@@ -169,21 +205,24 @@ namespace PhenoPad.HWRService
 
             while (indexNew < recogResults.Count && indexServer < lastServerRecog.Count)
             {//loop through indexes to compare word to word until one of the list reaches end of index
-                string newResult = recogResults[indexNew].selectedCandidate;
-                string preResult = lastServerRecog[indexServer].selectedCandidate;
+                string newResult = recogResults[indexNew].selectedCandidate.ToLower();
+                string preResult = lastServerRecog[indexServer].selectedCandidate.ToLower();
+
+                Debug.WriteLine($"\nnewResult={newResult}");
+                Debug.WriteLine($"preResult={preResult}\n");
 
                 if (newResult == preResult)
                 {//if the current word matches
 
-                    if (abbrDict.ContainsKey(preResult.ToLower()))
+                    if (abbrDict.ContainsKey(preResult))
                     {//the match is an abbreviation
+                        HWRRecognizedText newAbbr = new HWRRecognizedText();
                         newRecog.Add(lastServerRecog[indexServer]);
-                        List<string> abbrs = abbrDict[preResult.ToLower()];
-                        if (!abbrs.Contains(recogResults[indexNew + 1].selectedCandidate))
-                        {//only add the extended form if it doesn't exist 
-                            newRecog.Add(lastServerRecog[indexServer + 1]);
-                            indexServer++;
-                        }
+                        newRecog.Add(lastServerRecog[indexServer + 1]);
+                        indexServer++;
+                        List<string> abbr = abbrDict[preResult];
+                        if (abbr.Contains(recogResults[indexNew + 1].selectedCandidate))
+                            indexNew++;
                     }
                     else
                     {//normal matching word,just add from new recog result
@@ -192,16 +231,23 @@ namespace PhenoPad.HWRService
                 }
                 else
                 {//if no matches
-                    if (abbrDict.ContainsKey(newResult.ToLower()))
+                    if (abbrDict.ContainsKey(preResult))
+                    {
+                        indexServer++;
+                    }
+                    if (abbrDict.ContainsKey(newResult))
                     {//if the non-match word is a known abbreviation, just re add its extended form
+                        //NOTE:incase both the new/old word are abbreviations, we will replace with the new one for simplicity
                         HWRRecognizedText newAbbr = new HWRRecognizedText();
-                        newAbbr.candidateList = abbrDict[newResult.ToLower()];
+                        newAbbr.candidateList = abbrDict[newResult];
                         newAbbr.selectedIndex = 0;
                         newAbbr.selectedCandidate = newAbbr.candidateList[0];
 
                         newRecog.Add(recogResults[indexNew]);
                         newRecog.Add(newAbbr);
+                        indexNew++;
                     }
+
                     else
                     {//normal non-match word, just replace with new recog result
                         newRecog.Add(recogResults[indexNew]);
@@ -232,7 +278,7 @@ namespace PhenoPad.HWRService
             return sentence;
         }
 
-        public async Task<List<HWRRecognizedText>> UpdateResultFromServer(HTTPRequest rawdata)
+        public async Task<List<HWRRecognizedText>> UpdateResultFromServer(HTTPRequest rawdata,List<HWRRecognizedText> old=null)
         {
             List<List<string>> processedAlter = new List<List<string>>();
             //Create an HTTP client object
@@ -269,8 +315,16 @@ namespace PhenoPad.HWRService
                 Debug.WriteLine("\n res: \n" + httpResponseBody + "\n");
 
                 HTTPResponse result = JsonConvert.DeserializeObject<HTTPResponse>(httpResponseBody);
-                List<HWRRecognizedText> recogResults = processAlternative(result.alternatives);
-                recogResults = processAbbr(result.abbreviations, recogResults);
+                sentence = result.result.Split(" ").ToList();
+                List<HWRRecognizedText> recogResults = new List<HWRRecognizedText>();
+                recogResults = processAlternative(result.alternatives);
+                if ((recogResults == null || recogResults.Count == 0) && old != null) {
+                    recogResults = processAbbr(result.abbreviations, old);
+                }
+                else
+                    recogResults = processAbbr(result.abbreviations, recogResults);
+
+
                 return recogResults;
             }
             catch (System.Net.Http.HttpRequestException he)
@@ -285,13 +339,10 @@ namespace PhenoPad.HWRService
             return null;
         }
 
-
         public List<HWRRecognizedText> processAbbr(List<Abbreviation> abbrs, List<HWRRecognizedText> recog)
         {
-            abbrDict.Clear();
-
             int offset = 0;
-            List<HWRRecognizedText> recogAb = recog == null? new List<HWRRecognizedText>() : recog;
+            List<HWRRecognizedText> recogAb = recog;
             foreach (Abbreviation ab in abbrs) {
                 int index = Convert.ToInt32(ab.word_pos);
                 HWRRecognizedText rt = new HWRRecognizedText();
@@ -299,14 +350,17 @@ namespace PhenoPad.HWRService
                 rt.candidateList = res;
                 rt.selectedIndex = 0;
                 rt.selectedCandidate = res.ElementAt(0);
-                recogAb.Insert(index + offset + 1, rt);
-                //adding the abbreviation and its alternatives to a dictionary for later references.
+                //only insert the extended form if there's no previously inserted abbreviations
+                if ((index + offset + 1 == recog.Count) || 
+                    (index +offset+1 <= recog.Count && recogAb[index+offset+1].selectedCandidate != rt.selectedCandidate))
+                    recogAb.Insert(index + offset + 1, rt);
                 if (abbrDict.ContainsKey($"{sentence[index].ToLower()}"))
                 {
                     abbrDict[$"{sentence[index].ToLower()}"] = ab.abbr_list;
                 }
                 else {
                     abbrDict.Add($"{sentence[index].ToLower()}", ab.abbr_list);
+                    Debug.WriteLine($"added key {sentence[index].ToLower()} to abbr.dict");
                 }
                 offset++;
             }

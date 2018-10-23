@@ -130,6 +130,11 @@ namespace PhenoPad.CustomControl
                     if (_hwrResult[i].candidateList.Count() == value[i].candidateList.Count()
                         && _hwrResult[i].candidateList.All(value[i].candidateList.Contains))
                     {
+                        //if the selected candidate has changed, update result
+                        if (_hwrResult[i].selectedCandidate != value[i].selectedCandidate)
+                        {
+                            _hwrResult[i] = value[i];
+                        }
                         // do nothing
                     }
                     else
@@ -239,6 +244,15 @@ namespace PhenoPad.CustomControl
 
         }
 
+        public void refreshWordList() {
+            _wordStrings.Clear();
+            foreach (HWRRecognizedText rt in HwrResult) {
+                _wordStrings.Add(rt.selectedCandidate);
+                Debug.WriteLine($"refreshing,new word={rt.selectedCandidate}");
+            }
+            _text = String.Join(" ", _wordStrings);
+        }
+
         private void addOneAnnotation(NCRPhenotype ncr)
         {
             annotations.Add(ncr);
@@ -277,6 +291,7 @@ namespace PhenoPad.CustomControl
                 string selected = this.HwrResult[wordind].candidateList[selectind]; //currently selected alternative
                 //if currently selected an abbreviation short form, need to delete the previous abbreviation.
                 if (wordind + 1 != this.HwrResult.Count && dict.ContainsKey(this.HwrResult[wordind].selectedCandidate.ToLower())) {
+                    Debug.WriteLine("will delete the nxt phrase");
                     this.HwrResult.RemoveAt(wordind + 1);
                     _wordStrings.RemoveAt(wordind + 1);
                 }
@@ -285,6 +300,7 @@ namespace PhenoPad.CustomControl
                 _wordStrings[wordind] = this.HwrResult[wordind].selectedCandidate;
                 _text = String.Join(" ", _wordStrings);
             }
+            return;
         }
 
         private (int, int) convertStringIndexToWordIndex(int start, int end)

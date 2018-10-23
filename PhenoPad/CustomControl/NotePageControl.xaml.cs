@@ -501,6 +501,7 @@ namespace PhenoPad.CustomControl
             ClearSelectionAsync();
 
             curLineResultPanel.Visibility = Visibility.Collapsed;
+            curLineWordsStackPanel.Children.Clear();
             //operationDispathcerTimer.Stop();
             foreach (var stroke in args.Strokes)
             {

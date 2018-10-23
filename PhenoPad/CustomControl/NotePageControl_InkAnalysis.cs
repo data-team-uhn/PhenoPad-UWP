@@ -399,6 +399,7 @@ namespace PhenoPad.CustomControl
                 Debug.WriteLine("Switching to a different line.");
                 curLineCandidatePheno.Clear();
                 curLineWordsStackPanel.Children.Clear();
+                HWRManager.getSharedHWRManager().clearCache();
                 //curWordPhenoControlGrid.Margin = new Thickness(0);
                 phenoCtrlSlide.Y = 0;
                 showingResultOfLine = line.Id;
@@ -409,8 +410,8 @@ namespace PhenoPad.CustomControl
             {  // existing line
                 Debug.WriteLine("Existing line");
                 NoteLine nl = idToNoteLine[line.Id];
-                cur_result = nl.HwrResult;
                 nl.HwrResult = await RecognizeLine(line.Id, serverRecog);
+                Debug.WriteLine("recogresult="+nl.HwrResult[0].selectedCandidate);
             }
             else
             {
@@ -419,6 +420,7 @@ namespace PhenoPad.CustomControl
                 NoteLine nl = new NoteLine(line);
                 phenoCtrlSlide.Y = 0;
                 curLineWordsStackPanel.Children.Clear();
+                HWRManager.getSharedHWRManager().clearCache();
                 curLineCandidatePheno.Clear();
 
 
@@ -893,43 +895,75 @@ namespace PhenoPad.CustomControl
         private void setUpCurrentLineResultUI(InkAnalysisLine line)
         {
             Dictionary<string, List<string>> dict = HWRManager.getSharedHWRManager().getDictionary();
+            //await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () => {
+            //    idToNoteLine.GetValueOrDefault(line.Id).refreshWordList();
+            //});
             var wordlist = idToNoteLine.GetValueOrDefault(line.Id).WordStrings;
-            foreach (string word in wordlist) {
-                Debug.WriteLine(word);
-            }
+            //foreach (string word in wordlist) {
+            //    Debug.WriteLine(word);
+            //}
             List<HWRRecognizedText> newResult = idToNoteLine.GetValueOrDefault(line.Id).HwrResult;
             curLineWordsStackPanel.Children.Clear();
 
-            foreach (var word in wordlist)
-            {
-                int index = wordlist.IndexOf(word);
-                //words that are new to the line
+            for (int index = 0; index < newResult.Count; index++) {
+                string word = newResult[index].selectedCandidate;
+                Debug.WriteLine(word);
+                TextBlock tb = new TextBlock();
+                tb.VerticalAlignment = VerticalAlignment.Center;
+                tb.FontSize = 16;
+                //for detecting abbreviations
+                if (index != 0 && dict.ContainsKey(wordlist[index - 1].ToLower()) && dict[wordlist[index - 1].ToLower()].Contains(word))
+                {
+                    tb.Text = $"({word})";
+                    tb.Foreground = new SolidColorBrush(Colors.DarkOrange);
+                }
+                else
+                {
+                    tb.Text = word;
+                }
 
-                    TextBlock tb = new TextBlock();
-                    tb.VerticalAlignment = VerticalAlignment.Center;
-                    tb.FontSize = 16;
-                    //for detecting abbreviations
-                    if (index != 0 && dict.ContainsKey(wordlist[index - 1].ToLower()) && dict[wordlist[index - 1].ToLower()].Contains(word))
-                    {
-                        tb.Text = $"({word})";
-                        tb.Foreground = new SolidColorBrush(Colors.DarkOrange);
-                    }
-                    else
-                    {
-                        tb.Text = word;
-                    }
-
-                    curLineWordsStackPanel.Children.Add(tb);
-                    //Binding event listener to each text block
-                    tb.Tapped += ((object sender, TappedRoutedEventArgs e) => {
-                        int wi = curLineWordsStackPanel.Children.IndexOf((TextBlock)sender);
-                        var alterFlyout = (Flyout)this.Resources["ChangeAlternativeFlyout"];
-                        showAlterOfWord = wi;
-                        alternativeListView.ItemsSource = idToNoteLine[showingResultOfLine].HwrResult[wi].candidateList;
-                        alterFlyout.ShowAt((FrameworkElement)sender);
-                    });
-
+                curLineWordsStackPanel.Children.Add(tb);
+                //Binding event listener to each text block
+                tb.Tapped += ((object sender, TappedRoutedEventArgs e) => {
+                    int wi = curLineWordsStackPanel.Children.IndexOf((TextBlock)sender);
+                    var alterFlyout = (Flyout)this.Resources["ChangeAlternativeFlyout"];
+                    showAlterOfWord = wi;
+                    alternativeListView.ItemsSource = idToNoteLine[showingResultOfLine].HwrResult[wi].candidateList;
+                    alterFlyout.ShowAt((FrameworkElement)sender);
+                });
             }
+
+
+            //foreach (var word in wordlist)
+            //{
+            //    int index = wordlist.IndexOf(word);
+            //    //words that are new to the line
+
+            //        TextBlock tb = new TextBlock();
+            //        tb.VerticalAlignment = VerticalAlignment.Center;
+            //        tb.FontSize = 16;
+            //        //for detecting abbreviations
+            //        if (index != 0 && dict.ContainsKey(wordlist[index - 1].ToLower()) && dict[wordlist[index - 1].ToLower()].Contains(word))
+            //        {
+            //            tb.Text = $"({word})";
+            //            tb.Foreground = new SolidColorBrush(Colors.DarkOrange);
+            //        }
+            //        else
+            //        {
+            //            tb.Text = word;
+            //        }
+
+            //        curLineWordsStackPanel.Children.Add(tb);
+            //        //Binding event listener to each text block
+            //        tb.Tapped += ((object sender, TappedRoutedEventArgs e) => {
+            //            int wi = curLineWordsStackPanel.Children.IndexOf((TextBlock)sender);
+            //            var alterFlyout = (Flyout)this.Resources["ChangeAlternativeFlyout"];
+            //            showAlterOfWord = wi;
+            //            alternativeListView.ItemsSource = idToNoteLine[showingResultOfLine].HwrResult[wi].candidateList;
+            //            alterFlyout.ShowAt((FrameworkElement)sender);
+            //        });
+
+            //}
 
             loading.Visibility = Visibility.Collapsed;
             curLineWordsStackPanel.Visibility = Visibility.Visible;
@@ -955,13 +989,16 @@ namespace PhenoPad.CustomControl
             {
                 Debug.WriteLine("\nchanging alternative of an abbreviation.\n");
                 previous = curLine.HwrResult[showAlterOfWord].selectedIndex;
+                curLine.updateHwrResult(showAlterOfWord, ind, previous);
             }
             if (previous == -1) {
                 Debug.WriteLine("\nchanging a normal word in dispaly.\n");
                 //HWRManager.getSharedHWRManager().setRequestType(false);
-                curLine.HwrResult = await RecognizeLine(curLine.id, serverFlag:true);
+                await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () => {
+                    curLine.updateHwrResult(showAlterOfWord, ind, previous);
+                });
+                curLine.HwrResult = await HWRManager.getSharedHWRManager().ReRecognizeAsync(curLine.HwrResult);
             }
-            curLine.updateHwrResult(showAlterOfWord, ind, previous);
 
 
             // HWR result UI
