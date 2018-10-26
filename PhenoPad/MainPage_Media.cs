@@ -381,6 +381,14 @@ namespace PhenoPad
                     await SpeechManager.getSharedSpeechManager().StartAudio();
                 else
                     await SpeechManager.getSharedSpeechManager().EndAudio(notebookId);
+
+                //#region demo
+                ////FOR DEMO PURPOSES, COMMENT OUT FOR REAL USAGE
+                //if (speechEngineRunning == false)
+                //    await SpeechManager.getSharedSpeechManager().StartAudioDemo();
+                //else
+                //    await SpeechManager.getSharedSpeechManager().EndAudioDemo(notebookId);
+                //#endregion
             }
             catch (Exception ex)
             {
@@ -388,11 +396,6 @@ namespace PhenoPad
                 ReEnableAudioButton(null, null);
             }
 
-            // Note that we have a giant loop in speech manager so that after it is done
-            // there won't be any audio processing going on
-            //speechEngineRunning = false;
-            //this.AudioOn = false;
-            //testButton.IsChecked = false;
         }
 
         /// <summary>

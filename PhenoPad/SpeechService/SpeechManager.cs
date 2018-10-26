@@ -543,6 +543,90 @@ namespace PhenoPad.SpeechService
             }
         }
 
+        //==================FOR DEMO PURPOSES===================================
+        public async Task<bool> StartAudioDemo() {
+            MainPage.Current.NotifyUser("Audio started ...", NotifyType.StatusMessage, 2);
+            Debug.WriteLine("STARTED AUDIO DEMO");
+            SpeechPage.Current.setSpeakerButtonEnabled(true);
+            SpeechPage.Current.adjustSpeakerCount(2);
+            //Triggers audio started event handler in Mainpage to switch necessary interface layout
+            MainPage.Current.onAudioStarted();
+
+            await Task.Delay(TimeSpan.FromSeconds(2));
+            this.speechInterpreter.newConversation();
+            List<string> dialogues = new List<string>()
+            {
+                "0Good afternoon Mr.Miller, How's it going?",
+                "1Good day Dr, I’m not feeling so well recently so am here for a check-in",
+                "0Oh ok, have a sit here so we can discuss more about your issues.",
+                "0What’s your age sir?",
+                "154",
+                "0Ok,So what's the problem here?",
+                "1I’ve been having chest pain for a while and recently it gets worse on the left arm side",
+                "1Also my headaches are more frequent than before especially the past two days, also faints a lot more than before.",
+                "0How bad is the headache and the fainting? Do you get hallucinations?",
+                "1Nope, I just feel dizzy and weak",
+                "0Have you had any seizures before? ",
+                "1Nope, but had a stroke last Saturday while drinking Vodka at home, was sent in by ambulance.",
+                "0Ok, do you have any allergies?",
+                "1Penicillins only",
+                "0Any past history of Coronary artery disease?",
+                "1No",
+                "0Ok,so let me take some tests on your blood pressure and heart rates",
+                "0Blood Pressure 154 and 76",
+                "0Heart Rate 103 tachycardic, this is high Mr.Millers, do you ever have the feeling that your heart is beating too fast?",
+                "1Rarely when I drink, but most times no",
+                "0Have any of your family members also have heart related problems?",
+                "1No not as far as I know, but my grandmother died at 92 from a breast cancer, one of my aunt also has colorectal cancer.",
+                "0I see, do you have any past medical history relating to this issue?",
+                "1Yes, I’ve been to the health check few years ago and took some electrocardiograms, the doc there said I have some kind of atrial fibrillation and should be check-in.",
+            };
+            foreach (string sentence in dialogues) {
+                uint speaker = Convert.ToUInt32(sentence.Substring(0, 1));
+                Debug.WriteLine(speaker.ToString());
+                var m = new TextMessage()
+                {
+                    Body = sentence.Substring(1,sentence.Length - 1),
+                    Speaker = (uint)speaker,
+                    IsFinal = true,
+                    DisplayTime = DateTime.Now,
+                    ConversationIndex = 1
+                };
+                int length = sentence.Length;
+                TimeSpan delay = new TimeSpan();
+                if (length < 5)
+                    delay = TimeSpan.FromSeconds(0.5);
+                else if (length < 15)
+                    delay = TimeSpan.FromSeconds(2);
+                else if (length < 30)
+                    delay = TimeSpan.FromSeconds(4);
+                else if (length < 50)
+                    delay = TimeSpan.FromSeconds(5);
+                else
+                    delay = TimeSpan.FromSeconds(6);
+
+                this.speechInterpreter.conversation.Add(m);
+                this.speechInterpreter.addToCurrentConversation(m);
+                this.speechInterpreter.queryPhenoService(m.Body);
+                EngineHasResult.Invoke(this, speechInterpreter);
+                await Task.Delay(delay);
+            }
+
+
+            return true;
+
+
+        }
+
+        public async Task<bool> EndAudioDemo(string notebookid) {
+            await this.SaveTranscriptions();
+            SpeechPage.Current.setSpeakerButtonEnabled(false);
+            //Triggers audio started event handler in Mainpage to switch necessary interface layout
+            MainPage.Current.onAudioEnded();
+            return true;
+        }
+
+
         //==================================================================================================================
         public async Task SaveTranscriptions()
         {

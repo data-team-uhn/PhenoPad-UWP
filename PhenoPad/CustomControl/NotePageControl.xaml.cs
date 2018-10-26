@@ -967,6 +967,7 @@ namespace PhenoPad.CustomControl
 
 
             userControlCanvas.Children.Add(canvasAddIn);
+            curLineResultPanel.Visibility = Visibility.Collapsed ;
 
             //loading a photo from disk with editing option
             if (loadFromDisk)

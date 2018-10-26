@@ -154,7 +154,7 @@ namespace PhenoPad.SpeechService
             this.latestSentenceIndex = 0;
         }
 
-        private void queryPhenoService(string text)
+        public void queryPhenoService(string text)
         {
             Task<Dictionary<string, Phenotype>> phenosTask = PhenotypeManager.getSharedPhenotypeManager().annotateByNCRAsync(text);
 
@@ -361,32 +361,32 @@ namespace PhenoPad.SpeechService
         }
 
     // Show all words that have not been diarized
-    private List<string> constructTempSentence()
-        {
-            List<string> sentences = new List<string>();
-            string result = String.Empty;
-
-            /*Debug.WriteLine("constructing latest sentences from word index " +
-                        this.latestSentenceIndex.ToString() + " to " +
-                        this.words.Count.ToString());*/
-            for (int i = this.latestSentenceIndex; i < this.words.Count; i++)
+        private List<string> constructTempSentence()
             {
-                result += " " + words[i].word;
+                List<string> sentences = new List<string>();
+                string result = String.Empty;
 
-                if (result.Length > 120)
+                /*Debug.WriteLine("constructing latest sentences from word index " +
+                            this.latestSentenceIndex.ToString() + " to " +
+                            this.words.Count.ToString());*/
+                for (int i = this.latestSentenceIndex; i < this.words.Count; i++)
+                {
+                    result += " " + words[i].word;
+
+                    if (result.Length > 120)
+                    {
+                        sentences.Add(result);
+                        result = String.Empty;
+                    }
+                }
+
+                if (result.Length > 0)
                 {
                     sentences.Add(result);
-                    result = String.Empty;
                 }
-            }
 
-            if (result.Length > 0)
-            {
-                sentences.Add(result);
+                return sentences;
             }
-
-            return sentences;
-        }
 
         private TextMessage constructTempBubble()
         {
@@ -709,6 +709,10 @@ namespace PhenoPad.SpeechService
                 }
             }
            }
+
+        public void addToCurrentConversation(TextMessage t) {
+            currentConversation.Add(t);
+        }
 
     }
 }
