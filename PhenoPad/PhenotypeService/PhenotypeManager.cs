@@ -340,8 +340,10 @@ namespace PhenoPad.PhenotypeService
            // if (type == SourceType.Notes)
             //{
                 temp = phenotypesInNote.Where(x => x.hpId == pid).FirstOrDefault();
-                if (temp != null)
-                    phenotypesInNote.Remove(temp);
+            if (temp != null)
+            {
+                phenotypesInNote.Remove(temp);
+            }
             //}
 
             // if deletion is from suggest, then we should remove it, otherwise set it state to -1

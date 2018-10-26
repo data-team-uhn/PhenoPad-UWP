@@ -297,6 +297,7 @@ namespace PhenoPad
             return pgResult && result2;
         }
 
+
         /// <summary>
         /// Saves current added phenotypes to local file
         /// </summary>

@@ -622,8 +622,6 @@ namespace PhenoPad.CustomControl
                     foreach (InkStroke st in inkCanvas.InkPresenter.StrokeContainer.GetStrokes())
                         st.Selected = true;
                     inkCanvas.InkPresenter.StrokeContainer.MoveSelected(new Point(-bound.Left, -bound.Top));
-
-                    //resizeIcon.Visibility = Visibility.Collapsed;
                 }
             }
             //await rootPage.curPage.AutoSaveAddin(this.name);

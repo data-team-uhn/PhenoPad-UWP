@@ -119,6 +119,7 @@ namespace PhenoPad.CustomControl
         private bool leftLasso = false;
 
         Queue<uint> linesToAnnotate = new Queue<uint>();
+
         int lastStrokeLine = -1;
         List<string> curLineWords = new List<string>();
 
@@ -279,6 +280,7 @@ namespace PhenoPad.CustomControl
             //selectionRectangle.ManipulationCompleted += SelectionRectangle_ManipulationCompleted;      
 
         }
+
 
 
         #region UI Display
