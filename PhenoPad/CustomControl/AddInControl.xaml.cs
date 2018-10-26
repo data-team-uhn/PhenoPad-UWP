@@ -607,12 +607,13 @@ namespace PhenoPad.CustomControl
             {
                 inkCanvas.InkPresenter.InputDeviceTypes = Windows.UI.Core.CoreInputDeviceTypes.None;
                 Rect bound = inkCanvas.InkPresenter.StrokeContainer.BoundingRect;
-
                 if (hasImage)
                 {
                     double ratio = bound.Width / bound.Height;
                     inkCan.Visibility = Visibility.Collapsed;
-
+                    TranslateTransform tt = new TranslateTransform();
+                    tt.Y = -24;
+                    contentGrid.RenderTransform = tt;
                 }
                 else
                 {
