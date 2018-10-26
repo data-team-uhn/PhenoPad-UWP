@@ -611,8 +611,7 @@ namespace PhenoPad.CustomControl
                 if (hasImage)
                 {
                     double ratio = bound.Width / bound.Height;
-                    inkCan.Height = 200;
-                    inkCan.Width = 200 * ratio;
+                    inkCan.Visibility = Visibility.Collapsed;
 
                 }
                 else
@@ -624,12 +623,9 @@ namespace PhenoPad.CustomControl
                     inkCanvas.InkPresenter.StrokeContainer.MoveSelected(new Point(-bound.Left, -bound.Top));
 
                     //resizeIcon.Visibility = Visibility.Collapsed;
-
                 }
-
             }
             //await rootPage.curPage.AutoSaveAddin(this.name);
-
         }
 
         /// <summary>

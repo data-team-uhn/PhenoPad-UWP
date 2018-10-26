@@ -452,7 +452,7 @@
                 <ListView.ItemTemplate>
                     <DataTemplate x:DataType="fileservice:ImageAndAnnotation">
                         <Button Click="addInIcon_Click" HorizontalAlignment="Center" Width="200"
-                            Style="{StaticResource ButtonStyle1}">
+                            Style="{StaticResource ButtonStyleaddin}">
                             <Viewbox Name="AddInIcon" Stretch="Uniform" CanDrag="False">
                                 <customcontrol:AddInControl name="{x:Bind name}" notebookId="{x:Bind notebookId}" 
                                                     viewOnly="True" pageId="{x:Bind pageId}" />
