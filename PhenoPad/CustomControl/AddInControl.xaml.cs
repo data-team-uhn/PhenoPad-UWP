@@ -268,7 +268,9 @@ namespace PhenoPad.CustomControl
         #endregion
 
         #region Resizing / DragTransform Event Handlers
-
+        /// <summary>
+        /// invoked when user is starting the resizing (when pointer is pressed on addin at hit area)
+        /// </summary>
         private void AddInManipulate_Started(object sender, ManipulationStartedRoutedEventArgs e) {
 
             double xPos = e.Position.X;
@@ -296,6 +298,9 @@ namespace PhenoPad.CustomControl
 
 
         }
+        /// <summary>
+        /// invoked when user is resizing the add-in
+        /// </summary>
         private void AddInManipulate_Delta(object sender, ManipulationDeltaRoutedEventArgs e) {
             Opacity = 0.5;
             double left = Canvas.GetLeft(this);
@@ -360,7 +365,9 @@ namespace PhenoPad.CustomControl
                 inkCan.Width += e.Delta.Translation.X * deltaModifier;
             }
         }
-
+        /// <summary>
+        /// invoked when a resizing action is completed by the user
+        /// </summary>
         private async void AddInManipulate_Completed(object sender, ManipulationCompletedRoutedEventArgs e) {
             _isMoving = false;
             _isResizing = false;
@@ -371,7 +378,9 @@ namespace PhenoPad.CustomControl
             Opacity = 1;
             await rootPage.curPage.AutoSaveAddin(this.name);
         }
-
+        /// <summary>
+        /// invoked when user is starting to move the add in (when pointer is pressed in hit area)
+        /// </summary>
         private void Moving_Started(object sender, ManipulationStartedRoutedEventArgs e) {
             this._isResizing = false;
             this._isMoving = true;
@@ -379,6 +388,9 @@ namespace PhenoPad.CustomControl
             manipulateButton.IsEnabled = false;
             Opacity = 0.5;
         }
+        /// <summary>
+        /// invoked when user is moving the addin
+        /// </summary>
         private void Moving_Delta(object sender, ManipulationDeltaRoutedEventArgs e) {
             if (!_isResizing)
             {
@@ -388,6 +400,9 @@ namespace PhenoPad.CustomControl
                 this.dragTransform.Y += e.Delta.Translation.Y * deltaModifier;
             }
         }
+        /// <summary>
+        /// invoked when user has finished moving the add in 
+        /// </summary>
         private async void Moving_Completed(object sender, ManipulationCompletedRoutedEventArgs e) {
             this._isResizing = false;
             this._isMoving = false;
@@ -423,6 +438,9 @@ namespace PhenoPad.CustomControl
             this.Visibility = Visibility.Collapsed;
         }
 
+        /// <summary>
+        /// Need this funciton for resetting hidden add-in the slide animation offset upon every launch
+        /// </summary>
         public async void OnOpenShowDock() {
             if (MainPage.Current.curPage != null) {
                 DoubleAnimation da = (DoubleAnimation)addinPanelHideAnimation.Children.ElementAt(0);
@@ -455,7 +473,9 @@ namespace PhenoPad.CustomControl
             InitiateInkCanvas();
 
         }
-
+        /// <summary>
+        /// invoked when user selects take a photo from category grid
+        /// </summary>
         private void TakePhotoButton_Click(object sender, RoutedEventArgs e)
         {
             this.CameraCanvas.Visibility = Visibility.Visible;
@@ -463,7 +483,9 @@ namespace PhenoPad.CustomControl
             //this.imageControl.deleteAsHide();
             PhotoButton.Visibility = Visibility.Visible;
         }
-
+        /// <summary>
+        /// invoked when user is in camera preview mode and clicks on the camera button
+        /// </summary>
         private async void PhotoButton_Click(object sender, RoutedEventArgs e)
         {
             try
@@ -581,10 +603,6 @@ namespace PhenoPad.CustomControl
 
             scrollViewer.Visibility = Visibility.Visible;
 
-
-            //this.ControlStackPanel.Visibility = Visibility.Visible;
-            //contentGrid.Children.Add(inkCanvas);
-
             inkCan.Visibility = Visibility.Visible;
             if (!onlyView) // added from note page, need editing
             {           
@@ -664,8 +682,6 @@ namespace PhenoPad.CustomControl
                 var file = await FileManager.getSharedFileManager().GetNoteFileNotCreate(notebookId, pageId, NoteFileType.Image, name);
                 if (file != null)
                 {
-                    //inkCan.Height = this.Height / viewFactor.ScaleY - 88;
-                    //inkCan.Width = this.Width / viewFactor.ScaleX;
                     var properties = await file.Properties.GetImagePropertiesAsync();
                     imgratio = (double)properties.Width / properties.Height;
                     BitmapImage img = new BitmapImage(new Uri(file.Path));
