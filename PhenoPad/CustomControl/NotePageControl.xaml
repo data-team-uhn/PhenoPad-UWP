@@ -432,7 +432,7 @@
 
 
         <Grid x:Name="addinBase" Grid.Column="1"  x:FieldModifier="public"
-            Visibility="Collapsed" Padding="5" Width="250"
+            Visibility="Visible" Padding="5" Width="250"
             Background="{StaticResource TITLE_BAR_WHITE}" HorizontalAlignment="Right"
             VerticalAlignment="Stretch">
 

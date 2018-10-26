@@ -230,7 +230,6 @@ namespace PhenoPad.CustomControl
             {
                 this.widthOrigin = (widthOrigin < DEFAULT_WIDTH) ? DEFAULT_WIDTH : widthOrigin;
                 this.heightOrigin = (heightOrigin < DEFAULT_HEIGHT) ? DEFAULT_HEIGHT : heightOrigin;
-                Debug.WriteLine($"ORIGIN = {this.widthOrigin},{this.heightOrigin}");
                 this.Width = this.widthOrigin;
                 this.Height = this.heightOrigin;
 
@@ -425,11 +424,13 @@ namespace PhenoPad.CustomControl
         }
 
         public async void OnOpenShowDock() {
-            DoubleAnimation da = (DoubleAnimation)addinPanelHideAnimation.Children.ElementAt(0);
-            da.By = rootPage.ActualWidth - (this.canvasLeft + this.dragTransform.X);
-            MainPage.Current.curPage.quickShowDock();
-            await addinPanelHideAnimation.BeginAsync();
-            this.Visibility = Visibility.Collapsed;
+            if (MainPage.Current.curPage != null) {
+                DoubleAnimation da = (DoubleAnimation)addinPanelHideAnimation.Children.ElementAt(0);
+                da.By = rootPage.ActualWidth - (this.canvasLeft + this.dragTransform.X);
+                MainPage.Current.curPage.quickShowDock();
+                await addinPanelHideAnimation.BeginAsync();
+                this.Visibility = Visibility.Collapsed;
+            }
         }
 
         public async void Maximize_Addin() {
@@ -604,18 +605,28 @@ namespace PhenoPad.CustomControl
             }
             else // only for viewing on page overview page
             {
+                inkCanvas.InkPresenter.InputDeviceTypes = Windows.UI.Core.CoreInputDeviceTypes.None;
                 Rect bound = inkCanvas.InkPresenter.StrokeContainer.BoundingRect;
-                inkCan.Height = bound.Height;
-                inkCan.Width = bound.Width;
-                foreach (InkStroke st in inkCanvas.InkPresenter.StrokeContainer.GetStrokes())
-                    st.Selected = true;
-                inkCanvas.InkPresenter.StrokeContainer.MoveSelected(new Point(-bound.Left,-bound.Top));
 
-                //resizeIcon.Visibility = Visibility.Collapsed;
-                double ratio = bound.Width / bound.Height;
+                if (hasImage)
+                {
+                    double ratio = bound.Width / bound.Height;
+                    inkCan.Height = 200;
+                    inkCan.Width = 200 * ratio;
 
-                inkCanvas.InkPresenter.InputDeviceTypes =
-                    Windows.UI.Core.CoreInputDeviceTypes.None;
+                }
+                else
+                {
+                    inkCan.Height = bound.Height;
+                    inkCan.Width = bound.Width;
+                    foreach (InkStroke st in inkCanvas.InkPresenter.StrokeContainer.GetStrokes())
+                        st.Selected = true;
+                    inkCanvas.InkPresenter.StrokeContainer.MoveSelected(new Point(-bound.Left, -bound.Top));
+
+                    //resizeIcon.Visibility = Visibility.Collapsed;
+
+                }
+
             }
             //await rootPage.curPage.AutoSaveAddin(this.name);
 

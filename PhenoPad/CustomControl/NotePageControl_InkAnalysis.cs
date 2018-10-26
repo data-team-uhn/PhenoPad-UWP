@@ -236,9 +236,16 @@ namespace PhenoPad.CustomControl
             IReadOnlyList<InkStroke> currentStrokes = inkCanvas.InkPresenter.StrokeContainer.GetStrokes();
             if (currentStrokes.Count > 0)
             {
-                List<HWRRecognizedText> recognitionResults = await HWRManager.getSharedHWRManager().OnRecognizeAsync
-                    (inkCanvas.InkPresenter.StrokeContainer, InkRecognitionTarget.Selected);
-
+                List<HWRRecognizedText> recognitionResults = new List<HWRRecognizedText>();
+                if (abbreviation_enabled)
+                {
+                    recognitionResults = await HWRManager.getSharedHWRManager().OnRecognizeAsync
+                                                            (inkCanvas.InkPresenter.StrokeContainer, InkRecognitionTarget.Selected, true);
+                }
+                else {
+                    recognitionResults = await HWRManager.getSharedHWRManager().OnRecognizeAsync
+                                        (inkCanvas.InkPresenter.StrokeContainer, InkRecognitionTarget.Selected);
+                }
                 string str = "";
                 if (recognitionResults != null)
                 {
@@ -253,6 +260,7 @@ namespace PhenoPad.CustomControl
 
                 return str;
             }
+            ClearSelectionAsync();
             return String.Empty;
         }
 
@@ -353,6 +361,7 @@ namespace PhenoPad.CustomControl
         private async void TriggerRecogServer(object sender, object e)
         {
             Debug.WriteLine("\n TRIGGER TICKED, WILL ANALYZE THROUGH SERVER...\n");
+            
             recognizeTimer.Stop();
             if (inkAnalyzer.IsAnalyzing)
             {
@@ -492,6 +501,7 @@ namespace PhenoPad.CustomControl
                     //user has drawn a square/rectangle for adding an add-in
                     if (drawNode.DrawingKind == InkAnalysisDrawingKind.Rectangle || drawNode.DrawingKind == InkAnalysisDrawingKind.Square)
                     {
+                        recognizeTimer.Stop();
                         foreach (var dstroke in drawNode.GetStrokeIds())
                         {
                             var stroke = inkCanvas.InkPresenter.StrokeContainer.GetStrokeById(dstroke);

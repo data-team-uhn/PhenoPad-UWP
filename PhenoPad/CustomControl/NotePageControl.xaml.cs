@@ -1094,16 +1094,10 @@ namespace PhenoPad.CustomControl
         /// </summary>
         public async void AddinsButton_Click(object sender, RoutedEventArgs e)
         {
-            if (addinBase.Visibility == Visibility.Visible)
-            {
-                await addinHideAnimation.BeginAsync();
-                addinBase.Visibility = Visibility.Collapsed;
-            }
-            else
-            {
-                addinBase.Visibility = Visibility.Visible;
+            if (slide.X == 250)
                 await addinShowAnimation.BeginAsync();
-            }
+            else
+                await addinHideAnimation.BeginAsync();
         }
 
         /// <summary>
@@ -1115,13 +1109,13 @@ namespace PhenoPad.CustomControl
         }
 
         public async void quickShowDock() {
-            if (addinBase.Visibility == Visibility.Collapsed) {
-                AddinsButton_Click(null, null);
-                await Task.Delay(TimeSpan.FromSeconds(1));
-                AddinsButton_Click(null, null);
+            if (slide.X == 250) {
+                await addinShowAnimation.BeginAsync();
+                await Task.Delay(TimeSpan.FromSeconds(0.3));
+                await addinHideAnimation.BeginAsync();
             }
             else
-                AddinsButton_Click(null, null);
+                await addinHideAnimation.BeginAsync();
         }
 
         #endregion
