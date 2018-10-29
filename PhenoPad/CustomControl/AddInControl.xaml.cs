@@ -70,7 +70,7 @@ namespace PhenoPad.CustomControl
 
         public double canvasLeft;
         public double canvasTop;
-        public double imgratio;
+
 
         public bool inDock;
         public double slideOffset = 250;
@@ -136,7 +136,7 @@ namespace PhenoPad.CustomControl
         private double _curWidthRatio;
 
 
-        private Direction resizeDir;
+
         public static readonly DependencyProperty nameProperty = DependencyProperty.Register(
          "name",
          typeof(String),
@@ -187,6 +187,25 @@ namespace PhenoPad.CustomControl
          typeof(TextBlock),
          new PropertyMetadata(null)
        );
+
+        public double imgratio
+        {
+            get { return (double)GetValue(imgratioProperty); }
+            set
+            {
+                SetValue(imgratioProperty, value);
+            }
+        }
+
+        public static readonly DependencyProperty imgratioProperty = DependencyProperty.Register(
+         "imgratio",
+         typeof(double),
+         typeof(TextBlock),
+         new PropertyMetadata(null)
+        );
+
+
+
         #endregion
 
         //===================================================METHODS BELOW==================================================
@@ -419,7 +438,6 @@ namespace PhenoPad.CustomControl
 
         private async void Delete_Click(object sender, RoutedEventArgs e)
         {
-            LogService.MetroLogger.getSharedLogger().Info($"Deleting addin {this.name} from notepage.");
             ((Panel)this.Parent).Children.Remove(this);
             await rootPage.curPage.AutoSaveAddin(null);
             await rootPage.curPage.refreshAddInList();
@@ -628,10 +646,16 @@ namespace PhenoPad.CustomControl
                 if (hasImage)
                 {
                     double ratio = bound.Width / bound.Height;
-                    inkCan.Visibility = Visibility.Collapsed;
+                    //inkCan.Visibility = Visibility.Collapsed;
                     TranslateTransform tt = new TranslateTransform();
                     tt.Y = -24;
                     contentGrid.RenderTransform = tt;
+                    this.Width = 400;
+                    this.Height = this.Width / imgratio;
+                    inkCan.Height = this.Height;
+                    inkCan.Width = this.Width;
+                    Debug.WriteLine(inkCan.Width+","+inkCan.Height);
+
                 }
                 else
                 {

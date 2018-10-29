@@ -430,7 +430,7 @@
         </ScrollViewer>
         
 
-
+        <!--Sidebar dock to show minimized add in controls-->
         <Grid x:Name="addinBase" Grid.Column="1"  x:FieldModifier="public"
             Visibility="Visible" Padding="5" Width="250"
             Background="{StaticResource TITLE_BAR_WHITE}" HorizontalAlignment="Right"
@@ -451,11 +451,12 @@
                     Margin="0" Grid.Row="1">
                 <ListView.ItemTemplate>
                     <DataTemplate x:DataType="fileservice:ImageAndAnnotation">
-                        <Button Click="addInIcon_Click" HorizontalAlignment="Center" Width="200"
+                        <Button Click="addInIcon_Click" HorizontalAlignment="Center" Width="200" Margin="0" Padding="0"
                             Style="{StaticResource ButtonStyleaddin}">
                             <Viewbox Name="AddInIcon" Stretch="Uniform" CanDrag="False">
                                 <customcontrol:AddInControl name="{x:Bind name}" notebookId="{x:Bind notebookId}" 
-                                                    viewOnly="True" pageId="{x:Bind pageId}" />
+                                                    viewOnly="True"
+                                                    pageId="{x:Bind pageId}" />
                             </Viewbox>
                         </Button>
                     </DataTemplate>
