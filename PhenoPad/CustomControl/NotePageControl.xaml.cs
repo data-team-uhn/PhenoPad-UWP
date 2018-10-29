@@ -331,6 +331,7 @@ namespace PhenoPad.CustomControl
         {
             // Draw background lines
             DrawBackgroundLines();
+            ClearSelectionAsync();
             scrollViewer.ChangeView(null, 100, null, true);
             sideScrollView.ChangeView(null, 100, null, true);
         }
