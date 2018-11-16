@@ -377,18 +377,18 @@ namespace PhenoPad
         {
             try
             {
-                if (speechEngineRunning == false)
-                    await SpeechManager.getSharedSpeechManager().StartAudio();
-                else
-                    await SpeechManager.getSharedSpeechManager().EndAudio(notebookId);
-
-                //#region demo
-                ////FOR DEMO PURPOSES, COMMENT OUT FOR REAL USAGE
                 //if (speechEngineRunning == false)
-                //    await SpeechManager.getSharedSpeechManager().StartAudioDemo();
+                //    await SpeechManager.getSharedSpeechManager().StartAudio();
                 //else
-                //    await SpeechManager.getSharedSpeechManager().EndAudioDemo(notebookId);
-                //#endregion
+                //    await SpeechManager.getSharedSpeechManager().EndAudio(notebookId);
+
+                #region demo
+                //FOR DEMO PURPOSES, COMMENT OUT FOR REAL USAGE
+                if (speechEngineRunning == false)
+                    await SpeechManager.getSharedSpeechManager().StartAudioDemo();
+                else
+                    await SpeechManager.getSharedSpeechManager().EndAudioDemo(notebookId);
+                #endregion
             }
             catch (Exception ex)
             {

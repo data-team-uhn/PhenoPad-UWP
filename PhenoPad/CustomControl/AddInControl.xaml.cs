@@ -64,10 +64,6 @@ namespace PhenoPad.CustomControl
 
         //https://stackoverflow.com/questions/48397647/uwp-is-there-anyway-to-implement-control-for-resizing-and-move-textbox-in-canva
 
-        //public string name { get; }
-        //public string notebookId { get; }
-        //public string pageId { get; }
-
         public double canvasLeft;
         public double canvasTop;
 
@@ -134,8 +130,6 @@ namespace PhenoPad.CustomControl
         private bool _leftSide;
         private bool _rightSide;
         private double _curWidthRatio;
-
-
 
         public static readonly DependencyProperty nameProperty = DependencyProperty.Register(
          "name",
@@ -620,10 +614,9 @@ namespace PhenoPad.CustomControl
               hideScrollViewer();
 
             scrollViewer.Visibility = Visibility.Visible;
-
             inkCan.Visibility = Visibility.Visible;
-            if (!onlyView) // added from note page, need editing
-            {           
+            if (!onlyView)
+            {// added from note page, need editing       
                 // Set supported input type to default using both moush and pen
                 inkCanvas.InkPresenter.InputDeviceTypes =
                     Windows.UI.Core.CoreInputDeviceTypes.Mouse |
@@ -639,34 +632,31 @@ namespace PhenoPad.CustomControl
                 inkToolbar.TargetInkCanvas = inkCanvas;
                 inkToolbar.Visibility = Visibility.Visible;
             }
-            else // only for viewing on page overview page
-            {
+            else
+            {// only for viewing on page overview page / addin collection dock
                 inkCanvas.InkPresenter.InputDeviceTypes = Windows.UI.Core.CoreInputDeviceTypes.None;
-                Rect bound = inkCanvas.InkPresenter.StrokeContainer.BoundingRect;
                 if (hasImage)
-                {
-                    double ratio = bound.Width / bound.Height;
-                    //inkCan.Visibility = Visibility.Collapsed;
+                {//when loading an image, had to manually adjust dimension to display full size strokes
                     TranslateTransform tt = new TranslateTransform();
-                    tt.Y = -24;
-                    contentGrid.RenderTransform = tt;
+                    //tt.Y = -24;
+                    //contentGrid.RenderTransform = tt;
                     this.Width = 400;
-                    this.Height = this.Width / imgratio;
+                    this.Height = (int)(this.Width / imgratio);
                     inkCan.Height = this.Height;
                     inkCan.Width = this.Width;
                     Debug.WriteLine(inkCan.Width+","+inkCan.Height);
-
                 }
                 else
-                {
-                    inkCan.Height = bound.Height;
-                    inkCan.Width = bound.Width;
+                {//adjust ink canvas size/position to display full stroke view
+                    Rect bound = inkCanvas.InkPresenter.StrokeContainer.BoundingRect;
+                    double ratio = bound.Width / bound.Height;
+                    inkCan.Height = bound.Height + 10;
+                    inkCan.Width = bound.Width + 10;
                     foreach (InkStroke st in inkCanvas.InkPresenter.StrokeContainer.GetStrokes())
                         st.Selected = true;
                     inkCanvas.InkPresenter.StrokeContainer.MoveSelected(new Point(-bound.Left, -bound.Top));
                 }
             }
-            //await rootPage.curPage.AutoSaveAddin(this.name);
         }
 
         /// <summary>
@@ -705,7 +695,7 @@ namespace PhenoPad.CustomControl
                 // photo file
                 var file = await FileManager.getSharedFileManager().GetNoteFileNotCreate(notebookId, pageId, NoteFileType.Image, name);
                 if (file != null)
-                {
+                {//gets the photo file and adds to content grid
                     var properties = await file.Properties.GetImagePropertiesAsync();
                     imgratio = (double)properties.Width / properties.Height;
                     BitmapImage img = new BitmapImage(new Uri(file.Path));
@@ -715,22 +705,18 @@ namespace PhenoPad.CustomControl
                     contentGrid.Children.Add(photo);
                     categoryGrid.Visibility = Visibility.Collapsed;
                     this.hasImage = true;
-                    //inkCan.RenderTransform = viewFactor;
                 }
-                //stroke-only addin, resetting canvas dimension to bound saved storkes
                 else
-                {
+                {//Initializing addin with drawing mode, reset windows to saved dimension
+
                     inkCan.Height = this.Height - 48;
                     inkCan.Width = this.Width;
                 }
-
                 InitiateInkCanvas(onlyView);
             }
             catch (Exception e) {
-                LogService.MetroLogger.getSharedLogger().Error($"{e}");
+                LogService.MetroLogger.getSharedLogger().Error($"{e}:{e.Message}");
             }
-
-
         }
 
         /// <summary>

@@ -155,7 +155,7 @@
         </Grid>
 
         <Grid Grid.Row="0" Grid.RowSpan="2" Background="White" Opacity="0.9"  
-              Name="MovingGrid" Visibility="Collapsed"
+              Name="MovingGrid"  Visibility="Collapsed"
               Tapped="noImageManipulation_Tapped"
               ManipulationMode="TranslateX,TranslateY"
               ManipulationStarted="AddInManipulate_Started" 
@@ -163,6 +163,8 @@
               ManipulationCompleted="AddInManipulate_Completed">
             <TextBlock Text="Resizing Mode" FontWeight="Bold" FontSize="24" VerticalAlignment="Center"  HorizontalAlignment="Center"
                        Opacity="0.3"/>
+            <TextBlock Text="Tap to cancel" FontWeight="SemiBold" FontSize="18" VerticalAlignment="Center"  HorizontalAlignment="Center"
+                       Opacity="0.3" Margin="146,166,147,110"/>
             <Grid Name="noImageManipulation">
                 <SymbolIcon Name="leftA" Margin="10" Symbol="Back" VerticalAlignment="Center" HorizontalAlignment="Left" />
                 <SymbolIcon Name="rightA" Margin="10" Symbol="Back" VerticalAlignment="Center" HorizontalAlignment="Right" RenderTransformOrigin="0.5,0.488">

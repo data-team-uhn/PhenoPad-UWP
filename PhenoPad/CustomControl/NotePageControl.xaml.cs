@@ -929,7 +929,7 @@ namespace PhenoPad.CustomControl
                 {
                     canvasAddIn.Visibility = Visibility.Collapsed;
                     Canvas.SetLeft(canvasAddIn, ia.canvasLeft);
-                    //canvasAddIn.Minimize_Click(this, null);
+                    //need to manually trigger hidden slide animation to initialize slide offsets
                     canvasAddIn.OnOpenShowDock();
                 }
                 else
@@ -946,7 +946,6 @@ namespace PhenoPad.CustomControl
 
                 //If this addin was hidden during the last edit, auto hides it from initialization
                 canvasAddIn.Visibility = ia.inDock ? Visibility.Collapsed : Visibility.Visible;   
-
         }
 
         /// <summary>
@@ -1107,10 +1106,13 @@ namespace PhenoPad.CustomControl
         /// Refetch updated meta XML data for addins and uses showAddIn() to refresh preview dock.
         /// </summary>
         public async Task refreshAddInList() {
-            List<ImageAndAnnotation> imageAndAnno = await FileManager.getSharedFileManager().GetImgageAndAnnotationObjectFromXML(notebookId, pageId);
+            List<ImageAndAnnotation> imageAndAnno = await FileManager.getSharedFileManager().
+                                                          GetImgageAndAnnotationObjectFromXML(notebookId, pageId);
             this.showAddIn(imageAndAnno);
         }
-
+        /// <summary>
+        /// Quick plays addin dock sliding animation
+        /// </summary>
         public async void quickShowDock() {
             if (slide.X == 250) {
                 await addinShowAnimation.BeginAsync();

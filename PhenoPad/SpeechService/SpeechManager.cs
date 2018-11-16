@@ -556,32 +556,47 @@ namespace PhenoPad.SpeechService
             this.speechInterpreter.newConversation();
             List<string> dialogues = new List<string>()
             {
-                "0Good afternoon Mr.Miller, How's it going?",
-                "1Good day Dr, I’m not feeling so well recently so am here for a check-in",
+                "0Good morning Ms.Bingham, How are you doing?",
+                "1Good day Dr, I’m not feeling so well so I came for a check-in",
                 "0Oh ok, have a sit here so we can discuss more about your issues.",
-                "0What’s your age sir?",
-                "154",
-                "0Ok,So what's the problem here?",
-                "1I’ve been having chest pain for a while and recently it gets worse on the left arm side",
-                "1Also my headaches are more frequent than before especially the past two days, also faints a lot more than before.",
-                "0How bad is the headache and the fainting? Do you get hallucinations?",
-                "1Nope, I just feel dizzy and weak",
-                "0Have you had any seizures before? ",
-                "1Nope, but had a stroke last Saturday while drinking Vodka at home, was sent in by ambulance.",
-                "0Ok, do you have any allergies?",
-                "1Penicillins only",
-                "0Any past history of Coronary artery disease?",
-                "1No",
-                "0Ok,so let me take some tests on your blood pressure and heart rates",
-                "0Blood Pressure 154 and 76",
-                "0Heart Rate 103 tachycardic, this is high Mr.Millers, do you ever have the feeling that your heart is beating too fast?",
-                "1Rarely when I drink, but most times no",
-                "0Have any of your family members also have heart related problems?",
-                "1No not as far as I know, but my grandmother died at 92 from a breast cancer, one of my aunt also has colorectal cancer.",
-                "0I see, do you have any past medical history relating to this issue?",
-                "1Yes, I’ve been to the health check few years ago and took some electrocardiograms, the doc there said I have some kind of atrial fibrillation and should be check-in.",
+                "0What’s your age Ms?",
+                "124",
+                "0Ok,so tell me something about your illness please.",
+                "1I’ve been having sore throat since yesterday morning and it's getting worse, I've never had this problem before",
+                "0Do you have any difficulties swallowing?",
+                "1Nope, but the pain gets worse if I try to swallow. I tried different home-cures but none of them helped at all.",
+                "0I see, did you have any shortness of breadth or choking?",
+                "1No, not at all.",
+                "0Do you feel tired while having the sore throat?",
+                "1Yes and my appetite is gone and I don't feel like eating anything at all. I also feel like I've got a fever.",
+                "0Ok, have you had any chest pains during this period?",
+                "1Yes but mild.",
+                "0How about coughing?",
+                "1Occasionally",
+                "0Abdonminal pains or headaches?",
+                "1Sometimes yes",
+                "0Do you have any family members with similar illness?",
+                "1I'm married with two children and none of them are having the same issue.",
+                "0Any alcohol or drug intakes at the moment?",
+                "1No not at all.",
+                "0I see. Thank you Ms.Bingham, we will now go through some physical examinations to further check the problems."
+
             };
-            foreach (string sentence in dialogues) {
+            List<string> dialogues2 = new List<string>(){
+                "0Good afternoon Mr.Miller, How's it going?",
+                "1Good day Dr, I'm not feeling so well recently so am here for a check-in",
+                "0Oh ok, have a sit here so we can discuss more about your issues.",
+                "0What's your age sir?",
+                "154",
+                "0Alright, so what brings you here today?",
+                "1I've been having chest pain for a while and recently it's getting worse on the left arm side",
+                "1I'm also getting headaches more frequent than before,especially the past two days",
+                "0How bad is the headache, do you get hallucinations?",
+                "1Nope, I just feel dizzy and weak",
+                "0Have you had any seizures before?",
+                "1Nope, but I had a stroke last Saturday while drinking Vodka at home and was sent in by ambulance."
+            };
+            foreach (string sentence in dialogues2) {
                 uint speaker = Convert.ToUInt32(sentence.Substring(0, 1));
                 Debug.WriteLine(speaker.ToString());
                 var m = new TextMessage()
