@@ -177,6 +177,10 @@ namespace PhenoPad
         /// if user attempts to exit while editing, exit apps after
         /// </summary>
         private async Task confirmOnExit_Clicked() {
+            //no need to ask user if already at note overview page
+            if (Frame.CurrentSourcePageType == typeof(PageOverview))
+                Application.Current.Exit();
+
             var messageDialog = new MessageDialog("Save and exit?");
             messageDialog.Title = "PhenoPad";
             messageDialog.Commands.Add(new UICommand("Save") { Id = 0 });
@@ -361,21 +365,42 @@ namespace PhenoPad
         {
             //initializing notes
             {
-                var nid = e.Parameter as string;
-                if (nid == "__new__")
+                var nid= e.Parameter as string;
+                if (nid == "__EHR__")
                 {
-                    this.loadFromDisk = false;
+                    try
+                    {
+                        // Let users choose their text file using a file picker.
+                        // Initialize the picker.
+                        FileOpenPicker openPicker = new FileOpenPicker();
+                        openPicker.SuggestedStartLocation = PickerLocationId.DocumentsLibrary;
+                        openPicker.FileTypeFilter.Add(".txt");
+                        // Show the file picker.
+                        StorageFile file = await openPicker.PickSingleFileAsync();
+                        await this.InitializeEHRNote(file);
+                    }
+                    catch (Exception ex)
+                    {
+                        LogService.MetroLogger.getSharedLogger().Error(ex.Message);
+                    }
                 }
                 else
                 {
-                    this.loadFromDisk = true;
-                    this.notebookId = nid;
-                    FileManager.getSharedFileManager().currentNoteboookId = nid;
+                    if (nid == "__new__")
+                    {
+                        this.loadFromDisk = false;
+                    }
+                    else
+                    {
+                        this.loadFromDisk = true;
+                        this.notebookId = nid;
+                        FileManager.getSharedFileManager().currentNoteboookId = nid;
+                    }
+                    if (loadFromDisk) // Load notes from file
+                        await Dispatcher.RunAsync(CoreDispatcherPriority.High, this.InitializeNotebookFromDisk);
+                    else // Create new notebook
+                        await Dispatcher.RunAsync(CoreDispatcherPriority.High, this.InitializeNotebook);
                 }
-                if (loadFromDisk) // Load notes from file
-                    await Dispatcher.RunAsync(CoreDispatcherPriority.High, this.InitializeNotebookFromDisk);
-                else // Create new notebook
-                    await Dispatcher.RunAsync(CoreDispatcherPriority.High, this.InitializeNotebook);
             }
         }
 

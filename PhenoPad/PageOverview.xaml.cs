@@ -26,6 +26,7 @@ using Windows.UI.Xaml.Media;
 using Windows.UI.Xaml.Media.Imaging;
 using Windows.UI.Xaml.Navigation;
 using PhenoPad.LogService;
+using Windows.Storage.Pickers;
 
 // The Blank Page item template is documented at https://go.microsoft.com/fwlink/?LinkId=234238
 
@@ -90,6 +91,11 @@ namespace PhenoPad
         {
             LogService.MetroLogger.getSharedLogger().Info("Creating a new note...");
             this.Frame.Navigate(typeof(MainPage), "__new__");
+        }
+
+        private void ImportEHR_Click(object sender, RoutedEventArgs e) {
+            LogService.MetroLogger.getSharedLogger().Info("Importing EHR from local...");
+            this.Frame.Navigate(typeof(MainPage), "__EHR__");
         }
 
         private async void notebookList_ItemClick(object sender, ItemClickEventArgs e)

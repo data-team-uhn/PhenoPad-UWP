@@ -209,6 +209,55 @@ namespace PhenoPad
 
         }
 
+        public async Task InitializeEHRNote(StorageFile file)
+        {
+            PhenoMana.clearCache();
+
+            //if user cancels choosing a file or file is not valid, just create a new notebook
+            if (file == null) {
+                NotifyUser("No EHR file, will create a new note instead",NotifyType.StatusMessage,2);
+                await Dispatcher.RunAsync(CoreDispatcherPriority.High, this.InitializeNotebook);
+                return;
+            }
+
+            // Tries to create a file structure for the new notebook.
+            {
+                notebookId = FileManager.getSharedFileManager().createNotebookId();
+                FileManager.getSharedFileManager().currentNoteboookId = notebookId;
+                bool result = await FileManager.getSharedFileManager().CreateNotebook(notebookId);
+                SpeechManager.getSharedSpeechManager().setAudioIndex(0);
+                if (!result)
+                    NotifyUser("Failed to create file structure, notes may not be saved.", NotifyType.ErrorMessage, 2);
+                else
+                    notebookObject = await FileManager.getSharedFileManager().GetNotebookObjectFromXML(notebookId);
+
+                if (notebookObject != null)
+                    noteNameTextBox.Text = notebookObject.name;
+            }
+
+            notePages = new List<NotePageControl>();
+            pageIndexButtons = new List<Button>();
+
+            NotePageControl aPage = new NotePageControl(notebookId, "0");
+            notePages.Add(aPage);
+            inkCanvas = aPage.inkCan;
+            MainPageInkBar.TargetInkCanvas = inkCanvas;
+            curPage = aPage;
+            curPageIndex = 0;
+            PageHost.Content = curPage;
+            addNoteIndex(curPageIndex);
+            setNotePageIndex(curPageIndex);
+
+            currentMode = WritingMode;
+            modeTextBlock.Text = WritingMode;
+            //by default uses internal microphone
+            SurfaceMicRadioButton_Checked(null, null);
+            // create file sturcture for this page
+            await FileManager.getSharedFileManager().CreateNotePage(notebookObject, curPageIndex.ToString());
+            curPage.Visibility = Visibility.Visible;
+        }
+
+
         public async Task PromptRemakeNote(string notebookId) {
             var messageDialog = new MessageDialog("This Notebook seems to be corrupted and cannot be loaded, please recreate a new note.");
             messageDialog.Title = "Error";
