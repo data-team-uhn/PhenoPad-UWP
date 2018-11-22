@@ -269,8 +269,8 @@ namespace PhenoPad.CustomControl
             //textEditGrid.Visibility = Visibility.Collapsed;
             
             var format = textNoteEditBox.Document.GetDefaultParagraphFormat();
-            textNoteEditBox.FontSize = 22;
-            format.SetLineSpacing(LineSpacingRule.Exactly, 33.7f);
+            textNoteEditBox.FontSize = 32;
+            format.SetLineSpacing(LineSpacingRule.Exactly, 37.5f);
             textNoteEditBox.Document.SetDefaultParagraphFormat(format);
 
             // disable moving strokes for now
@@ -286,6 +286,26 @@ namespace PhenoPad.CustomControl
         #region UI Display
         // ============================== UI DISPLAYS HANDLER ==============================================//
         // draw background lines for notes
+
+        public void changeLineHeight() {
+            var format = textNoteEditBox.Document.GetDefaultParagraphFormat();
+            textNoteEditBox.FontSize = 32;
+            format.SetLineSpacing(LineSpacingRule.Exactly, 50f);
+            textNoteEditBox.Document.SetDefaultParagraphFormat(format);
+            this.AddHandler(PointerMovedEvent, new PointerEventHandler(editor_PointerMoved), true);
+            Debug.WriteLine("added");
+        }
+
+        private void editor_PointerMoved(object sender, PointerRoutedEventArgs e)
+        {
+            var position = e.GetCurrentPoint(textNoteEditBox).Position;
+
+            var range = textNoteEditBox.Document.GetRangeFromPoint(position, Windows.UI.Text.PointOptions.ClientCoordinates);
+            string outt;
+            textNoteEditBox.Document.GetText(TextGetOptions.None, out outt);
+            Debug.WriteLine("pos:"+outt.Substring(range.StartPosition));
+        }
+
         public void DrawBackgroundLines()
         {
             for (int i = 1; i <= backgroundCanvas.RenderSize.Height / LINE_HEIGHT; ++i)
@@ -1690,10 +1710,10 @@ namespace PhenoPad.CustomControl
             tb.BorderThickness = new Thickness(0);
             tb.FontSize = 22;
             tb.Width = bounding.Width;
-            tb.Height = LINE_HEIGHT ;
+            tb.Height = LINE_HEIGHT;
             int ln = line + 1;
             Canvas.SetLeft(tb, bounding.X);
-            Canvas.SetTop(tb, ln * LINE_HEIGHT - tb.Height + 8); 
+            Canvas.SetTop(tb, ln * LINE_HEIGHT - tb.Height + 8);
             //selectionCanvas.Children.Add(rectangle);
             recognizedTextCanvas.Children.Add(tb);
             textBlockToAlternatives.Add(tb, alters);

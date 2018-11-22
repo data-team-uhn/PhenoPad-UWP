@@ -98,9 +98,9 @@ namespace PhenoPad
         public static readonly string ViewMode = "View Mode";
         private string currentMode = WritingMode;
         private bool ifViewMode = false;
-        private string curMic = "external";
 
         private int num = 0;
+        public bool abbreviation_enabled;
 
         private SemaphoreSlim notifySemaphoreSlim = new SemaphoreSlim(1);
         #endregion
@@ -151,8 +151,17 @@ namespace PhenoPad
             chatView.ContainerContentChanging += OnChatViewContainerContentChanging;
             realtimeChatView.ItemsSource = SpeechManager.getSharedSpeechManager().realtimeConversation;
             speechEngineRunning = false;
-
             PropertyChanged += MainPage_PropertyChanged;
+
+
+            HWRAddrInput.Text = HWRService.HWRManager.getSharedHWRManager().getIPAddr();
+            string serverPath = SpeechManager.getSharedSpeechManager().getServerAddress() + ":" +
+                                SpeechManager.getSharedSpeechManager().getServerPort();
+            ASRAddrInput.Text = serverPath;
+
+            //by default using internal microphone and with abbreviation detections
+            SurfaceMicRadioButton_Checked(null,null);
+            AbbreviationON_Checked(null, null);
 
             //When user clicks X while in mainpage, auto-saves all current process and exits the program.
             Windows.UI.Core.Preview.SystemNavigationManagerPreview.GetForCurrentView().CloseRequested +=
@@ -171,11 +180,12 @@ namespace PhenoPad
             var messageDialog = new MessageDialog("Save and exit?");
             messageDialog.Title = "PhenoPad";
             messageDialog.Commands.Add(new UICommand("Save") { Id = 0 });
-            messageDialog.Commands.Add(new UICommand("Cancel") { Id = 1 });
+            messageDialog.Commands.Add(new UICommand("Don't Save") { Id = 1 });
+            messageDialog.Commands.Add(new UICommand("Cancel") { Id = 2 });
             // Set the command that will be invoked by default
-            messageDialog.DefaultCommandIndex = 0;
+            messageDialog.DefaultCommandIndex = 2;
             // Set the command to be invoked when escape is pressed
-            messageDialog.CancelCommandIndex = 1;
+            messageDialog.CancelCommandIndex = 2;
             // Show the message dialog
             var result = await messageDialog.ShowAsync();
             if ((int)result.Id == 0)
@@ -186,7 +196,12 @@ namespace PhenoPad
                     await this.saveNoteToDisk();
                 Application.Current.Exit();
             }
-            else {
+            else if ((int)result.Id == 1) {
+                logger.Info("Exiting app without saving ...");
+                Application.Current.Exit();
+            }
+            else
+            {
                 logger.Info("Canceled Exiting app");
             }
         }
@@ -221,10 +236,7 @@ namespace PhenoPad
             if (curPage != null)
                 curPage.DrawBackgroundLines();
 
-            HWRAddrInput.Text = HWRService.HWRManager.getSharedHWRManager().getIPAddr();
-            string serverPath = SpeechManager.getSharedSpeechManager().getServerAddress() + ":" + 
-                                SpeechManager.getSharedSpeechManager().getServerPort();
-            ASRAddrInput.Text = serverPath;
+            
 
         }
 
@@ -715,15 +727,6 @@ namespace PhenoPad
             this.audioButton.IsEnabled = true;
         }
 
-        //private void MicButton_Click(object sender, RoutedEventArgs e)
-        //{
-        //    enableMic();
-        //}
-
-        //private void PageOverviewButton_Click(object sender, RoutedEventArgs e)
-        //{
-        //    NotifyUser("PageOverviewButton_Click not implemented yet.");
-        //}
 
         //=======================================SWITCHING NOTE PAGES========================================
         private async void AddPageButton_Click(object sender, RoutedEventArgs e)
@@ -872,71 +875,9 @@ namespace PhenoPad
             }
         }
 
-        private async void ChangeServer_Click(object sender, RoutedEventArgs e)
+        private void Settings_Click(object sender, RoutedEventArgs e)
         {
-            //string text = await InputTextDialogAsync("Change a server: ", "");
-            /*
-            if(text != "" && text != string.Empty)
-                SpeechManager.getSharedSpeechManager().setServerAddress(text);
-            */
-
-            string serverPath = SpeechManager.getSharedSpeechManager().getServerAddress() + ":" + SpeechManager.getSharedSpeechManager().getServerPort();
-
-            if (serverPath == "")
-                serverPath = "phenopad.ccm.sickkids.ca";
-
-            string text = await InputTextDialogAsync("Change a server. Server Address (or sickkids): ", serverPath);
-
-            string ipResult = "";
-            string portResult = "";
-
-            if (text.ToLower().IndexOf("sickkid") != -1)
-            {
-                //SpeechManager.getSharedSpeechManager().setServerAddress("speechengine.ccm.sickkids.ca");
-                //SpeechManager.getSharedSpeechManager().setServerPort("8888");
-                if (text.ToLower().IndexOf("speechengine") != -1)
-                {
-                    ipResult = "speechengine.ccm.sickkids.ca";
-                    portResult = "8888";
-                }
-                else
-                {
-                    ipResult = "phenopad.ccm.sickkids.ca";
-                    portResult = "8888";
-                }
-
-            }
-            else
-            {
-                if (text != "" && text != string.Empty)
-                {
-                    int colonIndex = text.IndexOf(':');
-
-                    // Only entered server address
-                    if (colonIndex == -1)
-                    {
-                        //SpeechManager.getSharedSpeechManager().setServerAddress(text.Trim());
-
-                        ipResult = text.Trim();
-                        portResult = "8888";
-                    }
-                    // address and port both here
-                    else
-                    {
-                        //SpeechManager.getSharedSpeechManager().setServerAddress(text.Substring(0, colonIndex).Trim());
-                        //SpeechManager.getSharedSpeechManager().setServerPort(text.Substring(colonIndex + 1).Trim());
-
-                        ipResult = text.Substring(0, colonIndex).Trim();
-                        portResult = text.Substring(colonIndex + 1).Trim();
-                    }
-                }
-            }
-
-            SpeechManager.getSharedSpeechManager().setServerAddress(ipResult);
-            SpeechManager.getSharedSpeechManager().setServerPort(portResult);
-
-            AppConfigurations.saveSetting("serverIP", ipResult);
-            AppConfigurations.saveSetting("serverPort", portResult);
+            AppSetting.Visibility = Visibility.Visible;
         }
 
         private void ChangeServerHWR_Click(object sender, RoutedEventArgs e) {
@@ -991,6 +932,10 @@ namespace PhenoPad
 
             AppConfigurations.saveSetting("serverIP", ipResult);
             AppConfigurations.saveSetting("serverPort", portResult);
+        }
+
+        private void SettingsClose_Click(object sender, RoutedEventArgs e) {
+            AppSetting.Visibility = Visibility.Collapsed;
         }
 
         /// <summary>
@@ -1244,9 +1189,9 @@ namespace PhenoPad
         private void MultimediaClose_Click(object sender, RoutedEventArgs e)
         {
             MultimediaPreviewGrid.Visibility = Visibility.Collapsed;
-            videoStreamWebSocket.Close(1000, "no reason:)");
+            if (videoStreamWebSocket != null)
+                videoStreamWebSocket.Close(1000, "no reason:)");
         }
-
 
         private void FullscreenBtn_Click(object sender, RoutedEventArgs e)
         {
@@ -1277,6 +1222,7 @@ namespace PhenoPad
             this.audioButton.IsEnabled = true;
             this.serverConnectButton.IsEnabled = false;
             this.StreamButton.IsEnabled = false;
+            SurfaceMicRadioBtn.IsChecked = true;
             //this.StreamButton.IsEnabled = true;
             NotifyUser("Using Surface microphone", NotifyType.StatusMessage, 2);
         }
@@ -1288,9 +1234,19 @@ namespace PhenoPad
             this.serverConnectButton.IsEnabled = true;
             this.shutterButton.IsEnabled = false;
             this.audioButton.IsEnabled = false;
+            ExternalMicRadioBtn.IsChecked = true;
             NotifyUser("Using external microphone", NotifyType.StatusMessage, 2);
         }
-        
+
+        private void AbbreviationON_Checked(object sender, RoutedEventArgs e) {
+            this.abbreviation_enabled = true;
+            AbbrONBtn.IsChecked = true;
+        }
+        private void AbbreviationOFF_Checked(object sender, RoutedEventArgs e) {
+            this.abbreviation_enabled = false;
+            AbbrOFFBtn.IsChecked = true;
+        }
+
         private async void OpenFileFolder_Click(object sender, RoutedEventArgs e)
         {
             await Windows.System.Launcher.LaunchFolderAsync(await StorageFolder.GetFolderFromPathAsync(ApplicationData.Current.LocalFolder.Path));
@@ -1568,8 +1524,8 @@ namespace PhenoPad
         /// </summary>
         private void AppBarButton_Click_1(object sender, RoutedEventArgs e)
         {
-            curPage.abbreviation_enabled = curPage.abbreviation_enabled == true ? false : true;
-            Debug.WriteLine($"Abbreviation is now on {curPage.abbreviation_enabled}");
+
+            //curPage.changeLineHeight();
         }
         #endregion
 

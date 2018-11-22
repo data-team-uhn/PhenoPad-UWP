@@ -128,7 +128,7 @@ namespace PhenoPad.HWRService
                         ind++;
                     }
                     //triggers server side abbreviation detection
-                    if (server && MainPage.Current.curPage.abbreviation_enabled)
+                    if (server && MainPage.Current.abbreviation_enabled)
                     {
                         string fullsentence = listToString(sentence);
                         HTTPRequest unprocessed = new HTTPRequest(fullsentence, this.alternatives, this.newRequest.ToString());
@@ -165,7 +165,7 @@ namespace PhenoPad.HWRService
         public async Task<List<HWRRecognizedText>> ReRecognizeAsync(List<HWRRecognizedText> newLine) {
             try {
                 //triggers server side abbreviation detection
-                if (MainPage.Current.curPage.abbreviation_enabled)
+                if (MainPage.Current.abbreviation_enabled)
                 {
                     string fullsentence = "";
                     for (int i = 0; i < newLine.Count; i++) {

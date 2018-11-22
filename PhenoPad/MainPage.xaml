@@ -20,8 +20,8 @@
     xmlns:phenotypeservice="using:PhenoPad.PhenotypeService"
     xmlns:customcontrol="using:PhenoPad.CustomControl"
     xmlns:photovideoservice="using:PhenoPad.PhotoVideoService"
-     xmlns:styles="using:PhenoPad.Styles"
-   xmlns:controls="using:Microsoft.Toolkit.Uwp.UI.Controls"
+    xmlns:styles="using:PhenoPad.Styles"
+    xmlns:controls="using:Microsoft.Toolkit.Uwp.UI.Controls"
     mc:Ignorable="d"
     Loaded="Page_Loaded"
     NavigationCacheMode="Required">
@@ -32,8 +32,6 @@
         -->
         <local:BackgroundColorConverter x:Key="bcConverter" />
         <local:IntervalDisplayConverter x:Key="intervalConverter" />
-
-        
     </Page.Resources>
 
     <Grid x:Name="RootGrid" Margin="0 0 0 0">
@@ -41,7 +39,12 @@
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
-        
+
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
+
+        <!--TOP MENU BAR-->
         <Grid Name="TopMenuRelativePanel" Grid.Row="0" Background="{StaticResource TITLE_BAR_WHITE}">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="200"></ColumnDefinition>
@@ -59,18 +62,19 @@
             </StackPanel>
 
             <CommandBar Grid.Column="1" HorizontalAlignment="Right" Margin="0 0 30 0"  Name="topCmdBar" OverflowButtonVisibility="Collapsed" Background="{StaticResource TITLE_BAR_WHITE}">
-                <AppBarButton ToolTipService.ToolTip="Toggle Abbreviation Detection" Click="AppBarButton_Click_1">
-                    <!--<AppBarButton.Flyout>
+                <AppBarButton ToolTipService.ToolTip="Dev Functions" HorizontalContentAlignment="Center" Icon="Setting" Click="AppBarButton_Click_1">
+                    <AppBarButton.Flyout>
                         <MenuFlyout>
-                            <MenuFlyoutItem Text="Open file folder" Click="OpenFileFolder_Click"/>
+                            <!--<MenuFlyoutItem Text="Open file folder" Click="OpenFileFolder_Click"/>
                             <MenuFlyoutItem Text="Create new note" Tag="rating"/>
                             <MenuFlyoutItem Text="Save note" Tag="Save note to disk." Click="SaveNote_Click"/>
                             <MenuFlyoutItem Text="Save image" Tag="Save note to image." Click="SaveNoteToImage_Click"/>
-                            <MenuFlyoutItem Text="Open saved note" Tag="Open a saved note." Click="LoadNote_Click"/>
-                            <MenuFlyoutItem Text="Change a server" Tag="Open a saved note." Click="ChangeServer_Click"/>
+                            <MenuFlyoutItem Text="Open saved note" Tag="Open a saved note." Click="LoadNote_Click"/>-->
+                            <MenuFlyoutItem Text="Settings" HorizontalAlignment="Center" Tag="Change configurations" Click="Settings_Click"/>
                         </MenuFlyout>
-                    </AppBarButton.Flyout>-->
+                    </AppBarButton.Flyout>
                 </AppBarButton>
+                
                 <AppBarToggleButton Style="{StaticResource MyAppBarToggleButtonStyle}" IsChecked="True" Label="Notes" Name="NotesButton" Click="NotesButton_Click">
                     <ToolTipService.ToolTip>
                         <TextBlock>Show notes panel</TextBlock>
@@ -78,11 +82,10 @@
                     
                     <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xF0E3;"/>
                     
-                    
-                        
                    
                 </AppBarToggleButton>
-                <AppBarToggleButton Icon="PreviewLink" Style="{StaticResource MyAppBarToggleButtonStyle}" Label="Overview" Name="OverviewButton" Click="OverviewButton_Click">
+                <AppBarToggleButton Icon="PreviewLink" Style="{StaticResource MyAppBarToggleButtonStyle}" Label="Overview" 
+                                    Name="OverviewButton" Click="OverviewButton_Click">
                     <ToolTipService.ToolTip>
                         <TextBlock >Show overview panel</TextBlock>
                     </ToolTipService.ToolTip>
@@ -188,14 +191,14 @@
 
 
         </Grid>
-
+        <!--SIDE/BOTTOM MENU VIEW-->
         <SplitView   Name="MainSplitView" Grid.Row="1" DisplayMode="CompactInline"  IsPaneOpen="False" OpenPaneLength="400"  CompactPaneLength="40" PanePlacement="Left">
             <SplitView.Style>
                 <Style TargetType="SplitView">
                     <Setter Property="PaneBackground" Value="{StaticResource Left_Panel_Title_BG}"/>
                 </Style>
             </SplitView.Style>
-
+            <!--SIDE BAR MENU-->
             <SplitView.Pane>
                 <Grid Name="QuickViewGrid" BorderThickness="0 0 0 0" Background="Transparent">
                     <Grid.RowDefinitions>
@@ -663,10 +666,12 @@
                 </Grid>
             </SplitView.Pane>
 
-            
-
             <Grid Background="LightGray">
-                
+
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+
                 <ContentControl x:Name="PageHost"  HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch">
                     <ContentControl.ContentTransitions>
                         <TransitionCollection>
@@ -713,7 +718,7 @@
 
                     <!-- pheotypes user are looking for -->
                     <Grid  Name="CandidateGrid" HorizontalAlignment="Stretch" 
-                           RelativePanel.AlignRightWithPanel="True" RelativePanel.RightOf="MultimediaPreviewGrid" 
+                           RelativePanel.AlignLeftWithPanel="True" 
                            RelativePanel.AlignTopWithPanel="True">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="40" />
@@ -737,9 +742,12 @@
 
                         <StackPanel Orientation="Vertical" Grid.Column="1" 
                                     Name="CandidatePanelStackPanel" 
+                                    Padding="5 0 5 0"
+                                    HorizontalAlignment="Center"
+                                    VerticalAlignment="Center"
                                     Background="WhiteSmoke" Visibility="Collapsed" >
                             
-                            <ListView Grid.Column="2"
+                            <ListView 
                               ScrollViewer.HorizontalScrollMode="Enabled"
                               ScrollViewer.VerticalScrollMode="Disabled"
                               ScrollViewer.HorizontalScrollBarVisibility="Hidden"
@@ -782,7 +790,7 @@
 
                     </Grid>
                     
-
+                    <!--VIDEO PREVIEW PANEL-->
                     <Grid Name="MultimediaPreviewGrid" Background="{StaticResource TITLE_BAR_WHITE}"
                           Visibility="Collapsed"
                           Padding="10" Width="550" Height="350" RelativePanel.AlignBottomWithPanel="True">
@@ -802,9 +810,8 @@
                                 <ColumnDefinition Width="*"/>
                             </Grid.ColumnDefinitions>
 
-                            <TextBlock Text="Microphone" Grid.Row="1" Grid.Column="0" FontWeight="Bold"
+                            <!--<TextBlock Text="Microphone" Grid.Row="1" Grid.Column="0" FontWeight="Bold"
                            VerticalAlignment="Center" HorizontalAlignment="Left"/>
-
                             <Button Grid.Row="1" Grid.Column="1" HorizontalAlignment="Right" Style="{StaticResource MyButtonStyle}" Background="Transparent" Foreground="Gray" Height="30" VerticalAlignment="Top" Width="30" Padding="0"
                                     Click="MultimediaClose_Click">
                                 <SymbolIcon Symbol="Clear" Height="20" Width="20"></SymbolIcon>
@@ -826,11 +833,10 @@
                             </StackPanel>
                             <TextBlock Text="HWR server:" Grid.Row="4" Grid.Column="0"
                            VerticalAlignment="Center" HorizontalAlignment="Right"/>
-                            
                             <StackPanel Orientation="Horizontal" Grid.Row="4" Grid.Column="1" Spacing="10" HorizontalAlignment="Center">
                                 <TextBox x:Name="HWRAddrInput" PlaceholderText="Server Address:Port" Width="220" Margin="5" />
                                 <Button Content="Change server" Click="ChangeServerHWR_Click"/>
-                            </StackPanel>
+                            </StackPanel>-->
 
                             <TextBlock Text="Video" Grid.Row="5" Grid.Column="0" FontWeight="Bold"
                            VerticalAlignment="Top" HorizontalAlignment="Left"/>
@@ -871,15 +877,69 @@
                 </RelativePanel>
             </Grid>
         </SplitView>
+        <!--APP SETTINGS POP UP GRID-->
+        <Grid x:Name="AppSetting" Background="{StaticResource TITLE_BAR_WHITE}"
+                        Visibility="Collapsed" Grid.Row="1" 
+                        Padding="10" Width="600" Height="300" RelativePanel.AlignBottomWithPanel="True">
 
-        <!--
-        <customcontrol:MyScriptTextEditor x:Name="myScriptEditor" Visibility="Collapsed" Grid.Row="1"></customcontrol:MyScriptTextEditor>
-     -->
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="20"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
 
+                </Grid.RowDefinitions>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="100"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+
+                <TextBlock Text="Application Settings" Grid.Row="0" Padding="10" Grid.ColumnSpan="2" FontWeight="Bold"
+                        VerticalAlignment="Center" HorizontalAlignment="Left"/>
+
+                <Button Grid.Row="0" Grid.Column="2" HorizontalAlignment="Right" Style="{StaticResource MyButtonStyle}" Background="Transparent" Foreground="Gray" Height="30" VerticalAlignment="Top" Width="30" Padding="0"
+                        Click="SettingsClose_Click">
+                    <SymbolIcon Symbol="Clear" Height="20" Width="20"></SymbolIcon>
+                </Button>
+                
+                <TextBlock Text="Microphone:" Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="1"
+                        VerticalAlignment="Center" HorizontalAlignment="Right"/>
+                <StackPanel Orientation="Horizontal" Grid.Row="2" Grid.Column="1" Grid.ColumnSpan="2" Margin="30 0 0 0" Spacing="20" HorizontalAlignment="Stretch">
+                    <RadioButton Content="Surface Microphone" Tag="Surface Microphone" Name="SurfaceMicRadioBtn"  GroupName="MicSwitcher" Checked="SurfaceMicRadioButton_Checked"/>
+                    <RadioButton Content="External Microphone" Tag="External Microphone" Name="ExternalMicRadioBtn" GroupName="MicSwitcher" Checked="ExterMicRadioButton_Checked"/>
+                </StackPanel>
+                <TextBlock Text="ASR server:" Grid.Row="3" Grid.Column="0"
+                        VerticalAlignment="Center" HorizontalAlignment="Right"/>
+                <StackPanel Orientation="Horizontal" Grid.Row="3" Grid.Column="1" Grid.ColumnSpan="2" Spacing="10" HorizontalAlignment="Center">
+                    <TextBox x:Name="ASRAddrInput" PlaceholderText="Server Address:Port" Width="300" Margin="5" />
+                    <Button Content="Change server" Click="ChangeServerASR_Click"/>
+                </StackPanel>
+                <TextBlock Text="HWR server:" Grid.Row="4" Grid.Column="0"
+                        VerticalAlignment="Center" HorizontalAlignment="Right"/>
+
+                <StackPanel Orientation="Horizontal" Grid.Row="4" Grid.Column="1" Grid.ColumnSpan="2" Spacing="10" HorizontalAlignment="Center">
+                    <TextBox x:Name="HWRAddrInput" PlaceholderText="Server Address:Port" Width="300" Margin="5" />
+                    <Button Content="Change server" Click="ChangeServerHWR_Click"/>
+                </StackPanel>
+                
+                <TextBlock Text="Abbreviation:" Grid.Row="5" Grid.Column="0" Grid.ColumnSpan="1"
+                        VerticalAlignment="Center" HorizontalAlignment="Right"/>
+                <StackPanel Orientation="Horizontal" Grid.Row="5" Grid.Column="1" Grid.ColumnSpan="2" Margin="30 0 0 0" Spacing="20" HorizontalAlignment="Stretch">
+                    <RadioButton Content="ON" Tag="Turn On Abbreviation Detection" Name="AbbrONBtn" GroupName="AbbrSwitcher"  Checked="AbbreviationON_Checked"/>
+                    <RadioButton Content="OFF" Tag="Turn OFF Abbreviation Detection" Name="AbbrOFFBtn" GroupName="AbbrSwitcher" Checked="AbbreviationOFF_Checked"/>
+                </StackPanel>
+
+
+            </Grid>
+            </Grid>
+        <!--POP UP PAGES FOR OVERVIEW / SPEECH--> 
         <Popup x:Name="OverviewPopUp">
             <local:OverviewPage x:Name="OverivePopUpPage"/>
         </Popup>
-        
         <Popup x:Name="SpeechPopUp" >
             <local:SpeechPage x:Name="SpeechPopUpPage"/>
         </Popup>

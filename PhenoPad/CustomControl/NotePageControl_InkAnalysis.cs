@@ -47,7 +47,6 @@ namespace PhenoPad.CustomControl
 {
     public sealed partial class NotePageControl : UserControl
     {
-        public bool abbreviation_enabled = false;
         DispatcherTimer recognizeTimer;
         List<HWRRecognizedText> cur_result;
         // ================================= INK RECOGNITION ==============================================                      
@@ -237,7 +236,7 @@ namespace PhenoPad.CustomControl
             if (currentStrokes.Count > 0)
             {
                 List<HWRRecognizedText> recognitionResults = new List<HWRRecognizedText>();
-                if (abbreviation_enabled)
+                if (MainPage.Current.abbreviation_enabled)
                 {
                     recognitionResults = await HWRManager.getSharedHWRManager().OnRecognizeAsync
                                                             (inkCanvas.InkPresenter.StrokeContainer, InkRecognitionTarget.Selected, true);
