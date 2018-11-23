@@ -1,0 +1,48 @@
+﻿<UserControl
+    x:Class="PhenoPad.CustomControl.EHRPageControl"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d"
+    VerticalAlignment="Stretch" 
+    HorizontalAlignment="Stretch"
+    Loaded="Page_Loaded">
+
+    <Grid Margin="0 10 0 0" Padding="0 100 0 0" 
+          Background="{ThemeResource SystemControlBackgroundChromeWhiteBrush}" 
+          Height="{x:Bind EHR_HEIGHT}" Width="{x:Bind EHR_WIDTH}">
+        <!-- Inking area -->
+        <Canvas x:Name="backgroundCanvas" />
+        
+        <Grid x:Name="textEditGrid" Opacity="0.5">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+            <!--Text Box for imported EHR file-->
+            <RichEditBox Style="{StaticResource MyRichEditBoxStyle}"                         
+                         Background="AntiqueWhite" x:Name="EHRTextBox" 
+                         BorderThickness="0" />
+        </Grid>
+
+        <!-- Annotation/gesture canvas -->
+        <InkCanvas  x:Name="inkCanvas"/>
+
+        <Grid x:Name="InputGrid">
+            
+        </Grid>
+
+        <!-- pop up after selection-->
+
+        <!-- Add in control panel -->
+        <Canvas x:Name="addinCanvas" />
+
+
+
+        
+    </Grid>
+
+</UserControl>

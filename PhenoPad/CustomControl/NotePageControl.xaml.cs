@@ -113,6 +113,7 @@ namespace PhenoPad.CustomControl
         public ObservableCollection<HWRRecognizedText> recognizedText = new ObservableCollection<HWRRecognizedText>();
 
         private MainPage rootPage;
+        private EHRPageControl ehrPage;
         //private string[] textLines;
         CoreInkIndependentInputSource core;
 
@@ -188,6 +189,7 @@ namespace PhenoPad.CustomControl
 
             this.notebookId = notebookid;
             this.pageId = pageid;
+            this.ehrPage = null;
             
 
             UNPROCESSED_COLOR = new SolidColorBrush(UNPROCESSED_COLOR.Color);
@@ -306,6 +308,16 @@ namespace PhenoPad.CustomControl
             Debug.WriteLine("pos:"+outt.Substring(range.StartPosition));
         }
 
+        public void SwitchToEHR(StorageFile file) {
+            this.ehrPage = new EHRPageControl(file);
+            EHRScrollViewer.Content = ehrPage;
+            //EHROutputGrid.Children.Add(ehrPage);
+            scrollViewer.Visibility = Visibility.Collapsed;
+            EHRScrollViewer.Visibility = Visibility.Visible;
+            Debug.WriteLine("EHR should be added now");
+
+        }
+
         public void DrawBackgroundLines()
         {
             for (int i = 1; i <= backgroundCanvas.RenderSize.Height / LINE_HEIGHT; ++i)
@@ -354,6 +366,7 @@ namespace PhenoPad.CustomControl
             ClearSelectionAsync();
             scrollViewer.ChangeView(null, 100, null, true);
             sideScrollView.ChangeView(null, 100, null, true);
+            EHRScrollViewer.ChangeView(null, 100, null, true);
         }
        
         // Left button lasso control
@@ -2027,6 +2040,7 @@ namespace PhenoPad.CustomControl
 
         }
 
+        //triggered when user zooms in/out of the scroll view panel
         private void ScrollView_ViewChanged(object sender, ScrollViewerViewChangedEventArgs e)
         {
             if (sender == sideScrollView)

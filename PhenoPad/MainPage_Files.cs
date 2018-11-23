@@ -248,10 +248,14 @@ namespace PhenoPad
             addNoteIndex(curPageIndex);
             setNotePageIndex(curPageIndex);
 
+            aPage.SwitchToEHR(file);
+
             currentMode = WritingMode;
             modeTextBlock.Text = WritingMode;
             //by default uses internal microphone
             SurfaceMicRadioButton_Checked(null, null);
+            AbbreviationON_Checked(null, null);
+
             // create file sturcture for this page
             await FileManager.getSharedFileManager().CreateNotePage(notebookObject, curPageIndex.ToString());
             curPage.Visibility = Visibility.Visible;

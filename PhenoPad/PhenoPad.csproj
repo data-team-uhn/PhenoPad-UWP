@@ -127,6 +127,9 @@
     <Compile Include="CustomControl\DiseaseDetailControl.xaml.cs">
       <DependentUpon>DiseaseDetailControl.xaml</DependentUpon>
     </Compile>
+    <Compile Include="CustomControl\EHRPageControl.xaml.cs">
+      <DependentUpon>EHRPageControl.xaml</DependentUpon>
+    </Compile>
     <Compile Include="CustomControl\NotePageControl.xaml.cs">
       <DependentUpon>NotePageControl.xaml</DependentUpon>
     </Compile>
@@ -241,6 +244,10 @@
       <Generator>MSBuild:Compile</Generator>
     </Page>
     <Page Include="CustomControl\DiseaseDetailControl.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="CustomControl\EHRPageControl.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
