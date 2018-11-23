@@ -301,7 +301,6 @@ namespace PhenoPad.CustomControl
         private void editor_PointerMoved(object sender, PointerRoutedEventArgs e)
         {
             var position = e.GetCurrentPoint(textNoteEditBox).Position;
-
             var range = textNoteEditBox.Document.GetRangeFromPoint(position, Windows.UI.Text.PointOptions.ClientCoordinates);
             string outt;
             textNoteEditBox.Document.GetText(TextGetOptions.None, out outt);

@@ -221,19 +221,19 @@ namespace PhenoPad
             }
 
             // Tries to create a file structure for the new notebook.
-            {
-                notebookId = FileManager.getSharedFileManager().createNotebookId();
-                FileManager.getSharedFileManager().currentNoteboookId = notebookId;
-                bool result = await FileManager.getSharedFileManager().CreateNotebook(notebookId);
-                SpeechManager.getSharedSpeechManager().setAudioIndex(0);
-                if (!result)
-                    NotifyUser("Failed to create file structure, notes may not be saved.", NotifyType.ErrorMessage, 2);
-                else
-                    notebookObject = await FileManager.getSharedFileManager().GetNotebookObjectFromXML(notebookId);
+            //{
+            notebookId = FileManager.getSharedFileManager().createNotebookId();
+            //    FileManager.getSharedFileManager().currentNoteboookId = notebookId;
+            //    bool result = await FileManager.getSharedFileManager().CreateNotebook(notebookId);
+            //    SpeechManager.getSharedSpeechManager().setAudioIndex(0);
+            //    if (!result)
+            //        NotifyUser("Failed to create file structure, notes may not be saved.", NotifyType.ErrorMessage, 2);
+            //    else
+            //        notebookObject = await FileManager.getSharedFileManager().GetNotebookObjectFromXML(notebookId);
 
-                if (notebookObject != null)
-                    noteNameTextBox.Text = notebookObject.name;
-            }
+            //    if (notebookObject != null)
+            //        noteNameTextBox.Text = notebookObject.name;
+            //}
 
             notePages = new List<NotePageControl>();
             pageIndexButtons = new List<Button>();
@@ -257,7 +257,7 @@ namespace PhenoPad
             AbbreviationON_Checked(null, null);
 
             // create file sturcture for this page
-            await FileManager.getSharedFileManager().CreateNotePage(notebookObject, curPageIndex.ToString());
+            //await FileManager.getSharedFileManager().CreateNotePage(notebookObject, curPageIndex.ToString());
             curPage.Visibility = Visibility.Visible;
         }
 

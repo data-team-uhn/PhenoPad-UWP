@@ -77,8 +77,6 @@ namespace PhenoPad.CustomControl
             }
         }
 
-
-
         /// <summary>
         /// PS:10/9/2018 this method is currently not used as the timer tick is commented out
         /// </summary>

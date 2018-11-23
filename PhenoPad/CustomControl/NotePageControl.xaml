@@ -247,7 +247,9 @@
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*"/>
                         </Grid.ColumnDefinitions>
-                        <RichEditBox Style="{StaticResource MyRichEditBoxStyle}" Background="Transparent" x:Name="textNoteEditBox" TextChanged="TextNoteEdit_TextChanged" BorderThickness="0">
+                        <RichEditBox Style="{StaticResource MyRichEditBoxStyle}" Background="Transparent" 
+                                     x:Name="textNoteEditBox" TextChanged="TextNoteEdit_TextChanged" 
+                                     BorderThickness="0">
                         </RichEditBox>
                     </Grid>
 

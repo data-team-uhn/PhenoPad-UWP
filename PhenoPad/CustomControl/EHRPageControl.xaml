@@ -31,9 +31,11 @@
         <!-- Annotation/gesture canvas -->
         <InkCanvas  x:Name="inkCanvas"/>
 
-        <Grid x:Name="InputGrid">
-            
-        </Grid>
+        <!--insert text pop up-->
+            <Grid  Width="600" Height="150" Background="WhiteSmoke" BorderBrush="Gray" x:Name="inputgrid"
+                   BorderThickness="3" CornerRadius="10" Visibility="Collapsed">
+                
+            </Grid>
 
         <!-- pop up after selection-->
 
