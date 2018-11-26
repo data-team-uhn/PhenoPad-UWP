@@ -370,14 +370,32 @@ namespace PhenoPad
                 {
                     try
                     {
-                        // Let users choose their text file using a file picker.
-                        // Initialize the picker.
-                        FileOpenPicker openPicker = new FileOpenPicker();
-                        openPicker.SuggestedStartLocation = PickerLocationId.DocumentsLibrary;
-                        openPicker.FileTypeFilter.Add(".txt");
-                        // Show the file picker.
-                        StorageFile file = await openPicker.PickSingleFileAsync();
-                        await this.InitializeEHRNote(file);
+                        var messageDialog = new MessageDialog("Please choose import approach:");
+                        messageDialog.Title = "Import EHR";
+                        messageDialog.Commands.Add(new UICommand("From File") { Id = 0 });
+                        messageDialog.Commands.Add(new UICommand("Paste Text") { Id = 1 });
+                        // Set the command that will be invoked by default
+                        messageDialog.DefaultCommandIndex = 1;
+                        // Set the command to be invoked when escape is pressed
+                        messageDialog.CancelCommandIndex = 1;
+                        // Show the message dialog
+                        var result = await messageDialog.ShowAsync();
+                        if ((int)result.Id == 0)
+                        {
+                            // Let users choose their text file using a file picker.
+                            // Initialize the picker.
+                            FileOpenPicker openPicker = new FileOpenPicker();
+                            openPicker.SuggestedStartLocation = PickerLocationId.DocumentsLibrary;
+                            openPicker.FileTypeFilter.Add(".txt");
+                            // Show the file picker.
+                            StorageFile file = await openPicker.PickSingleFileAsync();
+                            await this.InitializeEHRNote(file);
+                        }
+                        else if ((int)result.Id == 1)
+                        {
+                            await this.InitializeEHRNote(null);
+                        }
+
                     }
                     catch (Exception ex)
                     {

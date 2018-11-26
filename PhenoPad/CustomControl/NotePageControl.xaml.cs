@@ -313,8 +313,6 @@ namespace PhenoPad.CustomControl
             //EHROutputGrid.Children.Add(ehrPage);
             scrollViewer.Visibility = Visibility.Collapsed;
             EHRScrollViewer.Visibility = Visibility.Visible;
-            Debug.WriteLine("EHR should be added now");
-
         }
 
         public void DrawBackgroundLines()

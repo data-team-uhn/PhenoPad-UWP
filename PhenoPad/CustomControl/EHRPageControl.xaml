@@ -9,13 +9,41 @@
     HorizontalAlignment="Stretch"
     Loaded="Page_Loaded">
 
+    <UserControl.Resources>
+        <Flyout x:Key="ChangeAlternativeFlyout" Placement="Top">
+            <StackPanel Padding="0" Margin="3" Width="auto">
+                <ListView x:Name="alternativeListView" IsItemClickEnabled="True"
+                              ItemClick="alternativeListView_ItemClick" Width="auto">
+                    <ListView.ItemContainerStyle>
+                        <Style TargetType="ListViewItem">
+                            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                            <Setter Property="VerticalContentAlignment" Value="Center" />
+                            <Setter Property="Margin" Value="0,1,0,1" />
+                            <Setter Property="Padding" Value="0,0,0,0" />
+                            <Setter Property="MinHeight" Value="20" />
+                        </Style>
+                    </ListView.ItemContainerStyle>
+                </ListView>
+            </StackPanel>
+        </Flyout>
+    </UserControl.Resources>
+
     <Grid Margin="0 10 0 0" Padding="0 100 0 0" 
           Background="{ThemeResource SystemControlBackgroundChromeWhiteBrush}" 
           Height="{x:Bind EHR_HEIGHT}" Width="{x:Bind EHR_WIDTH}">
-        <!-- Inking area -->
-        <Canvas x:Name="backgroundCanvas" />
         
-        <Grid x:Name="textEditGrid" Opacity="0.5">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="1700" />
+            <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
+
+        <!-- Inking area -->
+        <Canvas x:Name="backgroundCanvas"/>
+        
+        <Grid x:Name="textEditGrid" IsHoldingEnabled="True">
             <Grid.RowDefinitions>
                 <RowDefinition Height="*"/>
             </Grid.RowDefinitions>
@@ -24,18 +52,85 @@
             </Grid.ColumnDefinitions>
             <!--Text Box for imported EHR file-->
             <RichEditBox Style="{StaticResource MyRichEditBoxStyle}"                         
-                         Background="AntiqueWhite" x:Name="EHRTextBox" 
+                         Background="Transparent" x:Name="EHRTextBox" 
                          BorderThickness="0" />
         </Grid>
 
-        <!-- Annotation/gesture canvas -->
-        <InkCanvas  x:Name="inkCanvas"/>
+        <!--Gesture canvas -->
+        <InkCanvas  x:Name="inkCanvas" Grid.Column="0" />
+         <!--Annotation-->
+        <InkCanvas x:Name="annotations" Grid.Column="1" />
 
         <!--insert text pop up-->
-            <Grid  Width="600" Height="150" Background="WhiteSmoke" BorderBrush="Gray" x:Name="inputgrid"
-                   BorderThickness="3" CornerRadius="10" Visibility="Collapsed">
-                
-            </Grid>
+        <Canvas>
+            <RelativePanel x:Name="inputgrid" Visibility="Collapsed">
+
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="45"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+
+                    <Grid Background="WhiteSmoke" CornerRadius="10" Grid.Row="0"
+                            BorderThickness="1" BorderBrush="DarkGray">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="40"/>
+                        </Grid.ColumnDefinitions>
+
+                        <!-- recongtion result of current line -->
+                        <StackPanel Name="curLineWordsStackPanel" Orientation="Horizontal" Spacing="5" HorizontalAlignment="Left"
+                                    Padding="5 0 5 0" />
+
+                        <ListView Visibility="Collapsed" Padding="5 0 0 0"
+                                  ScrollViewer.HorizontalScrollMode="Enabled"
+                                  ScrollViewer.VerticalScrollMode="Disabled"
+                                  ScrollViewer.HorizontalScrollBarVisibility="Hidden"
+                                  ScrollViewer.IsHorizontalRailEnabled="True"
+                                  x:Name="curLineWordsListView"
+                                  IsItemClickEnabled="True"
+                                  >
+                            <ListView.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <VirtualizingStackPanel  Orientation="Horizontal"/>
+                                </ItemsPanelTemplate>
+                            </ListView.ItemsPanel>
+                            <ListView.ItemTemplate>
+                                <DataTemplate >
+                                    <TextBlock Text="{Binding}" VerticalAlignment="Center"></TextBlock>
+                                </DataTemplate>
+                            </ListView.ItemTemplate>
+                            <!--<ListView.ItemContainerStyle>
+                            <Style TargetType="ListViewItem">
+                                <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                                <Setter Property="VerticalContentAlignment" Value="Stretch" />
+                                <Setter Property="Margin" Value="0,0,5,0" />
+                                <Setter Property="Padding" Value="0,0,0,0" />
+                                <Setter Property="MinHeight" Value="20" />
+                                <Setter Property="MinWidth" Value="20" />
+                            </Style>
+                        </ListView.ItemContainerStyle>-->
+                        </ListView>
+                        <Button Background="WhiteSmoke" Foreground="PaleVioletRed" Grid.Column="1" Grid.Row="1"
+                                Height="45"
+                                Style="{StaticResource ButtonStyle1}" HorizontalAlignment="Right"
+                                Click="InsertToEHR"
+                                RelativePanel.AlignRightWithPanel="True">
+                            <SymbolIcon Symbol="Add"/>
+                        </Button>
+                    </Grid>
+
+                    <Grid Grid.Row="1" Background="WhiteSmoke" Margin="0 5 0 0" Width="600" Height="150" BorderBrush="DarkGray"
+                          BorderThickness="1" CornerRadius="10">
+                        <InkCanvas x:Name="inputInkCanvas" />
+                    </Grid>
+                    
+                </Grid>
+            </RelativePanel>
+        </Canvas>
 
         <!-- pop up after selection-->
 

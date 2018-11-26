@@ -215,9 +215,7 @@ namespace PhenoPad
 
             //if user cancels choosing a file or file is not valid, just create a new notebook
             if (file == null) {
-                NotifyUser("No EHR file, will create a new note instead",NotifyType.StatusMessage,2);
-                await Dispatcher.RunAsync(CoreDispatcherPriority.High, this.InitializeNotebook);
-                return;
+                NotifyUser("No EHR file, please paste EHR text",NotifyType.StatusMessage,2);
             }
 
             // Tries to create a file structure for the new notebook.
