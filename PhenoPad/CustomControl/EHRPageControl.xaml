@@ -36,7 +36,7 @@
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="1700" />
+            <ColumnDefinition Width="1500" />
             <ColumnDefinition Width="*"/>
         </Grid.ColumnDefinitions>
 
@@ -62,7 +62,7 @@
         <!--<InkCanvas x:Name="annotations" Grid.Column="1" />-->
 
         <!--insert text pop up-->
-        <Canvas>
+        <Canvas Canvas.ZIndex="6">
             <RelativePanel x:Name="inputgrid" Visibility="Collapsed">
 
                 <Grid>
@@ -79,10 +79,29 @@
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*"/>
                             <ColumnDefinition Width="40"/>
+                            <ColumnDefinition Width="40"/>
                         </Grid.ColumnDefinitions>
+
+                        <Button Background="WhiteSmoke" Foreground="PaleVioletRed" Grid.Column="1" Grid.Row="1"
+                                Height="45"
+                                Style="{StaticResource ButtonStyle1}" HorizontalAlignment="Right"
+                                Click="InsertNewLineToEHR"
+                                RelativePanel.AlignRightWithPanel="True">
+                            <FontIcon Glyph="&#xE751;" />
+                        </Button>
+
+                        <Button Background="WhiteSmoke" Foreground="PaleVioletRed" Grid.Column="2" Grid.Row="1"
+                                Height="45"
+                                Style="{StaticResource ButtonStyle1}" HorizontalAlignment="Right"
+                                Click="InsertToEHR"
+                                RelativePanel.AlignRightWithPanel="True">
+                            <SymbolIcon Symbol="Add"/>
+                        </Button>
+
 
                         <!-- recongtion result of current line -->
                         <StackPanel Name="curLineWordsStackPanel" Orientation="Horizontal" Spacing="5" HorizontalAlignment="Left"
+                                    Grid.Column="0"
                                     Padding="5 0 5 0" />
 
                         <ListView Visibility="Collapsed" Padding="5 0 0 0"
@@ -114,17 +133,11 @@
                             </Style>
                         </ListView.ItemContainerStyle>-->
                         </ListView>
-                        <Button Background="WhiteSmoke" Foreground="PaleVioletRed" Grid.Column="1" Grid.Row="1"
-                                Height="45"
-                                Style="{StaticResource ButtonStyle1}" HorizontalAlignment="Right"
-                                Click="InsertToEHR"
-                                RelativePanel.AlignRightWithPanel="True">
-                            <SymbolIcon Symbol="Add"/>
-                        </Button>
+
                     </Grid>
 
-                    <Grid Grid.Row="1" Background="WhiteSmoke" Margin="0 5 0 0" Width="600" Height="150" BorderBrush="DarkGray"
-                          BorderThickness="1" CornerRadius="10">
+                    <Grid Grid.Row="1" Background="WhiteSmoke" Margin="0 5 0 0" Width="800" Height="250" BorderBrush="DarkGray"
+                          BorderThickness="1" CornerRadius="10" >
                         <InkCanvas x:Name="inputInkCanvas" />
                     </Grid>
                     

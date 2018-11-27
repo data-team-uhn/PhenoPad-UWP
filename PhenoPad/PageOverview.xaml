@@ -188,7 +188,8 @@
 
         </StackPanel>
         -->
-
+        
+        <!--NOTE QUICK VIEW PANEL-->
         <Grid Grid.Column="1" Background="White">
             <ScrollViewer>
             <StackPanel>
@@ -197,8 +198,8 @@
                 </Border>
                 <GridView Name="NoteGridView" ItemClick="GridView_ItemClick" Padding="10 10 10 10" Height="450"
                            ScrollViewer.HorizontalScrollBarVisibility="Auto"
-    ScrollViewer.HorizontalScrollMode="Enabled"
-    ScrollViewer.VerticalScrollMode="Disabled">
+                            ScrollViewer.HorizontalScrollMode="Enabled"
+                            ScrollViewer.VerticalScrollMode="Disabled">
                     
                     <GridView.ItemsPanel>
                         <ItemsPanelTemplate>

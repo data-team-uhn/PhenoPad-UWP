@@ -371,9 +371,8 @@ namespace PhenoPad
                     try
                     {
                         var messageDialog = new MessageDialog("Please choose import approach:");
-                        messageDialog.Title = "Import EHR";
                         messageDialog.Commands.Add(new UICommand("From File") { Id = 0 });
-                        messageDialog.Commands.Add(new UICommand("Paste Text") { Id = 1 });
+                        messageDialog.Commands.Add(new UICommand("From Clipboard") { Id = 1 });
                         // Set the command that will be invoked by default
                         messageDialog.DefaultCommandIndex = 1;
                         // Set the command to be invoked when escape is pressed
@@ -429,10 +428,8 @@ namespace PhenoPad
         {
             if (curPage != null) {
                 curPage.Visibility = Visibility.Collapsed;
-                curPage.ClearSelectionAsync();
             }
             CloseCandidate();
-            // this.Frame.BackStack.Clear();
             notePages = null;
             notebookId = null;
             // clear page index panel
@@ -442,7 +439,6 @@ namespace PhenoPad
             PhenotypeManager.getSharedPhenotypeManager().phenotypesCandidates.Clear();
             SpeechManager.getSharedSpeechManager().cleanUp();
 
-            //dispatcherTimer.Stop();
             // Microsoft ASR, not used for now
             if (this.speechRecognizer != null)
             {
@@ -537,6 +533,7 @@ namespace PhenoPad
             if (pageIndexPanel.Children.Count >= 1)
                 pageIndexPanel.Children.Insert(pageIndexPanel.Children.Count - 1, btn);
             setNotePageIndex(index);
+
         }
 
         /**

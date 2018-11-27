@@ -341,12 +341,23 @@ namespace PhenoPad.CustomControl
 
         private void Page_Loaded(object sender, RoutedEventArgs e)
         {
+            if (this.ehrPage == null)
+            {
+                ClearSelectionAsync();
+                Debug.WriteLine("page loaded");
+                scrollViewer.ChangeView(null, 100, null, true);
+                sideScrollView.ChangeView(null, 100, null, true);
+                EHRScrollViewer.Visibility = Visibility.Collapsed;
+                scrollViewer.Visibility = Visibility.Visible;
+            }
+            else {
+                scrollViewer.Visibility = Visibility.Collapsed;
+                EHRScrollViewer.Visibility = Visibility.Visible;
+                scrollViewer.ChangeView(null, 100, null, true);
+                EHRScrollViewer.ChangeView(null, 100, null, true);
+            }
             // Draw background lines
             DrawBackgroundLines();
-            ClearSelectionAsync();
-            scrollViewer.ChangeView(null, 100, null, true);
-            sideScrollView.ChangeView(null, 100, null, true);
-            EHRScrollViewer.ChangeView(null, 100, null, true);
         }
        
         // Left button lasso control

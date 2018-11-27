@@ -155,11 +155,14 @@ namespace PhenoPad.FileService
                 object obj = await LoadObjectFromSerilization(metafile, typeof(List<ImageAndAnnotation>));
                 if (obj != null)
                     return obj as List<ImageAndAnnotation>;
+                else
+                    return null;
             }
             catch (Exception e) {
                 LogService.MetroLogger.getSharedLogger().Error($"{notebookId}-{pageId}:{e}:{e.Message}");
+                return null;
             }
-            return null;
+            
         }
 
         /// <summary>
@@ -219,22 +222,17 @@ namespace PhenoPad.FileService
         public async Task<StorageFile> GetNoteFileNotCreate(string notebookId, string notePageId, NoteFileType fileType, string name = "")
         {
             StorageFile notefile = null;
-            //StorageFolder localFolder = ApplicationData.Current.LocalFolder;
             string filepath = GetNoteFilePath(notebookId, notePageId, fileType, name);
             try
             {
                 notefile = await ROOT_FOLDER.GetFileAsync(filepath);
+                return notefile;
             }
-            catch (FileNotFoundException e) {
-                //LogService.MetroLogger.getSharedLogger().Error($"{filepath} does not exists");
-            }
-            catch (Exception)
+            catch (Exception e)
             {
-                Debug.WriteLine($"Failed to get {filepath}");
-                LogService.MetroLogger.getSharedLogger().Error($"Failed to get {filepath}");
+                LogService.MetroLogger.getSharedLogger().Error($"Failed to get {filepath}:{e}+{e.Message}");
                 return null;
             }
-            return notefile;
         }
 
         /// <summary>
@@ -814,6 +812,7 @@ namespace PhenoPad.FileService
                     + e.Message);
                 return false;
             }
+            Debug.WriteLine("stroke load successfull from file manager");
             return isSuccessful;
         }
 
@@ -826,7 +825,6 @@ namespace PhenoPad.FileService
             try
             {
                 stream = await metaFile.OpenStreamForReadAsync();
-                //tosave = new Class1("ididid", "namename");
                 var serializer = new XmlSerializer(type);
                 using (stream)
                 {
@@ -836,7 +834,7 @@ namespace PhenoPad.FileService
             }
             catch (InvalidOperationException xe) {
                 if (xe.InnerException.GetType() == typeof(XmlException)) {
-                    LogService.MetroLogger.getSharedLogger().Info($"XML object may be empty:{xe.Message}");
+                    //xml empty, ignore
                 }       
                 return null;
             }
@@ -852,7 +850,6 @@ namespace PhenoPad.FileService
         /// </summary>
         public async Task<bool> loadStrokes(StorageFile strokesFile, InkCanvas inkcancas)
         {
-            Debug.WriteLine($"Loading strokes from disk...");
             // User selects a file and picker returns a reference to the selected file.
             try
             {
@@ -862,7 +859,6 @@ namespace PhenoPad.FileService
                 using (var inputStream = stream.GetInputStreamAt(0))
                 {
                     await inkcancas.InkPresenter.StrokeContainer.LoadAsync(inputStream);
-                    Debug.WriteLine($"Strokes have been loaded.");
                 }
                 stream.Dispose();
                 return true;

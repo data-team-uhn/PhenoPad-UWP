@@ -175,26 +175,38 @@ namespace PhenoPad
                     aPage.notebookId = notebookId;
 
                     //check if there's an EHR file in the page
-                    StorageFile ehr = await FileManager.getSharedFileManager().GetNoteFile(notebookId, i.ToString(), NoteFileType.EHR);
-                    if (ehr != null)
+                    StorageFile ehr = await FileManager.getSharedFileManager().GetNoteFileNotCreate(notebookId, i.ToString(), NoteFileType.EHR);
+                    if (ehr == null) {
+                        Debug.WriteLine("EHR null");
+                    }
+                    else
                     {
                         has_EHR = true;
                         aPage.SwitchToEHR(ehr);
                     }
 
                     //load strokes
-                    await FileManager.getSharedFileManager().LoadNotePageStroke(notebookId, pageIds[i], aPage);
+                    bool result = await FileManager.getSharedFileManager().LoadNotePageStroke(notebookId, pageIds[i], aPage);
                     addNoteIndex(i);
-
+                    
                     //load image/drawing addins
                     List<ImageAndAnnotation> imageAndAnno = await FileManager.getSharedFileManager().GetImgageAndAnnotationObjectFromXML(notebookId, pageIds[i]);
-                    if (imageAndAnno != null)
+                    if (imageAndAnno == null) {
+                    }
+                    else
+                    {
                         //shows add-in icons into side bar
                         aPage.showAddIn(imageAndAnno);
-                    //loop to add actual add-in to canvas but hides it depending on its inDock value
-                    foreach (var ia in imageAndAnno)
-                        aPage.loadAddInControl(ia);
+                        //loop to add actual add-in to canvas but hides it depending on its inDock value
+                        foreach (var ia in imageAndAnno)
+                            aPage.loadAddInControl(ia);
+                    }
                 }
+                curPage = notePages[0];
+                curPageIndex = 0;
+                PageHost.Content = curPage;
+                setNotePageIndex(curPageIndex);
+
                 //setting initial page to first page and auto-start analyzing strokes
                 if (!has_EHR)
                 {
@@ -207,18 +219,12 @@ namespace PhenoPad
                     inkCanvas = notePages[0].ehrPage.inkCanvas;
                 }
                 MainPageInkBar.TargetInkCanvas = inkCanvas;
-                curPage = notePages[0];
-                curPageIndex = 0;
-                PageHost.Content = curPage;
-                setNotePageIndex(curPageIndex);
                 curPage.Visibility = Visibility.Visible;
-
-
             }
             catch (NullReferenceException ne)
             {
                 ////NullReferenceException is very likely to happen when things aren't saved properlly during debugging state due to force quit
-                MetroLogger.getSharedLogger().Error(ne+ne.Message);
+                MetroLogger.getSharedLogger().Error( ne + ne.Message );
                 await PromptRemakeNote(notebookId);
                 return;
             }

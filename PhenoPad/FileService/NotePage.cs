@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Diagnostics;
+using System.Threading.Tasks;
+using Windows.Storage;
 
 namespace PhenoPad.FileService
 {

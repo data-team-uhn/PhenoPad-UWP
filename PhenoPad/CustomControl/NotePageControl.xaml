@@ -214,7 +214,7 @@
                           ViewChanged="ScrollView_ViewChanged" 
                           VerticalScrollBarVisibility="Hidden" >
                 <Grid Padding="0 100 0 0">
-                <Canvas  Height="{x:Bind PAGE_HEIGHT}" Name="sideCanvas">
+                <Canvas  Height="{x:Bind PAGE_HEIGHT}" Width="{x:Bind PAGE_WIDTH}" Name="sideCanvas">
 
                 
                 </Canvas>
