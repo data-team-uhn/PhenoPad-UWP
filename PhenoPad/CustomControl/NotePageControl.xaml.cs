@@ -113,7 +113,7 @@ namespace PhenoPad.CustomControl
         public ObservableCollection<HWRRecognizedText> recognizedText = new ObservableCollection<HWRRecognizedText>();
 
         private MainPage rootPage;
-        private EHRPageControl ehrPage;
+        public EHRPageControl ehrPage;
         //private string[] textLines;
         CoreInkIndependentInputSource core;
 
@@ -168,9 +168,11 @@ namespace PhenoPad.CustomControl
         private InkDrawingAttributes drawingAttributesBackUp;
         Dictionary<string, List<Phenotype>> oldAnnotations = new Dictionary<string, List<Phenotype>>();
         Dictionary<TextBox, List<string>> textBlockToAlternatives = new Dictionary<TextBox, List<string>>();
-        /*************************END OF CLASS PROPERTIES*************************************/
-        #endregion
 
+        //====================================================================================
+        //                              END OF CLASS PROPERTIES
+        //====================================================================================
+        #endregion
 
 
         /// <summary>
@@ -191,7 +193,6 @@ namespace PhenoPad.CustomControl
             this.pageId = pageid;
             this.ehrPage = null;
             
-
             UNPROCESSED_COLOR = new SolidColorBrush(UNPROCESSED_COLOR.Color);
             UNPROCESSED_COLOR.Opacity = UNPROCESSED_OPACITY;
 
@@ -287,34 +288,16 @@ namespace PhenoPad.CustomControl
 
         #region UI Display
         // ============================== UI DISPLAYS HANDLER ==============================================//
-        // draw background lines for notes
-
-        public void changeLineHeight() {
-            var format = textNoteEditBox.Document.GetDefaultParagraphFormat();
-            textNoteEditBox.FontSize = 32;
-            format.SetLineSpacing(LineSpacingRule.Exactly, 50f);
-            textNoteEditBox.Document.SetDefaultParagraphFormat(format);
-            this.AddHandler(PointerMovedEvent, new PointerEventHandler(editor_PointerMoved), true);
-            Debug.WriteLine("added");
-        }
-
-        private void editor_PointerMoved(object sender, PointerRoutedEventArgs e)
-        {
-            var position = e.GetCurrentPoint(textNoteEditBox).Position;
-            var range = textNoteEditBox.Document.GetRangeFromPoint(position, Windows.UI.Text.PointOptions.ClientCoordinates);
-            string outt;
-            textNoteEditBox.Document.GetText(TextGetOptions.None, out outt);
-            Debug.WriteLine("pos:"+outt.Substring(range.StartPosition));
-        }
 
         public void SwitchToEHR(StorageFile file) {
-            this.ehrPage = new EHRPageControl(file);
-            EHRScrollViewer.Content = ehrPage;
-            //EHROutputGrid.Children.Add(ehrPage);
+            this.ehrPage = new EHRPageControl(file, notebookId, pageId);
+            //EHRScrollViewer.Content = ehrPage;
+            EHROutputGrid.Children.Add(ehrPage);
             scrollViewer.Visibility = Visibility.Collapsed;
             EHRScrollViewer.Visibility = Visibility.Visible;
         }
 
+        // draw background lines for notes
         public void DrawBackgroundLines()
         {
             for (int i = 1; i <= backgroundCanvas.RenderSize.Height / LINE_HEIGHT; ++i)
@@ -878,7 +861,13 @@ namespace PhenoPad.CustomControl
             await CoreApplication.MainView.CoreWindow.Dispatcher.RunAsync(CoreDispatcherPriority.Normal,
             () =>
             {
-                foreach (var c in this.userControlCanvas.Children)
+                Panel source = null;
+                if (this.ehrPage != null)
+                    source = addinCanvasEHR;
+                else
+                    source = userControlCanvas;
+
+                foreach (var c in source.Children)
                 {
                     if (c.GetType() == typeof(AddInControl))
                     {
@@ -970,8 +959,10 @@ namespace PhenoPad.CustomControl
                 canvasAddIn.viewFactor.ScaleY = ia.zoomFactorY;
 
             });
-
+            if (ehrPage == null)
                 userControlCanvas.Children.Add(canvasAddIn);
+            else
+                addinCanvasEHR.Children.Add(canvasAddIn);
                 canvasAddIn.InitializeFromDisk(false);
 
                 //If this addin was hidden during the last edit, auto hides it from initialization
@@ -985,7 +976,8 @@ namespace PhenoPad.CustomControl
                                                     double left, double top,                                                   
                                                     double widthOrigin, double heightOrigin,
                                                     double width = -1, double height = -1,
-                                                    WriteableBitmap wb = null                                                   
+                                                    WriteableBitmap wb = null,
+                                                    EHRPageControl ehr = null
                                                     )
         {
             AddInControl canvasAddIn = new AddInControl(name, notebookId, pageId, 
@@ -997,8 +989,10 @@ namespace PhenoPad.CustomControl
             Canvas.SetTop(canvasAddIn, top);
             canvasAddIn.slideOffset = rootPage.ActualWidth - left;
 
-
-            userControlCanvas.Children.Add(canvasAddIn);
+            if (ehr != null)
+                addinCanvasEHR.Children.Add(canvasAddIn);
+            else
+                userControlCanvas.Children.Add(canvasAddIn);
             curLineResultPanel.Visibility = Visibility.Collapsed ;
 
             //loading a photo from disk with editing option
@@ -1378,8 +1372,12 @@ namespace PhenoPad.CustomControl
                     return false;
                 }
                 // save handwritings
-                //result1 = await FileManager.getSharedFileManager().saveStrokes(file, this.inkCan);
                 result1 = await FileManager.getSharedFileManager().SaveNotePageStrokes(notebookId, pageId, this);
+
+                if (ehrPage != null)
+                {
+                    await FileManager.getSharedFileManager().SaveEHRText(notebookId, pageId, this.ehrPage);
+                }
 
 
                 // save add in controls

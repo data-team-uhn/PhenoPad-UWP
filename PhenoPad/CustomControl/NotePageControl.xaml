@@ -441,7 +441,10 @@
                         HorizontalScrollBarVisibility="Hidden"
                         >
 
-                <!--<Grid x:Name="EHROutputGrid" />-->
+                <Grid x:Name="EHROutputGrid">
+
+                    <Canvas x:Name="addinCanvasEHR" Canvas.ZIndex="5" />
+                </Grid>
             </ScrollViewer>
 
 

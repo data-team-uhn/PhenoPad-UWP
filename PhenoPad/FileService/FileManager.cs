@@ -32,7 +32,8 @@ namespace PhenoPad.FileService
         Transcriptions,
         Video,
         Meta,
-        ImageAnnotationMeta
+        ImageAnnotationMeta,
+        EHR
     };
 
     /// <summary>
@@ -44,6 +45,7 @@ namespace PhenoPad.FileService
         public static FileManager sharedFileManager = null;
         private MainPage rootPage = MainPage.Current;
         private string STROKE_FILE_NAME = "strokes.gif";
+        private string EHR_FILE_NAME = "ehr.txt";
         private string PHENOTYPE_FILE_NAME = "phenotypes.txt";
         private string NOTENOOK_NAME_PREFIX = "note_";
         private string NOTE_META_FILE = "meta.xml";
@@ -197,14 +199,15 @@ namespace PhenoPad.FileService
             StorageFile notefile = null;
             //StorageFolder localFolder = ApplicationData.Current.LocalFolder;
             string filepath = GetNoteFilePath(notebookId, notePageId, fileType, name);
+            Debug.WriteLineIf((fileType == NoteFileType.EHR), filepath);
             try
             {
                 notefile = await ROOT_FOLDER.CreateFileAsync(filepath, CreationCollisionOption.OpenIfExists);
             }
             catch (Exception ex)
             {
-                Debug.WriteLine($"Failed to create {filepath}");
-                LogService.MetroLogger.getSharedLogger().Error($"Failed to create file: notebook: {notebookId}, page: {notebookId}, type: {fileType}, name: {name}, details: {ex.Message}");
+                LogService.MetroLogger.getSharedLogger().Error($"Failed to create file: notebook: {notebookId}, " +
+                    $"page: {notebookId}, type: {fileType}, name: {name}, details: {ex.Message}");
                 return null;
             }
             return notefile;
@@ -294,6 +297,9 @@ namespace PhenoPad.FileService
                     break;
                 case NoteFileType.Transcriptions:
                     filename = name + ".xml";
+                    break;
+                case NoteFileType.EHR:
+                    filename = EHR_FILE_NAME;
                     break;
             }
 
@@ -595,7 +601,12 @@ namespace PhenoPad.FileService
                 var pageFolder = await notebookFolder.GetFolderAsync(pageId);
                 var strokesFolder = await pageFolder.GetFolderAsync("Strokes");
                 var strokesFile = await strokesFolder.CreateFileAsync(this.STROKE_FILE_NAME, CreationCollisionOption.OpenIfExists);
-                isSuccessful = await saveStrokes(strokesFile, notePage.inkCan);
+                
+                //Saves strokes on different canvas based on whether an EHR document exists
+                if (notePage.ehrPage == null)
+                    isSuccessful = await saveStrokes(strokesFile, notePage.inkCan);
+                else
+                    isSuccessful = await saveStrokes(strokesFile, notePage.ehrPage.inkCanvas);
 
             }
             catch (Exception e)
@@ -606,6 +617,30 @@ namespace PhenoPad.FileService
                 return false;
             }
             return true;
+        }
+
+        /// <summary>
+        /// Saves the EHR text file into local .txt file
+        /// </summary>
+        public async Task<bool> SaveEHRText(string notebookId, string pageId, EHRPageControl ehr) {
+
+            try
+            {
+                var notebookFolder = await ROOT_FOLDER.GetFolderAsync(notebookId);
+                var pageFolder = await notebookFolder.GetFolderAsync(pageId);
+                var ehrFile = await pageFolder.CreateFileAsync(this.EHR_FILE_NAME, CreationCollisionOption.OpenIfExists);
+                //saves text to local .txt file
+                await FileIO.WriteTextAsync(ehrFile, ehr.getEHRText());
+            }
+            catch (Exception e)
+            {
+                LogService.MetroLogger.getSharedLogger().Error(
+                    $"Failed to save EHR, notebook: {notebookId}, page: {pageId}, details: "
+                    + e.Message);
+                return false;
+            }
+            return true;
+
         }
 
         SemaphoreSlim serilizationSS = new SemaphoreSlim(1);
@@ -767,7 +802,10 @@ namespace PhenoPad.FileService
             {
                 string strokePath = GetNoteFilePath(notebookId, pageId, NoteFileType.Strokes);
                 var strokesFile = await ROOT_FOLDER.GetFileAsync(strokePath);
-                isSuccessful = await loadStrokes(strokesFile, notePage.inkCan);
+                if (notePage.ehrPage == null)
+                    isSuccessful = await loadStrokes(strokesFile, notePage.inkCan);
+                else
+                    isSuccessful = await loadStrokes(strokesFile, notePage.ehrPage.inkCanvas);
             }
             catch (Exception e)
             {

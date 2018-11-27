@@ -1014,7 +1014,6 @@ namespace PhenoPad.CustomControl
             phenoCtrlSlide.Y = 0;
             curLineCandidatePheno.Clear();
             annotateCurrentLineAndUpdateUI(curLineObject);
-
         }
 
 

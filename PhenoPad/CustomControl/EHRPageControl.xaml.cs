@@ -1,4 +1,5 @@
-﻿using PhenoPad.HWRService;
+﻿using PhenoPad.FileService;
+using PhenoPad.HWRService;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -49,19 +50,23 @@ namespace PhenoPad.CustomControl
 
         private int current_index;
 
+        private string notebookid;
+        private string pageid;
+
 
 
         List<HWRRecognizedText> inputRecogResult;
 
-        DispatcherTimer operationDispathcerTimer; //try to recognize last stroke as operation
-
-        public EHRPageControl(StorageFile file)
+        public EHRPageControl(StorageFile file,string noteid, string pageid)
         {
             this.InitializeComponent();
             //setting the text grid line format
             {
                 RemovePasteFormat();
             }
+
+            this.notebookid = noteid;
+            this.pageid = pageid;
 
             inkCanvas.AddHandler(UIElement.TappedEvent, new TappedEventHandler(OnElementTapped), true);
 
@@ -119,21 +124,6 @@ namespace PhenoPad.CustomControl
             DrawBackgroundLines();
         }
 
-        /// <summary>
-        /// Trims the extra newlines in current EHR text and copies it to windows clipboard
-        /// </summary>
-        private void CopyTextToClipboard(object sender, DoubleTappedRoutedEventArgs e)
-        {
-            DataPackage dataPackage = new DataPackage();
-            // copy 
-            dataPackage.RequestedOperation = DataPackageOperation.Copy;
-            string text;
-            EHRTextBox.Document.GetText(TextGetOptions.None, out text);
-            text = text.TrimEnd();
-            dataPackage.SetText(text);
-            Clipboard.SetContent(dataPackage);
-            MainPage.Current.NotifyUser("Copied EHR Text to Clipboard", NotifyType.StatusMessage, 1);
-        }
 
         /// <summary>
         /// Takes the EHR text file and converts content onto template
@@ -151,6 +141,8 @@ namespace PhenoPad.CustomControl
                 string text = await FileIO.ReadTextAsync(file);
                 text = text.TrimEnd();
                 EHRTextBox.Document.SetText(TextSetOptions.None, text);
+                Debug.WriteLine(text);
+
             }
             catch (Exception ex) {
                 LogService.MetroLogger.getSharedLogger().Error(ex.Message);
@@ -176,62 +168,14 @@ namespace PhenoPad.CustomControl
         }
 
         /// <summary>
-        /// Recognize a set of strokes as whether a shape or just drawing and handles each case
-        /// accordingly.
+        /// Displays input canvas for inserting into EHR
         /// </summary>
-        private async Task<int> RecognizeInkOperation()
+        /// <param name="p"></param>
+        private void ShowInputPanel(Point p)
         {
-            var result = await inkOperationAnalyzer.AnalyzeAsync();
-
-            if (result.Status == InkAnalysisStatus.Updated)
-            {
-                Debug.WriteLine($"in");
-
-                //first need to clear all previous selections to filter out strokes that don't want to be deleted
-                //ClearSelectionAsync();
-                foreach (var s in inkCanvas.InkPresenter.StrokeContainer.GetStrokes())
-                    s.Selected = false;
-                //Gets all strokes from inkoperationanalyzer
-                var inkdrawingNodes = inkOperationAnalyzer.AnalysisRoot.FindNodes(InkAnalysisNodeKind.InkDrawing);
-                foreach (InkAnalysisInkDrawing drawNode in inkdrawingNodes)
-                {
-                    Rect bounding = drawNode.BoundingRect;
-                    foreach (uint sid in drawNode.GetStrokeIds())
-                    {
-                        lastOperationStrokeIDs.Add(sid);
-                    }
-
-                    if (bounding.Width < 10)
-                    {// detected operation for inserting
-                        Debug.WriteLine($"detected insert at {bounding.X},{bounding.Y}====");
-                        Point pos = new Point(bounding.X, bounding.Y + (bounding.Height / 2.0));
-                        var range = EHRTextBox.Document.GetRangeFromPoint(pos, PointOptions.ClientCoordinates);
-                        current_index = range.StartPosition;
-                        if (pos.X > 300)
-                            pos.X -= 300;
-                        ShowInputPanel(pos);
-                    }
-                    else if (bounding.Width >=10)
-                    {// detected operation for deleting
-                        Debug.WriteLine($"detected delete at {bounding.X},{bounding.Y}====");
-                        Point start = new Point(bounding.X + 10 , bounding.Y + (bounding.Height / 2.0));
-                        Point end = new Point(bounding.X + bounding.Width - 10, bounding.Y + (bounding.Height / 2.0));
-                        var range1 = EHRTextBox.Document.GetRangeFromPoint(start, PointOptions.ClientCoordinates);
-                        var range2 = EHRTextBox.Document.GetRangeFromPoint(end, PointOptions.ClientCoordinates);
-                        Debug.WriteLine($"start={range1.StartPosition},end={range2.StartPosition}");
-                        DeleteTextInRange(range1.StartPosition, range2.StartPosition);
-                    }
-
-                }
-                // delete all strokes that are too large, like drawings
-                foreach (var sid in inkOperationAnalyzer.AnalysisRoot.GetStrokeIds())
-                {
-                    inkOperationAnalyzer.RemoveDataForStroke(sid);
-                }
-                //inkCanvas.InkPresenter.StrokeContainer.DeleteSelected();
-                return 1;
-            }
-            return -1;
+            Canvas.SetLeft(inputgrid, p.X - 10);
+            Canvas.SetTop(inputgrid, p.Y + LINE_HEIGHT);
+            inputgrid.Visibility = Visibility.Visible;
         }
 
 
@@ -304,6 +248,11 @@ namespace PhenoPad.CustomControl
 
         }
 
+
+        // ====================================
+        //     EHR OPERATIONS
+        // ====================================
+
         /// <summary>
         /// Inserts current recognized text into EHR text edit box
         /// </summary>
@@ -361,6 +310,22 @@ namespace PhenoPad.CustomControl
         }
 
         /// <summary>
+        /// Trims the extra newlines in current EHR text and copies it to windows clipboard
+        /// </summary>
+        private void CopyTextToClipboard(object sender, DoubleTappedRoutedEventArgs e)
+        {
+            DataPackage dataPackage = new DataPackage();
+            // copy 
+            dataPackage.RequestedOperation = DataPackageOperation.Copy;
+            string text;
+            EHRTextBox.Document.GetText(TextGetOptions.None, out text);
+            text = text.TrimEnd();
+            dataPackage.SetText(text);
+            Clipboard.SetContent(dataPackage);
+            MainPage.Current.NotifyUser("Copied EHR Text to Clipboard", NotifyType.StatusMessage, 1);
+        }
+
+        /// <summary>
         /// Deletes all processed operation strokes from inkCanvas
         /// </summary>
         private void ClearOperationStrokes() {
@@ -374,9 +339,102 @@ namespace PhenoPad.CustomControl
             lastOperationStrokeIDs.Clear();
         }
 
+
+        /// <summary>
+        /// Returns the current non-formatted text in EHR text box as string
+        /// </summary>
+        /// <returns></returns>
+        public string getEHRText() {
+            string body;
+            EHRTextBox.Document.GetText(TextGetOptions.None, out body);
+            body = body.TrimEnd();
+            return body;
+        }
+
+
         //=======================================
         //      ANALYZING INK STROKES
         //=======================================
+
+        /// <summary>
+        /// Recognize a set of strokes as whether a shape or just drawing and handles each case
+        /// accordingly.
+        /// </summary>
+        private async Task<int> RecognizeInkOperation()
+        {
+            var result = await inkOperationAnalyzer.AnalyzeAsync();
+
+            if (result.Status == InkAnalysisStatus.Updated)
+            {
+                Debug.WriteLine($"in");
+
+                //first need to clear all previous selections to filter out strokes that don't want to be deleted
+                //ClearSelectionAsync();
+                foreach (var s in inkCanvas.InkPresenter.StrokeContainer.GetStrokes())
+                    s.Selected = false;
+                //Gets all strokes from inkoperationanalyzer
+                var inkdrawingNodes = inkOperationAnalyzer.AnalysisRoot.FindNodes(InkAnalysisNodeKind.InkDrawing);
+                foreach (InkAnalysisInkDrawing drawNode in inkdrawingNodes)
+                {
+                    Rect bounding = drawNode.BoundingRect;
+                    foreach (uint sid in drawNode.GetStrokeIds())
+                    {
+                        lastOperationStrokeIDs.Add(sid);
+                    }
+
+                    if (drawNode.DrawingKind == InkAnalysisDrawingKind.Rectangle || drawNode.DrawingKind == InkAnalysisDrawingKind.Square)
+                    {
+                        Debug.WriteLine("addin");
+                        foreach (var dstroke in drawNode.GetStrokeIds())
+                        {
+                            var stroke = inkCanvas.InkPresenter.StrokeContainer.GetStrokeById(dstroke);
+                            //adds a new add-in control 
+                            string name = FileManager.getSharedFileManager().CreateUniqueName();
+                            MainPage.Current.curPage.NewAddinControl(name, false, left: stroke.BoundingRect.X, top: stroke.BoundingRect.Y,
+                                            widthOrigin: stroke.BoundingRect.Width, heightOrigin: stroke.BoundingRect.Height, ehr: this);
+                            stroke.Selected = true;
+                        }
+                        //dispose the strokes as don't need them anymore
+                        inkOperationAnalyzer.RemoveDataForStrokes(drawNode.GetStrokeIds());
+                        inkCanvas.InkPresenter.StrokeContainer.DeleteSelected();
+                    }
+
+                    else {
+                        if (bounding.Width < 10)
+                        {// detected operation for inserting
+                            Debug.WriteLine($"detected insert at {bounding.X},{bounding.Y}====");
+                            Point pos = new Point(bounding.X, bounding.Y + (bounding.Height / 2.0));
+                            var range = EHRTextBox.Document.GetRangeFromPoint(pos, PointOptions.ClientCoordinates);
+                            current_index = range.StartPosition;
+                            if (pos.X > 300)
+                                pos.X -= 300;
+                            ShowInputPanel(pos);
+                        }
+                        else if (bounding.Width >= 10)
+                        {// detected operation for deleting
+                            Debug.WriteLine($"detected delete at {bounding.X},{bounding.Y}====");
+                            Point start = new Point(bounding.X + 10, bounding.Y + (bounding.Height / 2.0));
+                            Point end = new Point(bounding.X + bounding.Width - 10, bounding.Y + (bounding.Height / 2.0));
+                            var range1 = EHRTextBox.Document.GetRangeFromPoint(start, PointOptions.ClientCoordinates);
+                            var range2 = EHRTextBox.Document.GetRangeFromPoint(end, PointOptions.ClientCoordinates);
+                            Debug.WriteLine($"start={range1.StartPosition},end={range2.StartPosition}");
+                            DeleteTextInRange(range1.StartPosition, range2.StartPosition);
+                        }
+
+                    }
+
+                }
+                // delete all strokes that are too large, like drawings
+                foreach (var sid in inkOperationAnalyzer.AnalysisRoot.GetStrokeIds())
+                {
+                    inkOperationAnalyzer.RemoveDataForStroke(sid);
+                }
+                //inkCanvas.InkPresenter.StrokeContainer.DeleteSelected();
+                return 1;
+            }
+            return -1;
+        }
+
 
         /// <summary>
         ///  Analyze ink strokes contained in inkAnalyzer and add phenotype candidates
@@ -419,6 +477,7 @@ namespace PhenoPad.CustomControl
             }
             return false;
         }
+
         /// <summary>
         /// set up for current line, i.e. hwr, show recognition results and show recognized phenotypes
         /// </summary>
@@ -496,7 +555,6 @@ namespace PhenoPad.CustomControl
             tb.Text = citem;
         }
 
-
         private async Task<List<HWRRecognizedText>> RecognizeLine(uint lineid, bool serverFlag)
         {
             try
@@ -517,15 +575,6 @@ namespace PhenoPad.CustomControl
             }
             return null;
         }
-
-        private void ShowInputPanel(Point p) {
-            Canvas.SetLeft(inputgrid, p.X - 10);
-            Canvas.SetTop(inputgrid, p.Y + LINE_HEIGHT);
-            inputgrid.Visibility = Visibility.Visible;
-
-        }
-
-
 
 
 

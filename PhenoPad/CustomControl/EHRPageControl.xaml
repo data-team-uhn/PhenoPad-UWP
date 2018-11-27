@@ -57,9 +57,9 @@
         </Grid>
 
         <!--Gesture canvas -->
-        <InkCanvas  x:Name="inkCanvas" Grid.Column="0" />
+        <InkCanvas  x:Name="inkCanvas" x:FieldModifier="public" Grid.Column="0" Grid.ColumnSpan="2" />
          <!--Annotation-->
-        <InkCanvas x:Name="annotations" Grid.Column="1" />
+        <!--<InkCanvas x:Name="annotations" Grid.Column="1" />-->
 
         <!--insert text pop up-->
         <Canvas>
@@ -135,7 +135,6 @@
         <!-- pop up after selection-->
 
         <!-- Add in control panel -->
-        <Canvas x:Name="addinCanvas" />
 
 
 

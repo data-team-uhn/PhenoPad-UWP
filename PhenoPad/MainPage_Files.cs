@@ -144,7 +144,6 @@ namespace PhenoPad
                     List<TextMessage> messages = await FileManager.getSharedFileManager().GetSavedTranscriptsFromXML(notebookId, fName);
                     if (messages == null)
                     {
-                        NotifyUser($"Failed to load transcript_{i}, file may be empty.", NotifyType.StatusMessage, 2);
                         MetroLogger.getSharedLogger().Error($"Failed to load transcript_{i}, file may not exist or is empty.");
                     }
                     else
@@ -166,16 +165,27 @@ namespace PhenoPad
                 // Process loading note pages one by one
                 notePages = new List<NotePageControl>();
                 pageIndexButtons = new List<Button>();
+                bool has_EHR = false;
 
                 for (int i = 0; i < pageIds.Count; ++i)
                 {
-                    //load strokes
                     NotePageControl aPage = new NotePageControl(notebookObject.name, i.ToString());
                     notePages.Add(aPage);
                     aPage.pageId = pageIds[i];
                     aPage.notebookId = notebookId;
+
+                    //check if there's an EHR file in the page
+                    StorageFile ehr = await FileManager.getSharedFileManager().GetNoteFile(notebookId, i.ToString(), NoteFileType.EHR);
+                    if (ehr != null)
+                    {
+                        has_EHR = true;
+                        aPage.SwitchToEHR(ehr);
+                    }
+
+                    //load strokes
                     await FileManager.getSharedFileManager().LoadNotePageStroke(notebookId, pageIds[i], aPage);
                     addNoteIndex(i);
+
                     //load image/drawing addins
                     List<ImageAndAnnotation> imageAndAnno = await FileManager.getSharedFileManager().GetImgageAndAnnotationObjectFromXML(notebookId, pageIds[i]);
                     if (imageAndAnno != null)
@@ -186,14 +196,24 @@ namespace PhenoPad
                         aPage.loadAddInControl(ia);
                 }
                 //setting initial page to first page and auto-start analyzing strokes
-                inkCanvas = notePages[0].inkCan;
+                if (!has_EHR)
+                {
+                    //initializing for regular note page
+                    inkCanvas = notePages[0].inkCan;
+                    curPage.initialAnalyze();
+                }
+                else {
+                    //current implementation assumes if there's ehr, it must be on first page
+                    inkCanvas = notePages[0].ehrPage.inkCanvas;
+                }
                 MainPageInkBar.TargetInkCanvas = inkCanvas;
                 curPage = notePages[0];
                 curPageIndex = 0;
                 PageHost.Content = curPage;
                 setNotePageIndex(curPageIndex);
-                curPage.initialAnalyze();
                 curPage.Visibility = Visibility.Visible;
+
+
             }
             catch (NullReferenceException ne)
             {
@@ -219,19 +239,19 @@ namespace PhenoPad
             }
 
             // Tries to create a file structure for the new notebook.
-            //{
-            notebookId = FileManager.getSharedFileManager().createNotebookId();
-            //    FileManager.getSharedFileManager().currentNoteboookId = notebookId;
-            //    bool result = await FileManager.getSharedFileManager().CreateNotebook(notebookId);
-            //    SpeechManager.getSharedSpeechManager().setAudioIndex(0);
-            //    if (!result)
-            //        NotifyUser("Failed to create file structure, notes may not be saved.", NotifyType.ErrorMessage, 2);
-            //    else
-            //        notebookObject = await FileManager.getSharedFileManager().GetNotebookObjectFromXML(notebookId);
+            {
+                notebookId = FileManager.getSharedFileManager().createNotebookId();
+                FileManager.getSharedFileManager().currentNoteboookId = notebookId;
+                bool result = await FileManager.getSharedFileManager().CreateNotebook(notebookId);
+                SpeechManager.getSharedSpeechManager().setAudioIndex(0);
+                if (!result)
+                    NotifyUser("Failed to create file structure, notes may not be saved.", NotifyType.ErrorMessage, 2);
+                else
+                    notebookObject = await FileManager.getSharedFileManager().GetNotebookObjectFromXML(notebookId);
 
-            //    if (notebookObject != null)
-            //        noteNameTextBox.Text = notebookObject.name;
-            //}
+                if (notebookObject != null)
+                    noteNameTextBox.Text = notebookObject.name;
+            }
 
             notePages = new List<NotePageControl>();
             pageIndexButtons = new List<Button>();
@@ -255,7 +275,7 @@ namespace PhenoPad
             AbbreviationON_Checked(null, null);
 
             // create file sturcture for this page
-            //await FileManager.getSharedFileManager().CreateNotePage(notebookObject, curPageIndex.ToString());
+            await FileManager.getSharedFileManager().CreateNotePage(notebookObject, curPageIndex.ToString());
             curPage.Visibility = Visibility.Visible;
         }
 
@@ -272,26 +292,6 @@ namespace PhenoPad
             Frame.Navigate(typeof(PageOverview));
         }
 
-        ///// <summary>
-        ///// Saves the Notebook to disk after a specified time in seconds.
-        ///// </summary>
-        //private void saveNotesTimer(int seconds)
-        //{
-        //    TimeSpan period = TimeSpan.FromSeconds(seconds);
-
-        //    ThreadPoolTimer PeriodicTimer = ThreadPoolTimer.CreatePeriodicTimer(async (source) =>
-        //    {
-        //        try
-        //        {
-        //            LogService.MetroLogger.getSharedLogger().Info("Timer tick, auto-saving everything...");
-        //            await this.saveNoteToDisk();
-        //        }
-        //        catch (Exception e)
-        //        {
-        //            Debug.WriteLine(e.Message);
-        //        }
-        //    }, period);
-        //}
 
         /// <summary>
         /// Save everything to disk, include: 
@@ -330,6 +330,8 @@ namespace PhenoPad
 
                 if (! (pgResult && result2))
                     MetroLogger.getSharedLogger().Info($"Some parts of notebook {notebookId} failed to save.");
+
+
             }
             catch (NullReferenceException)
             {
