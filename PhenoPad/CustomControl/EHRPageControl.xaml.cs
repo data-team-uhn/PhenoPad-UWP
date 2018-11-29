@@ -26,6 +26,8 @@ using Windows.UI.Xaml.Input;
 using Windows.UI.Xaml.Media;
 using Windows.UI.Xaml.Navigation;
 using Windows.UI.Xaml.Shapes;
+using WobbrockLib;
+using PhenoPad.Gestures;
 
 //using System.Drawing;
 
@@ -40,6 +42,7 @@ namespace PhenoPad.CustomControl
         private double EHR_WIDTH = 2300;
         private float LINE_HEIGHT = 50;
         private float MAX_WRITING;
+        private Recognizer GESTURE_RECOGNIZER;
 
         private Polyline lasso;
 
@@ -47,7 +50,6 @@ namespace PhenoPad.CustomControl
 
         private float UNPROCESSED_OPACITY = 0.2f;
         private int UNPROCESSED_THICKNESS = 30;
-        private int UNPROCESSED_RESOLUTION = 5;
         private SolidColorBrush UNPROCESSED_COLOR = Application.Current.Resources["WORD_DARK"] as SolidColorBrush;
         private bool isBoundRect;
 
@@ -89,6 +91,10 @@ namespace PhenoPad.CustomControl
             this.pageid = pageid;
 
             MAX_WRITING = LINE_HEIGHT;
+
+            GESTURE_RECOGNIZER = new Recognizer();
+            GESTURE_RECOGNIZER.LoadGesture(@"C:\Users\helen\AppData\Local\Packages\16bc6b12-daff-4104-a251-1fa502edec02_qfxtr3e52dkcc\LocalState\circle.xml");
+
 
             inkCanvas.InkPresenter.InputDeviceTypes = CoreInputDeviceTypes.Pen;
 
@@ -487,8 +493,10 @@ namespace PhenoPad.CustomControl
             {//processing strokes inputs
                 foreach (var s in args.Strokes)
                 {
-                    List<Point> pts = GetStrokePoints(s);
-                    Debug.WriteLine(pts.Count);
+                    List<TimePointR> pts = GetStrokePoints(s);
+                    NBestList result = GESTURE_RECOGNIZER.Recognize(pts, false);
+
+                    Debug.WriteLine("$1 ="+ result.Name);
 
                     //Process strokes that excess maximum height for recognition
                     if (s.BoundingRect.Height > MAX_WRITING)
@@ -852,25 +860,27 @@ namespace PhenoPad.CustomControl
         }
         #endregion
 
-        /// <summary>
-        /// Gets the points in an inkstroke on a per millisecond basis
-        /// </summary>
-        /// <returns></returns>
-        private List<Point> GetStrokePoints(InkStroke s) {
-            List<Point> points = new List<Point>();
+        // <summary>
+        // Converts a stroke's InkPoint to TimePointF for gesture recognition
+        // </summary>
+        private List<TimePointR> GetStrokePoints(InkStroke s)
+        {
+            List<TimePointR> points = new List<TimePointR>();
             int counter = 0;
-            foreach (InkPoint p in s.GetInkPoints()) {
+            foreach (InkPoint p in s.GetInkPoints())
+            {
                 //reached per ms threshold
                 if (!((counter + 1) % 1000000 == 0))
                 {
-                    points.Add(p.Position);
+                    points.Add(new TimePointR((float)p.Position.X, (float)p.Position.Y, (long)p.Timestamp));
                     counter++;
                 }
-                else {
+                else
+                {
                     counter = 0;
                 }
             }
-            return points;           
+            return points;
         }
 
 

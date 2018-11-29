@@ -146,6 +146,11 @@
     <Compile Include="FileService\Notebook.cs" />
     <Compile Include="FileService\ImageAndAnnotation.cs" />
     <Compile Include="FileService\NotePage.cs" />
+    <Compile Include="Gestures\Category.cs" />
+    <Compile Include="Gestures\NBestList.cs" />
+    <Compile Include="Gestures\ProgressEvent.cs" />
+    <Compile Include="Gestures\Recognizer.cs" />
+    <Compile Include="Gestures\Unistroke.cs" />
     <Compile Include="HelperFunctions.cs" />
     <Compile Include="HWRService\HWRManager.cs" />
     <Compile Include="LogService\FileLoggingSessionScenario.cs" />
@@ -178,7 +183,6 @@
     <Compile Include="PhenotypeService\Disease.cs" />
     <Compile Include="PhenotypeService\Phenotype.cs" />
     <Compile Include="PhenotypeService\PhenotypeManager.cs" />
-    <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="SpeechService\GoogleRecognize.cs" />
     <Compile Include="SpeechService\SpeechEngineInterpreter.cs" />
     <Compile Include="SpeechService\SpeechManager.cs" />
@@ -187,6 +191,16 @@
     <Compile Include="Styles\MyColors.cs" />
     <Compile Include="WebSocketService\UIWebSocketClient.cs" />
     <Compile Include="WebSocketService\SpeechStreamSocket.cs" />
+    <Compile Include="WobbrockLib\CircleR.cs" />
+    <Compile Include="WobbrockLib\EventArgsT.cs" />
+    <Compile Include="WobbrockLib\GeotrigEx.cs" />
+    <Compile Include="WobbrockLib\PointR.cs" />
+    <Compile Include="WobbrockLib\RandomEx.cs" />
+    <Compile Include="WobbrockLib\RangeR.cs" />
+    <Compile Include="WobbrockLib\RectangleR.cs" />
+    <Compile Include="WobbrockLib\SeriesEx.cs" />
+    <Compile Include="WobbrockLib\SizeR.cs" />
+    <Compile Include="WobbrockLib\TimePointR.cs" />
   </ItemGroup>
   <ItemGroup>
     <AppxManifest Include="Package.appxmanifest">
