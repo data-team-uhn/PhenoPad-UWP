@@ -26,6 +26,7 @@ using Windows.UI.Xaml.Input;
 using Windows.UI.Xaml.Media;
 using Windows.UI.Xaml.Navigation;
 using Windows.UI.Xaml.Shapes;
+
 //using System.Drawing;
 
 // The User Control item template is documented at https://go.microsoft.com/fwlink/?LinkId=234236
@@ -199,7 +200,6 @@ namespace PhenoPad.CustomControl
             autosaveDispatcherTimer.Stop();
             await MainPage.Current.curPage.SaveToDisk();
         }
-
 
         /// <summary>
         /// When pasting from other sources, auto removes the rtf format to match 
@@ -487,6 +487,9 @@ namespace PhenoPad.CustomControl
             {//processing strokes inputs
                 foreach (var s in args.Strokes)
                 {
+                    List<Point> pts = GetStrokePoints(s);
+                    Debug.WriteLine(pts.Count);
+
                     //Process strokes that excess maximum height for recognition
                     if (s.BoundingRect.Height > MAX_WRITING)
                     {
@@ -598,7 +601,6 @@ namespace PhenoPad.CustomControl
             Debug.WriteLine($"topleft={top_left.X},{top_left.Y},bottom_right={bottom_right.X},{bottom_right.Y}");
             return new Rect(top_left,bottom_right);           
         }
-
 
         /// <summary>
         /// Gets the position of first occuring space index given a point posiiton
@@ -788,7 +790,6 @@ namespace PhenoPad.CustomControl
             return null;
         }
 
-
         /// <summary>
         /// Adds recognized words into recognized UI line
         /// </summary>
@@ -850,6 +851,28 @@ namespace PhenoPad.CustomControl
             tb.Text = citem;
         }
         #endregion
+
+        /// <summary>
+        /// Gets the points in an inkstroke on a per millisecond basis
+        /// </summary>
+        /// <returns></returns>
+        private List<Point> GetStrokePoints(InkStroke s) {
+            List<Point> points = new List<Point>();
+            int counter = 0;
+            foreach (InkPoint p in s.GetInkPoints()) {
+                //reached per ms threshold
+                if (!((counter + 1) % 1000000 == 0))
+                {
+                    points.Add(p.Position);
+                    counter++;
+                }
+                else {
+                    counter = 0;
+                }
+            }
+            return points;           
+        }
+
 
     }
 }
