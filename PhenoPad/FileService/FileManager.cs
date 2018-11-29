@@ -451,6 +451,15 @@ namespace PhenoPad.FileService
             return result;
         }
 
+        //public async Task<string> SaveEHRSnapShot(string notebookId, string pageId, EHRPageControl ehr) {
+        //    try {
+        //        Rect bound = 
+        //    }
+        //    catch (Exception e) {
+        //        LogService.MetroLogger.getSharedLogger().Error(e + e.Message);
+        //    }
+        //}
+
 
         /// <summary>
         /// Created a new file folder for a note page and creates folders to store components on notepage, returns boolean result.
@@ -795,11 +804,12 @@ namespace PhenoPad.FileService
         {
             bool isSuccessful = true;
             //StorageFolder localFolder = ApplicationData.Current.LocalFolder;
-            Debug.WriteLine("Local Path: " + ROOT_FOLDER.Path);
+            //Debug.WriteLine("Local Path: " + ROOT_FOLDER.Path);
             try
             {
                 string strokePath = GetNoteFilePath(notebookId, pageId, NoteFileType.Strokes);
                 var strokesFile = await ROOT_FOLDER.GetFileAsync(strokePath);
+                //loads the stroked based on whether the current note page is an EHR document
                 if (notePage.ehrPage == null)
                     isSuccessful = await loadStrokes(strokesFile, notePage.inkCan);
                 else
@@ -834,7 +844,7 @@ namespace PhenoPad.FileService
             }
             catch (InvalidOperationException xe) {
                 if (xe.InnerException.GetType() == typeof(XmlException)) {
-                    //xml empty, ignore
+                    //xml empty, ignore because it's not a big problem
                 }       
                 return null;
             }

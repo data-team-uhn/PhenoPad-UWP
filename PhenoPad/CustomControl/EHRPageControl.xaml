@@ -62,9 +62,8 @@
         <!--<InkCanvas x:Name="annotations" Grid.Column="1" />-->
 
         <!--insert text pop up-->
-        <Canvas Canvas.ZIndex="6">
+        <Canvas x:Name="popupCanvas" Canvas.ZIndex="6">
             <RelativePanel x:Name="inputgrid" Visibility="Collapsed">
-
                 <Grid>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="45"/>
@@ -143,7 +142,54 @@
                     
                 </Grid>
             </RelativePanel>
+
+            <StackPanel x:Name="SelectionMenu"  Spacing="15" Visibility="Collapsed" Orientation="Horizontal">
+                <Button Style="{StaticResource ButtonStyle1}" Padding="20" Background="WhiteSmoke"  Width="120"  
+                        Click="CopySelectedText"
+                            HorizontalContentAlignment="Center" VerticalContentAlignment="Center">
+                    <TextBlock Text="Copy" FontWeight="SemiBold" FontSize="20" />
+                </Button>
+                <Button Style="{StaticResource ButtonStyle1}" Padding="20" Background="WhiteSmoke" Width="120"  
+                        Click="DeleteSelectedText"
+                            HorizontalContentAlignment="Center" VerticalContentAlignment="Center">
+                    <TextBlock Text="Delete" FontWeight="SemiBold" FontSize="20" />
+                </Button>
+            </StackPanel>
+
+            <!--Copy/Paste pop up-->
+
+            <Grid x:Name="cpMenu" Width="600" Height="150" 
+                  Visibility="Collapsed">
+
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="30"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+
+                <Grid CornerRadius="10" Grid.Column="0" Background="White">
+
+                <Button Style="{StaticResource ButtonStyle1}"  Width="300" Height="200"  
+                            Click="CopyTextToClipboard"
+                            HorizontalContentAlignment="Center" VerticalContentAlignment="Center">
+                    <TextBlock Text="Copy" FontWeight="Bold" FontSize="30" />
+
+                </Button>
+                </Grid>
+                <Grid CornerRadius="10" Grid.Column="2" Background="White">
+
+                    <Button Style="{StaticResource ButtonStyle1}"  Width="300" Height="200"
+                            Click="PasteTextToEHR"
+                            HorizontalContentAlignment="Center" VerticalContentAlignment="Center">
+                        <TextBlock Text="Paste" FontWeight="Bold" FontSize="30" />
+                    </Button>
+                </Grid>
+            </Grid>
         </Canvas>
+
 
         <!-- pop up after selection-->
 

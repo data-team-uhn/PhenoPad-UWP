@@ -8,6 +8,7 @@ using System.Linq;
 using System.Runtime.InteropServices.WindowsRuntime;
 using System.Threading.Tasks;
 using Windows.ApplicationModel.DataTransfer;
+using Windows.Devices.Input;
 using Windows.Foundation;
 using Windows.Foundation.Collections;
 using Windows.Storage;
@@ -25,6 +26,7 @@ using Windows.UI.Xaml.Input;
 using Windows.UI.Xaml.Media;
 using Windows.UI.Xaml.Navigation;
 using Windows.UI.Xaml.Shapes;
+//using System.Drawing;
 
 // The User Control item template is documented at https://go.microsoft.com/fwlink/?LinkId=234236
 
@@ -38,13 +40,26 @@ namespace PhenoPad.CustomControl
         private float LINE_HEIGHT = 50;
         private float MAX_WRITING;
 
+        private Polyline lasso;
+
         private bool leftLasso = false;
+
+        private float UNPROCESSED_OPACITY = 0.2f;
+        private int UNPROCESSED_THICKNESS = 30;
+        private int UNPROCESSED_RESOLUTION = 5;
+        private SolidColorBrush UNPROCESSED_COLOR = Application.Current.Resources["WORD_DARK"] as SolidColorBrush;
+        private bool isBoundRect;
+
+        //Staring and Ending index of selected EHR text
+        private int selected_start;
+        private int selected_end;
 
         public InkStroke curStroke;
         public List<uint> lastOperationStrokeIDs;
 
         InkAnalyzer inkOperationAnalyzer;
         InkAnalyzer inputInkAnalyzer;
+        InkDrawingAttributes last_attribute;
 
         private int showAlterOfWord = -1;
 
@@ -57,9 +72,9 @@ namespace PhenoPad.CustomControl
 
         List<HWRRecognizedText> inputRecogResult;
 
-        //======================================
+        //==================================================================================================
         //           CONSTRUCTOR
-        //======================================
+        //==================================================================================================
 
         public EHRPageControl(StorageFile file,string noteid, string pageid)
         {
@@ -74,6 +89,8 @@ namespace PhenoPad.CustomControl
 
             MAX_WRITING = LINE_HEIGHT;
 
+            inkCanvas.InkPresenter.InputDeviceTypes = CoreInputDeviceTypes.Pen;
+
             inkCanvas.AddHandler(UIElement.TappedEvent, new TappedEventHandler(OnElementTapped), true);
 
             inkCanvas.InkPresenter.StrokeInput.StrokeStarted += inkCanvas_StrokeInput_StrokeStarted;
@@ -81,11 +98,19 @@ namespace PhenoPad.CustomControl
             inkCanvas.InkPresenter.StrokesCollected += inkCanvas_InkPresenter_StrokesCollectedAsync;
             inkCanvas.InkPresenter.StrokesErased += inkCanvas_StrokeErased;
 
+            inkCanvas.InkPresenter.InputProcessingConfiguration.RightDragAction = InkInputRightDragAction.LeaveUnprocessed;
+            inkCanvas.InkPresenter.UnprocessedInput.PointerPressed += UnprocessedInput_PointerPressed;
+            inkCanvas.InkPresenter.UnprocessedInput.PointerMoved += UnprocessedInput_PointerMoved;
+            inkCanvas.InkPresenter.UnprocessedInput.PointerReleased += UnprocessedInput_PointerReleased;
+
+
+            last_attribute = inkCanvas.InkPresenter.CopyDefaultDrawingAttributes();
+
             inputInkCanvas.InkPresenter.StrokesCollected += inputInkCanvas_StrokesCollected;
 
             EHRTextBox.Paste += RemovePasteFormat;
             EHRTextBox.IsDoubleTapEnabled = true;
-            this.DoubleTapped += CopyTextToClipboard;
+            this.DoubleTapped += ShowCPMenu;
 
             autosaveDispatcherTimer = new DispatcherTimer();
             autosaveDispatcherTimer.Tick += TriggerAutoSave;
@@ -106,9 +131,11 @@ namespace PhenoPad.CustomControl
 
 
 
-        //=======================================
+
+        #region Initialization
+        //===================================================================================================
         //          INITIALIZATION
-        //=======================================
+        //===================================================================================================
 
         /// <summary>
         /// Draws background dashed lines to background canvas 
@@ -167,7 +194,7 @@ namespace PhenoPad.CustomControl
         /// <summary>
         /// Trigger parent NotePageControl's auto-save to save all progress
         /// </summary>
-        private async void TriggerAutoSave(object sender, object e)
+        private async void TriggerAutoSave(object sender = null, object e = null)
         {
             autosaveDispatcherTimer.Stop();
             await MainPage.Current.curPage.SaveToDisk();
@@ -192,13 +219,17 @@ namespace PhenoPad.CustomControl
         private void OnElementTapped(object sender, TappedRoutedEventArgs e)
         {
             inputgrid.Visibility = Visibility.Collapsed;
+            cpMenu.Visibility = Visibility.Collapsed;
+            SelectionMenu.Visibility = Visibility.Collapsed;
             ClearOperationStrokes();
+            if (popupCanvas.Children.Contains(lasso)) {
+                popupCanvas.Children.Remove(lasso);
+            }
         }
 
         /// <summary>
         /// Displays input canvas for inserting into EHR
         /// </summary>
-        /// <param name="p"></param>
         private void ShowInputPanel(Point p)
         {
             Canvas.SetLeft(inputgrid, p.X - 10);
@@ -206,11 +237,46 @@ namespace PhenoPad.CustomControl
             inputgrid.Visibility = Visibility.Visible;
         }
 
+        private void ShowCPMenu(object sender, DoubleTappedRoutedEventArgs e)
+        {
 
-        // ====================================
+            Canvas.SetLeft(cpMenu, e.GetPosition(EHRTextBox).X - 250);
+            Canvas.SetTop(cpMenu, e.GetPosition(EHRTextBox).Y - 200);
+            cpMenu.Visibility = Visibility.Visible;
+
+        }
+
+        private async void SelectAndShowMenu(Rect bounding)
+        {
+            await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () => {
+                Point start = new Point(bounding.X - 20, bounding.Y + (bounding.Height / 2.0));
+                Point end = new Point(bounding.X + bounding.Width + 20, bounding.Y + (bounding.Height / 2.0));
+
+                var range1 = EHRTextBox.Document.GetRangeFromPoint(start, PointOptions.ClientCoordinates);
+                var range2 = EHRTextBox.Document.GetRangeFromPoint(end, PointOptions.ClientCoordinates);
+                Debug.WriteLine($"start={range1.StartPosition},end={range2.StartPosition}, text={getEHRText().Length}");
+                // the scribble does not collide with any text, just ignore
+                if (range1.StartPosition == range2.StartPosition || range1.StartPosition == getEHRText().Length)
+                {
+                    return;
+                }
+                selected_start = range1.StartPosition;
+                selected_end = range2.StartPosition;
+                Canvas.SetLeft(SelectionMenu, bounding.X + bounding.Width - SelectionMenu.ActualWidth);
+                Canvas.SetTop(SelectionMenu, bounding.Y - 2 * LINE_HEIGHT);
+                SelectionMenu.Visibility = Visibility.Visible;
+            });
+        }
+
+
+
+
+        #endregion
+
+        #region EHR OPERATIONS
+        // ================================================================================================
         //     EHR OPERATIONS
-        // ====================================
-
+        // ================================================================================================
 
         /// <summary>
         /// Inserts current recognized text into EHR text edit box
@@ -307,7 +373,7 @@ namespace PhenoPad.CustomControl
         /// <summary>
         /// Trims the extra newlines in current EHR text and copies it to windows clipboard
         /// </summary>
-        private void CopyTextToClipboard(object sender, DoubleTappedRoutedEventArgs e)
+        private void CopyTextToClipboard(object sender, RoutedEventArgs e)
         {
             DataPackage dataPackage = new DataPackage();
             // copy 
@@ -318,7 +384,44 @@ namespace PhenoPad.CustomControl
             dataPackage.SetText(text);
             Clipboard.SetContent(dataPackage);
             MainPage.Current.NotifyUser("Copied EHR Text to Clipboard", NotifyType.StatusMessage, 1);
+            cpMenu.Visibility = Visibility.Collapsed;
         }
+
+        private void CopySelectedText(object sender, RoutedEventArgs e) {
+            DataPackage dataPackage = new DataPackage();
+            // copy 
+            dataPackage.RequestedOperation = DataPackageOperation.Copy;
+            string text;
+            EHRTextBox.Document.GetText(TextGetOptions.None, out text);
+            
+            text = text.Substring(selected_start, selected_end - selected_start).TrimEnd();
+            dataPackage.SetText(text);
+            Clipboard.SetContent(dataPackage);
+            MainPage.Current.NotifyUser("Copied selected text to Clipboard", NotifyType.StatusMessage, 1);
+            SelectionMenu.Visibility = Visibility.Collapsed;
+            popupCanvas.Children.Remove(lasso);
+        }
+
+        private void DeleteSelectedText(object sender, RoutedEventArgs e) {
+
+            DeleteTextInRange(selected_start, selected_end);
+            SelectionMenu.Visibility = Visibility.Collapsed;
+            popupCanvas.Children.Remove(lasso);
+
+        }
+
+        private async void PasteTextToEHR(object sender, RoutedEventArgs e) {
+            DataPackageView dataPackageView = Clipboard.GetContent();
+            if (dataPackageView.Contains(StandardDataFormats.Text))
+            {
+                string text = await dataPackageView.GetTextAsync();
+                // To output the text from this example, you need a TextBlock control
+                EHRTextBox.Document.SetText(TextSetOptions.None, text);
+            }
+            MainPage.Current.NotifyUser("Pasted EHR to note", NotifyType.StatusMessage, 1);
+            cpMenu.Visibility = Visibility.Collapsed;
+        }
+
 
         /// <summary>
         /// Deletes all processed operation strokes from inkCanvas
@@ -334,7 +437,6 @@ namespace PhenoPad.CustomControl
             lastOperationStrokeIDs.Clear();
         }
 
-
         /// <summary>
         /// Returns the current non-formatted text in EHR text box as string
         /// </summary>
@@ -346,10 +448,19 @@ namespace PhenoPad.CustomControl
             return body;
         }
 
+        //public Bitmap getEHRBoundingBitMap() {
+        //    Rect bound = new Rect(0,0,(int)EHR_WIDTH,(int)EHR_HEIGHT);
+        //    Bitmap b = Control.DrawToBitmap();
 
-        //=======================================
-        //      ANALYZING INK STROKES
-        //=======================================
+        //    return bound;
+        //}
+
+        #endregion
+
+        #region Stroke Recognition / Analysis
+        //===================================================================================================
+        //      ANALYZING / RECOGNIZING INK STROKES
+        //===================================================================================================
 
         private void inkCanvas_StrokeInput_StrokeStarted(InkStrokeInput sender, PointerEventArgs args)
         {
@@ -369,7 +480,8 @@ namespace PhenoPad.CustomControl
             autosaveDispatcherTimer.Start();
         }
 
-        private async void inkCanvas_InkPresenter_StrokesCollectedAsync(InkPresenter sender, InkStrokesCollectedEventArgs args)
+        private async void inkCanvas_InkPresenter_StrokesCollectedAsync(InkPresenter sender, 
+                                                                        InkStrokesCollectedEventArgs args)
         {
             if (!leftLasso)
             {//processing strokes inputs
@@ -379,14 +491,35 @@ namespace PhenoPad.CustomControl
                     if (s.BoundingRect.Height > MAX_WRITING)
                     {
                         Debug.WriteLine("added stroke to operation");
-                        inkOperationAnalyzer.AddDataForStroke(s);
-                        try
+                        Rect bounding= s.BoundingRect;
+                        //a insert line is detected
+                        if (bounding.Height / bounding.Width > 2 && bounding.Width < 10 && bounding.Height < 3 * LINE_HEIGHT)
                         {
-                            await RecognizeInkOperation();
+                            lastOperationStrokeIDs.Add(s.Id);
+                            Point pos = new Point(bounding.X, bounding.Y + (bounding.Height / 2.0));
+                            var range = EHRTextBox.Document.GetRangeFromPoint(pos, PointOptions.ClientCoordinates);
+                            // the scribble does not collide with any text, just ignore
+                            if (range.StartPosition > 1500)
+                            {
+                                return;
+                            }
+                            current_index = range.StartPosition;
+
+                            if (bounding.X > 400)
+                                pos.X -= 400;
+                            ShowInputPanel(pos);
                         }
-                        catch (Exception e)
-                        {
-                            LogService.MetroLogger.getSharedLogger().Error($"{e}|{e.Message}");
+                        else {
+                            inkOperationAnalyzer.AddDataForStroke(s);
+                            try
+                            {
+                                await RecognizeInkOperation();
+                            }
+                            catch (Exception e)
+                            {
+                                LogService.MetroLogger.getSharedLogger().Error($"{e}|{e.Message}");
+                            }
+
                         }
                     }
                 }
@@ -411,6 +544,61 @@ namespace PhenoPad.CustomControl
             }
 
         }
+
+        // select strokes by "marking" handling: pointer pressed
+        private void UnprocessedInput_PointerPressed(InkUnprocessedInput sender, PointerEventArgs args)
+        {
+            lasso = new Polyline()
+            {
+                Stroke = UNPROCESSED_COLOR,
+                StrokeThickness = UNPROCESSED_THICKNESS,
+                //StrokeDashArray = UNPROCESSED_DASH,
+            };
+            lasso.Points.Add(args.CurrentPoint.RawPosition);
+            lasso.Opacity = UNPROCESSED_OPACITY;
+            popupCanvas.Children.Add(lasso);
+            isBoundRect = true;
+        }
+        // select strokes by "marking" handling: pointer moved
+        private void UnprocessedInput_PointerMoved(InkUnprocessedInput sender, PointerEventArgs args)
+        {
+            if (isBoundRect)
+            {
+                lasso.Points.Add(args.CurrentPoint.RawPosition);
+            }
+        }
+        // select strokes by "marking" handling: pointer released
+        private void UnprocessedInput_PointerReleased(InkUnprocessedInput sender, PointerEventArgs args)
+        {
+            lasso.Points.Add(args.CurrentPoint.RawPosition);
+            //lasso.Points.Add(lasso.Points.ElementAt(0));
+            isBoundRect = false;
+            Rect bounding = GetSelectBoundingRect(lasso);
+            SelectAndShowMenu(bounding);
+            
+        }
+
+        /// <summary>
+        /// Gets the bounding Rect of a lasso selection
+        /// </summary>
+        private Rect GetSelectBoundingRect(Polyline lasso) {
+
+            Point top_left = new Point(EHR_WIDTH,EHR_HEIGHT);
+            Point bottom_right = new Point(0, 0);
+            //fornow we only focus on selecting one line max
+            foreach (Point p in lasso.Points) {
+                if (p.X <= top_left.X) {
+                    top_left = p;
+
+                }
+                if (p.X >= bottom_right.X) {
+                    bottom_right = p;
+                }
+            }
+            Debug.WriteLine($"topleft={top_left.X},{top_left.Y},bottom_right={bottom_right.X},{bottom_right.Y}");
+            return new Rect(top_left,bottom_right);           
+        }
+
 
         /// <summary>
         /// Gets the position of first occuring space index given a point posiiton
@@ -450,6 +638,7 @@ namespace PhenoPad.CustomControl
                     {
                         foreach (var dstroke in drawNode.GetStrokeIds())
                         {
+                            lastOperationStrokeIDs.Add(dstroke);
                             var stroke = inkCanvas.InkPresenter.StrokeContainer.GetStrokeById(dstroke);
                             //adds a new add-in control 
                             string name = FileManager.getSharedFileManager().CreateUniqueName();
@@ -465,22 +654,6 @@ namespace PhenoPad.CustomControl
 
                     if (drawNode.DrawingKind == InkAnalysisDrawingKind.Drawing) {
                         Debug.WriteLine("is drawing");
-                        if (bounding.Width < 10)
-                        {// detected operation for inserting
-                            Debug.WriteLine($"detected insert at {bounding.X},{bounding.Y}====");
-                            Point pos = new Point(bounding.X, bounding.Y + (bounding.Height / 2.0));
-                            var range = EHRTextBox.Document.GetRangeFromPoint(pos, PointOptions.ClientCoordinates);
-                            // the scribble does not collide with any text, just ignore
-                            if (range.StartPosition > 1500)
-                            {
-                                inkOperationAnalyzer.RemoveDataForStrokes(drawNode.GetStrokeIds());
-                                return 1;
-                            }
-                            current_index = range.StartPosition;
-                            if (pos.X > 300)
-                                pos.X -= 300;
-                            ShowInputPanel(pos);
-                        }
                     }
 
                     else
@@ -488,11 +661,7 @@ namespace PhenoPad.CustomControl
                         Debug.WriteLine(drawNode.DrawingKind);
                     }
 
-                    //adds recognized operation strokes into list to be cleared later
-                    foreach (uint sid in drawNode.GetStrokeIds())
-                    {
-                        lastOperationStrokeIDs.Add(sid);
-                    }
+
 
 
                 }
@@ -529,7 +698,6 @@ namespace PhenoPad.CustomControl
             }
             return -1;
         }
-
 
         /// <summary>
         ///  Analyze ink strokes contained in inkAnalyzer and add phenotype candidates
@@ -596,6 +764,32 @@ namespace PhenoPad.CustomControl
         }
 
         /// <summary>
+        /// Recognize the line strokes in the input canvas
+        /// </summary>
+        private async Task<List<HWRRecognizedText>> RecognizeLine(uint lineid, bool serverFlag)
+        {
+            try
+            {
+                foreach (var stroke in inputInkCanvas.InkPresenter.StrokeContainer.GetStrokes())
+                {
+                    stroke.Selected = true;
+                }
+
+                //recognize selection
+                List<HWRRecognizedText> recognitionResults = await HWRManager.getSharedHWRManager().
+                    OnRecognizeAsync(inputInkCanvas.InkPresenter.StrokeContainer,
+                    InkRecognitionTarget.Selected, serverFlag);
+                return recognitionResults;
+            }
+            catch (Exception ex)
+            {
+                LogService.MetroLogger.getSharedLogger().Error($"Failed to recognize line ({lineid}): {ex.Message}");
+            }
+            return null;
+        }
+
+
+        /// <summary>
         /// Adds recognized words into recognized UI line
         /// </summary>
         private void setUpCurrentLineResultUI(InkAnalysisLine line)
@@ -655,31 +849,7 @@ namespace PhenoPad.CustomControl
             TextBlock tb = (TextBlock)curLineWordsStackPanel.Children.ElementAt(showAlterOfWord);
             tb.Text = citem;
         }
-
-        /// <summary>
-        /// Recognize the line strokes in the input canvas
-        /// </summary>
-        private async Task<List<HWRRecognizedText>> RecognizeLine(uint lineid, bool serverFlag)
-        {
-            try
-            {
-                foreach (var stroke in inputInkCanvas.InkPresenter.StrokeContainer.GetStrokes()) {
-                    stroke.Selected = true;
-                }
-
-                //recognize selection
-                List<HWRRecognizedText> recognitionResults = await HWRManager.getSharedHWRManager().
-                    OnRecognizeAsync(inputInkCanvas.InkPresenter.StrokeContainer,
-                    InkRecognitionTarget.Selected, serverFlag);
-                return recognitionResults;
-            }
-            catch (Exception ex)
-            {
-                LogService.MetroLogger.getSharedLogger().Error($"Failed to recognize line ({lineid}): {ex.Message}");
-            }
-            return null;
-        }
-
+        #endregion
 
     }
 }
