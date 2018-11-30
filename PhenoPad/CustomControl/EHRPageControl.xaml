@@ -51,15 +51,19 @@
                 <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>
             <!--Text Box for imported EHR file-->
+        
             <RichEditBox Style="{StaticResource MyRichEditBoxStyle}"                         
                          Background="Transparent" x:Name="EHRTextBox" 
+                         IsSpellCheckEnabled="False"
+                         Padding="10 50 10 0"
+                         IsEnabled="False"
                          BorderThickness="0" />
         </Grid>
 
         <!--Gesture canvas -->
-        <InkCanvas  x:Name="inkCanvas" x:FieldModifier="public" Grid.Column="0" Grid.ColumnSpan="2" />
+        <InkCanvas  x:Name="inkCanvas" x:FieldModifier="public" Grid.Column="0"/>
          <!--Annotation-->
-        <!--<InkCanvas x:Name="annotations" Grid.Column="1" />-->
+        <InkCanvas x:Name="annotations" Grid.Column="1" />
 
         <!--insert text pop up-->
         <Canvas x:Name="popupCanvas" Canvas.ZIndex="6">
@@ -81,13 +85,13 @@
                             <ColumnDefinition Width="40"/>
                         </Grid.ColumnDefinitions>
 
-                        <Button Background="WhiteSmoke" Foreground="PaleVioletRed" Grid.Column="1" Grid.Row="1"
+                        <!--<Button Background="WhiteSmoke" Foreground="PaleVioletRed" Grid.Column="1" Grid.Row="1"
                                 Height="45"
                                 Style="{StaticResource ButtonStyle1}" HorizontalAlignment="Right"
                                 Click="InsertNewLineToEHR"
                                 RelativePanel.AlignRightWithPanel="True">
                             <FontIcon Glyph="&#xE751;" />
-                        </Button>
+                        </Button>-->
 
                         <Button Background="WhiteSmoke" Foreground="PaleVioletRed" Grid.Column="2" Grid.Row="1"
                                 Height="45"
@@ -157,7 +161,6 @@
             </StackPanel>
 
             <!--Copy/Paste pop up-->
-
             <Grid x:Name="cpMenu" Width="600" Height="150" 
                   Visibility="Collapsed">
 
@@ -187,6 +190,11 @@
                         <TextBlock Text="Paste" FontWeight="Bold" FontSize="30" />
                     </Button>
                 </Grid>
+            </Grid>
+            
+            <!--Cursor Icon Markup-->
+            <Grid x:Name="inputMarkup" Visibility="Collapsed">
+                <FontIcon FontWeight="ExtraBold" FontSize="30" Glyph="&#xE878;" Foreground="LightBlue"/>
             </Grid>
         </Canvas>
 

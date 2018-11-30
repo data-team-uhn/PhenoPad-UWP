@@ -83,7 +83,7 @@ namespace PhenoPad.Gestures
 			this.Name = name;
             this.RawPoints = new List<TimePointR>(timepoints); // copy (saved for drawing)
             double I = GeotrigEx.PathLength(TimePointR.ConvertList(timepoints)) / (Recognizer.NumPoints - 1); // interval distance between points
-            this.Points = TimePointR.ConvertList(SeriesEx.ResampleInSpace(timepoints, I));
+            this.Points = TimePointR.ConvertList(SeriesEx.ResampleInSpace(timepoints, I / 2));
             double radians = GeotrigEx.Angle(GeotrigEx.Centroid(this.Points), this.Points[0], false);
             this.Points = GeotrigEx.RotatePoints(this.Points, -radians);
             this.Points = GeotrigEx.ScaleTo(this.Points, Recognizer.SquareSize);

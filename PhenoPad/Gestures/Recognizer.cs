@@ -66,12 +66,14 @@ using System.Diagnostics;
 using System.Reflection;
 using System.Text;
 using WobbrockLib;
+using Windows.Storage;
+using System.Threading.Tasks;
 
 namespace PhenoPad.Gestures
 {
-	public class Recognizer
-	{
-		#region Members
+    public class Recognizer
+    {
+        #region Members
 
         public const int NumPoints = 64;
         private const float DX = 250f;
@@ -80,26 +82,36 @@ namespace PhenoPad.Gestures
         public static readonly double HalfDiagonal = 0.5 * Diagonal;
         public static readonly PointR Origin = new PointR(0f, 0f);
         private static readonly double Phi = 0.5 * (-1.0 + Math.Sqrt(5.0)); // Golden Ratio
+        public string GESTURE_PATH = @"C:\Users\helen\AppData\Local\Packages\16bc6b12-daff-4104-a251-1fa502edec02_qfxtr3e52dkcc\LocalState\Gestures";
+
 
         // batch testing
         private const int NumRandomTests = 100;
         public event ProgressEventHandler ProgressChangedEvent;
 
-		//private Hashtable _gestures;
+        //private Hashtable _gestures;
         private Dictionary<string, Unistroke> _gestures;
 
-		#endregion
+        #endregion
 
-		#region Constructor
-	
-		public Recognizer()
-		{
+        #region Constructor
+
+        public Recognizer()
+        {
             _gestures = new Dictionary<string, Unistroke>(256);
-		}
+        }
 
-		#endregion
+        public async Task LoadGestureFromPath() {
+            StorageFolder fd = await StorageFolder.GetFolderFromPathAsync(GESTURE_PATH);
+            IReadOnlyList<StorageFile> files = await fd.GetFilesAsync();
+            foreach (var f in files)
+                this.LoadGesture(f.Path);
 
-		#region Recognition
+        }
+
+        #endregion
+
+        #region Recognition
 
         /// <summary>
         /// 
@@ -110,7 +122,7 @@ namespace PhenoPad.Gestures
         public NBestList Recognize(List<TimePointR> timepoints, bool protractor) // candidate points
         {
             double I = GeotrigEx.PathLength(TimePointR.ConvertList(timepoints)) / (NumPoints - 1); // interval distance between points
-            List<PointR> points = TimePointR.ConvertList(SeriesEx.ResampleInSpace(timepoints, I));
+            List<PointR> points = TimePointR.ConvertList(SeriesEx.ResampleInSpace(timepoints, I / 2));
             double radians = GeotrigEx.Angle(GeotrigEx.Centroid(points), points[0], false);
             points = GeotrigEx.RotatePoints(points, -radians);
             points = GeotrigEx.ScaleTo(points, SquareSize);
@@ -264,7 +276,7 @@ namespace PhenoPad.Gestures
                     bestA = i;
                 }
             }
-            writer.WriteLine("\nFull Search (360 rotations)\n{0:F2}{1}\t{2:F3} px", Math.Round(bestA, 2), (char) 176, Math.Round(bestD, 3)); // calls, angle, distance
+            writer.WriteLine("\nFull Search (360 rotations)\n{0:F2}{1}\t{2:F3} px", Math.Round(bestA, 2), (char)176, Math.Round(bestD, 3)); // calls, angle, distance
             return new double[3] { bestD, bestA, 360.0 }; // distance, angle, calls to pathdist
         }
 
@@ -273,12 +285,12 @@ namespace PhenoPad.Gestures
         #region Gestures & Xml
 
         public int NumGestures
-		{
-			get
-			{
+        {
+            get
+            {
                 return _gestures.Count;
-			}
-		}
+            }
+        }
 
         public List<Unistroke> Gestures
         {
@@ -290,72 +302,72 @@ namespace PhenoPad.Gestures
             }
         }
 
-		public void ClearGestures()
-		{
+        public void ClearGestures()
+        {
             _gestures.Clear();
-		}
+        }
 
-		public bool SaveGesture(string filename, List<TimePointR> points)
-		{
-			// add the new prototype with the name extracted from the filename.
+        public bool SaveGesture(string filename, List<TimePointR> points)
+        {
+            // add the new prototype with the name extracted from the filename.
             string name = Unistroke.ParseName(filename);
             if (_gestures.ContainsKey(name))
                 _gestures.Remove(name);
-			Unistroke newPrototype = new Unistroke(name, points);
+            Unistroke newPrototype = new Unistroke(name, points);
             _gestures.Add(name, newPrototype);
 
             // do the xml writing
-			bool success = true;
-			XmlTextWriter writer = null;
-			try
-			{
-				// save the prototype as an Xml file
-				writer = new XmlTextWriter(filename, Encoding.UTF8);
-				writer.Formatting = Formatting.Indented;
-				writer.WriteStartDocument(true);
-				writer.WriteStartElement("Gesture");
-				writer.WriteAttributeString("Name", name);
-				writer.WriteAttributeString("NumPts", XmlConvert.ToString(points.Count));
+            bool success = true;
+            XmlTextWriter writer = null;
+            try
+            {
+                // save the prototype as an Xml file
+                writer = new XmlTextWriter(filename, Encoding.UTF8);
+                writer.Formatting = Formatting.Indented;
+                writer.WriteStartDocument(true);
+                writer.WriteStartElement("Gesture");
+                writer.WriteAttributeString("Name", name);
+                writer.WriteAttributeString("NumPts", XmlConvert.ToString(points.Count));
                 writer.WriteAttributeString("Millseconds", XmlConvert.ToString(points[points.Count - 1].Time - points[0].Time));
                 writer.WriteAttributeString("AppName", Assembly.GetExecutingAssembly().GetName().Name);
-				writer.WriteAttributeString("AppVer", Assembly.GetExecutingAssembly().GetName().Version.ToString());
-				writer.WriteAttributeString("Date", DateTime.Now.ToLongDateString());
-				writer.WriteAttributeString("TimeOfDay", DateTime.Now.ToLongTimeString());
+                writer.WriteAttributeString("AppVer", Assembly.GetExecutingAssembly().GetName().Version.ToString());
+                writer.WriteAttributeString("Date", DateTime.Now.ToLongDateString());
+                writer.WriteAttributeString("TimeOfDay", DateTime.Now.ToLongTimeString());
 
-				// write out the raw individual points
-				foreach (TimePointR p in points)
-				{
-					writer.WriteStartElement("Point");
-					writer.WriteAttributeString("X", XmlConvert.ToString(p.X));
-					writer.WriteAttributeString("Y", XmlConvert.ToString(p.Y));
+                // write out the raw individual points
+                foreach (TimePointR p in points)
+                {
+                    writer.WriteStartElement("Point");
+                    writer.WriteAttributeString("X", XmlConvert.ToString(p.X));
+                    writer.WriteAttributeString("Y", XmlConvert.ToString(p.Y));
                     writer.WriteAttributeString("T", XmlConvert.ToString(p.Time));
-					writer.WriteEndElement(); // <Point />
-				}
+                    writer.WriteEndElement(); // <Point />
+                }
 
-				writer.WriteEndDocument(); // </Gesture>
-			}
-			catch (XmlException xex)
-			{
-				Console.Write(xex.Message);
-				success = false;
-			}
+                writer.WriteEndDocument(); // </Gesture>
+            }
+            catch (XmlException xex)
+            {
+                Console.Write(xex.Message);
+                success = false;
+            }
             catch (Exception ex)
             {
                 Console.Write(ex.Message);
                 success = false;
             }
-			finally
-			{
-				if (writer != null)
-					writer.Close();
-			}
-			return success; // Xml file successfully written (or not)
-		}
+            finally
+            {
+                if (writer != null)
+                    writer.Close();
+            }
+            return success; // Xml file successfully written (or not)
+        }
 
-		public bool LoadGesture(string filename)
-		{
-			bool success = true;
-			XmlTextReader reader = null;
+        public bool LoadGesture(string filename)
+        {
+            bool success = true;
+            XmlTextReader reader = null;
             try
             {
                 reader = new XmlTextReader(filename);
@@ -379,22 +391,22 @@ namespace PhenoPad.Gestures
                 Console.Write(ex.Message);
                 success = false;
             }
-			finally
-			{
-				if (reader != null)
-					reader.Close();
-			}
-			return success;
-		}
+            finally
+            {
+                if (reader != null)
+                    reader.Close();
+            }
+            return success;
+        }
 
         // assumes the reader has been just moved to the head of the content.
         private Unistroke ReadGesture(XmlTextReader reader)
         {
             Debug.Assert(reader.LocalName == "Gesture");
             string name = reader.GetAttribute("Name");
-            
+
             List<TimePointR> points = new List<TimePointR>(XmlConvert.ToInt32(reader.GetAttribute("NumPts")));
-            
+
             reader.Read(); // advance to the first Point
             Debug.Assert(reader.LocalName == "Point");
 
@@ -562,10 +574,10 @@ namespace PhenoPad.Gestures
                             int chosen = RandomEx.Integer(0, notLoaded.Length - 1); // index
                             Unistroke p = categories[i][notLoaded[chosen]]; // gesture to test
                             Debug.Assert(!_gestures.ContainsKey(p.Name));
-                            
+
                             // do the recognition!
                             List<PointR> testPts = GeotrigEx.RotatePoints( // spin gesture randomly
-                                TimePointR.ConvertList(p.RawPoints), 
+                                TimePointR.ConvertList(p.RawPoints),
                                 GeotrigEx.Degrees2Radians(RandomEx.Integer(0, 359))
                                 );
                             NBestList result = this.Recognize(TimePointR.ConvertList(testPts), protractor);
@@ -579,7 +591,7 @@ namespace PhenoPad.Gestures
                                 FirstCorrect(p.Name, result.Names), // 1stCorrect
                                 p.RawPoints.Count,                  // Pts
                                 p.Duration,                         // Ms 
-                                Math.Round(result.Angle, 1), (char) 176, // Angle tweaking : 
+                                Math.Round(result.Angle, 1), (char)176, // Angle tweaking : 
                                 result.NamesString,                 // (NBestNames)
                                 result.ScoresString);               // [NBestScores]
 
@@ -596,8 +608,8 @@ namespace PhenoPad.Gestures
                     //
                     for (int i = 0; i < numCategories; i++)
                     {
-                        results[i] /= (double) NumRandomTests; // normalize by the number of tests at this N
-                        Category c = (Category) categories[i];
+                        results[i] /= (double)NumRandomTests; // normalize by the number of tests at this N
+                        Category c = (Category)categories[i];
                         // Subject Recognizer Search Speed NumTraining GestureType RecognitionRate
                         mw.WriteLine("{0} $1 {1} {2} {3} {4} {5:F3}",
                             subject,
@@ -682,7 +694,7 @@ namespace PhenoPad.Gestures
                 double[] neg = HillClimbSearch(g1.Points, g2.Points, init, -1d);
                 double[] best = new double[3];
                 best = (neg[0] < pos[0]) ? neg : pos; // min distance
-                writer.WriteLine("\nHill Climb Search ({0} rotations)\n{1:F2}{2}\t{3:F3} px", pos[2] + neg[2] + 1, Math.Round(best[1], 2), (char) 176, Math.Round(best[0], 3)); // calls, angle, distance
+                writer.WriteLine("\nHill Climb Search ({0} rotations)\n{1:F2}{2}\t{3:F3} px", pos[2] + neg[2] + 1, Math.Round(best[1], 2), (char)176, Math.Round(best[0], 3)); // calls, angle, distance
 
                 // use golden section search to do it yet again
                 double[] gold = GoldenSectionSearch(
@@ -691,7 +703,7 @@ namespace PhenoPad.Gestures
                     GeotrigEx.Degrees2Radians(-45.0),   // lbound
                     GeotrigEx.Degrees2Radians(+45.0),   // ubound
                     GeotrigEx.Degrees2Radians(2.0));    // threshold
-                writer.WriteLine("\nGolden Section Search ({0} rotations)\n{1:F2}{2}\t{3:F3} px", gold[2], Math.Round(gold[1], 2), (char) 176, Math.Round(gold[0], 3)); // calls, angle, distance
+                writer.WriteLine("\nGolden Section Search ({0} rotations)\n{1:F2}{2}\t{3:F3} px", gold[2], Math.Round(gold[1], 2), (char)176, Math.Round(gold[0], 3)); // calls, angle, distance
 
                 // use Protractor to do it yet again
                 // TODO
