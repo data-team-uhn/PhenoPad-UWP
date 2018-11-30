@@ -316,7 +316,7 @@ namespace PhenoPad.CustomControl
                 if (inserts[i][0] > current_index && length > 0 && current_index > -1)
                 {
                     Debug.WriteLine("case1");
-                    inserts[i][0] += length;
+                    inserts[i][0] += length + 1;
                 }
 
                 //handles case when inserting to a inserted phrase
@@ -400,7 +400,7 @@ namespace PhenoPad.CustomControl
 
 
             //clears the previous input
-            UpdateTextStyle(Environment.NewLine.Length-1, current_index+1);
+            UpdateTextStyle(0, current_index+1);
             inputgrid.Visibility = Visibility.Collapsed;
             inputInkCanvas.InkPresenter.StrokeContainer.Clear();
             curLineWordsStackPanel.Children.Clear();
@@ -488,11 +488,11 @@ namespace PhenoPad.CustomControl
         private void ClearOperationStrokes() {
             foreach (uint sid in lastOperationStrokeIDs)
             {
-                InkStroke s = inkCanvas.InkPresenter.StrokeContainer.GetStrokeById(sid);
+                InkStroke s = annotations.InkPresenter.StrokeContainer.GetStrokeById(sid);
                 if ( s != null)
                     s.Selected = true;
             }
-            inkCanvas.InkPresenter.StrokeContainer.DeleteSelected();
+            annotations.InkPresenter.StrokeContainer.DeleteSelected();
             lastOperationStrokeIDs.Clear();
         }
 
@@ -599,27 +599,27 @@ namespace PhenoPad.CustomControl
         {
             foreach (InkStroke s in args.Strokes)
             {
-                if (s.BoundingRect.Height > LINE_HEIGHT && s.BoundingRect.Width > LINE_HEIGHT) {
+                if (true) {                  
                     List<TimePointR> pts = GetStrokePoints(s);
                     Debug.WriteLine(pts.Count);
                     NBestList result = GESTURE_RECOGNIZER.Recognize(pts, false);
-                    foreach (var r in result.Names)
-                        Debug.WriteLine(r);
-                    Debug.WriteLine("\n\n\n");
+                    //foreach (var r in result.Names)
+                    //    Debug.WriteLine(r);
+                    //Debug.WriteLine("\n\n\n");
 
-                    foreach (var p in result.Scores)
-                        Debug.WriteLine(p);
-
+                    //foreach (var p in result.Scores)
+                    //    Debug.WriteLine(p);
 
                     var resultges = Regex.Replace(result.Name, @"[\d-]", string.Empty);
-                    if (resultges == "square") {
+                    if (resultges == "rectangle") {
                         lastOperationStrokeIDs.Add(s.Id);
                         var stroke = inkCanvas.InkPresenter.StrokeContainer.GetStrokeById(s.Id);
                         //adds a new add-in control 
                         string name = FileManager.getSharedFileManager().CreateUniqueName();
                         //adding extra 100 pixel to bounding Y to cope the padding
-                        MainPage.Current.curPage.NewAddinControl(name, false, left: s.BoundingRect.X, top: s.BoundingRect.Y + 100,
+                        MainPage.Current.curPage.NewAddinControl(name, false, left: s.BoundingRect.X + 1500, top: s.BoundingRect.Y + 100,
                                         widthOrigin: s.BoundingRect.Width, heightOrigin: s.BoundingRect.Height, ehr: this);
+                        ClearOperationStrokes();
                     }
                 }
             }

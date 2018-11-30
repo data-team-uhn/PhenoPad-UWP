@@ -111,6 +111,137 @@ namespace PhenoPad.Gestures
 
         #endregion
 
+        public void GiveSuggestion(double MinXYRatio, double MinPathXYRatio, double Path2Area)
+        {
+            if ((MinXYRatio <= 0.04) && (MinPathXYRatio <= 1.5))
+            {
+                Debug.WriteLine("Is Line!");
+            }
+            else if (Path2Area >= 0.08)
+            {
+                Debug.WriteLine("Suggestion: ZigZag");
+            }
+        }
+
+        public static double FindBoundingBoxArea(List<TimePointR> points)
+        {
+            double minX = double.MaxValue;
+            double maxX = double.MinValue;
+            double minY = double.MaxValue;
+            double maxY = double.MinValue;
+
+            foreach (TimePointR p in points)
+            {
+                if (p.X < minX)
+                    minX = p.X;
+                if (p.X > maxX)
+                    maxX = p.X;
+
+                if (p.Y < minY)
+                    minY = p.Y;
+                if (p.Y > maxY)
+                    maxY = p.Y;
+            }
+
+            return (maxX - minX) * (maxY - minY);
+        }
+
+        public static double FindMinPathXYRatio(List<TimePointR> points, double pathlength)
+        {
+            double minX = double.MaxValue;
+            double maxX = double.MinValue;
+            double minY = double.MaxValue;
+            double maxY = double.MinValue;
+
+            foreach (TimePointR p in points)
+            {
+                if (p.X < minX)
+                    minX = p.X;
+                if (p.X > maxX)
+                    maxX = p.X;
+
+                if (p.Y < minY)
+                    minY = p.Y;
+                if (p.Y > maxY)
+                    maxY = p.Y;
+            }
+
+            return Math.Min(pathlength / (maxX - minX), pathlength / (maxY - minY));
+        }
+
+        public static double FindXYRatio(List<PointR> points)
+        {
+            double minX = double.MaxValue;
+            double maxX = double.MinValue;
+            double minY = double.MaxValue;
+            double maxY = double.MinValue;
+
+            foreach (TimePointR p in points)
+            {
+                if (p.X < minX)
+                    minX = p.X;
+                if (p.X > maxX)
+                    maxX = p.X;
+
+                if (p.Y < minY)
+                    minY = p.Y;
+                if (p.Y > maxY)
+                    maxY = p.Y;
+            }
+
+            return (maxY - minY) / (maxX - minX);
+        }
+
+        public double[] FindMinXYRatio(List<PointR> points)
+        {
+            /*
+            Debug.WriteLine("pts1.Count: ");
+            Debug.WriteLine(pts1.Count);
+            Debug.WriteLine("pts2.Count: ");
+            Debug.WriteLine(pts2.Count);
+            Debug.WriteLine("##########");
+            */
+            double a = GeotrigEx.Degrees2Radians(-90.0);
+            double b = GeotrigEx.Degrees2Radians(+90.0);
+            double threshold = GeotrigEx.Degrees2Radians(2.0);
+
+            double x1 = Phi * a + (1 - Phi) * b;
+            List<PointR> newPoints = GeotrigEx.RotatePoints(points, x1);
+            double fx1 = FindXYRatio(newPoints);
+
+            double x2 = (1 - Phi) * a + Phi * b;
+            newPoints = GeotrigEx.RotatePoints(points, x2);
+            double fx2 = FindXYRatio(newPoints);
+
+            double i = 2.0; // calls to pathdist
+            while (Math.Abs(b - a) > threshold)
+            {
+                if (fx1 < fx2)
+                {
+                    b = x2;
+                    x2 = x1;
+                    fx2 = fx1;
+                    x1 = Phi * a + (1 - Phi) * b;
+                    newPoints = GeotrigEx.RotatePoints(points, x1);
+                    fx1 = FindXYRatio(newPoints);
+                }
+                else
+                {
+                    a = x1;
+                    x1 = x2;
+                    fx1 = fx2;
+                    x2 = (1 - Phi) * a + Phi * b;
+                    newPoints = GeotrigEx.RotatePoints(points, x2);
+                    fx2 = FindXYRatio(newPoints);
+                }
+                i++;
+            }
+
+            //Debug.WriteLine(i);
+            return new double[3] { Math.Min(fx1, fx2), GeotrigEx.Radians2Degrees((b + a) / 2.0), i };
+        }
+
+
         #region Recognition
 
         /// <summary>
@@ -122,12 +253,32 @@ namespace PhenoPad.Gestures
         public NBestList Recognize(List<TimePointR> timepoints, bool protractor) // candidate points
         {
             double I = GeotrigEx.PathLength(TimePointR.ConvertList(timepoints)) / (NumPoints - 1); // interval distance between points
+            double A = FindBoundingBoxArea(timepoints);
             List<PointR> points = TimePointR.ConvertList(SeriesEx.ResampleInSpace(timepoints, I / 2));
+
+            //Debug.WriteLine("PathLength");
+            //Debug.WriteLine(GeotrigEx.PathLength(TimePointR.ConvertList(timepoints)));
+            //Debug.WriteLine("BoundingBoxArea");
+            //Debug.WriteLine(A);
+            //Debug.WriteLine("MinPathXYRatio");
+            //Debug.WriteLine(FindMinPathXYRatio(timepoints, GeotrigEx.PathLength(TimePointR.ConvertList(timepoints))));
+            //Debug.WriteLine("XYRatio");
+            //Debug.WriteLine(FindXYRatio(points));
+            //Debug.WriteLine("MinXYRatio");
+            //Debug.WriteLine(FindMinXYRatio(points)[1]);
+            //Debug.WriteLine(FindMinXYRatio(points)[0]);
+            //Debug.WriteLine("PathLength/BoundingBoxArea");
+            //Debug.WriteLine(GeotrigEx.PathLength(TimePointR.ConvertList(timepoints)) / A);
+            GiveSuggestion(FindMinXYRatio(points)[0], FindMinPathXYRatio(timepoints, GeotrigEx.PathLength(TimePointR.ConvertList(timepoints))), 
+                GeotrigEx.PathLength(TimePointR.ConvertList(timepoints)) / A);
+
             double radians = GeotrigEx.Angle(GeotrigEx.Centroid(points), points[0], false);
             points = GeotrigEx.RotatePoints(points, -radians);
             points = GeotrigEx.ScaleTo(points, SquareSize);
             points = GeotrigEx.TranslateTo(points, Origin, true);
             List<double> vector = Unistroke.Vectorize(points); // candidate's vector representation
+
+
 
             NBestList nbest = new NBestList();
             foreach (Unistroke u in _gestures.Values)
@@ -213,13 +364,40 @@ namespace PhenoPad.Gestures
             return new double[3] { distance, GeotrigEx.Radians2Degrees(angle), 0.0 }; // distance, angle, calls to pathdist
         }
 
+        public static double PathDistance(List<PointR> path1, List<PointR> path2)
+        {
+            double distance = 0;
+            for (int i = 0; i < Math.Min(path1.Count, path2.Count); i++)
+            {
+                distance += GeotrigEx.Distance(path1[i], path2[i]);
+                /*
+                if (path1.Count / path2.Count >= 2)
+                {
+                    distance = distance * (path1.Count / path2.Count);
+                }
+                if (path2.Count / path1.Count >= 2)
+                {
+                    distance = distance * (path2.Count / path1.Count);
+                }
+                */
+                /*
+                Debug.WriteLine("path1.Count: ");
+                Debug.WriteLine(path1.Count);
+                Debug.WriteLine("path2.Count: ");
+                Debug.WriteLine(path2.Count);
+                */
+            }
+            return distance / path1.Count;
+            //return path1.Count *20 / path2.Count;
+        }
+
         /// <summary>
         /// 
         /// </summary>
         /// <param name="path1"></param>
         /// <param name="path2"></param>
         /// <returns></returns>
-        public static double PathDistance(List<PointR> path1, List<PointR> path2)
+        public static double PathDistance2(List<PointR> path1, List<PointR> path2)
         {
             double distance = 0;
             for (int i = 0; i < Math.Min(path1.Count, path2.Count); i++)
