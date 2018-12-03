@@ -203,6 +203,7 @@ namespace PhenoPad.CustomControl
                 string text = await FileIO.ReadTextAsync(file);
                 text = text.TrimEnd();
                 EHRTextBox.Document.SetText(TextSetOptions.None, text);
+                var range = EHRTextBox.Document.GetRange(0, 5);
 
             }
             catch (Exception ex)
@@ -413,21 +414,78 @@ namespace PhenoPad.CustomControl
         /// </summary>
         private void DeleteTextInRange(int start, int end)
         {
-            ClearOperationStrokes();
-            if (start < 0 || end < 0|| end < start || start == end)
+
+            // the scribble does not collide with any text, just ignore
+            if (start < 0 || end < 0|| end < start || start == end || start == getEHRText().Length)
                 return;
+
+            UpdateRecordListDelete(start, end, this.inserts);
+            Debug.WriteLine("Update complete");
             string all_text;
             EHRTextBox.Document.GetText(TextGetOptions.None, out all_text);
+
+            //guarantees that first_half is trimmed with ending space character
             string first_half = all_text.Substring(0, start);
-            first_half = first_half.Substring(0, first_half.LastIndexOf(' ') + 1);
+            //guarantees that second_half is trimmed beginning with no space character
             string rest = all_text.Substring(end);
-            if (rest.IndexOf(' ') > 0)
-                rest = rest.Substring(rest.IndexOf(' '));
+
             //temporary inserting a star mark indicating some contents were deleted
-            EHRTextBox.Document.SetText(TextSetOptions.None, first_half + " * " + rest);
+            EHRTextBox.Document.SetText(TextSetOptions.None, first_half + rest);
+            UpdateTextStyle();
             autosaveDispatcherTimer.Start();
 
         }
+
+        /// <summary>
+        /// Removes the corresponding records for a delete operation
+        /// </summary>
+        private void UpdateRecordListDelete(int start, int end, List<List<int>> record) {
+
+            //to keep the format consistent, all editing phrase records will be range of concatenations of words,
+            //including the following space " "
+
+            for (int i = 0; i < record.Count; i++) {
+                int list_start = record[i][0];
+                int list_end = record[i][0] + record[i][1] + 1; //because second element of record sub_list indicates word length
+                Debug.WriteLine($"start={start} end={end}");
+                Debug.WriteLine($"list_start={list_start} list_end={list_end}");
+                Debug.WriteLine("-");
+
+                //Case 1: list element range fully surrounds [start,end]
+                if (start >= list_start && end <= list_end)
+                {
+                    Debug.WriteLine("Delete (list element range fully surrounds [start,end])");
+                    record[i][1] -= end - start;
+                }
+                //Case 2: list element range is subset of [start,end]
+                else if (start < list_start && end > list_end)
+                {
+                    Debug.WriteLine("Delete (list element range is subset of [start,end])");
+                    record.RemoveAt(i);
+
+                }
+                //Case 3: start < list start, end < list end
+                else if (start < list_start && end < list_end)
+                {
+                    Debug.WriteLine("Delete (start < list start, end < list end)");
+                    record[i][1] = record[i][1] + list_start - end;
+                    record[i][0] = start;
+                }
+                //Case 4: start > list start, end > list end
+                else if (start > list_start && end > list_end)
+                {
+                    Debug.WriteLine("Delete (start > list start, end > list end)");
+                    record[i][1] = record[i][1] + 2 * start - list_start - list_end;
+                    record[i][0] = start;
+                }
+
+                else {
+                    throw new ArgumentException("Shouldn't reach here.");
+                }
+
+            }
+        }
+
 
         /// <summary>
         /// Trims the extra newlines in current EHR text and copies it to windows clipboard
@@ -540,55 +598,74 @@ namespace PhenoPad.CustomControl
         }
 
         private void inkCanvas_InkPresenter_StrokesCollectedAsync(InkPresenter sender, 
-                                                                        InkStrokesCollectedEventArgs args)
+                                                                       InkStrokesCollectedEventArgs args)
         {
             if (!leftLasso)
             {//processing strokes inputs
                 foreach (var s in args.Strokes)
                 {
                     //Process strokes that excess maximum height for recognition
-                        Rect bounding = s.BoundingRect;
-                        lastOperationStrokeIDs.Add(s.Id);
-                        string is_line = PreCheckGesture(s);
-                        //Not a line gesture, pass to $1 to recognize
-                        if (is_line == null)
-                        {
-                            List<TimePointR> pts = GetStrokePoints(s);
-                            NBestList result = GESTURE_RECOGNIZER.Recognize(pts, false);
-                            Debug.WriteLine("$1 =" + result.Name);
-                            var resultges = Regex.Replace(result.Name, @"[\d-]", string.Empty);
+                    Rect bounding = s.BoundingRect;
+                    lastOperationStrokeIDs.Add(s.Id);
+                    string is_line = PreCheckGesture(s);
+                    //Not a line gesture, pass to $1 to recognize
+                    if (is_line == null)
+                    {
+                        List<TimePointR> pts = GetStrokePoints(s);
+                        NBestList result = GESTURE_RECOGNIZER.Recognize(pts, false);
+                        Debug.WriteLine("$1 =" + result.Name);
+                        var resultges = Regex.Replace(result.Name, @"[\d-]", string.Empty);
+                        if (resultges == "zigzag") {
+
+                            Debug.WriteLine($"detected delete at {bounding.X},{bounding.Y}====");
+                            Point start = new Point(bounding.X + 10 , bounding.Y + (bounding.Height / 2.0) - LINE_HEIGHT);
+                            Point end = new Point(bounding.X + bounding.Width - 10, bounding.Y + (bounding.Height / 2.0) - LINE_HEIGHT);
+                            var range1 = EHRTextBox.Document.GetRangeFromPoint(start, PointOptions.ClientCoordinates);
+                            var range2 = EHRTextBox.Document.GetRangeFromPoint(end, PointOptions.ClientCoordinates);
+
+                            string sub_text1 = getEHRText().Substring(0, range1.StartPosition);
+                            string sub_text2 = getEHRText().Substring(range2.StartPosition);
+                            //Guarantees that the range if of format "some word followed by space "
+                            int del_start = sub_text1.LastIndexOf(" ") + 1;
+                            int del_end = sub_text2.IndexOf(" ") + range2.StartPosition + 1;
+
+                            Debug.WriteLine($"Attempt to delete text:-{getEHRText().Substring(del_start, del_end - del_start)}-");
+                            DeleteTextInRange(del_start, del_end);
                         }
-                        else
-                        {
-                            switch (is_line) {
-                                case ("vline"):
-                                    Point pos = new Point(bounding.X + bounding.Width / 2 - 10, bounding.Y + bounding.Height / 2 - LINE_HEIGHT);
-                                    var range = EHRTextBox.Document.GetRangeFromPoint(pos, PointOptions.ClientCoordinates);
-                                    // the scribble does not collide with any text, just ignore
-                                    string text;
-                                    EHRTextBox.Document.GetText(TextGetOptions.None, out text);
-                                    Debug.WriteLine($"detected fir letter: -{text.Substring(range.StartPosition, 1)}-");
-                                    current_index = range.StartPosition;
-                                    if (text.Substring(range.StartPosition, 1) == " ")
-                                        InsertNewLineToEHR();
-                                    break;
-                                case ("hline"):
-                                    //TODO SELECT text
-                                    break;
-                                case ("dot"):
-                                    pos = new Point(bounding.X + bounding.Width / 2 - 10 , bounding.Y - LINE_HEIGHT);
-                                    range = EHRTextBox.Document.GetRangeFromPoint(pos, PointOptions.ClientCoordinates);
-                                    // the scribble does not collide with any text, just ignore
-                                    EHRTextBox.Document.GetText(TextGetOptions.None,out text);
-                                    Debug.WriteLine($"detected fir letter: -{text.Substring(range.StartPosition,1)}-");
-                                    current_index = range.StartPosition;
-                                    if (text.Substring(range.StartPosition, 1) == " ")
-                                        ShowInputPanel(pos);
-                                    break;
-                                default:
-                                    break;
-                            }                            
-                        }
+                    }
+
+                    //Recognized a line
+                    else
+                    {
+                        switch (is_line) {
+                            case ("vline"):
+                                Point pos = new Point(bounding.X + bounding.Width / 2 - 10, bounding.Y + bounding.Height / 2 - LINE_HEIGHT);
+                                var range = EHRTextBox.Document.GetRangeFromPoint(pos, PointOptions.ClientCoordinates);
+                                // the scribble does not collide with any text, just ignore
+                                string text;
+                                EHRTextBox.Document.GetText(TextGetOptions.None, out text);
+                                Debug.WriteLine($"detected fir letter: -{text.Substring(range.StartPosition, 1)}-");
+                                current_index = range.StartPosition;
+                                if (text.Substring(range.StartPosition, 1) == " ")
+                                    InsertNewLineToEHR();
+                                break;
+                            case ("hline"):
+                                //TODO SELECT text
+                                break;
+                            case ("dot"):
+                                pos = new Point(bounding.X + bounding.Width / 2 - 10 , bounding.Y - LINE_HEIGHT);
+                                range = EHRTextBox.Document.GetRangeFromPoint(pos, PointOptions.ClientCoordinates);
+                                // the scribble does not collide with any text, just ignore
+                                EHRTextBox.Document.GetText(TextGetOptions.None,out text);
+                                Debug.WriteLine($"detected fir letter: -{text.Substring(range.StartPosition,1)}-");
+                                current_index = range.StartPosition;
+                                if (text.Substring(range.StartPosition, 1) == " ")
+                                    ShowInputPanel(pos);
+                                break;
+                            default:
+                                break;
+                        }                            
+                    }
                         
                 }
             }
@@ -624,7 +701,6 @@ namespace PhenoPad.CustomControl
                 }
             }
         }
-
 
         private async void inputInkCanvas_StrokesCollected(InkPresenter sender, InkStrokesCollectedEventArgs args)
         {
