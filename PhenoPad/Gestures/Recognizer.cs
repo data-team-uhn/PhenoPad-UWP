@@ -111,16 +111,19 @@ namespace PhenoPad.Gestures
 
         #endregion
 
-        public void GiveSuggestion(double MinXYRatio, double MinPathXYRatio, double Path2Area)
+        public string GiveSuggestion(double MinXYRatio, double MinPathXYRatio, double Path2Area)
         {
             if ((MinXYRatio <= 0.04) && (MinPathXYRatio <= 1.5))
             {
-                Debug.WriteLine("Is Line!");
+                Debug.WriteLine("Line");
+                return "line";
             }
             else if (Path2Area >= 0.08)
             {
-                Debug.WriteLine("Suggestion: ZigZag");
+                Debug.WriteLine("ZigZag");
+                return "zigzag";
             }
+            return "";
         }
 
         public static double FindBoundingBoxArea(List<TimePointR> points)
@@ -269,7 +272,7 @@ namespace PhenoPad.Gestures
             //Debug.WriteLine(FindMinXYRatio(points)[0]);
             //Debug.WriteLine("PathLength/BoundingBoxArea");
             //Debug.WriteLine(GeotrigEx.PathLength(TimePointR.ConvertList(timepoints)) / A);
-            GiveSuggestion(FindMinXYRatio(points)[0], FindMinPathXYRatio(timepoints, GeotrigEx.PathLength(TimePointR.ConvertList(timepoints))), 
+            string suggestion = GiveSuggestion(FindMinXYRatio(points)[0], FindMinPathXYRatio(timepoints, GeotrigEx.PathLength(TimePointR.ConvertList(timepoints))), 
                 GeotrigEx.PathLength(TimePointR.ConvertList(timepoints)) / A);
 
             double radians = GeotrigEx.Angle(GeotrigEx.Centroid(points), points[0], false);
@@ -281,6 +284,7 @@ namespace PhenoPad.Gestures
 
 
             NBestList nbest = new NBestList();
+
             foreach (Unistroke u in _gestures.Values)
             {
                 if (protractor) // Protractor extension by Yang Li (CHI 2010)
@@ -304,6 +308,13 @@ namespace PhenoPad.Gestures
                 }
             }
             nbest.SortDescending(); // sort descending by score so that nbest[0] is best result
+
+            if (nbest[0].Score < 0.7 && suggestion != "") {
+                    nbest.AddResult(suggestion, 1.0, 0, 0);
+            }
+            nbest.SortDescending(); // sort descending by score so that nbest[0] is best result
+
+
             return nbest;
         }
 

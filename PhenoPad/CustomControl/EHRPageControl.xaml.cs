@@ -54,11 +54,12 @@ namespace PhenoPad.CustomControl
 
         private float UNPROCESSED_OPACITY = 0.2f;
         private int UNPROCESSED_THICKNESS = 30;
-        private SolidColorBrush UNPROCESSED_COLOR = Application.Current.Resources["WORD_DARK"] as SolidColorBrush;
+        private SolidColorBrush UNPROCESSED_COLOR = new SolidColorBrush(Colors.Yellow);
         private bool isBoundRect;
 
         //For keeping edited records;
         private List<List<int>> inserts;//tuple = <start_index, word_length>
+        private List<List<int>> highlights;
 
         //Staring and Ending index of selected EHR text
         private int selected_start;
@@ -99,8 +100,6 @@ namespace PhenoPad.CustomControl
 
             GESTURE_RECOGNIZER = new Recognizer();
 
-            //inserts = new List<(int,int)>();
-
             inkCanvas.InkPresenter.InputDeviceTypes = CoreInputDeviceTypes.Pen;
 
             inkCanvas.AddHandler(UIElement.TappedEvent, new TappedEventHandler(OnElementTapped), true);
@@ -131,7 +130,7 @@ namespace PhenoPad.CustomControl
             autosaveDispatcherTimer.Interval = TimeSpan.FromSeconds(1); //setting stroke auto save interval to be 1 sec
 
             inserts = new List<List<int>>();
-            
+            highlights = new List<List<int>>();
 
             inkOperationAnalyzer = new InkAnalyzer();
             inputInkAnalyzer = new InkAnalyzer();
@@ -143,10 +142,6 @@ namespace PhenoPad.CustomControl
             this.SetUpEHRFile(file);
             this.DrawBackgroundLines();
         }
-
-
-
-
 
         #region Initialization
         //===================================================================================================
@@ -202,9 +197,12 @@ namespace PhenoPad.CustomControl
             {
                 string text = await FileIO.ReadTextAsync(file);
                 text = text.TrimEnd();
-                EHRTextBox.Document.SetText(TextSetOptions.None, text);
-                var range = EHRTextBox.Document.GetRange(0, 5);
-
+                string[] paragraphs = text.Split(Environment.NewLine);
+                string new_text = "";
+                foreach (string s in paragraphs) {
+                    new_text += s + Environment.NewLine + " ";
+                }
+                EHRTextBox.Document.SetText(TextSetOptions.None, new_text);
             }
             catch (Exception ex)
             {
@@ -242,6 +240,7 @@ namespace PhenoPad.CustomControl
             inputgrid.Visibility = Visibility.Collapsed;
             inputMarkup.Visibility = Visibility.Collapsed;
             cpMenu.Visibility = Visibility.Collapsed;
+            RefreshTextStyle();
             SelectionMenu.Visibility = Visibility.Collapsed;
             ClearOperationStrokes();
             if (popupCanvas.Children.Contains(lasso)) {
@@ -310,6 +309,8 @@ namespace PhenoPad.CustomControl
 
         private void UpdateTextStyle(int length = 0, int current_index = -1) {
             Debug.WriteLine($"Inseting at {current_index}");
+
+
             for (int i = 0; i < inserts.Count; i++)
             {
                 Debug.WriteLine($"current insert record starting: {inserts[i][0]}");
@@ -336,6 +337,42 @@ namespace PhenoPad.CustomControl
 
                 var range = EHRTextBox.Document.GetRange(inserts[i][0], inserts[i][0] + inserts[i][1] + 1);
                 range.CharacterFormat.ForegroundColor = Colors.LightBlue;
+            }
+
+            for (int i = 0; i < highlights.Count; i++) {
+                //Case 1: insert index in middle of highlight section
+                if (highlights[i][0] <= current_index && length > 0 && current_index > -1)
+                {
+                    highlights[i][1] += length + 1;
+                }
+
+                //Case 2: insert index in front of highlight section
+                else if (highlights[i][0] >= current_index && length > 0)
+                {
+                    highlights[i][0] += length + 1; //just extends this phrase by new word length + space char
+                }
+
+                var range = EHRTextBox.Document.GetRange(highlights[i][0], highlights[i][0] + highlights[i][1] - 1);
+                range.CharacterFormat.BackgroundColor = Color.FromArgb(50, 255, 255, 0);
+            }
+
+        }
+
+        /// <summary>
+        /// Resets EHR Text and reapplies saved styles
+        /// </summary>
+        private void RefreshTextStyle() {
+
+            string text = getEHRText();
+            EHRTextBox.Document.SetText(TextSetOptions.None ,text);
+
+            foreach (List<int> r in inserts) {
+                var range = EHRTextBox.Document.GetRange(r[0], r[0] + r[1] - 1);
+                range.CharacterFormat.ForegroundColor = Colors.LightBlue;
+            }
+            foreach (List<int> r in highlights) {
+                var range = EHRTextBox.Document.GetRange(r[0], r[0] + r[1] - 2);
+                range.CharacterFormat.BackgroundColor = Color.FromArgb(50, 255, 255, 0);
             }
         }
 
@@ -420,7 +457,9 @@ namespace PhenoPad.CustomControl
                 return;
 
             UpdateRecordListDelete(start, end, this.inserts);
-            Debug.WriteLine("Update complete");
+            Debug.WriteLine("Insert Update complete");
+            UpdateRecordListDelete(start, end, this.highlights);
+            Debug.WriteLine("Highlight Update complete");
             string all_text;
             EHRTextBox.Document.GetText(TextGetOptions.None, out all_text);
 
@@ -436,6 +475,79 @@ namespace PhenoPad.CustomControl
 
         }
 
+        private void HighlightTextInRange(int start, int end) {
+
+            // the scribble does not collide with any text, just ignore
+            if (start < 0 || end < 0 || end < start || start == end || start == getEHRText().Length)
+                return;
+
+            if (highlights.Count == 0) {
+
+                highlights.Add(new List<int>() { start, end - start + 1 });
+                var range = EHRTextBox.Document.GetRange(start, end - 1);
+                range.CharacterFormat.BackgroundColor = Color.FromArgb(50, 255, 255, 0);
+                return;
+            }
+
+            //for (int i = 0; i < highlights.Count; i++) {
+
+            //    int list_start = highlights[i][0];
+            //    int list_end = highlights[i][0] + highlights[i][1];
+
+            //    //Case 1: list element range fully surrounds [start,end]
+            //    if (start >= list_start || end <= list_end)
+            //    {
+            //        Debug.WriteLine("Highlight (list element range fully surrounds [start,end] or is neighbor)");
+
+            //        return;
+            //    }
+            //    //Case 2: list element range is subset of [start,end]
+            //    else if (start < list_start && end > list_end)
+            //    {
+            //        Debug.WriteLine("Highlight (list element range is subset of [start,end])");
+            //        highlights[i][0] = start;
+            //        highlights[i][1] = end - start;
+
+            //        var range = EHRTextBox.Document.GetRange(highlights[i][0], highlights[i][1] - 1);
+            //        range.CharacterFormat.BackgroundColor = Color.FromArgb(50, 255, 255, 0);
+
+            //        return;
+            //    }
+            //    //Case 3: start < list start, end < list end
+            //    else if (start < list_start && end < list_end && end > list_start)
+            //    {
+            //        Debug.WriteLine("Highlight (start < list start, end < list end)");
+            //        highlights[i][0] = start;
+            //        highlights[i][1] = list_end - start;
+
+            //        var range = EHRTextBox.Document.GetRange(highlights[i][0], highlights[i][1] - 1);
+            //        range.CharacterFormat.BackgroundColor = Color.FromArgb(50, 255, 255, 0);
+            //        return;
+            //    }
+            //    else if (start > list_start && end > list_end && start < list_end) {
+            //        highlights[i][0] = start;
+            //        highlights[i][1] = end - start;
+
+            //        var range = EHRTextBox.Document.GetRange(highlights[i][0], highlights[i][1] - 1);
+            //        range.CharacterFormat.BackgroundColor = Color.FromArgb(50, 255, 255, 0);
+            //        return;
+            //    }
+
+            //    else
+            //    {
+            //        // does not intersect
+            //    }
+
+
+            //}
+
+            highlights.Add(new List<int>() { start, end - start + 1 });
+            UpdateHighlightRecordMerge();
+            EHRTextBox.Document.GetRange(start, end - 1).CharacterFormat.BackgroundColor = Color.FromArgb(50, 255, 255, 0);
+            return;
+
+        }
+
         /// <summary>
         /// Removes the corresponding records for a delete operation
         /// </summary>
@@ -443,7 +555,6 @@ namespace PhenoPad.CustomControl
 
             //to keep the format consistent, all editing phrase records will be range of concatenations of words,
             //including the following space " "
-
             for (int i = 0; i < record.Count; i++) {
                 int list_start = record[i][0];
                 int list_end = record[i][0] + record[i][1] + 1; //because second element of record sub_list indicates word length
@@ -452,40 +563,58 @@ namespace PhenoPad.CustomControl
                 Debug.WriteLine("-");
 
                 //Case 1: list element range fully surrounds [start,end]
-                if (start >= list_start && end <= list_end)
+                if (start > list_start && end < list_end)
                 {
                     Debug.WriteLine("Delete (list element range fully surrounds [start,end])");
                     record[i][1] -= end - start;
                 }
                 //Case 2: list element range is subset of [start,end]
-                else if (start < list_start && end > list_end)
+                else if ((start >= list_start && end <= list_end) || (list_start > start && list_end < end))
                 {
                     Debug.WriteLine("Delete (list element range is subset of [start,end])");
                     record.RemoveAt(i);
-
                 }
                 //Case 3: start < list start, end < list end
-                else if (start < list_start && end < list_end)
+                else if (start < list_start && end < list_end && end > list_start)
                 {
                     Debug.WriteLine("Delete (start < list start, end < list end)");
                     record[i][1] = record[i][1] + list_start - end;
                     record[i][0] = start;
                 }
                 //Case 4: start > list start, end > list end
-                else if (start > list_start && end > list_end)
+                else if (start > list_start && end > list_end && start < list_end)
                 {
                     Debug.WriteLine("Delete (start > list start, end > list end)");
                     record[i][1] = record[i][1] + 2 * start - list_start - list_end;
                     record[i][0] = start;
                 }
 
-                else {
+                else
+                {
                     throw new ArgumentException("Shouldn't reach here.");
                 }
-
             }
         }
 
+        /// <summary>
+        /// checks each record list interval and merge those in line
+        /// </summary>
+        private void UpdateHighlightRecordMerge() {
+            highlights = highlights.OrderBy(lst => lst[0]).ToList();
+
+            Debug.WriteLine("starting merge");
+            for (int i = 0; i < highlights.Count; i++) {
+                Debug.WriteLine($"starting index = {highlights[i][0]}, length = {highlights[i][1]}");
+                for (int j = i + 1; j < highlights.Count; j++) {
+                    if (highlights[i][0] + highlights[i][1] >= highlights[j][0]) {
+                        Debug.WriteLine("merging");
+                        highlights[i][1] = highlights[i][1] + highlights[j][1] - ((highlights[i][0] + highlights[i][1])- highlights[j][0]);
+                        highlights.Remove(highlights[j]);
+                    }
+                }
+            }
+            RefreshTextStyle();
+        }
 
         /// <summary>
         /// Trims the extra newlines in current EHR text and copies it to windows clipboard
@@ -537,6 +666,24 @@ namespace PhenoPad.CustomControl
             }
             MainPage.Current.NotifyUser("Pasted EHR to note", NotifyType.StatusMessage, 1);
             cpMenu.Visibility = Visibility.Collapsed;
+        }
+
+        private void SetSelectStyle(Rect bounding) {
+            RefreshTextStyle();
+            Point start = new Point(bounding.X + 10, bounding.Y - LINE_HEIGHT - 20);
+            Point end = new Point(bounding.X + bounding.Width - 10, bounding.Y - LINE_HEIGHT - 20);
+            var range1 = EHRTextBox.Document.GetRangeFromPoint(start, PointOptions.ClientCoordinates);
+            var range2 = EHRTextBox.Document.GetRangeFromPoint(end, PointOptions.ClientCoordinates);
+
+            string sub_text1 = getEHRText().Substring(0, range1.StartPosition);
+            string sub_text2 = getEHRText().Substring(range2.StartPosition);
+            //Guarantees that the range if of format "some word followed by space "
+            int sel_start = sub_text1.LastIndexOf(" ") + 1;
+            int sel_end = sub_text2.IndexOf(" ") + range2.StartPosition + 1;
+
+            var sel_range = EHRTextBox.Document.GetRange(sel_start, sel_end);
+
+            sel_range.CharacterFormat.Underline = UnderlineType.Dotted;
         }
 
 
@@ -613,12 +760,12 @@ namespace PhenoPad.CustomControl
                     {
                         List<TimePointR> pts = GetStrokePoints(s);
                         NBestList result = GESTURE_RECOGNIZER.Recognize(pts, false);
-                        Debug.WriteLine("$1 =" + result.Name);
                         var resultges = Regex.Replace(result.Name, @"[\d-]", string.Empty);
-                        if (resultges == "zigzag") {
+                        if (resultges == "zigzag")
+                        {
 
                             Debug.WriteLine($"detected delete at {bounding.X},{bounding.Y}====");
-                            Point start = new Point(bounding.X + 10 , bounding.Y + (bounding.Height / 2.0) - LINE_HEIGHT);
+                            Point start = new Point(bounding.X + 10, bounding.Y + (bounding.Height / 2.0) - LINE_HEIGHT);
                             Point end = new Point(bounding.X + bounding.Width - 10, bounding.Y + (bounding.Height / 2.0) - LINE_HEIGHT);
                             var range1 = EHRTextBox.Document.GetRangeFromPoint(start, PointOptions.ClientCoordinates);
                             var range2 = EHRTextBox.Document.GetRangeFromPoint(end, PointOptions.ClientCoordinates);
@@ -631,6 +778,25 @@ namespace PhenoPad.CustomControl
 
                             Debug.WriteLine($"Attempt to delete text:-{getEHRText().Substring(del_start, del_end - del_start)}-");
                             DeleteTextInRange(del_start, del_end);
+                        }
+                        else if (resultges == "line")
+                        {
+                            SetSelectStyle(bounding);
+                        }
+                        else if (resultges == "rectangle") {
+                            Point start = new Point(bounding.X + 10, bounding.Y + (bounding.Height / 2.0) - LINE_HEIGHT);
+                            Point end = new Point(bounding.X + bounding.Width - 10, bounding.Y + (bounding.Height / 2.0) - LINE_HEIGHT);
+                            var range1 = EHRTextBox.Document.GetRangeFromPoint(start, PointOptions.ClientCoordinates);
+                            var range2 = EHRTextBox.Document.GetRangeFromPoint(end, PointOptions.ClientCoordinates);
+
+                            string sub_text1 = getEHRText().Substring(0, range1.StartPosition);
+                            string sub_text2 = getEHRText().Substring(range2.StartPosition);
+                            //Guarantees that the range if of format "some word followed by space "
+                            int high_start = sub_text1.LastIndexOf(" ") + 1;
+                            int high_end = sub_text2.IndexOf(" ") + range2.StartPosition + 1;
+
+                            Debug.WriteLine($"Attempt to highlight text:-{getEHRText().Substring(high_start, high_end - high_start)}-");
+                            HighlightTextInRange(high_start, high_end);
                         }
                     }
 
@@ -650,7 +816,7 @@ namespace PhenoPad.CustomControl
                                     InsertNewLineToEHR();
                                 break;
                             case ("hline"):
-                                //TODO SELECT text
+                                SetSelectStyle(bounding);
                                 break;
                             case ("dot"):
                                 pos = new Point(bounding.X + bounding.Width / 2 - 10 , bounding.Y - LINE_HEIGHT);
