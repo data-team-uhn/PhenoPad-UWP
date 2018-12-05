@@ -141,6 +141,7 @@
     <Compile Include="CustomControl\PhenotypeDetail.xaml.cs">
       <DependentUpon>PhenotypeDetail.xaml</DependentUpon>
     </Compile>
+    <Compile Include="FileService\EHRFormats.cs" />
     <Compile Include="FileService\FileManager.cs" />
     <Compile Include="FileService\FileServerClient.cs" />
     <Compile Include="FileService\Notebook.cs" />

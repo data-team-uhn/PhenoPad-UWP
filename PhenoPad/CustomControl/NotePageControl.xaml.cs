@@ -1388,6 +1388,7 @@ namespace PhenoPad.CustomControl
                 if (ehrPage != null)
                 {
                     await FileManager.getSharedFileManager().SaveEHRText(notebookId, pageId, this.ehrPage);
+                    await FileManager.getSharedFileManager().SaveEHRFormats(notebookId, pageId, this.ehrPage);
                 }
 
 
@@ -1411,6 +1412,8 @@ namespace PhenoPad.CustomControl
                 List<ImageAndAnnotation> imageList = await GetAllAddInObjects();
                 string metapath = FileManager.getSharedFileManager().GetNoteFilePath(notebookId, pageId, NoteFileType.ImageAnnotationMeta);
                 result3 = await FileManager.getSharedFileManager().SaveObjectSerilization(metapath, imageList, typeof(List<ImageAndAnnotation>));
+
+                
 
                 return result1 && result2 && result3;
             }

@@ -33,7 +33,8 @@ namespace PhenoPad.FileService
         Video,
         Meta,
         ImageAnnotationMeta,
-        EHR
+        EHR,
+        EHRFormat
     };
 
     /// <summary>
@@ -46,6 +47,7 @@ namespace PhenoPad.FileService
         private MainPage rootPage = MainPage.Current;
         private string STROKE_FILE_NAME = "strokes.gif";
         private string EHR_FILE_NAME = "ehr.txt";
+        private string EHR_FORMAT_NAME = "ehrformat.xml";
         private string PHENOTYPE_FILE_NAME = "phenotypes.txt";
         private string NOTENOOK_NAME_PREFIX = "note_";
         private string NOTE_META_FILE = "meta.xml";
@@ -298,6 +300,9 @@ namespace PhenoPad.FileService
                     break;
                 case NoteFileType.EHR:
                     filename = EHR_FILE_NAME;
+                    break;
+                case NoteFileType.EHRFormat:
+                    filename = EHR_FORMAT_NAME;
                     break;
             }
 
@@ -763,6 +768,39 @@ namespace PhenoPad.FileService
 
         }
 
+        public async Task<bool> SaveEHRFormats(string notebookId, string pageId, EHRPageControl ehr) {
+            try
+            {
+                EHRFormats format = new EHRFormats(ehr.inserts, ehr.highlights, ehr.deletes);
+                string xml = format.Serialize();
+                string path = GetNoteFilePath(notebookId, pageId, NoteFileType.EHRFormat);
+                //Debug.WriteLine($"EHR PATH={path}");
+                StorageFile sfile = await ROOT_FOLDER.CreateFileAsync(path, CreationCollisionOption.ReplaceExisting);
+                await Windows.Storage.FileIO.WriteTextAsync(sfile, xml);
+                return true;
+
+            }
+            catch (Exception e) {
+                Debug.WriteLine(e + e.Message);
+                return false;
+            }
+        }
+        public async Task<EHRFormats> LoadEHRFormats(string notebookId, string pageId) {
+            try
+            {
+                string path = GetNoteFilePath(notebookId, pageId, NoteFileType.EHRFormat);
+                //Debug.WriteLine($"EHR PATH={path}");
+                StorageFile sfile = await ROOT_FOLDER.GetFileAsync(path);
+                string xml = await Windows.Storage.FileIO.ReadTextAsync(sfile);
+                EHRFormats ehrformat = EHRFormats.Deserialize(xml);
+                return ehrformat;
+            }
+            catch (Exception e)
+            {
+                Debug.WriteLine(e + e.Message);
+                return null;
+            }
+        }
 
         /// <summary>
         /// Creates and returns a new Notebook ID
