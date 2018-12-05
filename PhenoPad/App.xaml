@@ -911,6 +911,7 @@
             <Style x:Key="MyRichEditBoxStyle" TargetType="RichEditBox">
                 <Setter Property="MinWidth" Value="{ThemeResource TextControlThemeMinWidth}"/>
                 <Setter Property="MinHeight" Value="{ThemeResource TextControlThemeMinHeight}"/>
+                <Setter Property="Opacity" Value="0.9"/>
                 <Setter Property="Foreground" Value="{ThemeResource TextControlForeground}"/>
                 <Setter Property="Background" Value="{ThemeResource TextControlBackground}"/>
                 <Setter Property="SelectionHighlightColor" Value="{ThemeResource TextControlSelectionHighlightColor}"/>

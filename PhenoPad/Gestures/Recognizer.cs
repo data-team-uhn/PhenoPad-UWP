@@ -309,9 +309,10 @@ namespace PhenoPad.Gestures
             }
             nbest.SortDescending(); // sort descending by score so that nbest[0] is best result
 
-            if (nbest[0].Score < 0.7 && suggestion != "") {
+            if (suggestion == "line") {
                     nbest.AddResult(suggestion, 1.0, 0, 0);
             }
+
             nbest.SortDescending(); // sort descending by score so that nbest[0] is best result
 
 

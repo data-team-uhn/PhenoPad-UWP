@@ -208,8 +208,8 @@ namespace PhenoPad.HWRService
                 string newResult = recogResults[indexNew].selectedCandidate.ToLower();
                 string preResult = lastServerRecog[indexServer].selectedCandidate.ToLower();
 
-                Debug.WriteLine($"\nnewResult={newResult}");
-                Debug.WriteLine($"preResult={preResult}\n");
+                //Debug.WriteLine($"\nnewResult={newResult}");
+                //Debug.WriteLine($"preResult={preResult}\n");
 
                 if (newResult == preResult)
                 {//if the current word matches
@@ -256,7 +256,7 @@ namespace PhenoPad.HWRService
                 indexServer++;
                 indexNew++;
             }
-            Debug.WriteLine($"current recog count={recogResults.Count},index={indexNew}");
+            //Debug.WriteLine($"current recog count={recogResults.Count},index={indexNew}");
             if (indexServer == lastServerRecog.Count)
             {//only care if there are new words to be added from new recog result
                 for (int i = indexNew; i < recogResults.Count; i++) {
@@ -306,13 +306,13 @@ namespace PhenoPad.HWRService
             try
             {
                 string rawdatastr = JsonConvert.SerializeObject(rawdata);
-                Debug.WriteLine("\n raw: \n"+ rawdatastr + "\n");
+                //Debug.WriteLine("\n raw: \n"+ rawdatastr + "\n");
 
                 HttpStringContent data = new HttpStringContent(rawdatastr, UnicodeEncoding.Utf8, "application/json");
                 httpResponse = await httpClient.PostAsync(requestUri, data);
                 httpResponse.EnsureSuccessStatusCode();
                 httpResponseBody = await httpResponse.Content.ReadAsStringAsync();
-                Debug.WriteLine("\n res: \n" + httpResponseBody + "\n");
+                //Debug.WriteLine("\n res: \n" + httpResponseBody + "\n");
 
                 HTTPResponse result = JsonConvert.DeserializeObject<HTTPResponse>(httpResponseBody);
                 sentence = result.result.Split(" ").ToList();
@@ -360,7 +360,7 @@ namespace PhenoPad.HWRService
                 }
                 else {
                     abbrDict.Add($"{sentence[index].ToLower()}", ab.abbr_list);
-                    Debug.WriteLine($"added key {sentence[index].ToLower()} to abbr.dict");
+                    //Debug.WriteLine($"added key {sentence[index].ToLower()} to abbr.dict");
                 }
                 offset++;
             }
