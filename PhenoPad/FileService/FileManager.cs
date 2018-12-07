@@ -135,15 +135,18 @@ namespace PhenoPad.FileService
         /// </summary>
         public async Task<Notebook> GetNotebookObjectFromXML(string notebookId)
         {
-            Debug.WriteLine($"Fetching notebook meta file object of {notebookId}");
-            // meta data
-            var metafile = await GetNoteFile(notebookId, "", NoteFileType.Meta);
-            object obj = await LoadObjectFromSerilization(metafile, typeof(Notebook));
-            if (obj != null)
+            try
             {
-                return obj as Notebook;
+                //Debug.WriteLine($"Fetching notebook meta file object of {notebookId}");
+                // meta data
+                var metafile = await GetNoteFile(notebookId, "", NoteFileType.Meta);
+                Notebook obj = null;
+                obj = (Notebook) await LoadObjectFromSerilization(metafile, typeof(Notebook));
+                return obj;
             }
-            return null;
+            catch (Exception e) {
+                return null;
+            }
         }
 
         /// <summary>
@@ -161,7 +164,7 @@ namespace PhenoPad.FileService
                     return null;
             }
             catch (Exception e) {
-                LogService.MetroLogger.getSharedLogger().Error($"{notebookId}-{pageId}:{e}:{e.Message}");
+                //LogService.MetroLogger.getSharedLogger().Error($"{notebookId}-{pageId}:{e}:{e.Message}");
                 return null;
             }
             
@@ -172,14 +175,17 @@ namespace PhenoPad.FileService
         /// </summary>
         public async Task<List<Phenotype>> GetSavedPhenotypeObjectsFromXML(string notebookId)
         {
-            // meta data
-            var phenofile = await GetNoteFile(notebookId, "", NoteFileType.Phenotypes);
-            object obj = await LoadObjectFromSerilization(phenofile, typeof(List<Phenotype>));
-            if (obj != null)
-            {
-                return obj as List<Phenotype>;
+            try {
+                // meta data
+                var phenofile = await GetNoteFile(notebookId, "", NoteFileType.Phenotypes);
+                object obj = await LoadObjectFromSerilization(phenofile, typeof(List<Phenotype>));
+                if (obj != null)
+                    return obj as List<Phenotype>;
+                return null;
             }
-            return null;
+            catch (Exception) {
+                return null;
+            }
         }
 
         /// <summary>
@@ -187,12 +193,18 @@ namespace PhenoPad.FileService
         /// </summary>
         public async Task<List<TextMessage>> GetSavedTranscriptsFromXML(string notebookId,string name = "")
         {
-            var trans = await GetNoteFile(notebookId, "", NoteFileType.Transcriptions,name);
-            object obj = await LoadObjectFromSerilization(trans, typeof(List<TextMessage>));
-            if (obj != null) {
-                return obj as List<TextMessage>;
+            try {
+                var trans = await GetNoteFile(notebookId, "", NoteFileType.Transcriptions, name);
+                object obj = await LoadObjectFromSerilization(trans, typeof(List<TextMessage>));
+                if (obj != null)
+                {
+                    return obj as List<TextMessage>;
+                }
+                return null;
             }
-            return null;
+            catch (Exception) {
+                return null;
+            }
         }
 
 
@@ -201,13 +213,14 @@ namespace PhenoPad.FileService
         /// </summary>
         public async Task<StorageFile> GetNoteFile(string notebookId, string notePageId, NoteFileType fileType, string name = "")
         {
-            StorageFile notefile = null;
-            //StorageFolder localFolder = ApplicationData.Current.LocalFolder;
-            string filepath = GetNoteFilePath(notebookId, notePageId, fileType, name);
-            Debug.WriteLineIf((fileType == NoteFileType.EHR), filepath);
             try
             {
+                StorageFile notefile = null;
+                //StorageFolder localFolder = ApplicationData.Current.LocalFolder;
+                string filepath = GetNoteFilePath(notebookId, notePageId, fileType, name);
+                Debug.WriteLineIf((fileType == NoteFileType.EHR), filepath);
                 notefile = await ROOT_FOLDER.CreateFileAsync(filepath, CreationCollisionOption.OpenIfExists);
+                return notefile;
             }
             catch (Exception ex)
             {
@@ -215,7 +228,6 @@ namespace PhenoPad.FileService
                     $"page: {notebookId}, type: {fileType}, name: {name}, details: {ex.Message}");
                 return null;
             }
-            return notefile;
         }
 
         /// <summary>
@@ -223,18 +235,21 @@ namespace PhenoPad.FileService
         /// </summary>
         public async Task<StorageFile> GetNoteFileNotCreate(string notebookId, string notePageId, NoteFileType fileType, string name = "")
         {
-            StorageFile notefile = null;
-            string filepath = GetNoteFilePath(notebookId, notePageId, fileType, name);
-            Debug.WriteLine($"getting {filepath}");
-
             try
             {
+                StorageFile notefile;
+                string filepath = GetNoteFilePath(notebookId, notePageId, fileType, name);
+                //Debug.WriteLine($"getting {filepath}");
+
                 notefile = await ROOT_FOLDER.GetFileAsync(filepath);
-                return notefile;
+                if (notefile == null)
+                    return null;
+                else
+                    return notefile;
             }
             catch (Exception e)
             {
-                LogService.MetroLogger.getSharedLogger().Error($"Failed to get {filepath}:{e}+{e.Message}");
+                //LogService.MetroLogger.getSharedLogger().Error($"Failed to get {filepath}:{e}+{e.Message}");
                 return null;
             }
         }
@@ -316,9 +331,9 @@ namespace PhenoPad.FileService
         /// </summary>
         public BitmapImage GetStrokeImage(string notebookId, string pageId)
         {
-            string imagePath = GetNoteFilePath(notebookId, pageId, NoteFileType.Strokes);
             try
             {
+                string imagePath = GetNoteFilePath(notebookId, pageId, NoteFileType.Strokes);
                 BitmapImage bitmapImage = new BitmapImage(new Uri($"ms-appdata:///local/{imagePath}"));
                 return bitmapImage;
             }
@@ -363,7 +378,7 @@ namespace PhenoPad.FileService
                 }
                 return result;
             }
-            catch (FileNotFoundException)
+            catch (Exception)
             {
                 LogService.MetroLogger.getSharedLogger().Error("Failed to get all notebook ids.");
                 rootPage.NotifyUser("Failed to get all notebook ids.", NotifyType.ErrorMessage, 2);
@@ -394,8 +409,8 @@ namespace PhenoPad.FileService
             }
             catch (Exception e) {
                 LogService.MetroLogger.getSharedLogger().Error($"{notebookId}:{e}:{e.Message}");
+                return null;
             }
-            return null;
         }
 
         /// <summary>
@@ -403,18 +418,24 @@ namespace PhenoPad.FileService
         /// </summary>
         public async Task<List<NotePage>> GetAllNotePageObjects(string notebookId)
         {
+            try {
+                List<string> pageIds = await GetPageIdsByNotebook(notebookId);
+                if (pageIds == null)
+                    return null;
 
-            List<string> pageIds = await GetPageIdsByNotebook(notebookId);
-            if (pageIds == null)
-                return null;
+                List<NotePage> result = new List<NotePage>();
+                foreach (var pid in pageIds)
+                {
+                    NotePage np = new NotePage(notebookId, pid);
+                    result.Add(np);
+                }
+                return result;
 
-            List<NotePage> result = new List<NotePage>();
-            foreach (var pid in pageIds)
-            {
-                NotePage np = new NotePage(notebookId, pid);
-                result.Add(np);
             }
-            return result;
+            catch (Exception) {
+                return null;
+            }
+
         }
         #endregion
 
@@ -457,16 +478,6 @@ namespace PhenoPad.FileService
             Debug.WriteLine($"Successfully created notebook {notebookId}");
             return result;
         }
-
-        //public async Task<string> SaveEHRSnapShot(string notebookId, string pageId, EHRPageControl ehr) {
-        //    try {
-        //        Rect bound = 
-        //    }
-        //    catch (Exception e) {
-        //        LogService.MetroLogger.getSharedLogger().Error(e + e.Message);
-        //    }
-        //}
-
 
         /// <summary>
         /// Created a new file folder for a note page and creates folders to store components on notepage, returns boolean result.
@@ -700,34 +711,40 @@ namespace PhenoPad.FileService
         /// </summary>
         public async Task<bool> saveStrokes(StorageFile strokesFile, InkCanvas inkcancas)
         {
+            try {
+                // Prevent updates to the file until updates are 
+                // finalized with call to CompleteUpdatesAsync.
+                //Windows.Storage.CachedFileManager.DeferUpdates(strokesFile);
+                // Open a file stream for writing.
+                IRandomAccessStream stream = await strokesFile.OpenAsync(FileAccessMode.ReadWrite);
+                // Write the ink strokes to the output stream.
+                using (IOutputStream outputStream = stream.GetOutputStreamAt(0))
+                {
+                    await inkcancas.InkPresenter.StrokeContainer.SaveAsync(outputStream);
+                    await outputStream.FlushAsync();
+                    outputStream.Dispose();
+                }
+                stream.Dispose();
 
-            // Prevent updates to the file until updates are 
-            // finalized with call to CompleteUpdatesAsync.
-            //Windows.Storage.CachedFileManager.DeferUpdates(strokesFile);
-            // Open a file stream for writing.
-            IRandomAccessStream stream = await strokesFile.OpenAsync(FileAccessMode.ReadWrite);
-            // Write the ink strokes to the output stream.
-            using (IOutputStream outputStream = stream.GetOutputStreamAt(0))
-            {
-                await inkcancas.InkPresenter.StrokeContainer.SaveAsync(outputStream);
-                await outputStream.FlushAsync();
-                outputStream.Dispose();
+                // Finalize write so other apps can update file.
+                Windows.Storage.Provider.FileUpdateStatus status =
+                    await CachedFileManager.CompleteUpdatesAsync(strokesFile);
+
+                if (status == Windows.Storage.Provider.FileUpdateStatus.Complete)
+                {
+                    return true;
+                }
+                else
+                {
+                    LogService.MetroLogger.getSharedLogger().Error($"Failed to save strokes of InkCanvas.");
+                    return false;
+                }
+
             }
-            stream.Dispose();
-
-            // Finalize write so other apps can update file.
-            Windows.Storage.Provider.FileUpdateStatus status =
-                await CachedFileManager.CompleteUpdatesAsync(strokesFile);
-
-            if (status == Windows.Storage.Provider.FileUpdateStatus.Complete)
-            {
-                return true;
-            }
-            else
-            {
-                LogService.MetroLogger.getSharedLogger().Error($"Failed to save strokes of InkCanvas.");
+            catch (Exception) {
                 return false;
             }
+
         }
 
         /// <summary>

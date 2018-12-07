@@ -106,11 +106,9 @@ namespace PhenoPad
         #endregion
 
         //******************************END OF ATTRIBUTES DEFINITION***************************************
-        /// <summary>
-        /// Creates and initializes a new MainPage instance.
-        /// </summary>
+        
         public MainPage()
-        {
+        {/// <summary>Creates and initializes a new MainPage instance.</summary>
             Current = this;
             this.InitializeComponent();
 
@@ -370,14 +368,14 @@ namespace PhenoPad
                 {
                     try
                     {
-                            // Let users choose their text file using a file picker.
-                            // Initialize the picker.
-                            FileOpenPicker openPicker = new FileOpenPicker();
-                            openPicker.SuggestedStartLocation = PickerLocationId.DocumentsLibrary;
-                            openPicker.FileTypeFilter.Add(".txt");
-                            // Show the file picker.
-                            StorageFile file = await openPicker.PickSingleFileAsync();
-                            await this.InitializeEHRNote(file);
+                        // Let users choose their text file using a file picker.
+                        // Initialize the picker.
+                        FileOpenPicker openPicker = new FileOpenPicker();
+                        openPicker.SuggestedStartLocation = PickerLocationId.DocumentsLibrary;
+                        openPicker.FileTypeFilter.Add(".txt");
+                        // Show the file picker.
+                        StorageFile file = await openPicker.PickSingleFileAsync();
+                        await this.InitializeEHRNote(file);
 
                     }
                     catch (Exception ex)
@@ -388,9 +386,7 @@ namespace PhenoPad
                 else
                 {
                     if (nid == "__new__")
-                    {
                         this.loadFromDisk = false;
-                    }
                     else
                     {
                         this.loadFromDisk = true;
@@ -410,9 +406,8 @@ namespace PhenoPad
         /// </summary>
         protected async override void OnNavigatingFrom(NavigatingCancelEventArgs e)
         {
-            if (curPage != null) {
+            if (curPage != null) 
                 curPage.Visibility = Visibility.Collapsed;
-            }
             CloseCandidate();
             notePages = null;
             notebookId = null;
@@ -519,30 +514,6 @@ namespace PhenoPad
             setNotePageIndex(index);
 
         }
-
-        /**
-        private void CoreTitleBar_LayoutMetricsChanged(CoreApplicationViewTitleBar sender, object args)
-        {
-            UpdateTitleBarLayout(sender);
-        }
-
-        private void UpdateTitleBarLayout(CoreApplicationViewTitleBar coreTitleBar)
-        {
-            
-        }
-
-        private void CoreTitleBar_IsVisibleChanged(CoreApplicationViewTitleBar sender, object args)
-        {
-            if (sender.IsVisible)
-            {
-                fakeTileBar.Visibility = Visibility.Visible;
-            }
-            else
-            {
-                fakeTileBar.Visibility = Visibility.Collapsed;
-            }
-        }
-        **/
 
         // ************** Tool Toggle event handlers ********************
         #region Tool Toggles

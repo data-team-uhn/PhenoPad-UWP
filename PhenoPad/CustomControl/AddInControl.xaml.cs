@@ -329,6 +329,10 @@ namespace PhenoPad.CustomControl
                 this.RenderTransform = tg;
             }
 
+            scrollViewer.ZoomMode = ZoomMode.Disabled;
+            scrollViewer.HorizontalScrollMode = ScrollMode.Disabled;
+            scrollViewer.VerticalScrollMode = ScrollMode.Disabled;
+
             this.Tapped += ToggleMenu;
             this.LostFocus += ResetZIndex;
             Canvas.SetZIndex(this, 99);
@@ -557,21 +561,17 @@ namespace PhenoPad.CustomControl
             InitiateInkCanvas();
 
         }
-        /// <summary>
-        /// invoked when user selects take a photo from category grid
-        /// </summary>
+        
         private void TakePhotoButton_Click(object sender, RoutedEventArgs e)
-        {
+        {/// <summary>invoked when user selects take a photo from category grid</summary>
             this.CameraCanvas.Visibility = Visibility.Visible;
             captureControl.setUp();
             //this.imageControl.deleteAsHide();
             PhotoButton.Visibility = Visibility.Visible;
         }
-        /// <summary>
-        /// invoked when user is in camera preview mode and clicks on the camera button
-        /// </summary>
+        
         private async void PhotoButton_Click(object sender, RoutedEventArgs e)
-        {
+        {/// <summary>invoked when user is in camera preview mode and clicks on the camera button</summary>
             try
             {
                 var imageSource = await captureControl.TakePhotoAsync(notebookId,
@@ -670,16 +670,12 @@ namespace PhenoPad.CustomControl
             }
         }
 
-
         #endregion
 
         #region initializations
-
-        /// <summary>
-        /// Initializes inkcanvas attributes for the add-in panel based on  whether item will be editable or not.
-        /// </summary>
+       
         private void InitiateInkCanvas(bool onlyView = false, double scaleX = 1, double scaleY = 1)
-        {
+        {/// <summary>Initializes inkcanvas attributes for the add-in panel based on  whether item will be editable or not.</summary>
             isInitialized = true;
 
             if (hasImage || onlyView)
@@ -747,12 +743,9 @@ namespace PhenoPad.CustomControl
                 }
             }
         }
-
-        /// <summary>
-        /// //Initialize a bitmap image to add-in canvas and calls InitiateInkCanvas
-        /// </summary>
+       
         public async void InitializeFromImage(WriteableBitmap wb, bool onlyView = false)
-        {
+        {/// <summary>Initialize a bitmap image to add-in canvas and calls InitiateInkCanvas</summary>
             this.categoryGrid.Visibility = Visibility.Collapsed;
 
             Image imageControl = new Image();
@@ -766,24 +759,30 @@ namespace PhenoPad.CustomControl
             var result = await FileManager.getSharedFileManager().SaveImageForNotepage(notebookId, pageId, name, wb);
             await rootPage.curPage.AutoSaveAddin(this.name);
         }
-
-        /// <summary>
-        /// Initializing a photo to add-in through disk and calls InitiateInkCanvas
-        /// </summary>
+       
         public async void InitializeFromDisk(bool onlyView)
-        {
+        {/// <summary>Initializing a photo to add-in through disk and calls InitiateInkCanvas</summary>
 
             this.categoryGrid.Visibility = Visibility.Collapsed;
             try
             {
-                var annofile = await FileManager.getSharedFileManager().GetNoteFileNotCreate(notebookId, pageId, 
+                var annofile = await FileManager.getSharedFileManager().GetNoteFileNotCreate(notebookId, pageId,
                                                                                              NoteFileType.ImageAnnotation, name);
                 if (annofile != null)
                     await FileManager.getSharedFileManager().loadStrokes(annofile, inkCanvas);
 
                 // photo file
                 var file = await FileManager.getSharedFileManager().GetNoteFileNotCreate(notebookId, pageId, NoteFileType.Image, name);
-                if (file != null)
+                if (file == null)
+                {
+                    //Initializing addin with drawing mode, reset windows to saved dimension
+                    if (!isComment)
+                    {
+                        inkCan.Height = this.Height - 48;
+                        inkCan.Width = this.Width;
+                    }
+                }
+                else
                 {//gets the photo file and adds to content grid
                     var properties = await file.Properties.GetImagePropertiesAsync();
                     imgratio = (double)properties.Width / properties.Height;
@@ -795,25 +794,17 @@ namespace PhenoPad.CustomControl
                     categoryGrid.Visibility = Visibility.Collapsed;
                     this.hasImage = true;
                 }
-                else
-                {//Initializing addin with drawing mode, reset windows to saved dimension
-                    if (!isComment) {
-                        inkCan.Height = this.Height - 48;
-                        inkCan.Width = this.Width;
-                    }
-                }
                 InitiateInkCanvas(onlyView);
             }
-            catch (Exception e) {
+            catch (FileNotFoundException) { }
+            catch (Exception e)
+            {
                 LogService.MetroLogger.getSharedLogger().Error($"{e}:{e.Message}");
             }
         }
-
-        /// <summary>
-        /// When user control is loaded, sets the default size and initialize from disk.
-        /// </summary>
+        
         private void UserControl_Loaded(object sender, RoutedEventArgs e)
-        {
+        {/// <summary> When user control is loaded, sets the default size and initialize from disk.</summary>
             if (viewOnly)
             {
                 this.Width = DEFAULT_WIDTH;
@@ -945,6 +936,7 @@ namespace PhenoPad.CustomControl
             if (!(addinSlide.X > 0))
             {
                 this.CompressComment();
+                Canvas.SetZIndex(this, 1);
                 DoubleAnimation dx = (DoubleAnimation)EHRCommentSlidingAnimation.Children.ElementAt(0);
                 dx.By = offsetX;
                 DoubleAnimation dy = (DoubleAnimation)EHRCommentSlidingAnimation.Children.ElementAt(1);
@@ -952,7 +944,6 @@ namespace PhenoPad.CustomControl
                 await EHRCommentSlidingAnimation.BeginAsync();
             }
         }
-
 
         private void ToggleMenu(object sender, TappedRoutedEventArgs e)
         {
@@ -982,8 +973,6 @@ namespace PhenoPad.CustomControl
         {
             Canvas.SetZIndex(this, 1);
         }
-
-
 
         private async void CompressComment() {
             if (!hasImage) {
@@ -1018,7 +1007,7 @@ namespace PhenoPad.CustomControl
                     s.Selected = true;
                 inkCanvas.InkPresenter.StrokeContainer.MoveSelected(new Point(-1 * bound.X + 5, -1 * bound.Y + 5));
                 this.Height = bound.Height + 5;
-                this.Width = bound.Width < MIN_WIDTH ? MIN_WIDTH + 5 : bound.Width + 5;
+                this.Width = bound.Width < MIN_WIDTH ? MIN_WIDTH + 5 : bound.Width + 10;
             }
         }
 

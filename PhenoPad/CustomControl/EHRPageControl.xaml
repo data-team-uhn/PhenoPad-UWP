@@ -76,8 +76,8 @@
         <InkCanvas x:Name="annotations" x:FieldModifier="public" Grid.Column="1" />
 
         <!--insert text pop up-->
-        <Canvas x:Name="popupCanvas" Canvas.ZIndex="6">
-            <RelativePanel x:Name="inputgrid" Visibility="Collapsed">
+        <Canvas x:Name="popupCanvas">
+            <RelativePanel x:Name="inputgrid" Canvas.ZIndex="99" Visibility="Collapsed">
                 <Grid>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="45"/>
@@ -94,14 +94,6 @@
                             <ColumnDefinition Width="40"/>
                             <ColumnDefinition Width="40"/>
                         </Grid.ColumnDefinitions>
-
-                        <!--<Button Background="WhiteSmoke" Foreground="PaleVioletRed" Grid.Column="1" Grid.Row="1"
-                                Height="45"
-                                Style="{StaticResource ButtonStyle1}" HorizontalAlignment="Right"
-                                Click="InsertNewLineToEHR"
-                                RelativePanel.AlignRightWithPanel="True">
-                            <FontIcon Glyph="&#xE751;" />
-                        </Button>-->
 
                         <Button Background="WhiteSmoke" Foreground="PaleVioletRed" Grid.Column="2" Grid.Row="1"
                                 Height="45"
@@ -163,20 +155,19 @@
                     <Button Style="{StaticResource ButtonStyle1}" Width="170" Padding="20 10 20 10" Background="WhiteSmoke"                     
                             HorizontalContentAlignment="Center" VerticalContentAlignment="Center"
                             Click="DeleteSelectedText">
-
                         <TextBlock x:Name="deleteText" Text="{x:Bind deleteState, Mode=TwoWay}" FontWeight="SemiBold" FontSize="18" />
                     </Button>
                 </Grid>
-                                
-                <Grid CornerRadius="10" BorderBrush="Gray"  BorderThickness="1">
+
+                <Grid CornerRadius="10" BorderBrush="Gray"  BorderThickness="1" Background="WhiteSmoke">
                     <Button Style="{StaticResource ButtonStyle1}" Width="170" Padding="20 10 20 10" Background="WhiteSmoke"
-                        Click="HighlightSelectedText"
-                            HorizontalContentAlignment="Center" VerticalContentAlignment="Center">
+                            HorizontalContentAlignment="Center" VerticalContentAlignment="Center"
+                            Click="HighlightSelectedText">
                         <TextBlock x:Name="highlightText" Text="{x:Bind highlightState, Mode=TwoWay}" FontWeight="SemiBold" FontSize="18" />
                     </Button>
                 </Grid>
 
-                <Grid CornerRadius="10" BorderBrush="Gray" BorderThickness="1">
+                <Grid CornerRadius="10" BorderBrush="Gray" BorderThickness="1" Background="WhiteSmoke">
                     <Button Style="{StaticResource ButtonStyle1}" Width="170" Padding="20 10 20 10" Background="WhiteSmoke"
                         Click="ShowCommentCanvas"
                             HorizontalContentAlignment="Center" VerticalContentAlignment="Center">
@@ -185,43 +176,31 @@
                 </Grid>
 
             </StackPanel>
-
+            
             <!--Copy/Paste pop up-->
-            <Grid x:Name="cpMenu" Width="600" Height="150" 
-                  Visibility="Collapsed">
-
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="*"/>
-                </Grid.RowDefinitions>
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*" />
-                    <ColumnDefinition Width="30"/>
-                    <ColumnDefinition Width="*"/>
-                </Grid.ColumnDefinitions>
-
-                <Grid CornerRadius="10" Grid.Column="0" Background="White">
-
-                <Button Style="{StaticResource ButtonStyle1}"  Width="300" Height="200"  
+            <StackPanel x:Name="cpMenu" Visibility="Collapsed" Spacing="40" Orientation="Vertical"  >
+                <Grid CornerRadius="20" BorderThickness="2" BorderBrush="LightGray" Background="White">
+                    <Button Style="{StaticResource ButtonStyle1}" Background="WhiteSmoke"  Width="250" Height="100"  
                             Click="CopyTextToClipboard"
                             HorizontalContentAlignment="Center" VerticalContentAlignment="Center">
-                    <TextBlock Text="Copy" FontWeight="Bold" FontSize="30" />
-
-                </Button>
-                </Grid>
-
-                <Grid CornerRadius="10" Grid.Column="2" Background="White">
-
-                    <Button Style="{StaticResource ButtonStyle1}"  Width="300" Height="200"
-                            Click="PasteTextToEHR"
-                            HorizontalContentAlignment="Center" VerticalContentAlignment="Center">
-                        <TextBlock Text="Paste" FontWeight="Bold" FontSize="30" />
+                        <TextBlock Text="Copy Text" FontWeight="SemiBold" FontSize="30" />
                     </Button>
                 </Grid>
-            </Grid>
+
+                <Grid CornerRadius="20" BorderThickness="2" BorderBrush="LightGray" Background="White">
+
+                    <Button Style="{StaticResource ButtonStyle1}" Background="WhiteSmoke"  Width="250" Height="100"
+                            Click="PasteTextToEHR"
+                            HorizontalContentAlignment="Center" VerticalContentAlignment="Center">
+                        <TextBlock Text="Paste Text" FontWeight="SemiBold" FontSize="30" />
+                    </Button>
+                </Grid>
+            </StackPanel>
+
             
             <!--Cursor Icon Markup-->
             <Grid x:Name="inputMarkup" Visibility="Collapsed">
-                <FontIcon FontWeight="ExtraBold" FontSize="30" Glyph="&#xE878;" Foreground="LightBlue"/>
+                <FontIcon FontWeight="ExtraBold" FontSize="40" Glyph="&#xE878;" Foreground="DodgerBlue"/>
             </Grid>
         </Canvas>
 

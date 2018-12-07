@@ -1168,14 +1168,20 @@ namespace PhenoPad.CustomControl
         /// Refetch updated meta XML data for addins and uses showAddIn() to refresh preview dock.
         /// </summary>
         public async Task refreshAddInList() {
-            List<ImageAndAnnotation> imageAndAnno = await FileManager.getSharedFileManager().
-                                                          GetImgageAndAnnotationObjectFromXML(notebookId, pageId);
-            this.showAddIn(imageAndAnno);
+            try
+            {
+                List<ImageAndAnnotation> imageAndAnno = await FileManager.getSharedFileManager().
+                                              GetImgageAndAnnotationObjectFromXML(notebookId, pageId);
+                this.showAddIn(imageAndAnno);
+
+            }
+            catch (Exception) {
+            }
         }
-        /// <summary>
-        /// Quick plays addin dock sliding animation
-        /// </summary>
-        public async void quickShowDock() {
+
+        
+        public async void quickShowDock()
+        {/// <summary>Quick plays addin dock sliding animation</summary>
             if (slide.X == 250) {
                 await addinShowAnimation.BeginAsync();
                 await Task.Delay(TimeSpan.FromSeconds(0.3));
