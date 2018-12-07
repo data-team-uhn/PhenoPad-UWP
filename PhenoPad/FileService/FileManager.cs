@@ -225,6 +225,8 @@ namespace PhenoPad.FileService
         {
             StorageFile notefile = null;
             string filepath = GetNoteFilePath(notebookId, notePageId, fileType, name);
+            Debug.WriteLine($"getting {filepath}");
+
             try
             {
                 notefile = await ROOT_FOLDER.GetFileAsync(filepath);

@@ -43,9 +43,9 @@
         <!-- Inking area -->
         <Canvas x:Name="backgroundCanvas"/>
         
-        <Grid x:Name="textEditGrid" IsHoldingEnabled="True">
+        <Grid x:Name="textEditGrid" Background="Transparent" IsHoldingEnabled="True">
             <Grid.RowDefinitions>
-                <RowDefinition Height="*"/>
+                <RowDefinition Height="auto"/>
             </Grid.RowDefinitions>
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"/>
@@ -54,7 +54,15 @@
         
             <RichEditBox Style="{StaticResource MyRichEditBoxStyle}"                         
                          Background="Transparent" x:Name="EHRTextBox" 
-                         Opacity="0.9"
+                         Opacity="0.8"
+                         IsSpellCheckEnabled="False"
+                         Padding="10 50 10 0"
+                         IsEnabled="False"
+                         BorderThickness="0" />
+            <RichEditBox Style="{StaticResource MyRichEditBoxStyle}"                         
+                         Background="WhiteSmoke" x:Name="EHRPreview" 
+                         Visibility="Collapsed"
+                         Opacity="0.6"
                          IsSpellCheckEnabled="False"
                          Padding="10 50 10 0"
                          IsEnabled="False"
@@ -62,9 +70,10 @@
         </Grid>
 
         <!--Gesture canvas -->
-        <InkCanvas  x:Name="inkCanvas" x:FieldModifier="public" Grid.Column="0"/>
-         <!--Annotation-->
-        <InkCanvas x:Name="annotations" Grid.Column="1" />
+        <InkCanvas  x:Name="inkCanvas" x:FieldModifier="public" Grid.Column="0" />
+
+        <!--Annotation-->
+        <InkCanvas x:Name="annotations" x:FieldModifier="public" Grid.Column="1" />
 
         <!--insert text pop up-->
         <Canvas x:Name="popupCanvas" Canvas.ZIndex="6">
@@ -148,17 +157,33 @@
                 </Grid>
             </RelativePanel>
 
-            <StackPanel x:Name="SelectionMenu"  Spacing="15" Visibility="Collapsed" Orientation="Horizontal">
-                <Button Style="{StaticResource ButtonStyle1}" Padding="20" Background="WhiteSmoke"  Width="120"  
-                        Click="CopySelectedText"
+            <StackPanel x:Name="SelectionMenu" Visibility="Collapsed" Spacing="10" Orientation="Vertical">
+
+                <Grid CornerRadius="10" BorderBrush="Gray" BorderThickness="1" Background="WhiteSmoke" HorizontalAlignment="Stretch">
+                    <Button Style="{StaticResource ButtonStyle1}" Width="170" Padding="20 10 20 10" Background="WhiteSmoke"                     
+                            HorizontalContentAlignment="Center" VerticalContentAlignment="Center"
+                            Click="DeleteSelectedText">
+
+                        <TextBlock x:Name="deleteText" Text="{x:Bind deleteState, Mode=TwoWay}" FontWeight="SemiBold" FontSize="18" />
+                    </Button>
+                </Grid>
+                                
+                <Grid CornerRadius="10" BorderBrush="Gray"  BorderThickness="1">
+                    <Button Style="{StaticResource ButtonStyle1}" Width="170" Padding="20 10 20 10" Background="WhiteSmoke"
+                        Click="HighlightSelectedText"
                             HorizontalContentAlignment="Center" VerticalContentAlignment="Center">
-                    <TextBlock Text="Copy" FontWeight="SemiBold" FontSize="20" />
-                </Button>
-                <Button Style="{StaticResource ButtonStyle1}" Padding="20" Background="WhiteSmoke" Width="120"  
-                        Click="DeleteSelectedText"
+                        <TextBlock x:Name="highlightText" Text="{x:Bind highlightState, Mode=TwoWay}" FontWeight="SemiBold" FontSize="18" />
+                    </Button>
+                </Grid>
+
+                <Grid CornerRadius="10" BorderBrush="Gray" BorderThickness="1">
+                    <Button Style="{StaticResource ButtonStyle1}" Width="170" Padding="20 10 20 10" Background="WhiteSmoke"
+                        Click="ShowCommentCanvas"
                             HorizontalContentAlignment="Center" VerticalContentAlignment="Center">
-                    <TextBlock Text="Delete" FontWeight="SemiBold" FontSize="20" />
-                </Button>
+                        <TextBlock Text="Annotate" FontWeight="SemiBold" FontSize="18" />
+                    </Button>
+                </Grid>
+
             </StackPanel>
 
             <!--Copy/Paste pop up-->
@@ -170,7 +195,7 @@
                 </Grid.RowDefinitions>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*" />
-                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="30"/>
                     <ColumnDefinition Width="*"/>
                 </Grid.ColumnDefinitions>
 
@@ -183,15 +208,7 @@
 
                 </Button>
                 </Grid>
-                <Grid CornerRadius="10" Grid.Column="0" Background="White">
 
-                    <Button Style="{StaticResource ButtonStyle1}"  Width="300" Height="200"  
-                            Click="RedoOperation"
-                            HorizontalContentAlignment="Center" VerticalContentAlignment="Center">
-                        <TextBlock Text="Redo" FontWeight="Bold" FontSize="30" />
-
-                    </Button>
-                </Grid>
                 <Grid CornerRadius="10" Grid.Column="2" Background="White">
 
                     <Button Style="{StaticResource ButtonStyle1}"  Width="300" Height="200"
@@ -207,12 +224,6 @@
                 <FontIcon FontWeight="ExtraBold" FontSize="30" Glyph="&#xE878;" Foreground="LightBlue"/>
             </Grid>
         </Canvas>
-
-
-        <!-- pop up after selection-->
-
-        <!-- Add in control panel -->
-
 
 
         

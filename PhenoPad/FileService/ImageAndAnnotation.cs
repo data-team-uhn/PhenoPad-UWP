@@ -28,6 +28,7 @@ namespace PhenoPad.FileService
         public double heightOrigin { get; set; }
         public double widthOrigin { get; set; }
         public bool inDock { get; set; }
+        public bool isComment { get; set; }
 
 
         /// <summary>
@@ -45,7 +46,7 @@ namespace PhenoPad.FileService
                                     double transX, double transY, ScaleTransform zoomFactor,
                                     double widthOrigin, double heightOrigin,
                                     double width, double height,
-                                    bool inDock)
+                                    bool inDock, bool isComment)
         {
             this.name = name;
             this.notebookId = notebookId;
@@ -61,6 +62,7 @@ namespace PhenoPad.FileService
             this.zoomFactorX = zoomFactor.ScaleX;
             this.zoomFactorY = zoomFactor.ScaleY;
             this.inDock = inDock;
+            this.isComment = isComment;
             date = DateTime.Now.ToString("MM/dd/yyyy HH:mm:ss");
         }
 

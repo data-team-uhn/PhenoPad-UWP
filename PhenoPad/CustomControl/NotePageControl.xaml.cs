@@ -464,16 +464,26 @@ namespace PhenoPad.CustomControl
         //============================= REVIEW MODE ========================================================/
         public void showRecognizedTextCanvas()
         {
-            recognizedTextCanvas.Visibility = Visibility.Visible;
-            inkCanvas.Visibility = Visibility.Collapsed;
-            backgroundCanvas.Background = new SolidColorBrush(Colors.WhiteSmoke);
+            if (ehrPage == null)
+            {
+                recognizedTextCanvas.Visibility = Visibility.Visible;
+                inkCanvas.Visibility = Visibility.Collapsed;
+                backgroundCanvas.Background = new SolidColorBrush(Colors.WhiteSmoke);
+            }
+            else 
+                ehrPage.PreviewEHR();
         }
 
         public void hideRecognizedTextCanvas()
         {
-            recognizedTextCanvas.Visibility = Visibility.Collapsed;
-            inkCanvas.Visibility = Visibility.Visible;
-            backgroundCanvas.Background = new SolidColorBrush(Colors.White);
+            if (ehrPage == null)
+            {
+                recognizedTextCanvas.Visibility = Visibility.Collapsed;
+                inkCanvas.Visibility = Visibility.Visible;
+                backgroundCanvas.Background = new SolidColorBrush(Colors.White);
+            }
+            else
+                ehrPage.ReturnToEdit();
         }
 
         private async void Core_PointerExiting(CoreInkIndependentInputSource sender, PointerEventArgs args)
@@ -901,7 +911,7 @@ namespace PhenoPad.CustomControl
                                                                  addin.transX, addin.transY, addin.viewFactor, 
                                                                  addin.widthOrigin, addin.heightOrigin,
                                                                  addin.Width, addin.Height,
-                                                                 addin.inDock);
+                                                                 addin.inDock, addin.isComment);
                 olist.Add(temp);
             }
 
@@ -937,8 +947,11 @@ namespace PhenoPad.CustomControl
         /// </summary>
         public async void loadAddInControl(ImageAndAnnotation ia)
         {
-            AddInControl canvasAddIn = new AddInControl(ia.name, notebookId, pageId, 
-                                                        ia.widthOrigin, ia.heightOrigin);
+            AddInControl canvasAddIn;
+            if (ehrPage == null)
+                canvasAddIn = new AddInControl(ia.name, notebookId, pageId, ia.widthOrigin, ia.heightOrigin);
+            else
+                canvasAddIn = new AddInControl(ia.name, ehrPage);
 
             await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () => {
                 //Manually setting pre-saved configuration of the add-in control
@@ -952,6 +965,7 @@ namespace PhenoPad.CustomControl
                 canvasAddIn.canvasTop = ia.canvasTop;
                 canvasAddIn.dragTransform.X = ia.transX;
                 canvasAddIn.dragTransform.Y = ia.transY;
+                canvasAddIn.isComment = ia.isComment;
                 Canvas.SetTop(canvasAddIn, ia.canvasTop);
 
                 canvasAddIn.inDock = ia.inDock;
@@ -963,9 +977,7 @@ namespace PhenoPad.CustomControl
                     canvasAddIn.OnOpenShowDock();
                 }
                 else
-                {
                     Canvas.SetLeft(canvasAddIn, ia.canvasLeft);
-                }
                 canvasAddIn.viewFactor.ScaleX = ia.zoomFactorX;
                 canvasAddIn.viewFactor.ScaleY = ia.zoomFactorY;
 
@@ -973,11 +985,14 @@ namespace PhenoPad.CustomControl
             if (ehrPage == null)
                 userControlCanvas.Children.Add(canvasAddIn);
             else
+            {
                 addinCanvasEHR.Children.Add(canvasAddIn);
-                canvasAddIn.InitializeFromDisk(false);
+                ehrPage.comments.Add(canvasAddIn);
+            }
+            canvasAddIn.InitializeFromDisk(false);
 
-                //If this addin was hidden during the last edit, auto hides it from initialization
-                canvasAddIn.Visibility = ia.inDock ? Visibility.Collapsed : Visibility.Visible;   
+            //If this addin was hidden during the last edit, auto hides it from initialization
+            canvasAddIn.Visibility = ia.inDock ? Visibility.Collapsed : Visibility.Visible;   
         }
 
         /// <summary>
@@ -1011,6 +1026,18 @@ namespace PhenoPad.CustomControl
                 canvasAddIn.InitializeFromDisk(false);
             if (wb != null)
                 canvasAddIn.InitializeFromImage(wb);
+        }
+
+        public AddInControl NewEHRCommentControl(double left, double top) {
+            string name = FileManager.getSharedFileManager().CreateUniqueName();
+            AddInControl comment = new AddInControl(name, this.ehrPage);
+            comment.canvasLeft = left;
+            comment.canvasTop = top;
+            Canvas.SetLeft(comment, left);
+            Canvas.SetTop(comment, top);
+            comment.slideOffset = rootPage.ActualWidth - left;
+            addinCanvasEHR.Children.Add(comment);
+            return comment;
         }
 
         public void AddImageControl(string imagename, SoftwareBitmapSource source)

@@ -69,6 +69,7 @@ namespace PhenoPad.CustomControl
 
 
         public bool inDock;
+        public bool isComment;
         public double slideOffset = 250;
 
         private MainPage rootPage;
@@ -264,6 +265,57 @@ namespace PhenoPad.CustomControl
                 autosaveDispatcherTimer.Tick += AutoSaveTimer_Tick;
                 //If user has not add new stroke in 0.5 seconds, tick auto timer
                 autosaveDispatcherTimer.Interval = TimeSpan.FromSeconds(0.5);
+                this.LostFocus += ResetZIndex;
+
+            }
+
+            //control transform group binding
+            {
+                TransformGroup tg = new TransformGroup();
+                viewFactor = new ScaleTransform();
+                viewFactor.ScaleX = 1;
+                viewFactor.ScaleY = 1;
+                dragTransform = new TranslateTransform();
+                tg.Children.Add(dragTransform);
+                this.RenderTransform = tg;
+            }
+            Canvas.SetZIndex(this, 99);
+
+        }
+
+        public AddInControl(string name,
+                            EHRPageControl ehr)
+        {
+            this.InitializeComponent();
+            rootPage = MainPage.Current;
+
+            //setting pre-saved configurations of the control
+            {
+                this.widthOrigin = 600;
+                this.heightOrigin = 200;
+                this.Width = this.widthOrigin;
+                this.Height = this.heightOrigin;
+
+                inkCan.Width = this.Width;
+                inkCan.Height = this.Height;
+                this.inDock = false;
+                this.name = name;
+                this.notebookId = ehr.notebookid;
+                this.pageId = ehr.pageid;
+                this._isResizing = false;
+                this.hasImage = false;
+                isComment = true;
+            }
+
+            //Timer event handler bindings
+            {
+                inkCanvas.InkPresenter.StrokeInput.StrokeStarted += StrokeInput_StrokeStarted;
+                inkCanvas.InkPresenter.StrokeInput.StrokeEnded += StrokeInput_StrokeEnded;
+                inkCanvas.InkPresenter.StrokesCollected += StrokesCollected;
+                inkCanvas.InkPresenter.StrokesErased += InkPresenter_StrokesErased;
+                autosaveDispatcherTimer.Tick += AutoSaveTimer_Tick;
+                //If user has not add new stroke in 0.5 seconds, tick auto timer
+                autosaveDispatcherTimer.Interval = TimeSpan.FromSeconds(0.5);
             }
 
             //control transform group binding
@@ -277,7 +329,23 @@ namespace PhenoPad.CustomControl
                 this.RenderTransform = tg;
             }
 
+            this.Tapped += ToggleMenu;
+            this.LostFocus += ResetZIndex;
+            Canvas.SetZIndex(this, 99);
+
+            TitleRelativePanel.Visibility = Visibility.Collapsed;
+            TitleRelativePanel.Children.Remove(manipulateButton);
+            Grid.SetRow(contentGrid, 0);
+            Grid.SetRowSpan(contentGrid, 2);
+            OutlineGrid.BorderBrush = new SolidColorBrush(Colors.Gray);
+            OutlineGrid.CornerRadius = new CornerRadius(10);
+            OutlineGrid.BorderThickness = new Thickness(1);
+            categoryGrid.Visibility = Visibility.Collapsed;
+            DrawingButton_Click(null, null);
         }
+
+
+
         #endregion
 
         #region Resizing / DragTransform Event Handlers
@@ -433,6 +501,9 @@ namespace PhenoPad.CustomControl
         private async void Delete_Click(object sender, RoutedEventArgs e)
         {
             ((Panel)this.Parent).Children.Remove(this);
+            if (isComment) {
+                MainPage.Current.curPage.ehrPage.RemoveComment(this);
+            }
             await rootPage.curPage.AutoSaveAddin(null);
             await rootPage.curPage.refreshAddInList();
         }
@@ -449,6 +520,7 @@ namespace PhenoPad.CustomControl
             await addinPanelHideAnimation.BeginAsync();
             this.Visibility = Visibility.Collapsed;
         }
+
 
         /// <summary>
         /// Need this funciton for resetting hidden add-in the slide animation offset upon every launch
@@ -615,7 +687,24 @@ namespace PhenoPad.CustomControl
 
             scrollViewer.Visibility = Visibility.Visible;
             inkCan.Visibility = Visibility.Visible;
-            if (!onlyView)
+
+            if (isComment) {
+                InkDrawingAttributes drawingAttributes = new InkDrawingAttributes();
+                drawingAttributes.Color = Colors.Black;
+                drawingAttributes.Size = new Size(2, 2);
+                drawingAttributes.IgnorePressure = false;
+                drawingAttributes.FitToCurve = true;
+                inkCanvas.InkPresenter.UpdateDefaultDrawingAttributes(drawingAttributes);
+
+                TitleRelativePanel.Visibility = Visibility.Collapsed;
+                Grid.SetRow(contentGrid, 0);
+                Grid.SetRowSpan(contentGrid, 2);
+                OutlineGrid.BorderBrush = new SolidColorBrush(Colors.Gray);
+                OutlineGrid.CornerRadius = new CornerRadius(10);
+                OutlineGrid.BorderThickness = new Thickness(1);
+            }
+
+            else if (!onlyView)
             {// added from note page, need editing       
                 // Set supported input type to default using both moush and pen
                 inkCanvas.InkPresenter.InputDeviceTypes =
@@ -644,7 +733,7 @@ namespace PhenoPad.CustomControl
                     this.Height = (int)(this.Width / imgratio);
                     inkCan.Height = this.Height;
                     inkCan.Width = this.Width;
-                    Debug.WriteLine(inkCan.Width+","+inkCan.Height);
+                    Debug.WriteLine(inkCan.Width + "," + inkCan.Height);
                 }
                 else
                 {//adjust ink canvas size/position to display full stroke view
@@ -708,9 +797,10 @@ namespace PhenoPad.CustomControl
                 }
                 else
                 {//Initializing addin with drawing mode, reset windows to saved dimension
-
-                    inkCan.Height = this.Height - 48;
-                    inkCan.Width = this.Width;
+                    if (!isComment) {
+                        inkCan.Height = this.Height - 48;
+                        inkCan.Width = this.Width;
+                    }
                 }
                 InitiateInkCanvas(onlyView);
             }
@@ -841,6 +931,98 @@ namespace PhenoPad.CustomControl
                 hideMovingGrid();
             }
         }
+
+        #region EHR Comment Exclusive
+
+        private async void StrokesCollected(InkPresenter sender, InkStrokesCollectedEventArgs args)
+        {
+            inkAnalyzer.AddDataForStrokes(args.Strokes);
+            await inkAnalyzer.AnalyzeAsync();
+        }
+
+        public async void SlideToRight(double offsetX, double offsetY)
+        {
+            if (!(addinSlide.X > 0))
+            {
+                this.CompressComment();
+                DoubleAnimation dx = (DoubleAnimation)EHRCommentSlidingAnimation.Children.ElementAt(0);
+                dx.By = offsetX;
+                DoubleAnimation dy = (DoubleAnimation)EHRCommentSlidingAnimation.Children.ElementAt(1);
+                dy.By = offsetY;
+                await EHRCommentSlidingAnimation.BeginAsync();
+            }
+        }
+
+
+        private void ToggleMenu(object sender, TappedRoutedEventArgs e)
+        {
+            if (addinSlide.X > 0)
+            {
+                if (TitleRelativePanel.Visibility == Visibility.Collapsed)
+                {
+                    Canvas.SetZIndex(this, 99);
+                    Grid.SetRow(contentGrid, 1);
+                    Grid.SetRowSpan(contentGrid, 1);
+                    TitleRelativePanel.Visibility = Visibility.Visible;
+                    this.Height += 48;
+                }
+                else
+                {
+                    Canvas.SetZIndex(this, 1);
+
+                    Grid.SetRow(contentGrid, 0);
+                    Grid.SetRowSpan(contentGrid, 2);
+                    TitleRelativePanel.Visibility = Visibility.Collapsed;
+                    this.Height -= 48;
+                }
+            }
+        }
+
+        private void ResetZIndex(object sender, RoutedEventArgs e)
+        {
+            Canvas.SetZIndex(this, 1);
+        }
+
+
+
+        private async void CompressComment() {
+            if (!hasImage) {
+
+                await inkAnalyzer.AnalyzeAsync();
+
+                foreach (InkStroke s in inkCan.InkPresenter.StrokeContainer.GetStrokes())
+                    s.Selected = false;
+
+                var inkNodes = inkAnalyzer.AnalysisRoot.FindNodes(InkAnalysisNodeKind.Line);
+                int count = 0;
+                float ratio = 1;
+                foreach(InkAnalysisLine l in inkNodes)
+                {
+                    Rect bounding = l.BoundingRect;
+
+                    Debug.WriteLine($"text= {l.RecognizedText}, is a line with height = {bounding.Height}");
+                    if (bounding.Height > 33.5f)
+                    {
+                        if (ratio == 1)
+                            ratio = (float)MainPage.Current.curPage.ehrPage.LINE_HEIGHT / (float)bounding.Height;
+                        foreach (uint sid in l.GetStrokeIds()) {                                
+                            InkStroke s = inkCan.InkPresenter.StrokeContainer.GetStrokeById(sid);
+                            s.PointTransform = Matrix3x2.CreateScale(ratio, ratio);
+                        }
+                    }
+                    count++;
+                }
+
+                Rect bound = inkCan.InkPresenter.StrokeContainer.BoundingRect;
+                foreach (InkStroke s in inkCan.InkPresenter.StrokeContainer.GetStrokes())
+                    s.Selected = true;
+                inkCanvas.InkPresenter.StrokeContainer.MoveSelected(new Point(-1 * bound.X + 5, -1 * bound.Y + 5));
+                this.Height = bound.Height + 5;
+                this.Width = bound.Width < MIN_WIDTH ? MIN_WIDTH + 5 : bound.Width + 5;
+            }
+        }
+
+        #endregion
     }
 
 }

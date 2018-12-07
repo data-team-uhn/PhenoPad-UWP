@@ -19,6 +19,25 @@
             <x:Double x:Key="categoryButtonHeight">60</x:Double>
             <x:Double x:Key="categoryButtonFontSize">27</x:Double>
 
+            <Storyboard x:Name="EHRCommentSlidingAnimation">
+                <DoubleAnimation Storyboard.TargetName="addinSlide" 
+                                 Storyboard.TargetProperty="X"
+                                 Duration="0:0:0.5">
+                    <DoubleAnimation.EasingFunction>
+                        <CircleEase EasingMode="EaseOut" />
+                    </DoubleAnimation.EasingFunction>
+                </DoubleAnimation>
+                <DoubleAnimation Storyboard.TargetName="addinSlide" 
+                                 Storyboard.TargetProperty="Y"
+                                 Duration="0:0:0.5">
+                    <DoubleAnimation.EasingFunction>
+                        <CircleEase EasingMode="EaseOut" />
+                    </DoubleAnimation.EasingFunction>
+                </DoubleAnimation>
+
+            </Storyboard>
+
+
             <Storyboard x:Name="addinPanelHideAnimation">
                 <DoubleAnimation Storyboard.TargetName="addinSlide" 
                                  Storyboard.TargetProperty="X"
@@ -74,9 +93,9 @@
             <!--<local:AddInImageControl Canvas.ZIndex="1" Visibility="Collapsed" x:Name="imageControl"/>-->
             <ScrollViewer Canvas.ZIndex="2" Grid.Row="1" x:Name="scrollViewer" Visibility="Collapsed" ZoomMode="Enabled" 
                               MinZoomFactor="1" VerticalScrollMode="Enabled" 
-                              VerticalScrollBarVisibility="Auto" 
+                              VerticalScrollBarVisibility="Hidden" 
                               HorizontalScrollMode="Enabled" 
-                              HorizontalScrollBarVisibility="Auto">
+                              HorizontalScrollBarVisibility="Hidden">
                 <Grid x:Name="scrollGrid">
                     <Viewbox Name="canvasViewBox">
                         <InkCanvas Visibility="Collapsed" x:Name="inkCanvas" Canvas.ZIndex="5"/>

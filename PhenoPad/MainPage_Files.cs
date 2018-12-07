@@ -200,6 +200,7 @@ namespace PhenoPad
                         //loop to add actual add-in to canvas but hides it depending on its inDock value
                         foreach (var ia in imageAndAnno)
                             aPage.loadAddInControl(ia);
+
                     }
                 }
                 curPage = notePages[0];
@@ -216,7 +217,8 @@ namespace PhenoPad
                 }
                 else {
                     //current implementation assumes if there's ehr, it must be on first page
-                    inkCanvas = notePages[0].ehrPage.inkCanvas;
+                    inkCanvas = notePages[0].ehrPage.annotations;
+                    curPage.ehrPage.SlideCommentsToSide();
                 }
                 MainPageInkBar.TargetInkCanvas = inkCanvas;
                 curPage.Visibility = Visibility.Visible;
@@ -264,8 +266,6 @@ namespace PhenoPad
 
             NotePageControl aPage = new NotePageControl(notebookId, "0");
             notePages.Add(aPage);
-            inkCanvas = aPage.inkCan;
-            MainPageInkBar.TargetInkCanvas = inkCanvas;
             curPage = aPage;
             curPageIndex = 0;
             PageHost.Content = curPage;
@@ -273,6 +273,8 @@ namespace PhenoPad
             setNotePageIndex(curPageIndex);
 
             aPage.SwitchToEHR(file);
+            inkCanvas = aPage.ehrPage.annotations;
+            MainPageInkBar.TargetInkCanvas = inkCanvas;
 
             currentMode = WritingMode;
             modeTextBlock.Text = WritingMode;
