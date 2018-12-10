@@ -155,7 +155,7 @@ namespace PhenoPad.CustomControl
 
         private int showAlterOfWord = -1;
 
-        private Dictionary<string, Phenotype> cachedAnnotation = new Dictionary<string, Phenotype>();
+        public Dictionary<string, Phenotype> cachedAnnotation = new Dictionary<string, Phenotype>();
         private HashSet<int> annotatedLines = new HashSet<int>();
         int hoveringLine = -1;
 
@@ -541,7 +541,7 @@ namespace PhenoPad.CustomControl
             //operationDispathcerTimer.Stop();
             foreach (var stroke in args.Strokes)
             {
-                inkAnalyzer.RemoveDataForStroke(stroke.Id);      
+                inkAnalyzer.RemoveDataForStroke(stroke.Id);
             }
             //operationDispathcerTimer.Start();
             //dispatcherTimer.Start();

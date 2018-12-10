@@ -23,6 +23,7 @@
                                  By="-45"
                                  Duration="0:0:0.1" />
             </Storyboard>
+            
             <Storyboard x:Name="curWordPhenoHideAnimation">
                 <DoubleAnimation Storyboard.TargetName="phenoCtrlSlide" 
                                  Storyboard.TargetProperty="Y"

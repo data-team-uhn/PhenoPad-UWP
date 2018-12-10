@@ -361,31 +361,27 @@ namespace PhenoPad
         /// </summary>
         protected async override void OnNavigatedTo(NavigationEventArgs e)
         {
-            //initializing notes
-            {
-                int o;
-                var nid= e.Parameter as string;
-                Debug.WriteLine(nid);
-                if (nid == "__new__")
-                    this.loadFromDisk = false;
-                else if (int.TryParse(nid,out o))
-                {//is a saved noted book
-                    this.loadFromDisk = true;
-                    this.notebookId = nid;
-                    FileManager.getSharedFileManager().currentNoteboookId = nid;
-                }
-                else
-                {//is a file path for importing
-                    StorageFile file = e.Parameter as StorageFile;
-                    await Dispatcher.RunAsync(CoreDispatcherPriority.High, ()=> { this.InitializeEHRNote(file); });
-                    return;
-                }
-                if (loadFromDisk) // Load notes from file
-                    await Dispatcher.RunAsync(CoreDispatcherPriority.High, this.InitializeNotebookFromDisk);
-                else // Create new notebook
-                    await Dispatcher.RunAsync(CoreDispatcherPriority.High, this.InitializeNotebook);
-                
+            int o;
+            var nid= e.Parameter as string;
+            bool isValidID = int.TryParse(nid, out o);
+
+            if (nid == "__new__") {
+                this.loadFromDisk = false;
+                await Dispatcher.RunAsync(CoreDispatcherPriority.High, this.InitializeNotebookFromDisk);
             }
+            else if (int.TryParse(nid,out o))
+            {//is a saved noted book, nid all numeric
+                this.loadFromDisk = true;
+                this.notebookId = nid;
+                FileManager.getSharedFileManager().currentNoteboookId = nid;
+                await Dispatcher.RunAsync(CoreDispatcherPriority.High, this.InitializeNotebook);
+            }
+            else
+            {//is a file for importing EHR
+                StorageFile file = e.Parameter as StorageFile;
+                await Dispatcher.RunAsync(CoreDispatcherPriority.High, ()=> { this.InitializeEHRNote(file); });
+            }
+            return;                
         }
 
         /// <summary>

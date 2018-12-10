@@ -30,6 +30,8 @@ using WobbrockLib;
 using PhenoPad.Gestures;
 using System.Text.RegularExpressions;
 using DCSoft.RTF;
+using PhenoPad.PhenotypeService;
+using System.Collections.ObjectModel;
 
 //using System.Drawing;
 
@@ -53,6 +55,9 @@ namespace PhenoPad.CustomControl
         private int UNPROCESSED_THICKNESS = 35;
         private SolidColorBrush UNPROCESSED_COLOR = new SolidColorBrush(Colors.Yellow);
         private SolidColorBrush INSERT_MARKUP = new SolidColorBrush(Color.FromArgb(0,66, 134, 244));
+        public ObservableCollection<Phenotype> curLineCandidatePheno = new ObservableCollection<Phenotype>();
+        public Dictionary<string, Phenotype> cachedAnnotation = new Dictionary<string, Phenotype>();
+
 
         private Color INSERTED_COLOR = (Color)Application.Current.Resources["WORD_DARK_COLOR"];//Dark Blue
         private Color HIGHLIGHT_COLOR = Color.FromArgb(0, 255, 248, 173);//Light Yellow
@@ -1305,7 +1310,61 @@ namespace PhenoPad.CustomControl
             TextBlock tb = (TextBlock)curLineWordsStackPanel.Children.ElementAt(showAlterOfWord);
             tb.Text = citem;
         }
-               
+
+        private async void annotateCurrentLineAndUpdateUI(string selected)
+        {
+            PhenotypeManager phenoMana = PhenotypeManager.getSharedPhenotypeManager();
+            // after get annotation, recognized text has also changed
+            Dictionary<string, Phenotype> annoResult = await phenoMana.annotateByNCRAsync(selected);
+            if (annoResult != null && annoResult.Count != 0)
+            {
+                Debug.WriteLine("has annoResult");
+                // update global annotations
+                foreach (var anno in annoResult.ToList())
+                {
+                    if (cachedAnnotation.ContainsKey(anno.Key))
+                        cachedAnnotation[anno.Key] = anno.Value;
+                    else
+                        cachedAnnotation.Add(anno.Key, anno.Value);
+                    // add to global candidate list
+                    anno.Value.sourceType = SourceType.Notes;
+                    phenoMana.addPhenotypeCandidate(anno.Value, SourceType.Notes);
+                }
+
+
+                curWordPhenoControlGrid.Visibility = Visibility.Visible;
+
+                if (curLineCandidatePheno.Count == 0 || phenoCtrlSlide.Y == 0)
+                {
+                    Debug.WriteLine($"current Y offset is at {phenoCtrlSlide.Y}, visibility is {curWordPhenoControlGrid.Visibility}");
+                    curWordPhenoAnimation.Begin();
+                }
+
+
+                foreach (var pheno in annoResult.Values.ToList())
+                {
+                    var temp = curLineCandidatePheno.Where(x => x == pheno).FirstOrDefault();
+                    pheno.state = PhenotypeManager.getSharedPhenotypeManager().getStateByHpid(pheno.hpId);
+                    if (temp == null)
+                    {
+                        curLineCandidatePheno.Add(pheno);
+                    }
+                    else
+                    {
+                        if (temp.state != pheno.state)
+                        {
+                            var ind = curLineCandidatePheno.IndexOf(temp);
+                            curLineCandidatePheno.Remove(temp);
+                            curLineCandidatePheno.Insert(ind, pheno);
+
+                        }
+                    }
+                }
+
+            }
+        }
+
+
         #endregion
 
     }

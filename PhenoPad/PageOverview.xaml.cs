@@ -100,7 +100,6 @@ namespace PhenoPad
             openPicker.FileTypeFilter.Add(".txt");
             // Show the file picker.
             StorageFile file = await openPicker.PickSingleFileAsync();
-            Debug.WriteLine("file path = " + file.Path);
             this.Frame.Navigate(typeof(MainPage), file);
         }
 
