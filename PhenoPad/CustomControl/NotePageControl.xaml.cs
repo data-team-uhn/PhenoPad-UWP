@@ -353,8 +353,7 @@ namespace PhenoPad.CustomControl
             else {
                 scrollViewer.Visibility = Visibility.Collapsed;
                 EHRScrollViewer.Visibility = Visibility.Visible;
-                scrollViewer.ChangeView(null, 100, null, true);
-                EHRScrollViewer.ChangeView(null, 100, null, true);
+                EHRScrollViewer.ChangeView(0, 100, 0.5f, true);
             }
             // Draw background lines
             DrawBackgroundLines();
@@ -1173,7 +1172,6 @@ namespace PhenoPad.CustomControl
                 List<ImageAndAnnotation> imageAndAnno = await FileManager.getSharedFileManager().
                                               GetImgageAndAnnotationObjectFromXML(notebookId, pageId);
                 this.showAddIn(imageAndAnno);
-
             }
             catch (Exception) {
             }
@@ -2096,9 +2094,6 @@ namespace PhenoPad.CustomControl
                 sideScrollView.ChangeView(null, scrollViewer.VerticalOffset, scrollViewer.ZoomFactor, true);
             }
         }
-
-
-
 
     }
 

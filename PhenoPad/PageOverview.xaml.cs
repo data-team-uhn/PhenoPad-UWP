@@ -93,9 +93,15 @@ namespace PhenoPad
             this.Frame.Navigate(typeof(MainPage), "__new__");
         }
 
-        private void ImportEHR_Click(object sender, RoutedEventArgs e) {
+        private async void ImportEHR_Click(object sender, RoutedEventArgs e) {
             LogService.MetroLogger.getSharedLogger().Info("Importing EHR from local...");
-            this.Frame.Navigate(typeof(MainPage), "__EHR__");
+            FileOpenPicker openPicker = new FileOpenPicker();
+            openPicker.SuggestedStartLocation = PickerLocationId.DocumentsLibrary;
+            openPicker.FileTypeFilter.Add(".txt");
+            // Show the file picker.
+            StorageFile file = await openPicker.PickSingleFileAsync();
+            Debug.WriteLine("file path = " + file.Path);
+            this.Frame.Navigate(typeof(MainPage), file);
         }
 
         private async void notebookList_ItemClick(object sender, ItemClickEventArgs e)

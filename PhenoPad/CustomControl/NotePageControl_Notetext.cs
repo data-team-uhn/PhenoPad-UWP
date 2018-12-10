@@ -274,13 +274,13 @@ namespace PhenoPad.CustomControl
             if (previousInd != -1)
             {
                 string previous = this.HwrResult[wordind].candidateList[previousInd];//previously selected alternative
-                Debug.WriteLine($"previous key: {(HwrResult[wordind - 1].selectedCandidate).ToLower()}");
+                //Debug.WriteLine($"previous key: {(HwrResult[wordind - 1].selectedCandidate).ToLower()}");
                 int index = dict[HwrResult[wordind-1].selectedCandidate.ToLower()].IndexOf(previous);
                 if (index != -1)
                 {
                     string selected = this.HwrResult[wordind].candidateList[selectind]; //currently selected alternative
                     this.HwrResult[wordind].selectedCandidate = selected;
-                    Debug.WriteLine($"\n new alter:{this.HwrResult[wordind].selectedCandidate}");
+                    //Debug.WriteLine($"\n new alter:{this.HwrResult[wordind].selectedCandidate}");
                     // update 
                     _wordStrings[wordind] = this.HwrResult[wordind].selectedCandidate;
                     _text = String.Join(" ", _wordStrings);

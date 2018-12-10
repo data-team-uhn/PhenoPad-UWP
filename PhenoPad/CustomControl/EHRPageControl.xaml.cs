@@ -555,7 +555,6 @@ namespace PhenoPad.CustomControl
             EHRPreview.Visibility = Visibility.Collapsed;
         }
 
-
         private void InsertToEHR(object sender, RoutedEventArgs e)
         {/// Inserts current recognized text into EHR text edit box
 
@@ -1049,8 +1048,9 @@ namespace PhenoPad.CustomControl
             isErasing = false;
             popupCanvas.Children.Remove(lasso);
             Rect bounding = GetSelectBoundingRect(lasso);
-            Point start = new Point(bounding.X - 10, bounding.Y + (bounding.Height / 2.0) - LINE_HEIGHT);
-            Point end = new Point(bounding.X + bounding.Width, bounding.Y + (bounding.Height / 2.0) - LINE_HEIGHT);
+            //chooses the left top point as starting point and bottom right and ending point
+            Point start = new Point(bounding.X - 10, bounding.Y - LINE_HEIGHT);
+            Point end = new Point(bounding.X + bounding.Width, bounding.Y + bounding.Height - LINE_HEIGHT);
 
             var range1 = EHRTextBox.Document.GetRangeFromPoint(start, PointOptions.ClientCoordinates);
             var range2 = EHRTextBox.Document.GetRangeFromPoint(end, PointOptions.ClientCoordinates);
@@ -1058,7 +1058,7 @@ namespace PhenoPad.CustomControl
             int sel_start = range1.StartPosition;
             int sel_end = range2.StartPosition;
 
-            Debug.WriteLine($"highlighting: start = {sel_start}, end = {sel_end}");
+            Debug.WriteLine($"highlighting at: start = {sel_start}, end = {sel_end}");
             HighlightTextInRange(sel_start, sel_end);
         }
 

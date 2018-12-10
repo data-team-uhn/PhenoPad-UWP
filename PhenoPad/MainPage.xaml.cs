@@ -363,41 +363,28 @@ namespace PhenoPad
         {
             //initializing notes
             {
+                int o;
                 var nid= e.Parameter as string;
-                if (nid == "__EHR__")
-                {
-                    try
-                    {
-                        // Let users choose their text file using a file picker.
-                        // Initialize the picker.
-                        FileOpenPicker openPicker = new FileOpenPicker();
-                        openPicker.SuggestedStartLocation = PickerLocationId.DocumentsLibrary;
-                        openPicker.FileTypeFilter.Add(".txt");
-                        // Show the file picker.
-                        StorageFile file = await openPicker.PickSingleFileAsync();
-                        await this.InitializeEHRNote(file);
-
-                    }
-                    catch (Exception ex)
-                    {
-                        LogService.MetroLogger.getSharedLogger().Error(ex.Message);
-                    }
+                Debug.WriteLine(nid);
+                if (nid == "__new__")
+                    this.loadFromDisk = false;
+                else if (int.TryParse(nid,out o))
+                {//is a saved noted book
+                    this.loadFromDisk = true;
+                    this.notebookId = nid;
+                    FileManager.getSharedFileManager().currentNoteboookId = nid;
                 }
                 else
-                {
-                    if (nid == "__new__")
-                        this.loadFromDisk = false;
-                    else
-                    {
-                        this.loadFromDisk = true;
-                        this.notebookId = nid;
-                        FileManager.getSharedFileManager().currentNoteboookId = nid;
-                    }
-                    if (loadFromDisk) // Load notes from file
-                        await Dispatcher.RunAsync(CoreDispatcherPriority.High, this.InitializeNotebookFromDisk);
-                    else // Create new notebook
-                        await Dispatcher.RunAsync(CoreDispatcherPriority.High, this.InitializeNotebook);
+                {//is a file path for importing
+                    StorageFile file = e.Parameter as StorageFile;
+                    await Dispatcher.RunAsync(CoreDispatcherPriority.High, ()=> { this.InitializeEHRNote(file); });
+                    return;
                 }
+                if (loadFromDisk) // Load notes from file
+                    await Dispatcher.RunAsync(CoreDispatcherPriority.High, this.InitializeNotebookFromDisk);
+                else // Create new notebook
+                    await Dispatcher.RunAsync(CoreDispatcherPriority.High, this.InitializeNotebook);
+                
             }
         }
 

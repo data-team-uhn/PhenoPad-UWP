@@ -236,7 +236,7 @@ namespace PhenoPad
 
         }
 
-        public async Task InitializeEHRNote(StorageFile file)
+        public async void InitializeEHRNote(StorageFile file)
         {
             PhenoMana.clearCache();
 
