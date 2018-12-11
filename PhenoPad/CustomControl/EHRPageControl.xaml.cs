@@ -44,7 +44,7 @@ namespace PhenoPad.CustomControl
         #region Class Attributes
         //By default sets the EHR template size to be US Letter size in pixels
         private double EHR_HEIGHT = 2200;
-        private double EHR_WIDTH = 2300;
+        private double EHR_WIDTH = 2000;
         public float LINE_HEIGHT = 50;
         private Recognizer GESTURE_RECOGNIZER;
         public string GESTURE_PATH = @"C:\Users\helen\AppData\Local\Packages\16bc6b12-daff-4104-a251-1fa502edec02_qfxtr3e52dkcc\LocalState\Gestures";
@@ -87,6 +87,8 @@ namespace PhenoPad.CustomControl
         private int showAlterOfWord = -1;
         private int current_index;//the most current pen position to text
         private (int, int) cur_selected;//most current selected phrase
+        private List<int> cur_highlight;
+        private List<int> cur_delete;
 
         public string notebookid;
         public string pageid;
@@ -111,6 +113,8 @@ namespace PhenoPad.CustomControl
             inkCanvas.InkPresenter.InputDeviceTypes = CoreInputDeviceTypes.Pen;
 
             inkCanvas.Tapped += OnElementTapped;
+            inkCanvas.DoubleTapped += ShowCPMenu;
+
             annotations.Tapped += OnElementTapped;
 
             inkCanvas.InkPresenter.StrokeInput.StrokeStarted += inkCanvas_StrokeInput_StrokeStarted;
@@ -134,10 +138,9 @@ namespace PhenoPad.CustomControl
 
 
             inputInkCanvas.InkPresenter.StrokesCollected += inputInkCanvas_StrokesCollected;
+            inputInkCanvas.DoubleTapped += InsertToEHR;
 
             EHRTextBox.Paste += RemovePasteFormat;
-            EHRTextBox.IsDoubleTapEnabled = true;
-            this.DoubleTapped += ShowCPMenu;
 
             EHRTextBox.Document.ApplyDisplayUpdates();
 
@@ -168,6 +171,7 @@ namespace PhenoPad.CustomControl
 
         public void DrawBackgroundLines()
         {/// Draws background dashed lines to background canvas 
+            //drawing background line for EHR text box
             for (int i = 1; i <= backgroundCanvas.RenderSize.Height / LINE_HEIGHT; ++i)
             {
                 var line = new Line()
@@ -180,7 +184,18 @@ namespace PhenoPad.CustomControl
                     Y1 = i * LINE_HEIGHT,
                     Y2 = i * LINE_HEIGHT
                 };
+                var line2 = new Line()
+                {
+                    Stroke = new SolidColorBrush(Windows.UI.Colors.Gray),
+                    StrokeThickness = 1.5,
+                    StrokeDashArray = new DoubleCollection() { 5, 2 },
+                    X1 = 0,
+                    X2 = backgroundCanvas.RenderSize.Width,
+                    Y1 = i * LINE_HEIGHT * 1.5,
+                    Y2 = i * LINE_HEIGHT * 1.5
+                };
                 backgroundCanvas.Children.Add(line);
+                inputCanvasbg.Children.Add(line2);
             }
         }
 
@@ -198,6 +213,8 @@ namespace PhenoPad.CustomControl
             if (file == null)
             {
                 EHRTextBox.Document.SetText(TextSetOptions.None, "");
+                await FileManager.getSharedFileManager().SaveEHRText(notebookid, pageid, this);
+                await FileManager.getSharedFileManager().SaveEHRFormats(notebookid, pageid, this);
                 return;
             }
 
@@ -206,13 +223,16 @@ namespace PhenoPad.CustomControl
                 string text = await FileIO.ReadTextAsync(file);
                 text = text.TrimEnd();
                 EHRTextBox.Document.SetText(TextSetOptions.None, text);
+                await FileManager.getSharedFileManager().SaveEHRText(notebookid, pageid, this);
                 EHRFormats formats = await FileManager.getSharedFileManager().LoadEHRFormats(notebookid, pageid);
-                this.inserts = formats.inserts;
-                this.highlights = formats.highlights;
-                this.deletes = formats.deletes;
-                RefreshTextStyle();
-
+                if (formats != null) {
+                    this.inserts = formats.inserts;
+                    this.highlights = formats.highlights;
+                    this.deletes = formats.deletes;
+                    RefreshTextStyle();
+                }
             }
+            catch (FileNotFoundException) { }
             catch (Exception ex)
             {
                 LogService.MetroLogger.getSharedLogger().Error(ex.Message);
@@ -237,8 +257,8 @@ namespace PhenoPad.CustomControl
 
         private void ShowCPMenu(object sender, DoubleTappedRoutedEventArgs e)
         {
-            Canvas.SetLeft(cpMenu, e.GetPosition(popupCanvas).X - cpMenu.ActualWidth - 10);
-            Canvas.SetTop(cpMenu, e.GetPosition(popupCanvas).Y - cpMenu.ActualHeight/2);
+            Canvas.SetLeft(cpMenu, e.GetPosition(backgroundCanvas).X - cpMenu.ActualWidth - 10);
+            Canvas.SetTop(cpMenu, e.GetPosition(backgroundCanvas).Y - cpMenu.ActualHeight/2);
             cpMenu.Visibility = Visibility.Visible;
         }
 
@@ -254,8 +274,30 @@ namespace PhenoPad.CustomControl
             this.comments.Add(comment);
         }
 
-        public void RemoveComment(AddInControl comment) {
+        public async void RemoveComment(AddInControl comment) {
+            MainPage.Current.curPage.addinCanvasEHR.Children.Remove(comment);
             comments.Remove(comment);
+            await MainPage.Current.curPage.AutoSaveAddin(null);
+            await MainPage.Current.curPage.refreshAddInList();
+        }
+
+        internal void showCommentMenu(AddInControl addInControl, double xOffset, double yOffset)
+        {
+            if (DeleteComment.Visibility == Visibility.Collapsed)
+            {
+                DeleteComment.Height = addInControl.ActualHeight;
+                DeleteComment.Width = addInControl.ActualHeight;
+                Canvas.SetLeft(DeleteComment, addInControl.canvasLeft + addInControl.RenderSize.Width + xOffset + 5);
+                Canvas.SetTop(DeleteComment, addInControl.canvasTop + yOffset - 110);
+                DeleteComment.Visibility = Visibility.Visible;
+                DeleteComment.Click += (object sender, RoutedEventArgs e) =>
+                {
+                    RemoveComment(addInControl);
+                    DeleteComment.Visibility = Visibility.Collapsed;
+                };
+            }
+            else
+                DeleteComment.Visibility = Visibility.Collapsed;
         }
 
         public void SlideCommentsToSide()
@@ -283,6 +325,7 @@ namespace PhenoPad.CustomControl
                 popupCanvas.Children.Remove(lasso);
             }
             SlideCommentsToSide();
+            DeleteComment.Visibility = Visibility.Collapsed;
         }
 
         private async void TriggerAutoSave(object sender = null, object e = null)
@@ -364,7 +407,6 @@ namespace PhenoPad.CustomControl
                     {
                         int offset = (highlights[i][0] + highlights[i][1]) - highlights[j][0];
                         highlights[i][1] = highlights[i][1] + highlights[j][1] - offset;
-
                         highlights.Remove(highlights[j]);
                     }
                 }
@@ -482,34 +524,33 @@ namespace PhenoPad.CustomControl
         private void UpdateRecordListInsert(int start = -1, int length = 0)
         {/// Updates and shifts saved record indexes accordingly
 
+            //Checking for insert range bound collision and add to inserts record
+            bool add = true;
             for (int i = 0; i < inserts.Count; i++)
             {
-                Debug.WriteLine($"current insert record starting: {inserts[i][0]}");
+                int list_start = inserts[i][0];
+                int list_end = inserts[i][0] + inserts[i][1];
+
+                Debug.WriteLine($"current insert record starting: {list_start}");
+
                 //Case1:New insert index is before previously inserted words
-                if (inserts[i][0] > start && length > 0 && start > -1)
+                if (start < list_start && length > 0 && start > -1)
                 {
-                    Debug.WriteLine("insert is before inserted");
+                    Debug.WriteLine("insert is strcitly before inserted");
                     inserts[i][0] += length;
                 }
-
-                //Case2: Insert into inserted phrase
-                else if (inserts[i][0] < start && start < inserts[i][0] + inserts[i][1])
+                //Case2: Inserting range collides with inserted range
+                else if (start >= list_start && start < list_end)
                 {
-                    inserts[i][1] += length; //just extends this phrase by new word length + space char
-                    Debug.WriteLine("insert is within inserted");
-                }
-                //for handling new inserts right before an inserted element
-                else if (start == inserts[i][0])
-                {
-                    Debug.WriteLine("insert is right before inserted");
-                    inserts[i][0] += length;
+                    Debug.WriteLine("---insert collides with inserted");
+                    inserts[i][1] += length;
+                    add = false;
                 }
             }
-            //Add newly inserted range to record
-            if (start != -1 && length != 0) {
-                inserts.Add(new List<int>() { current_index + 1, length });
-            }
+            if (add)
+                inserts.Add(new List<int>() { start, length });
 
+            //extend highlighting range according to inserted
             for (int i = 0; i < highlights.Count; i++) {
                 //Case 1: insert index in middle of highlight section
                 if (highlights[i][0] < start && start + length < highlights[i][0] + highlights[i][1])
@@ -524,6 +565,7 @@ namespace PhenoPad.CustomControl
                 }
             }
 
+            //extend deleting range according to inserted
             for (int i = 0; i < deletes.Count; i++)
             {
                 //Case 1: insert index in middle of highlight section
@@ -537,10 +579,7 @@ namespace PhenoPad.CustomControl
                 {
                     deletes[i][0] += length; //just extends this phrase by new word length + space char
                 }
-            }
-
-            UpdateRecordMerge();
-
+            }      
         }
 
         public void PreviewEHR()
@@ -560,7 +599,7 @@ namespace PhenoPad.CustomControl
             EHRPreview.Visibility = Visibility.Collapsed;
         }
 
-        private void InsertToEHR(object sender, RoutedEventArgs e)
+        private void InsertToEHR(object sender = null, DoubleTappedRoutedEventArgs e = null)
         {/// Inserts current recognized text into EHR text edit box
 
             string text = "";
@@ -586,13 +625,21 @@ namespace PhenoPad.CustomControl
 
             //clears the previous input
             UpdateRecordListInsert(current_index + 1, text.Length);
-            RefreshTextStyle();
-            gestureStack.Push(("insert", current_index + 1, text.Length));
+            UpdateRecordMerge();
             inputgrid.Visibility = Visibility.Collapsed;
             inputMarkup.Visibility = Visibility.Collapsed;
             inputInkCanvas.InkPresenter.StrokeContainer.Clear();
             curLineWordsStackPanel.Children.Clear();
             ClearOperationStrokes();
+        }
+
+        private void InsertToEHRClick(object sender, RoutedEventArgs e) {
+            InsertToEHR();
+        }
+
+        private void ClearInput(object sender, RoutedEventArgs e) {
+            curLineWordsStackPanel.Children.Clear();
+            inputInkCanvas.InkPresenter.StrokeContainer.Clear();
         }
 
         private void InsertNewLineToEHR(object sender = null, RoutedEventArgs e = null)
@@ -640,11 +687,14 @@ namespace PhenoPad.CustomControl
 
         private void DeleteSelectedText(object sender, RoutedEventArgs e)
         {
-            if (deleteText.Text == "Delete")
+            if (deleteText.Text == "Delete") {
                 DeleteTextInRange(cur_selected.Item1, cur_selected.Item2);
-            else
+                deleteText.Text = "UnDelete";
+            }
+            else {
                 RemoveFormat(cur_selected.Item1, cur_selected.Item2, ref deletes);
-            SelectionMenu.Visibility = Visibility.Collapsed;
+                deleteText.Text = "Delete";
+            }
         }
 
         private void HighlightTextInRange(int start, int end) {
@@ -662,10 +712,15 @@ namespace PhenoPad.CustomControl
         private void HighlightSelectedText(object sender, RoutedEventArgs e) {
 
             if (highlightState == "Highlight")
+            {
                 HighlightTextInRange(cur_selected.Item1, cur_selected.Item2);
-            else
+                highlightText.Text = "UnHighlight";
+
+            }
+            else {
                 RemoveFormat(cur_selected.Item1, cur_selected.Item2, ref highlights);
-            SelectionMenu.Visibility = Visibility.Collapsed;
+                highlightText.Text = "Highlight";
+            }
         }
 
         private void RemoveFormat(int start, int end, ref List<List<int>> record)
@@ -769,6 +824,35 @@ namespace PhenoPad.CustomControl
             }
             return "Delete";
 
+        }
+
+        private bool CheckForFormat(int start, int end, Point p)
+        {
+            bool showMenu = false;
+            foreach (List<int> h in highlights) {
+                if (start >= h[0] && end <= h[0] + h[1])
+                {
+                    highlightText.Text = "UnHighlight";
+                    cur_highlight = h;
+                    showMenu = true;
+                    break;
+                }                
+            }
+            foreach (List<int> d in deletes) {
+                if (start >= d[0] && end <= d[0] + d[1])
+                {
+                    deleteText.Text = "UnDelete";
+                    cur_delete = d;
+                    showMenu = true;
+                    break;
+                }
+            }
+            if (showMenu) {
+                Canvas.SetLeft(SelectionMenu, p.X - 10);
+                Canvas.SetTop(SelectionMenu, (Math.Ceiling(p.Y / LINE_HEIGHT) + 1) * LINE_HEIGHT);
+                SelectionMenu.Visibility = Visibility.Visible;
+            }
+            return showMenu;
         }
 
         private void RedoOperation(object sender, RoutedEventArgs e) {
@@ -890,21 +974,6 @@ namespace PhenoPad.CustomControl
                         {
                             SelectTextInBound(bounding);
                         }
-                        //else if (resultges == "rectangle") {
-                        //    Point start = new Point(bounding.X + 10, bounding.Y + (bounding.Height / 2.0) - LINE_HEIGHT);
-                        //    Point end = new Point(bounding.X + bounding.Width - 10, bounding.Y + (bounding.Height / 2.0) - LINE_HEIGHT);
-                        //    var range1 = EHRTextBox.Document.GetRangeFromPoint(start, PointOptions.ClientCoordinates);
-                        //    var range2 = EHRTextBox.Document.GetRangeFromPoint(end, PointOptions.ClientCoordinates);
-
-                        //    string sub_text1 = getEHRText().Substring(0, range1.StartPosition);
-                        //    string sub_text2 = getEHRText().Substring(range2.StartPosition);
-                        //    //Guarantees that the range if of format "some word followed by space "
-                        //    int high_start = sub_text1.LastIndexOf(" ") + 1;
-                        //    int high_end = sub_text2.IndexOf(" ") + range2.StartPosition + 1;
-
-                        //    Debug.WriteLine($"Attempt to highlight text:-{getEHRText().Substring(high_start, high_end - high_start)}-");
-                        //    HighlightTextInRange(high_start, high_end);
-                        //}
                     }
 
                     //Recognized a line
@@ -947,23 +1016,25 @@ namespace PhenoPad.CustomControl
                                 // the scribble does not collide with any text, just ignore
                                 EHRTextBox.Document.GetText(TextGetOptions.None, out text);
                                 Debug.WriteLine($"detected fir letter: -{text.Substring(range.StartPosition, 1)}-");
-                                current_index = GetNearestSpaceIndex(range.StartPosition);
-                                range = EHRTextBox.Document.GetRange(current_index - 1, current_index);
-                                range.GetPoint(HorizontalCharacterAlignment.Left, VerticalCharacterAlignment.Baseline,
-                                                PointOptions.ClientCoordinates, out pos);
-                                ShowInputPanel(pos);
+                                bool isFormatted = CheckForFormat(range.StartPosition, range.StartPosition + 1, pos);
+                                if (!isFormatted) {
+                                    current_index = GetNearestSpaceIndex(range.StartPosition);
+                                    range = EHRTextBox.Document.GetRange(current_index - 1, current_index);
+                                    range.GetPoint(HorizontalCharacterAlignment.Left, VerticalCharacterAlignment.Baseline,
+                                                    PointOptions.ClientCoordinates, out pos);
+                                    ShowInputPanel(pos);
+                                }
                                 break;
                             default:
                                 break;
                         }
                     }
-
-
                 }
 
             }
             inkCanvas.InkPresenter.StrokeContainer.Clear();
         }
+
 
         private void annotations_StrokesCollected(InkPresenter sender, InkStrokesCollectedEventArgs args)
         {
@@ -1267,7 +1338,7 @@ namespace PhenoPad.CustomControl
                 Debug.WriteLine(word);
                 TextBlock tb = new TextBlock();
                 tb.VerticalAlignment = VerticalAlignment.Center;
-                tb.FontSize = 16;
+                tb.FontSize = 24;
                 //for detecting abbreviations
                 if (index != 0 && dict.ContainsKey(newResult[index - 1].selectedCandidate.ToLower()) && 
                     dict[newResult[index - 1].selectedCandidate.ToLower()].Contains(word))

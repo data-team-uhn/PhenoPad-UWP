@@ -275,7 +275,7 @@ namespace PhenoPad.CustomControl
             textNoteEditBox.FontSize = 32;
             format.SetLineSpacing(LineSpacingRule.Exactly, 37.5f);
             textNoteEditBox.Document.SetDefaultParagraphFormat(format);
-
+            EHRScrollViewer.ChangeView(0, 50, 0.645f, true);
             // disable moving strokes for now
             //selectionRectangle.ManipulationMode = ManipulationModes.TranslateX | ManipulationModes.TranslateY;
             //selectionRectangle.ManipulationStarted += SelectionRectangle_ManipulationStarted;
@@ -285,16 +285,18 @@ namespace PhenoPad.CustomControl
         }
 
 
-
         #region UI Display
         // ============================== UI DISPLAYS HANDLER ==============================================//
 
-        public void SwitchToEHR(StorageFile file) {
-            this.ehrPage = new EHRPageControl(file, notebookId, pageId);
-            //EHRScrollViewer.Content = ehrPage;
-            EHROutputGrid.Children.Add(ehrPage);
-            scrollViewer.Visibility = Visibility.Collapsed;
-            EHRScrollViewer.Visibility = Visibility.Visible;
+        public async Task SwitchToEHR(StorageFile file) {
+            await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () => {
+                this.ehrPage = new EHRPageControl(file, notebookId, pageId);
+                //EHRScrollViewer.Content = ehrPage;
+                EHROutputGrid.Children.Add(ehrPage);
+                scrollViewer.Visibility = Visibility.Collapsed;
+                EHRScrollViewer.ChangeView(0, 50, 0.645f, true);
+                EHRScrollViewer.Visibility = Visibility.Visible;
+            });
         }
 
         // draw background lines for notes
@@ -345,15 +347,16 @@ namespace PhenoPad.CustomControl
             {
                 ClearSelectionAsync();
                 Debug.WriteLine("page loaded");
-                scrollViewer.ChangeView(null, 100, null, true);
-                sideScrollView.ChangeView(null, 100, null, true);
+                //scrollViewer.ChangeView(null, 100, null, true);
+                //sideScrollView.ChangeView(null, 100, null, true);
+                EHRScrollViewer.ChangeView(0, 50, 0.645f, true);
                 EHRScrollViewer.Visibility = Visibility.Collapsed;
                 scrollViewer.Visibility = Visibility.Visible;
             }
             else {
                 scrollViewer.Visibility = Visibility.Collapsed;
+                EHRScrollViewer.ChangeView(0, 50, 0.645f, true);
                 EHRScrollViewer.Visibility = Visibility.Visible;
-                EHRScrollViewer.ChangeView(0, 100, 0.5f, true);
             }
             // Draw background lines
             DrawBackgroundLines();
@@ -1406,6 +1409,7 @@ namespace PhenoPad.CustomControl
         {
             try
             {
+                Debug.WriteLine("saving note to disk ...");
                 bool result1 = false;
                 StorageFile file = await FileManager.getSharedFileManager().GetNoteFile(notebookId, pageId, NoteFileType.Strokes);
                 if (file == null)

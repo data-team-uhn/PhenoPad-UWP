@@ -182,7 +182,7 @@ namespace PhenoPad
                     else
                     {
                         has_EHR = true;
-                        aPage.SwitchToEHR(ehr);
+                        await aPage.SwitchToEHR(ehr);
                     }
 
                     //load strokes
@@ -270,19 +270,17 @@ namespace PhenoPad
             PageHost.Content = curPage;
             addNoteIndex(curPageIndex);
             setNotePageIndex(curPageIndex);
+            // create file sturcture for this page
+            await FileManager.getSharedFileManager().CreateNotePage(notebookObject, curPageIndex.ToString());
 
-            aPage.SwitchToEHR(file);
-            inkCanvas = aPage.ehrPage.annotations;
+            await curPage.SwitchToEHR(file);
+            inkCanvas = curPage.ehrPage.annotations;
             MainPageInkBar.TargetInkCanvas = inkCanvas;
 
             currentMode = WritingMode;
             modeTextBlock.Text = WritingMode;
-            //by default uses internal microphone
-            SurfaceMicRadioButton_Checked(null, null);
             AbbreviationON_Checked(null, null);
 
-            // create file sturcture for this page
-            await FileManager.getSharedFileManager().CreateNotePage(notebookObject, curPageIndex.ToString());
             curPage.Visibility = Visibility.Visible;
         }
 

@@ -361,25 +361,26 @@ namespace PhenoPad
         /// </summary>
         protected async override void OnNavigatedTo(NavigationEventArgs e)
         {
-            int o;
             var nid= e.Parameter as string;
-            bool isValidID = int.TryParse(nid, out o);
+            StorageFile file = e.Parameter as StorageFile;
 
             if (nid == "__new__") {
+                Debug.WriteLine("create new");
                 this.loadFromDisk = false;
-                await Dispatcher.RunAsync(CoreDispatcherPriority.High, this.InitializeNotebookFromDisk);
+                await Dispatcher.RunAsync(CoreDispatcherPriority.High, this.InitializeNotebook);
             }
-            else if (int.TryParse(nid,out o))
-            {//is a saved noted book, nid all numeric
+            else if (file != null)
+            {//is a file for importing EHR
+                Debug.WriteLine("create EHR");
+                await Dispatcher.RunAsync(CoreDispatcherPriority.High, () => { this.InitializeEHRNote(file); });
+            }
+            else
+            {//is a valid note to load
+                Debug.WriteLine("loading");
                 this.loadFromDisk = true;
                 this.notebookId = nid;
                 FileManager.getSharedFileManager().currentNoteboookId = nid;
-                await Dispatcher.RunAsync(CoreDispatcherPriority.High, this.InitializeNotebook);
-            }
-            else
-            {//is a file for importing EHR
-                StorageFile file = e.Parameter as StorageFile;
-                await Dispatcher.RunAsync(CoreDispatcherPriority.High, ()=> { this.InitializeEHRNote(file); });
+                await Dispatcher.RunAsync(CoreDispatcherPriority.High, this.InitializeNotebookFromDisk);
             }
             return;                
         }

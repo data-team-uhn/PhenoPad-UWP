@@ -72,6 +72,8 @@ namespace PhenoPad.CustomControl
         public bool isComment;
         public double slideOffset = 250;
 
+        public EHRPageControl ehr;
+
         private MainPage rootPage;
 
         private bool isInitialized = false;
@@ -283,6 +285,9 @@ namespace PhenoPad.CustomControl
 
         }
 
+        /// <summary>
+        /// Adding control for commenting annotation in EHR Mode only
+        /// </summary>
         public AddInControl(string name,
                             EHRPageControl ehr)
         {
@@ -291,13 +296,14 @@ namespace PhenoPad.CustomControl
 
             //setting pre-saved configurations of the control
             {
-                this.widthOrigin = 600;
-                this.heightOrigin = 200;
+                this.widthOrigin = 700;
+                this.heightOrigin = 90;
                 this.Width = this.widthOrigin;
                 this.Height = this.heightOrigin;
 
                 inkCan.Width = this.Width;
                 inkCan.Height = this.Height;
+                
                 this.inDock = false;
                 this.name = name;
                 this.notebookId = ehr.notebookid;
@@ -305,7 +311,15 @@ namespace PhenoPad.CustomControl
                 this._isResizing = false;
                 this.hasImage = false;
                 isComment = true;
+                this.ehr = ehr;
             }
+
+            InkDrawingAttributes drawingAttributes = new InkDrawingAttributes();
+            drawingAttributes.Color = Colors.Black;
+            drawingAttributes.Size = new Size(2, 2);
+            drawingAttributes.IgnorePressure = false;
+            drawingAttributes.FitToCurve = true;
+            inkCanvas.InkPresenter.UpdateDefaultDrawingAttributes(drawingAttributes);
 
             //Timer event handler bindings
             {
@@ -332,6 +346,7 @@ namespace PhenoPad.CustomControl
             scrollViewer.ZoomMode = ZoomMode.Disabled;
             scrollViewer.HorizontalScrollMode = ScrollMode.Disabled;
             scrollViewer.VerticalScrollMode = ScrollMode.Disabled;
+            commentbg.Visibility = Visibility.Visible;
 
             this.Tapped += ToggleMenu;
             this.LostFocus += ResetZIndex;
@@ -341,9 +356,9 @@ namespace PhenoPad.CustomControl
             TitleRelativePanel.Children.Remove(manipulateButton);
             Grid.SetRow(contentGrid, 0);
             Grid.SetRowSpan(contentGrid, 2);
-            OutlineGrid.BorderBrush = new SolidColorBrush(Colors.Gray);
-            OutlineGrid.CornerRadius = new CornerRadius(10);
-            OutlineGrid.BorderThickness = new Thickness(1);
+            OutlineGrid.BorderBrush = new SolidColorBrush(Colors.DarkOrange);
+            OutlineGrid.CornerRadius = new CornerRadius(5);
+            OutlineGrid.BorderThickness = new Thickness(2);
             categoryGrid.Visibility = Visibility.Collapsed;
             DrawingButton_Click(null, null);
         }
@@ -502,7 +517,7 @@ namespace PhenoPad.CustomControl
 
         #region button click event handlers
 
-        private async void Delete_Click(object sender, RoutedEventArgs e)
+        public async void Delete_Click(object sender = null, RoutedEventArgs e = null)
         {
             ((Panel)this.Parent).Children.Remove(this);
             if (isComment) {
@@ -685,19 +700,8 @@ namespace PhenoPad.CustomControl
             inkCan.Visibility = Visibility.Visible;
 
             if (isComment) {
-                InkDrawingAttributes drawingAttributes = new InkDrawingAttributes();
-                drawingAttributes.Color = Colors.Black;
-                drawingAttributes.Size = new Size(2, 2);
-                drawingAttributes.IgnorePressure = false;
-                drawingAttributes.FitToCurve = true;
-                inkCanvas.InkPresenter.UpdateDefaultDrawingAttributes(drawingAttributes);
-
-                TitleRelativePanel.Visibility = Visibility.Collapsed;
-                Grid.SetRow(contentGrid, 0);
-                Grid.SetRowSpan(contentGrid, 2);
-                OutlineGrid.BorderBrush = new SolidColorBrush(Colors.Gray);
-                OutlineGrid.CornerRadius = new CornerRadius(10);
-                OutlineGrid.BorderThickness = new Thickness(1);
+                inkCan.Height = this.Height;
+                inkCan.Width = this.Width;
             }
 
             else if (!onlyView)
@@ -949,23 +953,7 @@ namespace PhenoPad.CustomControl
         {
             if (addinSlide.X > 0)
             {
-                if (TitleRelativePanel.Visibility == Visibility.Collapsed)
-                {
-                    Canvas.SetZIndex(this, 99);
-                    Grid.SetRow(contentGrid, 1);
-                    Grid.SetRowSpan(contentGrid, 1);
-                    TitleRelativePanel.Visibility = Visibility.Visible;
-                    this.Height += 48;
-                }
-                else
-                {
-                    Canvas.SetZIndex(this, 1);
-
-                    Grid.SetRow(contentGrid, 0);
-                    Grid.SetRowSpan(contentGrid, 2);
-                    TitleRelativePanel.Visibility = Visibility.Collapsed;
-                    this.Height -= 48;
-                }
+                ehr.showCommentMenu(this, addinSlide.X, addinSlide.Y);
             }
         }
 
@@ -1006,8 +994,10 @@ namespace PhenoPad.CustomControl
                 foreach (InkStroke s in inkCan.InkPresenter.StrokeContainer.GetStrokes())
                     s.Selected = true;
                 inkCanvas.InkPresenter.StrokeContainer.MoveSelected(new Point(-1 * bound.X + 5, -1 * bound.Y + 5));
-                this.Height = bound.Height + 5;
-                this.Width = bound.Width < MIN_WIDTH ? MIN_WIDTH + 5 : bound.Width + 10;
+                this.Height = bound.Y + bound.Height + 5;
+                this.Width = bound.X + bound.Width < MIN_WIDTH ? MIN_WIDTH + 5 : bound.X + bound.Width + 5;
+                this.widthOrigin = this.Width;
+                this.heightOrigin = this.Height;
             }
         }
 

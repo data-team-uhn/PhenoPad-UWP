@@ -77,7 +77,7 @@
         </ResourceDictionary>
     </UserControl.Resources>
 
-    <Grid Background="WhiteSmoke" BorderBrush="LightGray" Name="OutlineGrid" Opacity="1">
+    <Grid Background="WhiteSmoke" Name="OutlineGrid" Opacity="1">
 
         <Grid.RowDefinitions>
             <RowDefinition Height="48"></RowDefinition>
@@ -97,6 +97,7 @@
                               HorizontalScrollMode="Enabled" 
                               HorizontalScrollBarVisibility="Hidden">
                 <Grid x:Name="scrollGrid">
+                    <Canvas x:Name="commentbg" Background="LightYellow" Visibility="Collapsed"/>
                     <Viewbox Name="canvasViewBox">
                         <InkCanvas Visibility="Collapsed" x:Name="inkCanvas" Canvas.ZIndex="5"/>
                     </Viewbox>

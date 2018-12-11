@@ -793,7 +793,6 @@ namespace PhenoPad.FileService
                 EHRFormats format = new EHRFormats(ehr.inserts, ehr.highlights, ehr.deletes);
                 string xml = format.Serialize();
                 string path = GetNoteFilePath(notebookId, pageId, NoteFileType.EHRFormat);
-                //Debug.WriteLine($"EHR PATH={path}");
                 StorageFile sfile = await ROOT_FOLDER.CreateFileAsync(path, CreationCollisionOption.ReplaceExisting);
                 await Windows.Storage.FileIO.WriteTextAsync(sfile, xml);
                 return true;
@@ -808,15 +807,22 @@ namespace PhenoPad.FileService
             try
             {
                 string path = GetNoteFilePath(notebookId, pageId, NoteFileType.EHRFormat);
-                //Debug.WriteLine($"EHR PATH={path}");
-                StorageFile sfile = await ROOT_FOLDER.GetFileAsync(path);
-                string xml = await Windows.Storage.FileIO.ReadTextAsync(sfile);
-                EHRFormats ehrformat = EHRFormats.Deserialize(xml);
-                return ehrformat;
+                var sfile = await ROOT_FOLDER.TryGetItemAsync(path);
+                if (sfile != null) {
+                    sfile = await ROOT_FOLDER.GetFileAsync(path);
+                    string xml = await Windows.Storage.FileIO.ReadTextAsync((StorageFile)sfile);
+                    EHRFormats ehrformat = EHRFormats.Deserialize(xml);
+                    return ehrformat;
+                }
+                return null;
+            }
+            catch (FileNotFoundException) {
+                //this may happen when creating a new ehr and thus can be omitted
+                return null;
             }
             catch (Exception e)
             {
-                Debug.WriteLine(e + e.Message);
+                LogService.MetroLogger.getSharedLogger().Error("FileManager|"+ e.Message);
                 return null;
             }
         }
@@ -860,17 +866,24 @@ namespace PhenoPad.FileService
         public async Task<bool> LoadNotePageStroke(string notebookId, string pageId, NotePageControl notePage)
         {
             bool isSuccessful = true;
-            //StorageFolder localFolder = ApplicationData.Current.LocalFolder;
-            //Debug.WriteLine("Local Path: " + ROOT_FOLDER.Path);
             try
             {
                 string strokePath = GetNoteFilePath(notebookId, pageId, NoteFileType.Strokes);
-                var strokesFile = await ROOT_FOLDER.GetFileAsync(strokePath);
-                //loads the stroked based on whether the current note page is an EHR document
-                if (notePage.ehrPage == null)
-                    isSuccessful = await loadStrokes(strokesFile, notePage.inkCan);
+                var s = await ROOT_FOLDER.TryGetItemAsync(strokePath);
+                if (s != null)
+                {
+                    var strokesFile = await ROOT_FOLDER.GetFileAsync(strokePath);
+                    //loads the stroked based on whether the current note page is an EHR document
+                    if (notePage.ehrPage == null)
+                        isSuccessful = await loadStrokes(strokesFile, notePage.inkCan);
+                    else
+                        isSuccessful = await loadStrokes(strokesFile, notePage.ehrPage.inkCanvas);
+
+                }
                 else
-                    isSuccessful = await loadStrokes(strokesFile, notePage.ehrPage.inkCanvas);
+                    isSuccessful = false;
+
+                return isSuccessful;
             }
             catch (Exception e)
             {
@@ -879,8 +892,6 @@ namespace PhenoPad.FileService
                     + e.Message);
                 return false;
             }
-            Debug.WriteLine("stroke load successfull from file manager");
-            return isSuccessful;
         }
 
         /// <summary>
@@ -899,10 +910,7 @@ namespace PhenoPad.FileService
                     return obj;
                 }
             }
-            catch (InvalidOperationException xe) {
-                if (xe.InnerException.GetType() == typeof(XmlException)) {
-                    //xml empty, ignore because it's not a big problem
-                }       
+            catch (InvalidOperationException) {     
                 return null;
             }
             catch (Exception ex)
@@ -920,6 +928,8 @@ namespace PhenoPad.FileService
             // User selects a file and picker returns a reference to the selected file.
             try
             {
+                if (strokesFile == null)
+                    return false;
                 // Open a file stream for reading.
                 IRandomAccessStream stream = await strokesFile.OpenAsync(FileAccessMode.Read);
                 // Read from file.

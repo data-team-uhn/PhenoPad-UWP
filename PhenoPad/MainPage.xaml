@@ -32,6 +32,13 @@
         -->
         <local:BackgroundColorConverter x:Key="bcConverter" />
         <local:IntervalDisplayConverter x:Key="intervalConverter" />
+        <Storyboard x:Name="StatusBorderEnterStoryboard">
+            <FadeInThemeAnimation Duration="0:0:0.6" Storyboard.TargetName="StatusBorder" />
+        </Storyboard>
+        <Storyboard x:Name="StatusBorderExitStoryboard">
+            <FadeOutThemeAnimation Duration="0:0:0.6" Storyboard.TargetName="StatusBorder" />
+        </Storyboard>
+
     </Page.Resources>
 
     <Grid x:Name="RootGrid" Margin="0 0 0 0">
@@ -682,14 +689,6 @@
                 </ContentControl>
 
                 <RelativePanel>
-                    <RelativePanel.Resources>
-                        <Storyboard x:Name="StatusBorderEnterStoryboard">
-                            <FadeInThemeAnimation Duration="0:0:0.6" Storyboard.TargetName="StatusBorder" />
-                        </Storyboard>
-                        <Storyboard x:Name="StatusBorderExitStoryboard">
-                            <FadeOutThemeAnimation Duration="0:0:0.6" Storyboard.TargetName="StatusBorder" />
-                        </Storyboard>
-                    </RelativePanel.Resources>
 
                     <TextBlock Visibility="Visible" x:Name="modeTextBlock" Width="190" Height="auto"
                                RelativePanel.AlignLeftWithPanel="True" 
