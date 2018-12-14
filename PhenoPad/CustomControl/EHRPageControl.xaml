@@ -45,7 +45,7 @@
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="1200" />
+            <ColumnDefinition Width="{x:Bind EHR_TEXTBOX_WIDTH}" />
             <ColumnDefinition Width="*"/>
         </Grid.ColumnDefinitions>
 
@@ -87,11 +87,11 @@
         <!--insert text pop up-->
         <Canvas x:Name="popupCanvas" Grid.ColumnSpan="2">
 
-            <Button Style="{StaticResource ButtonStyle1}" x:Name="DeleteComment" Visibility="Collapsed" Background="White">
+            <Button Style="{StaticResource ButtonStyle1}" x:Name="DeleteComment" Visibility="Collapsed" Background="WhiteSmoke">
                 <SymbolIcon Foreground="PaleVioletRed" Symbol="Clear"/>
             </Button>
 
-            <RelativePanel x:Name="inputgrid" Canvas.ZIndex="99" Visibility="Collapsed" >
+            <RelativePanel x:Name="inputgrid" Canvas.ZIndex="999" Visibility="Collapsed" >
                 <Grid>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="60"/>
@@ -183,7 +183,7 @@
 
                 <Grid CornerRadius="10" BorderBrush="Gray" BorderThickness="1" Background="WhiteSmoke">
                     <Button Style="{StaticResource ButtonStyle1}" Width="170" Padding="20 10 20 10" Background="WhiteSmoke"
-                        Click="ShowCommentCanvas"
+                        Click="AddComment"
                             HorizontalContentAlignment="Center" VerticalContentAlignment="Center">
                         <TextBlock Text="Annotate" FontWeight="SemiBold" FontSize="18" />
                     </Button>

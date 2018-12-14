@@ -45,6 +45,7 @@ namespace PhenoPad.CustomControl
         //By default sets the EHR template size to be US Letter size in pixels
         private double EHR_HEIGHT = 2200;
         private double EHR_WIDTH = 2000;
+        private double EHR_TEXTBOX_WIDTH = 1200;
         public float LINE_HEIGHT = 50;
         private Recognizer GESTURE_RECOGNIZER;
         public string GESTURE_PATH = @"C:\Users\helen\AppData\Local\Packages\16bc6b12-daff-4104-a251-1fa502edec02_qfxtr3e52dkcc\LocalState\Gestures";
@@ -58,23 +59,27 @@ namespace PhenoPad.CustomControl
         public ObservableCollection<Phenotype> curLineCandidatePheno = new ObservableCollection<Phenotype>();
         public Dictionary<string, Phenotype> cachedAnnotation = new Dictionary<string, Phenotype>();
 
-
         private Color INSERTED_COLOR = (Color)Application.Current.Resources["WORD_DARK_COLOR"];//Dark Blue
         private Color HIGHLIGHT_COLOR = Color.FromArgb(0, 255, 248, 173);//Light Yellow
+        private Color ANNOTATE_COLOR = Color.FromArgb(0, 255, 248, 173);//Light Yellow
 
         private bool isHighlighting;
         private bool isErasing;
         private string highlightState = "Highlight";
         private string deleteState = "Delete";
+        private int lastAddedCommentID;
+        private int showAlterOfWord = -1;
+        private int current_index;//the most current pen position to text
+        private (int, int) cur_selected;//most current selected phrase, (x, y, isHighlighted,isDeleted)
+        private (int, int) cur_highlight;
+        private (int, int) cur_delete;
 
         //For keeping edited records, all List<int> format = <start_index, phrase_length>
-        public List<List<int>> inserts;
-        public List<List<int>> highlights;
-        public List<List<int>> deletes;
-
+        public List<List<int>> inserts;//List<(ID, start_index, phrase_length)>
+        public List<List<int>> highlights;//List<(ID, start, phrase_length)>
+        public List<List<int>> deletes;//List<(ID, start, phrase_length)>
+        public List<List<int>> annotated; //List<(ID, start_index, end_index)>
         public List<AddInControl> comments;
-
-        private Stack<(string, int, int)> gestureStack;
 
         public InkStroke curStroke;
         public List<uint> lastOperationStrokeIDs;
@@ -84,20 +89,15 @@ namespace PhenoPad.CustomControl
         List<HWRRecognizedText> inputRecogResult;
         DispatcherTimer autosaveDispatcherTimer; //For auto saves
 
-        private int showAlterOfWord = -1;
-        private int current_index;//the most current pen position to text
-        private (int, int) cur_selected;//most current selected phrase
-        private List<int> cur_highlight;
-        private List<int> cur_delete;
-
         public string notebookid;
         public string pageid;
+        public NotePageControl parentControl;
 
         #endregion
 
         #region Constructor
 
-        public EHRPageControl(StorageFile file, string noteid, string pageid)
+        public EHRPageControl(StorageFile file, NotePageControl parent)
         {
             this.InitializeComponent();
             //setting the text grid line format
@@ -105,8 +105,8 @@ namespace PhenoPad.CustomControl
                 RemovePasteFormat();
             }
 
-            this.notebookid = noteid;
-            this.pageid = pageid;
+            this.notebookid = parent.notebookId;
+            this.pageid = parent.pageId;
 
             GESTURE_RECOGNIZER = new Recognizer();
 
@@ -148,11 +148,16 @@ namespace PhenoPad.CustomControl
             autosaveDispatcherTimer.Tick += TriggerAutoSave;
             autosaveDispatcherTimer.Interval = TimeSpan.FromSeconds(1); //setting stroke auto save interval to be 1 sec
 
-            inserts = new List<List<int>>();
-            highlights = new List<List<int>>();
-            deletes = new List<List<int>>();
+            inserts = new List<List<int>>();// List<(start, length)>
+            highlights = new List<List<int>>();// List<(start, length)>
+            deletes = new List<List<int>>();// List<(start, length)>
+            annotated = new List<List<int>>();// List<(ID,start,length)>
+
             comments = new List<AddInControl>();
-            gestureStack = new Stack<(string, int, int)>();
+            cur_selected = (-1,-1);
+            cur_highlight = (-1, -1);
+            cur_delete = (-1, -1);
+
 
             inkOperationAnalyzer = new InkAnalyzer();
             inputInkAnalyzer = new InkAnalyzer();
@@ -229,6 +234,7 @@ namespace PhenoPad.CustomControl
                     this.inserts = formats.inserts;
                     this.highlights = formats.highlights;
                     this.deletes = formats.deletes;
+                    this.annotated = formats.annotates;
                     RefreshTextStyle();
                 }
             }
@@ -244,10 +250,13 @@ namespace PhenoPad.CustomControl
 
             double newX = p.X - 20;
             double newY = ((int)(p.Y / LINE_HEIGHT) + 2) * LINE_HEIGHT - 20;
-            if (p.X > 600)
+            if (p.X + inputgrid.ActualWidth > EHR_TEXTBOX_WIDTH)
+                newX = EHR_TEXTBOX_WIDTH - inputgrid.ActualWidth;
+            else if (p.X > 600)
                 newX -= 400;
+
             Canvas.SetLeft(inputgrid, newX);
-            Canvas.SetTop(inputgrid, newY + 50);
+            Canvas.SetTop(inputgrid, newY + LINE_HEIGHT);
             Canvas.SetLeft(inputMarkup, p.X - 5);
             Canvas.SetTop(inputMarkup, newY);
 
@@ -262,23 +271,58 @@ namespace PhenoPad.CustomControl
             cpMenu.Visibility = Visibility.Visible;
         }
 
-        private void ShowCommentCanvas(object sender, RoutedEventArgs e) {
+        private void AddComment(object sender, RoutedEventArgs e)
+        { //adds a new addin control in parent NotePageControl as a comment type
 
             SelectionMenu.Visibility = Visibility.Collapsed;
-            HighlightTextInRange(cur_selected.Item1, cur_selected.Item2);
-            var range = EHRTextBox.Document.GetRange(cur_selected.Item1, cur_selected.Item1);
+            var range = EHRTextBox.Document.GetRange(cur_selected.Item1 - 1, cur_selected.Item1);
             Point pos;
             range.GetPoint(HorizontalCharacterAlignment.Left, VerticalCharacterAlignment.Bottom, PointOptions.ClientCoordinates, out pos);
             double newY = (Math.Ceiling(pos.Y / LINE_HEIGHT) + 1) * LINE_HEIGHT;
-            AddInControl comment = MainPage.Current.curPage.NewEHRCommentControl(pos.X + 10, newY + 110); //adding padding offsets to march lining
+
+            AddInControl comment = parentControl.NewEHRCommentControl(pos.X + 10, newY + 110, cur_selected.Item1);
+            comment.commentslideX = EHR_TEXTBOX_WIDTH - pos.X + 10;
+            comment.commentslideY = -LINE_HEIGHT;
+            annotated.Add(new List<int>() { cur_selected.Item1, cur_selected.Item2 });
+
+            this.comments = comments.OrderBy(x => x.commentID).ToList();
+            foreach (AddInControl c in comments)
+            {
+                //if the new comment collides with previously saved comments, shift this comment down
+                if (comment.commentID > c.commentID && Collides(comment, c))
+                    comment.commentslideY += (c.COMMENT_HEIGHT + 10);
+            }
             this.comments.Add(comment);
+            lastAddedCommentID = comment.commentID;
+            RefreshTextStyle();
         }
 
-        public async void RemoveComment(AddInControl comment) {
-            MainPage.Current.curPage.addinCanvasEHR.Children.Remove(comment);
-            comments.Remove(comment);
+        private bool Collides(AddInControl c1, AddInControl c2)
+        {// Checks whether two addin controls collides in bounding
+            Rect bound1 = new Rect(c1.canvasLeft + c1.commentslideX, c1.canvasTop + c1.commentslideY, 400, c1.COMMENT_HEIGHT + 10);
+            Rect bound2 = new Rect(c2.canvasLeft + c2.commentslideX, c2.canvasTop + c2.commentslideY, 400, c2.COMMENT_HEIGHT + 10);
+            bool collides = !(RectHelper.Intersect(bound1, bound2) == Rect.Empty);
+            return collides;
+        }
+
+        public async void RemoveComment(AddInControl comment)
+        {// removes a comment object from parent NotePageControl and shifts others up accordingly
+            await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () => {
+                parentControl.addinCanvasEHR.Children.Remove(comment);
+                List<int> commentRecord = annotated.Where(x => x[0] == comment.commentID).FirstOrDefault();
+                annotated.Remove(commentRecord);
+                //shifts the Y position for all comments before the deleted comment
+                comments = comments.OrderBy(c => c.commentID).ToList();
+                foreach (AddInControl c in comments) {
+                    if (c.commentID > comment.commentID) {
+                        c.commentslideY -= ( comment.COMMENT_HEIGHT + 10 );
+                        c.SlideDown(-1 * (comment.COMMENT_HEIGHT + 10));
+                    }
+                }
+                comments.Remove(comment);
+                RefreshTextStyle();
+            });
             await MainPage.Current.curPage.AutoSaveAddin(null);
-            await MainPage.Current.curPage.refreshAddInList();
         }
 
         internal void showCommentMenu(AddInControl addInControl, double xOffset, double yOffset)
@@ -287,7 +331,7 @@ namespace PhenoPad.CustomControl
             {
                 DeleteComment.Height = addInControl.ActualHeight;
                 DeleteComment.Width = addInControl.ActualHeight;
-                Canvas.SetLeft(DeleteComment, addInControl.canvasLeft + addInControl.RenderSize.Width + xOffset + 5);
+                Canvas.SetLeft(DeleteComment, addInControl.canvasLeft + addInControl.Width + xOffset);
                 Canvas.SetTop(DeleteComment, addInControl.canvasTop + yOffset - 110);
                 DeleteComment.Visibility = Visibility.Visible;
                 DeleteComment.Click += (object sender, RoutedEventArgs e) =>
@@ -302,10 +346,58 @@ namespace PhenoPad.CustomControl
 
         public void SlideCommentsToSide()
         {
-            foreach (AddInControl comment in comments)
-            {
-                comment.SlideToRight(1200 - comment.canvasLeft + 20, -1 * LINE_HEIGHT);
+            bool shift = false;//for sequtienal shifting
+            AddInControl lastAdded = comments.Where(c => c.commentID == lastAddedCommentID).FirstOrDefault();
+            comments = comments.OrderBy(x => x.commentID).ToList();
+            foreach (AddInControl comment in comments) {
+                if (lastAdded == null)
+                    comment.SlideToRight();
+                else {
+                    if (comment.commentID <= lastAddedCommentID)
+                        comment.SlideToRight();
+                    else if ((comment.commentID > lastAddedCommentID && Collides(lastAdded, comment)) || shift)
+                    {
+                        double lastAddedHeight = lastAdded.COMMENT_HEIGHT + 10;
+                        comment.commentslideY += lastAddedHeight;
+                        comment.SlideDown(lastAddedHeight);
+                        shift = true;
+                    }
+                }
             }
+        }
+
+        internal void ShowCommentLine(AddInControl comment)
+        {
+            List<int> annoRange = this.annotated.Where(x => x[0] == comment.commentID).FirstOrDefault();
+            if (annoRange != null) {
+                var range1 = EHRTextBox.Document.GetRange(annoRange[0], annoRange[1] - 1);
+                Rect bounding;
+                int hit;
+                range1.GetRect(PointOptions.ClientCoordinates, out bounding, out hit);
+
+                var line1 = new Polyline()
+                {
+                    Stroke = new SolidColorBrush(Windows.UI.Colors.Orange),
+                    StrokeThickness = 2,
+                    StrokeLineJoin = PenLineJoin.Round,
+                    //StrokeDashArray = new DoubleCollection() { 3,3},
+                    Points = new PointCollection()
+                {
+                    new Point(bounding.X + 10,bounding.Y + bounding.Height + LINE_HEIGHT),
+                    new Point(bounding.X + bounding.Width + 10, bounding.Y + bounding.Height + LINE_HEIGHT),
+                    new Point(comment.canvasLeft + comment.GetSlideX(), comment.canvasTop + comment.GetSlideY() - 110 + (comment.Height / 2))
+                }
+                };
+                popupCanvas.Children.Add(line1);
+            }
+
+        }
+
+        internal void HideCommentLine(AddInControl comment)
+        {
+            var line = popupCanvas.Children.Where(x => x.GetType() == typeof(Polyline)).FirstOrDefault();
+            popupCanvas.Children.Remove(line);
+            
         }
 
         #endregion
@@ -326,6 +418,10 @@ namespace PhenoPad.CustomControl
             }
             SlideCommentsToSide();
             DeleteComment.Visibility = Visibility.Collapsed;
+            cur_selected = (-1, -1);
+            cur_highlight = (-1, -1);
+            cur_delete = (-1, -1);
+            current_index = -1;
         }
 
         private async void TriggerAutoSave(object sender = null, object e = null)
@@ -371,6 +467,10 @@ namespace PhenoPad.CustomControl
                 var range = EHRTextBox.Document.GetRange(r[0], r[0] + r[1] - 1);
                 range.CharacterFormat.ForegroundColor = Colors.LightGray;
                 range.CharacterFormat.Strikethrough = FormatEffect.On;
+            }
+            foreach (List<int> a in annotated) {
+                var range = EHRTextBox.Document.GetRange(a[0], a[1] - 1);
+                range.CharacterFormat.BackgroundColor = ANNOTATE_COLOR;
             }
             EHRTextBox.UpdateLayout();
         }
@@ -432,93 +532,21 @@ namespace PhenoPad.CustomControl
             RefreshTextStyle();
         }
 
-        private void UpdateRecordListDelete(int start, int length)
-        {//updates index ranges based on deleted phrases, currently not in use 12/07/2018
-            //updating indexs in inserts
-            for (int i = 0; i < inserts.Count; i++)
-            {
-                int end = start + length;
-                int list_start = inserts[i][0];
-                int list_end = inserts[i][0] + inserts[i][1]; //because second element of record sub_list indicates word length
+        public void PreviewEHR()
+        {/// Removes all deleted phrase and sets preview EHR Text
 
-                //Case 1: list element range fully surrounds [start,end]
-                if (start > list_start && end < list_end)
-                {
-                    Debug.WriteLine("Delete (list element range fully surrounds [start,end])");
-                    inserts[i][1] -= length;
-                }
-                //Case 2: list element range is subset of [start,end]
-                else if ((start >= list_start && end <= list_end) || (list_start > start && list_end < end))
-                {
-                    Debug.WriteLine("Delete (list element range is subset of [start,end])");
-                    if (length == inserts[i][1])
-                        inserts.RemoveAt(i);
-                    else
-                        inserts[i][1] -= length;
-                }
-                //Case 3: partial intersections head
-                else if (start < list_start && end < list_end && end > list_start)
-                {
-                    Debug.WriteLine("Delete (start < list start, end < list end)");
-                    inserts[i][1] = inserts[i][1] + list_start - end;
-                    inserts[i][0] = start;
-                }
-                //Case 4: partial intersections tail
-                else if (start > list_start && end > list_end && start < list_end)
-                {
-                    Debug.WriteLine("Delete (start > list start, end > list end)");
-                    inserts[i][1] -= list_end - start;
-                }
-                //Case 5: Before phrase
-                else if (start < list_start && end <= list_start) {
-                    inserts[i][0] -= length;
-                }
-            }
+            string text = getEHRText();
+            foreach (List<int> r in deletes)
+                text = text.Substring(0, r[0]) + new string('*', r[1]) + text.Substring(r[0] + r[1]);
+            text = text.Replace("*", "");
+            EHRPreview.Document.SetText(TextSetOptions.None, text);
+            EHRTextBox.Visibility = Visibility.Collapsed;
+            EHRPreview.Visibility = Visibility.Visible;           
+        }
 
-            //updating indexs in highlights
-            for (int i = 0; i < highlights.Count; i++)
-            {
-                int end = start + length;
-                int list_start = highlights[i][0];
-                int list_end = highlights[i][0] + highlights[i][1]; //because second element of record sub_list indicates word length
-
-                //Case 1: list element range fully surrounds [start,end]
-                if (start > list_start && end < list_end)
-                {
-                    Debug.WriteLine("Delete (list element range fully surrounds [start,end])");
-                    highlights[i][1] -= length;
-                }
-                //Case 2: list element range is subset of [start,end]
-                else if ((start >= list_start && end <= list_end) || (list_start > start && list_end < end))
-                {
-                    Debug.WriteLine("Delete (list element range is subset of [start,end])");
-                    if (length == highlights[i][1])
-                        highlights.RemoveAt(i);
-                    else
-                        highlights[i][1] -= length;
-                }
-                //Case 3: partial intersections head
-                else if (start < list_start && end < list_end && end > list_start)
-                {
-                    Debug.WriteLine("Delete (start < list start, end < list end)");
-                    highlights[i][1] = highlights[i][1] + list_start - end;
-                    highlights[i][0] = start;
-                }
-                //Case 4: partial intersections tail
-                else if (start > list_start && end > list_end && start < list_end)
-                {
-                    Debug.WriteLine("Delete (start > list start, end > list end)");
-                    highlights[i][1] -= list_end - start;
-                }
-                //Case 5: Before phrase
-                else if (start < list_start && end <= list_start)
-                {
-                    highlights[i][0] -= length;
-                }
-            }
-
-
-
+        public void ReturnToEdit() {
+            EHRTextBox.Visibility = Visibility.Visible;
+            EHRPreview.Visibility = Visibility.Collapsed;
         }
 
         private void UpdateRecordListInsert(int start = -1, int length = 0)
@@ -551,7 +579,8 @@ namespace PhenoPad.CustomControl
                 inserts.Add(new List<int>() { start, length });
 
             //extend highlighting range according to inserted
-            for (int i = 0; i < highlights.Count; i++) {
+            for (int i = 0; i < highlights.Count; i++)
+            {
                 //Case 1: insert index in middle of highlight section
                 if (highlights[i][0] < start && start + length < highlights[i][0] + highlights[i][1])
                 {
@@ -579,24 +608,26 @@ namespace PhenoPad.CustomControl
                 {
                     deletes[i][0] += length; //just extends this phrase by new word length + space char
                 }
-            }      
-        }
+            }
 
-        public void PreviewEHR()
-        {/// Removes all deleted phrase and sets preview EHR Text
+            //entend annotated range according to inserted
+            for (int i = 0; i < annotated.Count; i++)
+            {
+                //Case 1: insert index in middle of highlight section
+                if (annotated[i][0] < start && start + length < annotated[i][1])
+                {
+                    annotated[i][1] += length;
+                }
+                //Case 2: insert index in front of highlight section
+                else if (annotated[i][0] >= start && length > 0)
+                {
+                    AddInControl comment = comments.Where(c => c.commentID == annotated[i][0]).FirstOrDefault();
+                    comment.commentID += length;
+                    annotated[i][0] += length;
+                    annotated[i][1] += length;
+                }
+            }
 
-            string text = getEHRText();
-            foreach (List<int> r in deletes)
-                text = text.Substring(0, r[0]) + new string('*', r[1]) + text.Substring(r[0] + r[1]);
-            text = text.Replace("*", "");
-            EHRPreview.Document.SetText(TextSetOptions.None, text);
-            EHRTextBox.Visibility = Visibility.Collapsed;
-            EHRPreview.Visibility = Visibility.Visible;           
-        }
-
-        public void ReturnToEdit() {
-            EHRTextBox.Visibility = Visibility.Visible;
-            EHRPreview.Visibility = Visibility.Collapsed;
         }
 
         private void InsertToEHR(object sender = null, DoubleTappedRoutedEventArgs e = null)
@@ -680,7 +711,6 @@ namespace PhenoPad.CustomControl
                 return;
 
             deletes.Add(new List<int>() { start, end - start });
-            gestureStack.Push(("delete", start, end - start));
             UpdateRecordMerge();
             autosaveDispatcherTimer.Start();
         }
@@ -688,11 +718,17 @@ namespace PhenoPad.CustomControl
         private void DeleteSelectedText(object sender, RoutedEventArgs e)
         {
             if (deleteText.Text == "Delete") {
-                DeleteTextInRange(cur_selected.Item1, cur_selected.Item2);
+                if (cur_delete.Item1 == -1)
+                    DeleteTextInRange(cur_selected.Item1, cur_selected.Item2);
+                else
+                    DeleteTextInRange(cur_delete.Item1, cur_delete.Item2);
                 deleteText.Text = "UnDelete";
             }
             else {
-                RemoveFormat(cur_selected.Item1, cur_selected.Item2, ref deletes);
+                if (cur_delete.Item1 == -1)
+                    RemoveFormat(cur_selected.Item1, cur_selected.Item2, ref deletes);
+                else
+                    RemoveFormat(cur_delete.Item1, cur_delete.Item2, ref deletes);
                 deleteText.Text = "Delete";
             }
         }
@@ -706,19 +742,24 @@ namespace PhenoPad.CustomControl
             highlights.Add(new List<int>() { start, end - start });
             UpdateRecordMerge();
             RefreshTextStyle();
-            gestureStack.Push(("highlight", start, end - start));
         }
 
         private void HighlightSelectedText(object sender, RoutedEventArgs e) {
 
             if (highlightState == "Highlight")
             {
-                HighlightTextInRange(cur_selected.Item1, cur_selected.Item2);
+                if (cur_highlight.Item1 == -1)
+                    HighlightTextInRange(cur_selected.Item1, cur_selected.Item2);
+                else
+                    HighlightTextInRange(cur_highlight.Item1, cur_highlight.Item2);
                 highlightText.Text = "UnHighlight";
 
             }
             else {
-                RemoveFormat(cur_selected.Item1, cur_selected.Item2, ref highlights);
+                if (cur_highlight.Item1 == -1)
+                    RemoveFormat(cur_selected.Item1, cur_selected.Item2, ref highlights);
+                else
+                    RemoveFormat(cur_highlight.Item1, cur_highlight.Item2, ref highlights);
                 highlightText.Text = "Highlight";
             }
         }
@@ -782,18 +823,15 @@ namespace PhenoPad.CustomControl
             int sel_start = sub_text1.LastIndexOf(" ") + 1;
             int sel_end = sub_text2.IndexOf(" ") + range2.StartPosition + 1;
 
-            cur_selected = (sel_start, sel_end);
             var sel_range = EHRTextBox.Document.GetRange(sel_start, sel_end);
 
             sel_range.CharacterFormat.Underline = UnderlineType.ThickDash;
             sel_range.CharacterFormat.ForegroundColor = Colors.Orange;
-
+            cur_selected = (sel_start, sel_end);
             highlightState = CheckIsHighlighted(sel_start, sel_end);
             highlightText.Text = highlightState;
-
             deleteState = CheckIsDeleted(sel_start, sel_end);
             deleteText.Text = deleteState;
-
 
             Canvas.SetLeft(SelectionMenu, start.X);
             Canvas.SetTop(SelectionMenu, (Math.Ceiling(end.Y / LINE_HEIGHT) + 1) * LINE_HEIGHT);
@@ -833,7 +871,7 @@ namespace PhenoPad.CustomControl
                 if (start >= h[0] && end <= h[0] + h[1])
                 {
                     highlightText.Text = "UnHighlight";
-                    cur_highlight = h;
+                    cur_highlight = (h[0], h[0] + h[1]);
                     showMenu = true;
                     break;
                 }                
@@ -842,7 +880,7 @@ namespace PhenoPad.CustomControl
                 if (start >= d[0] && end <= d[0] + d[1])
                 {
                     deleteText.Text = "UnDelete";
-                    cur_delete = d;
+                    cur_delete = (d[0], d[0] + d[1]);
                     showMenu = true;
                     break;
                 }
@@ -853,10 +891,6 @@ namespace PhenoPad.CustomControl
                 SelectionMenu.Visibility = Visibility.Visible;
             }
             return showMenu;
-        }
-
-        private void RedoOperation(object sender, RoutedEventArgs e) {
-
         }
 
         private void CopyTextToClipboard(object sender, RoutedEventArgs e)
@@ -913,7 +947,6 @@ namespace PhenoPad.CustomControl
 
 
         #endregion
-
 
         #region Stroke Event Handlers
 
@@ -1035,7 +1068,6 @@ namespace PhenoPad.CustomControl
             inkCanvas.InkPresenter.StrokeContainer.Clear();
         }
 
-
         private void annotations_StrokesCollected(InkPresenter sender, InkStrokesCollectedEventArgs args)
         {
             foreach (InkStroke s in args.Strokes)
@@ -1151,6 +1183,43 @@ namespace PhenoPad.CustomControl
             return points;
         }
 
+        private string PreCheckGesture(InkStroke s)
+        {/// <summary>Pre-checks the stroke gesture before passing in to $1</summary>
+
+            Rect bound = s.BoundingRect;
+            if (bound.Width < 20 && bound.Height < 20)
+                return "dot";
+            else if (bound.Height / bound.Width > 3 && bound.Width < 20)
+                return "vline";
+            else if (bound.Width / bound.Height > 3)
+            {
+                List<InkPoint> pts = s.GetInkPoints().ToList();
+                InkPoint pre_point = pts[0];
+                int spike_count = 0;
+                int direction = 1;
+                for (int i = 0; i < pts.Count; i += 3)
+                {
+                    if (direction == 1 && pts[i].Position.X < pre_point.Position.X)
+                    {
+                        spike_count++;
+                        direction = -1;
+                    }
+                    else if (direction == -1 && pts[i].Position.X > pre_point.Position.X)
+                    {
+                        spike_count++;
+                        direction = 1;
+                    }
+                    pre_point = pts[i];
+                }
+                if (spike_count > 3)
+                    return "zigzag";
+                else
+                    return "hline";
+            }
+            else
+                return null;
+        }
+
         private int GetNearestSpaceIndex(int index)
         {/// <summary> Gets the nearest space index for inserting a new word </summary>
 
@@ -1214,41 +1283,7 @@ namespace PhenoPad.CustomControl
             int space_index = rest.IndexOf(' ');
             return space_index;
         }
-      
-        private string PreCheckGesture(InkStroke s)
-        {/// <summary>Pre-checks the stroke gesture before passing in to $1</summary>
-
-            Rect bound = s.BoundingRect;
-            if (bound.Width < 10 && bound.Height < 10)
-                return "dot";
-            else if (bound.Height / bound.Width > 3 && bound.Width < 20)
-                return "vline";
-            else if (bound.Width / bound.Height > 3) {
-                List<InkPoint> pts = s.GetInkPoints().ToList();
-                InkPoint pre_point = pts[0];
-                int spike_count = 0;
-                int direction = 1;
-                for (int i = 0; i < pts.Count; i+=3) {
-                    if (direction == 1 && pts[i].Position.X < pre_point.Position.X)
-                    {
-                        spike_count++;
-                        direction = -1;
-                    }
-                    else if (direction == -1 && pts[i].Position.X > pre_point.Position.X) {
-                        spike_count++;
-                        direction = 1;
-                    }
-                    pre_point = pts[i];
-                }
-                if (spike_count > 3)
-                    return "zigzag";
-                else
-                    return "hline";
-            }
-            else
-                return null;
-        }
-      
+           
         private async Task<bool> analyzeInk(InkStroke lastStroke = null, bool serverFlag = false)
         {/// <summary> Analyze ink strokes contained in inkAnalyzer and add phenotype candidates from fetching API</summary>
 
@@ -1434,7 +1469,6 @@ namespace PhenoPad.CustomControl
 
             }
         }
-
 
         #endregion
 

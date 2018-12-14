@@ -790,7 +790,7 @@ namespace PhenoPad.FileService
         public async Task<bool> SaveEHRFormats(string notebookId, string pageId, EHRPageControl ehr) {
             try
             {
-                EHRFormats format = new EHRFormats(ehr.inserts, ehr.highlights, ehr.deletes);
+                EHRFormats format = new EHRFormats(ehr);
                 string xml = format.Serialize();
                 string path = GetNoteFilePath(notebookId, pageId, NoteFileType.EHRFormat);
                 StorageFile sfile = await ROOT_FOLDER.CreateFileAsync(path, CreationCollisionOption.ReplaceExisting);

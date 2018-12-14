@@ -290,7 +290,7 @@ namespace PhenoPad.CustomControl
 
         public async Task SwitchToEHR(StorageFile file) {
             await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () => {
-                this.ehrPage = new EHRPageControl(file, notebookId, pageId);
+                this.ehrPage = new EHRPageControl(file, this);
                 //EHRScrollViewer.Content = ehrPage;
                 EHROutputGrid.Children.Add(ehrPage);
                 scrollViewer.Visibility = Visibility.Collapsed;
@@ -912,8 +912,8 @@ namespace PhenoPad.CustomControl
                                                                  addin.canvasLeft, addin.canvasTop,
                                                                  addin.transX, addin.transY, addin.viewFactor, 
                                                                  addin.widthOrigin, addin.heightOrigin,
-                                                                 addin.Width, addin.Height,
-                                                                 addin.inDock, addin.isComment);
+                                                                 addin.Width, addin.Height, addin.inDock,
+                                                                 addin.commentID, addin.commentslideX, addin.commentslideY);
                 olist.Add(temp);
             }
 
@@ -953,7 +953,7 @@ namespace PhenoPad.CustomControl
             if (ehrPage == null)
                 canvasAddIn = new AddInControl(ia.name, notebookId, pageId, ia.widthOrigin, ia.heightOrigin);
             else
-                canvasAddIn = new AddInControl(ia.name, ehrPage);
+                canvasAddIn = new AddInControl(ia.name, ehrPage, 0);// need to update this commengID when impleting saving
 
             await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () => {
                 //Manually setting pre-saved configuration of the add-in control
@@ -967,7 +967,9 @@ namespace PhenoPad.CustomControl
                 canvasAddIn.canvasTop = ia.canvasTop;
                 canvasAddIn.dragTransform.X = ia.transX;
                 canvasAddIn.dragTransform.Y = ia.transY;
-                canvasAddIn.isComment = ia.isComment;
+                canvasAddIn.commentID = ia.commentID;
+                canvasAddIn.commentslideX = ia.slideX;
+                canvasAddIn.commentslideY = ia.slideY;
                 Canvas.SetTop(canvasAddIn, ia.canvasTop);
 
                 canvasAddIn.inDock = ia.inDock;
@@ -990,6 +992,7 @@ namespace PhenoPad.CustomControl
             {
                 addinCanvasEHR.Children.Add(canvasAddIn);
                 ehrPage.comments.Add(canvasAddIn);
+                canvasAddIn.SlideToRight();
             }
             canvasAddIn.InitializeFromDisk(false);
 
@@ -1030,9 +1033,9 @@ namespace PhenoPad.CustomControl
                 canvasAddIn.InitializeFromImage(wb);
         }
 
-        public AddInControl NewEHRCommentControl(double left, double top) {
+        public AddInControl NewEHRCommentControl(double left, double top, int commentID) {
             string name = FileManager.getSharedFileManager().CreateUniqueName();
-            AddInControl comment = new AddInControl(name, this.ehrPage);
+            AddInControl comment = new AddInControl(name, this.ehrPage, commentID);
             comment.canvasLeft = left;
             comment.canvasTop = top;
             Canvas.SetLeft(comment, left);

@@ -1,4 +1,5 @@
-﻿using System;
+﻿using PhenoPad.CustomControl;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -23,15 +24,20 @@ namespace PhenoPad.FileService
         [XmlArrayItem("Range", typeof(List<int>))]
         public List<List<int>> deletes;
 
+        [XmlArray("annotates")]
+        [XmlArrayItem("Range", typeof(List<int>))]
+        public List<List<int>> annotates;
+
 
         public EHRFormats() {
         }
 
-        public EHRFormats(List<List<int>> inserts, List<List<int>> highlights, List<List<int>> deletes)
+        public EHRFormats(EHRPageControl ehr)
         {
-            this.inserts = inserts;
-            this.highlights = highlights;
-            this.deletes = deletes;
+            this.inserts = ehr.inserts;
+            this.highlights = ehr.highlights;
+            this.deletes = ehr.deletes;
+            this.annotates = ehr.annotated;
         }
 
         public String Serialize()
