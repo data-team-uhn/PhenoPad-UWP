@@ -107,7 +107,7 @@
                             BorderThickness="1" BorderBrush="DarkGray">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="40"/>
-                            <ColumnDefinition Width="900"/>
+                            <ColumnDefinition Width="800"/>
                         </Grid.ColumnDefinitions>
 
                         <Button Background="WhiteSmoke" Foreground="PaleVioletRed" Grid.Column="0" Grid.Row="1"
@@ -207,7 +207,7 @@
                     <Button Style="{StaticResource ButtonStyle1}" Background="WhiteSmoke"  Width="250" Height="100"
                             Click="PasteTextToEHR"
                             HorizontalContentAlignment="Center" VerticalContentAlignment="Center">
-                        <TextBlock Text="Paste Text" FontWeight="SemiBold" FontSize="30" />
+                        <TextBlock Text="Paste to end" FontWeight="SemiBold" FontSize="30" />
                     </Button>
                 </Grid>
             </StackPanel>

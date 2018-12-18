@@ -690,12 +690,12 @@
 
                 <RelativePanel>
 
-                    <TextBlock Visibility="Visible" x:Name="modeTextBlock" Width="190" Height="auto"
+                    <TextBlock Visibility="Visible" x:Name="modeTextBlock" Width="190" Height="30"
                                RelativePanel.AlignLeftWithPanel="True" 
                                RelativePanel.AlignBottomWithPanel="True"
-                               Margin="10 10 10 10"
+                               Margin="10 10 10 10" Text="Handwriting Mode"
                                Padding=" 0 0 10 0" FontSize="20" FontFamily="Segoe UI" 
-                               FontWeight="ExtraBold" Foreground="Black" Opacity="0.2">Handwriting Mode</TextBlock>
+                               FontWeight="ExtraBold" Foreground="Black" Opacity="0.2" /> 
 
                     <StackPanel Spacing="2" Background="Transparent" Name="pageIndexPanel"  Margin="0 10 0 10" 
                                 Orientation="Horizontal"  

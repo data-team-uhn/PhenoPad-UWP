@@ -115,6 +115,7 @@
       <DependentUpon>BrowsePage.xaml</DependentUpon>
     </Compile>
     <Compile Include="ConfigService\ConfigService.cs" />
+    <Compile Include="CustomControl\AddInAnnotationControl.cs" />
     <Compile Include="CustomControl\AddInImageControl.xaml.cs">
       <DependentUpon>AddInImageControl.xaml</DependentUpon>
     </Compile>

@@ -95,7 +95,7 @@ namespace PhenoPad
         private Notebook notebookObject;
         public static readonly string TypeMode = "Typing Mode";
         public static readonly string WritingMode = "Handwriting Mode";
-        public static readonly string ViewMode = "View Mode";
+        public static readonly string ViewMode = "Previewing Mode";
         private string currentMode = WritingMode;
         private bool ifViewMode = false;
 
@@ -138,7 +138,6 @@ namespace PhenoPad
             //showTextGrid.PointerPressed += new PointerEventHandler(showTextGrid_PointerPressed);
             modeTextBlock.PointerReleased += new PointerEventHandler(modeTextBlock_PointerReleased);
             modeTextBlock.PointerCanceled += new PointerEventHandler(modeTextBlock_PointerExited);
-            modeTextBlock.PointerCaptureLost += new PointerEventHandler(modeTextBlock_PointerExited);
             modeTextBlock.PointerEntered += new PointerEventHandler(modeTextBlock_PointerEntered);
             modeTextBlock.PointerExited += new PointerEventHandler(modeTextBlock_PointerExited);
             //adding event handler to when erase all is clicked

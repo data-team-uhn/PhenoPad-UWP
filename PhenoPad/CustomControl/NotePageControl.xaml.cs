@@ -914,7 +914,7 @@ namespace PhenoPad.CustomControl
                                                                  addin.widthOrigin, addin.heightOrigin,
                                                                  addin.Width, addin.Height, addin.inDock,
                                                                  addin.commentID, addin.commentslideX, addin.commentslideY,
-                                                                 addin.inkRatio);
+                                                                 addin.inkRatio, addin.anno_type);
                 olist.Add(temp);
             }
 
@@ -955,7 +955,7 @@ namespace PhenoPad.CustomControl
                 canvasAddIn = new AddInControl(ia.name, notebookId, pageId, ia.widthOrigin, ia.heightOrigin);
             else {
                 if (ia.commentID != -1)
-                    canvasAddIn = new AddInControl(ia.name, ehrPage, ia.commentID);// need to update this commengID when impleting saving
+                    canvasAddIn = new AddInControl(ia.name, ehrPage, ia.commentID, ia.anno_type);// need to update this commengID when impleting saving
                 else
                     canvasAddIn = new AddInControl(ia.name, notebookId, pageId, ia.widthOrigin, ia.heightOrigin);
             }
@@ -1041,9 +1041,9 @@ namespace PhenoPad.CustomControl
                 canvasAddIn.InitializeFromImage(wb);
         }
 
-        public AddInControl NewEHRCommentControl(double left, double top, int commentID) {
+        public AddInControl NewEHRCommentControl(double left, double top, int commentID, AnnotationType type) {
             string name = FileManager.getSharedFileManager().CreateUniqueName();
-            AddInControl comment = new AddInControl(name, this.ehrPage, commentID);
+            AddInControl comment = new AddInControl(name, this.ehrPage, commentID, type);
             comment.canvasLeft = left;
             comment.canvasTop = top;
             Canvas.SetLeft(comment, left);

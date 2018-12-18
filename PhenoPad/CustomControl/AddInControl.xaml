@@ -96,7 +96,7 @@
                               HorizontalScrollMode="Enabled" 
                               HorizontalScrollBarVisibility="Hidden">
                     <Grid x:Name="scrollGrid">
-                        <Canvas x:Name="commentbg" Background="LightYellow" Visibility="Collapsed"/>
+                        <Canvas x:Name="commentbg" Visibility="Collapsed"/>
                         <Viewbox Name="canvasViewBox">
                             <InkCanvas Visibility="Collapsed" x:Name="inkCanvas" Canvas.ZIndex="5"/>
                         </Viewbox>

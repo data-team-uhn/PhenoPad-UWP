@@ -1,4 +1,5 @@
-﻿using System;
+﻿using PhenoPad.CustomControl;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -31,6 +32,7 @@ namespace PhenoPad.FileService
         public double slideX { get; set; }
         public double slideY { get; set; }
         public int commentID { get; set; }
+        public AnnotationType anno_type { get; set; }
         public double inkRatio { get; set; }
 
 
@@ -49,7 +51,7 @@ namespace PhenoPad.FileService
                                     double transX, double transY, ScaleTransform zoomFactor,
                                     double widthOrigin, double heightOrigin,
                                     double width, double height, bool inDock,
-                                    int commentID, double slideX, double slideY, double inkRatio)
+                                    int commentID, double slideX, double slideY, double inkRatio, AnnotationType type)
         {
             this.name = name;
             this.notebookId = notebookId;
@@ -69,6 +71,7 @@ namespace PhenoPad.FileService
             this.slideX = slideX;
             this.slideY = slideY;
             this.inkRatio = inkRatio;
+            this.anno_type = type;
             date = DateTime.Now.ToString("MM/dd/yyyy HH:mm:ss");
         }
 
