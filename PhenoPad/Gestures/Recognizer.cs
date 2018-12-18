@@ -82,7 +82,6 @@ namespace PhenoPad.Gestures
         public static readonly double HalfDiagonal = 0.5 * Diagonal;
         public static readonly PointR Origin = new PointR(0f, 0f);
         private static readonly double Phi = 0.5 * (-1.0 + Math.Sqrt(5.0)); // Golden Ratio
-        public string GESTURE_PATH = @"C:\Users\helen\AppData\Local\Packages\16bc6b12-daff-4104-a251-1fa502edec02_qfxtr3e52dkcc\LocalState\Gestures";
 
 
         // batch testing
@@ -101,12 +100,11 @@ namespace PhenoPad.Gestures
             _gestures = new Dictionary<string, Unistroke>(256);
         }
 
-        public async Task LoadGestureFromPath() {
-            StorageFolder fd = await StorageFolder.GetFolderFromPathAsync(GESTURE_PATH);
+        public async Task LoadGestureFromPath(string path) {
+            StorageFolder fd = await StorageFolder.GetFolderFromPathAsync(path);
             IReadOnlyList<StorageFile> files = await fd.GetFilesAsync();
             foreach (var f in files)
                 this.LoadGesture(f.Path);
-
         }
 
         #endregion

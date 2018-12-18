@@ -444,7 +444,7 @@
 
                 <Grid x:Name="EHROutputGrid">
 
-                    <Canvas x:Name="addinCanvasEHR" x:FieldModifier="public" Canvas.ZIndex="5" />
+                    <Canvas x:Name="addinCanvasEHR" x:FieldModifier="public" Canvas.ZIndex="100" />
                 </Grid>
             </ScrollViewer>
 

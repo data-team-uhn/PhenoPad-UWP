@@ -37,7 +37,7 @@
         </Flyout>
     </UserControl.Resources>
 
-    <Grid Margin="0 10 0 0" Padding="0 100 0 0" 
+    <Grid Margin="0 10 0 0" Padding="0 100 0 150" 
           Background="{ThemeResource SystemControlBackgroundChromeWhiteBrush}" 
           Height="{x:Bind EHR_HEIGHT}" Width="{x:Bind EHR_WIDTH}">
         
@@ -87,7 +87,8 @@
         <!--insert text pop up-->
         <Canvas x:Name="popupCanvas" Grid.ColumnSpan="2">
 
-            <Button Style="{StaticResource ButtonStyle1}" x:Name="DeleteComment" Visibility="Collapsed" Background="WhiteSmoke">
+            <Button Style="{StaticResource ButtonStyle1}" x:Name="DeleteComment" Visibility="Collapsed" 
+                    Click="RemoveComment" Background="WhiteSmoke">
                 <SymbolIcon Foreground="PaleVioletRed" Symbol="Clear"/>
             </Button>
 

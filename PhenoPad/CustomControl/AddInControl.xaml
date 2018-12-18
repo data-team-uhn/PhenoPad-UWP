@@ -76,62 +76,61 @@
 
         </ResourceDictionary>
     </UserControl.Resources>
+        <Grid Background="WhiteSmoke" Name="OutlineGrid" Opacity="1">
 
-    <Grid Background="WhiteSmoke" Name="OutlineGrid" Opacity="1">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="48"></RowDefinition>
+                <RowDefinition Height="*"></RowDefinition>
+            </Grid.RowDefinitions>
 
-        <Grid.RowDefinitions>
-            <RowDefinition Height="48"></RowDefinition>
-            <RowDefinition Height="*"></RowDefinition>
-        </Grid.RowDefinitions>
-
-        <Grid.RenderTransform>
-            <TranslateTransform x:Name="addinSlide" />
-        </Grid.RenderTransform>
+            <Grid.RenderTransform>
+                <TranslateTransform x:Name="addinSlide" />
+            </Grid.RenderTransform>
 
 
-        <Grid Name="contentGrid" Grid.Row="1">
-            <!--<local:AddInImageControl Canvas.ZIndex="1" Visibility="Collapsed" x:Name="imageControl"/>-->
-            <ScrollViewer Canvas.ZIndex="2" Grid.Row="1" x:Name="scrollViewer" Visibility="Collapsed" ZoomMode="Enabled" 
+            <Grid Name="contentGrid" Grid.Row="1">
+                <!--<local:AddInImageControl Canvas.ZIndex="1" Visibility="Collapsed" x:Name="imageControl"/>-->
+                <ScrollViewer Canvas.ZIndex="2" Grid.Row="1" x:Name="scrollViewer" Visibility="Collapsed" ZoomMode="Enabled" 
                               MinZoomFactor="1" VerticalScrollMode="Enabled" 
                               VerticalScrollBarVisibility="Hidden" 
                               HorizontalScrollMode="Enabled" 
                               HorizontalScrollBarVisibility="Hidden">
-                <Grid x:Name="scrollGrid">
-                    <Canvas x:Name="commentbg" Background="LightYellow" Visibility="Collapsed"/>
-                    <Viewbox Name="canvasViewBox">
-                        <InkCanvas Visibility="Collapsed" x:Name="inkCanvas" Canvas.ZIndex="5"/>
-                    </Viewbox>
-                </Grid>
-            </ScrollViewer>
-        </Grid>
+                    <Grid x:Name="scrollGrid">
+                        <Canvas x:Name="commentbg" Background="LightYellow" Visibility="Collapsed"/>
+                        <Viewbox Name="canvasViewBox">
+                            <InkCanvas Visibility="Collapsed" x:Name="inkCanvas" Canvas.ZIndex="5"/>
+                        </Viewbox>
+                    </Grid>
+                </ScrollViewer>
+            </Grid>
 
-        <Grid Name="categoryGrid"  Grid.Row="1">
+            <Grid Name="categoryGrid"  Grid.Row="1">
 
-            <StackPanel Name="SelectionStackPanel"  Width="200"  HorizontalAlignment="Center" VerticalAlignment="Center">
-                <Button Background="Transparent" Style="{StaticResource MyButtonStyle}" HorizontalAlignment="Stretch" Click="DrawingButton_Click"  Name="DrawingButton" Height="{StaticResource categoryButtonHeight}">
-                    <TextBlock FontSize="{StaticResource categoryButtonFontSize}" >Drawing</TextBlock>
-                </Button>
-                <Button Background="Transparent" Style="{StaticResource MyButtonStyle}" HorizontalAlignment="Stretch" Name="InsertPhotoButton" Click="InsertPhotoButton_Click" Height="{StaticResource categoryButtonHeight}">
-                    <TextBlock FontSize="{StaticResource categoryButtonFontSize}" >Insert a image</TextBlock>
-                </Button>
-                <Button Background="Transparent" Style="{StaticResource MyButtonStyle}" HorizontalAlignment="Stretch" Name="TakePhotoButton" Click="TakePhotoButton_Click" Height="{StaticResource categoryButtonHeight}">
-                    <TextBlock FontSize="{StaticResource categoryButtonFontSize}" >Take a photo</TextBlock>
-                </Button>
-            </StackPanel>
-        </Grid>
+                <StackPanel Name="SelectionStackPanel"  Width="200"  HorizontalAlignment="Center" VerticalAlignment="Center">
+                    <Button Background="Transparent" Style="{StaticResource MyButtonStyle}" HorizontalAlignment="Stretch" Click="DrawingButton_Click"  Name="DrawingButton" Height="{StaticResource categoryButtonHeight}">
+                        <TextBlock FontSize="{StaticResource categoryButtonFontSize}" >Drawing</TextBlock>
+                    </Button>
+                    <Button Background="Transparent" Style="{StaticResource MyButtonStyle}" HorizontalAlignment="Stretch" Name="InsertPhotoButton" Click="InsertPhotoButton_Click" Height="{StaticResource categoryButtonHeight}">
+                        <TextBlock FontSize="{StaticResource categoryButtonFontSize}" >Insert a image</TextBlock>
+                    </Button>
+                    <Button Background="Transparent" Style="{StaticResource MyButtonStyle}" HorizontalAlignment="Stretch" Name="TakePhotoButton" Click="TakePhotoButton_Click" Height="{StaticResource categoryButtonHeight}">
+                        <TextBlock FontSize="{StaticResource categoryButtonFontSize}" >Take a photo</TextBlock>
+                    </Button>
+                </StackPanel>
+            </Grid>
 
 
 
-        <RelativePanel Grid.Row="0" Name="TitleRelativePanel" Visibility="Visible" Background="WhiteSmoke">
-            <Button Style="{StaticResource MyButtonStyle}" Background="Transparent" Foreground="Gray" 
+            <RelativePanel Grid.Row="0" Name="TitleRelativePanel" Visibility="Visible" Background="WhiteSmoke">
+                <Button Style="{StaticResource MyButtonStyle}" Background="Transparent" Foreground="Gray" 
                     Height="48" VerticalAlignment="Top" Width="48" Padding="0" Name="deleteButton" Click="Delete_Click" Margin="0">
-                <SymbolIcon Symbol="Clear" Height="35" Width="35" Margin="-1,-1,-3,-3" HorizontalAlignment="Left"></SymbolIcon>
-            </Button>
-            <Button Style="{StaticResource MyButtonStyle}" Background="Transparent" Foreground="Gray" Height="48" 
+                    <SymbolIcon Symbol="Clear" Height="35" Width="35" Margin="-1,-1,-3,-3" HorizontalAlignment="Left"></SymbolIcon>
+                </Button>
+                <Button Style="{StaticResource MyButtonStyle}" Background="Transparent" Foreground="Gray" Height="48" 
                     VerticalAlignment="Top" Width="48" Padding="0" Name="minimizeButton" Click="Minimize_Click" Margin="50,0,0,0">
-                <SymbolIcon Symbol="Remove" Height="35" Width="35" Margin="-1,-1,-3,-3" HorizontalAlignment="Left"></SymbolIcon>
-            </Button>
-            <Button Style="{StaticResource MyButtonStyle}" Background="Transparent" Foreground="Gray" VerticalAlignment="Top" 
+                    <SymbolIcon Symbol="Remove" Height="35" Width="35" Margin="-1,-1,-3,-3" HorizontalAlignment="Left"></SymbolIcon>
+                </Button>
+                <Button Style="{StaticResource MyButtonStyle}" Background="Transparent" Foreground="Gray" VerticalAlignment="Top" 
                     RelativePanel.AlignRightWithPanel="True"
                     Width="48" Height="48" Padding="0" Name="manipulateButton" 
                     Click="showMovingGrid" Holding="manipulateButton_Holding"
@@ -139,94 +138,91 @@
                     ManipulationStarted="Moving_Started"
                     ManipulationDelta="Moving_Delta"
                     ManipulationCompleted="Moving_Completed">
-                <Grid>
+                    <Grid>
                         <SymbolIcon Symbol="FullScreen" Width="40" Height="40" RenderTransformOrigin="0.5,0.5" >
-                        <SymbolIcon.RenderTransform>
-                            <CompositeTransform Rotation="-45"/>
-                        </SymbolIcon.RenderTransform>
-                    </SymbolIcon>
-                    <SymbolIcon Symbol="FullScreen" Width="40" Height="40" RenderTransformOrigin="0.5,0.5" >
-                        <SymbolIcon.RenderTransform>
-                            <CompositeTransform Rotation="-135"/>
-                        </SymbolIcon.RenderTransform>
-                    </SymbolIcon>
-                </Grid>
+                            <SymbolIcon.RenderTransform>
+                                <CompositeTransform Rotation="-45"/>
+                            </SymbolIcon.RenderTransform>
+                        </SymbolIcon>
+                        <SymbolIcon Symbol="FullScreen" Width="40" Height="40" RenderTransformOrigin="0.5,0.5" >
+                            <SymbolIcon.RenderTransform>
+                                <CompositeTransform Rotation="-135"/>
+                            </SymbolIcon.RenderTransform>
+                        </SymbolIcon>
+                    </Grid>
 
-            </Button>
-        </RelativePanel>
+                </Button>
+            </RelativePanel>
 
-        <InkToolbar x:Name="inkToolbar" Background="LightGray"   Grid.Row="0" 
+            <InkToolbar x:Name="inkToolbar" Background="LightGray"   Grid.Row="0" 
         VerticalAlignment="Center" Margin="0 0 48 0" Visibility="Collapsed"
         HorizontalAlignment="Right" 
         Orientation="Horizontal"   />
 
-        <Button Height="48" Width="48" Name="PhotoButton" Style="{StaticResource MyButtonStyle}"
+            <Button Height="48" Width="48" Name="PhotoButton" Style="{StaticResource MyButtonStyle}"
                 Click="PhotoButton_Click" Foreground="Black" Background="WhiteSmoke" 
                 Grid.Row="0"  HorizontalAlignment="Right" Visibility="Collapsed" 
-                Margin="0 0 48 0"> 
-            <SymbolIcon Symbol="Camera" />
-        </Button>
+                Margin="0 0 48 0">
+                <SymbolIcon Symbol="Camera" />
+            </Button>
 
-        <!-- Photo service -->
-        <Grid Background="WhiteSmoke" Grid.Row="1"
+            <!-- Photo service -->
+            <Grid Background="WhiteSmoke" Grid.Row="1"
               Name="CameraCanvas"
               RelativePanel.AlignRightWithPanel="True" Visibility="Collapsed">
-            <photovideoservice:PhotoVideoCaptureControl x:Name="captureControl"></photovideoservice:PhotoVideoCaptureControl>
-        </Grid>
+                <photovideoservice:PhotoVideoCaptureControl x:Name="captureControl"></photovideoservice:PhotoVideoCaptureControl>
+            </Grid>
 
-        <Grid Grid.Row="0" Grid.RowSpan="2" Background="White" Opacity="0.9"  
+            <Grid Grid.Row="0" Grid.RowSpan="2" Background="White" Opacity="0.9"  
               Name="MovingGrid"  Visibility="Collapsed"
               Tapped="noImageManipulation_Tapped"
               ManipulationMode="TranslateX,TranslateY"
               ManipulationStarted="AddInManipulate_Started" 
               ManipulationDelta="AddInManipulate_Delta" 
               ManipulationCompleted="AddInManipulate_Completed">
-            <TextBlock Text="Resizing Mode" FontWeight="Bold" FontSize="24" VerticalAlignment="Center"  HorizontalAlignment="Center"
+                <TextBlock Text="Resizing Mode" FontWeight="Bold" FontSize="24" VerticalAlignment="Center"  HorizontalAlignment="Center"
                        Opacity="0.3"/>
-            <TextBlock Text="Tap to cancel" FontWeight="SemiBold" FontSize="18" VerticalAlignment="Center"  HorizontalAlignment="Center"
+                <TextBlock Text="Tap to cancel" FontWeight="SemiBold" FontSize="18" VerticalAlignment="Center"  HorizontalAlignment="Center"
                        Opacity="0.3" Margin="146,166,147,110"/>
-            <Grid Name="noImageManipulation">
-                <SymbolIcon Name="leftA" Margin="10" Symbol="Back" VerticalAlignment="Center" HorizontalAlignment="Left" />
-                <SymbolIcon Name="rightA" Margin="10" Symbol="Back" VerticalAlignment="Center" HorizontalAlignment="Right" RenderTransformOrigin="0.5,0.488">
-                    <SymbolIcon.RenderTransform>
-                        <CompositeTransform Rotation="180"/>
-                    </SymbolIcon.RenderTransform>
-                </SymbolIcon>
-                <SymbolIcon Name="topA" Margin="10" Symbol="Back" VerticalAlignment="Top" HorizontalAlignment="Center" RenderTransformOrigin="0.5,0.488">
-                    <SymbolIcon.RenderTransform>
-                        <CompositeTransform Rotation="90"/>
-                    </SymbolIcon.RenderTransform>
-                </SymbolIcon>
-                <SymbolIcon Name="bottomA" Margin="10" Symbol="Back" VerticalAlignment="Bottom" HorizontalAlignment="Center" RenderTransformOrigin="0.5,0.488">
-                    <SymbolIcon.RenderTransform>
-                        <CompositeTransform Rotation="270"/>
-                    </SymbolIcon.RenderTransform>
-                </SymbolIcon>
-                <SymbolIcon Name="tlA" Margin="10" Symbol="Back" VerticalAlignment="Top" HorizontalAlignment="Left" RenderTransformOrigin="0.5,0.488">
-                    <SymbolIcon.RenderTransform>
-                        <CompositeTransform Rotation="45"/>
-                    </SymbolIcon.RenderTransform>
-                </SymbolIcon>
-                <SymbolIcon Name="trA" Margin="10" Symbol="Back" VerticalAlignment="Top" HorizontalAlignment="Right" RenderTransformOrigin="0.5,0.488">
-                    <SymbolIcon.RenderTransform>
-                        <CompositeTransform Rotation="135"/>
-                    </SymbolIcon.RenderTransform>
-                </SymbolIcon>
-                <SymbolIcon Name="blA" Margin="10" Symbol="Back" VerticalAlignment="Bottom" HorizontalAlignment="Left" RenderTransformOrigin="0.5,0.488">
-                    <SymbolIcon.RenderTransform>
-                        <CompositeTransform Rotation="-45"/>
-                    </SymbolIcon.RenderTransform>
-                </SymbolIcon>
-                <SymbolIcon Name="brA" Margin="10" Symbol="Back" VerticalAlignment="Bottom" HorizontalAlignment="Right" RenderTransformOrigin="0.5,0.488">
-                    <SymbolIcon.RenderTransform>
-                        <CompositeTransform Rotation="-135"/>
-                    </SymbolIcon.RenderTransform>
-                </SymbolIcon>
+                <Grid Name="noImageManipulation">
+                    <SymbolIcon Name="leftA" Margin="10" Symbol="Back" VerticalAlignment="Center" HorizontalAlignment="Left" />
+                    <SymbolIcon Name="rightA" Margin="10" Symbol="Back" VerticalAlignment="Center" HorizontalAlignment="Right" RenderTransformOrigin="0.5,0.488">
+                        <SymbolIcon.RenderTransform>
+                            <CompositeTransform Rotation="180"/>
+                        </SymbolIcon.RenderTransform>
+                    </SymbolIcon>
+                    <SymbolIcon Name="topA" Margin="10" Symbol="Back" VerticalAlignment="Top" HorizontalAlignment="Center" RenderTransformOrigin="0.5,0.488">
+                        <SymbolIcon.RenderTransform>
+                            <CompositeTransform Rotation="90"/>
+                        </SymbolIcon.RenderTransform>
+                    </SymbolIcon>
+                    <SymbolIcon Name="bottomA" Margin="10" Symbol="Back" VerticalAlignment="Bottom" HorizontalAlignment="Center" RenderTransformOrigin="0.5,0.488">
+                        <SymbolIcon.RenderTransform>
+                            <CompositeTransform Rotation="270"/>
+                        </SymbolIcon.RenderTransform>
+                    </SymbolIcon>
+                    <SymbolIcon Name="tlA" Margin="10" Symbol="Back" VerticalAlignment="Top" HorizontalAlignment="Left" RenderTransformOrigin="0.5,0.488">
+                        <SymbolIcon.RenderTransform>
+                            <CompositeTransform Rotation="45"/>
+                        </SymbolIcon.RenderTransform>
+                    </SymbolIcon>
+                    <SymbolIcon Name="trA" Margin="10" Symbol="Back" VerticalAlignment="Top" HorizontalAlignment="Right" RenderTransformOrigin="0.5,0.488">
+                        <SymbolIcon.RenderTransform>
+                            <CompositeTransform Rotation="135"/>
+                        </SymbolIcon.RenderTransform>
+                    </SymbolIcon>
+                    <SymbolIcon Name="blA" Margin="10" Symbol="Back" VerticalAlignment="Bottom" HorizontalAlignment="Left" RenderTransformOrigin="0.5,0.488">
+                        <SymbolIcon.RenderTransform>
+                            <CompositeTransform Rotation="-45"/>
+                        </SymbolIcon.RenderTransform>
+                    </SymbolIcon>
+                    <SymbolIcon Name="brA" Margin="10" Symbol="Back" VerticalAlignment="Bottom" HorizontalAlignment="Right" RenderTransformOrigin="0.5,0.488">
+                        <SymbolIcon.RenderTransform>
+                            <CompositeTransform Rotation="-135"/>
+                        </SymbolIcon.RenderTransform>
+                    </SymbolIcon>
+                </Grid>
+
             </Grid>
-
         </Grid>
-
-
-
-    </Grid>
 </UserControl>

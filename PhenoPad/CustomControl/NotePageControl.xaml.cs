@@ -913,7 +913,8 @@ namespace PhenoPad.CustomControl
                                                                  addin.transX, addin.transY, addin.viewFactor, 
                                                                  addin.widthOrigin, addin.heightOrigin,
                                                                  addin.Width, addin.Height, addin.inDock,
-                                                                 addin.commentID, addin.commentslideX, addin.commentslideY);
+                                                                 addin.commentID, addin.commentslideX, addin.commentslideY,
+                                                                 addin.inkRatio);
                 olist.Add(temp);
             }
 
@@ -952,8 +953,12 @@ namespace PhenoPad.CustomControl
             AddInControl canvasAddIn;
             if (ehrPage == null)
                 canvasAddIn = new AddInControl(ia.name, notebookId, pageId, ia.widthOrigin, ia.heightOrigin);
-            else
-                canvasAddIn = new AddInControl(ia.name, ehrPage, 0);// need to update this commengID when impleting saving
+            else {
+                if (ia.commentID != -1)
+                    canvasAddIn = new AddInControl(ia.name, ehrPage, ia.commentID);// need to update this commengID when impleting saving
+                else
+                    canvasAddIn = new AddInControl(ia.name, notebookId, pageId, ia.widthOrigin, ia.heightOrigin);
+            }
 
             await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () => {
                 //Manually setting pre-saved configuration of the add-in control
@@ -970,6 +975,7 @@ namespace PhenoPad.CustomControl
                 canvasAddIn.commentID = ia.commentID;
                 canvasAddIn.commentslideX = ia.slideX;
                 canvasAddIn.commentslideY = ia.slideY;
+                canvasAddIn.inkRatio = ia.inkRatio;
                 Canvas.SetTop(canvasAddIn, ia.canvasTop);
 
                 canvasAddIn.inDock = ia.inDock;
@@ -991,8 +997,10 @@ namespace PhenoPad.CustomControl
             else
             {
                 addinCanvasEHR.Children.Add(canvasAddIn);
-                ehrPage.comments.Add(canvasAddIn);
-                canvasAddIn.SlideToRight();
+                if (canvasAddIn.commentID != -1) {
+                    ehrPage.comments.Add(canvasAddIn);
+                    canvasAddIn.SlideToRight();
+                }
             }
             canvasAddIn.InitializeFromDisk(false);
 
@@ -1042,6 +1050,7 @@ namespace PhenoPad.CustomControl
             Canvas.SetTop(comment, top);
             comment.slideOffset = rootPage.ActualWidth - left;
             addinCanvasEHR.Children.Add(comment);
+            autosaveDispatcherTimer.Start();
             return comment;
         }
 
@@ -1126,9 +1135,13 @@ namespace PhenoPad.CustomControl
                 if (images.Count > 0)
                 {
                     addinlist.Visibility = Visibility.Visible;
-                    addinlist.ItemsSource = images;
-                    NumIcon.Text = $"{images.Count}";
-                    badgeGrid.Visibility = Visibility.Visible;
+                    List<ImageAndAnnotation> addins = images.Where(x => x.commentID == -1).ToList();
+                    addinlist.ItemsSource = addins;
+                    if (addins.Count > 0)
+                    {
+                        NumIcon.Text = $"{addins.Count}";
+                        badgeGrid.Visibility = Visibility.Visible;
+                    }
                 }
                 else
                 {

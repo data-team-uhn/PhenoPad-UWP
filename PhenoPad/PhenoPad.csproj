@@ -148,6 +148,7 @@
     <Compile Include="FileService\ImageAndAnnotation.cs" />
     <Compile Include="FileService\NotePage.cs" />
     <Compile Include="Gestures\Category.cs" />
+    <Compile Include="Gestures\GestureManager.cs" />
     <Compile Include="Gestures\NBestList.cs" />
     <Compile Include="Gestures\ProgressEvent.cs" />
     <Compile Include="Gestures\Recognizer.cs" />

@@ -75,6 +75,7 @@ namespace PhenoPad.CustomControl
 
         public double commentslideX;
         public double commentslideY;
+        public double inkRatio;
 
         public int commentID;
 
@@ -287,6 +288,8 @@ namespace PhenoPad.CustomControl
                 this.RenderTransform = tg;
             }
             Canvas.SetZIndex(this, 90);
+            commentbg.Visibility = Visibility.Collapsed;
+
 
         }
 
@@ -330,16 +333,6 @@ namespace PhenoPad.CustomControl
             drawingAttributes.FitToCurve = true;
             inkCanvas.InkPresenter.UpdateDefaultDrawingAttributes(drawingAttributes);
 
-            //Timer event handler bindings
-            {
-                inkCanvas.InkPresenter.StrokeInput.StrokeStarted += StrokeInput_StrokeStarted;
-                inkCanvas.InkPresenter.StrokeInput.StrokeEnded += StrokeInput_StrokeEnded;
-                inkCanvas.InkPresenter.StrokesCollected += StrokesCollected;
-                inkCanvas.InkPresenter.StrokesErased += InkPresenter_StrokesErased;
-                autosaveDispatcherTimer.Tick += AutoSaveTimer_Tick;
-                //If user has not add new stroke in 0.5 seconds, tick auto timer
-                autosaveDispatcherTimer.Interval = TimeSpan.FromSeconds(0.5);
-            }
 
             //control transform group binding
             {
@@ -356,13 +349,18 @@ namespace PhenoPad.CustomControl
             scrollViewer.HorizontalScrollMode = ScrollMode.Disabled;
             scrollViewer.VerticalScrollMode = ScrollMode.Disabled;
             commentbg.Visibility = Visibility.Visible;
-            inkCan.PointerEntered += ShowCommentLine;
-            inkCan.PointerExited += HideCommentLine;
+            this.PointerEntered += ShowCommentLine;
+            this.PointerEntered += ToggleMenu;
+            this.PointerExited += HideCommentLine;
+            //this.PointerExited += ToggleMenu;
 
-            this.Tapped += ToggleMenu;
+            this.Tapped += HideMenu;
+            this.Tapped += ReEdit;
+            this.PointerPressed += HideMenu;
             Canvas.SetZIndex(this, 99);
 
             TitleRelativePanel.Visibility = Visibility.Collapsed;
+            inkToolbar.Visibility = Visibility.Collapsed;
             TitleRelativePanel.Children.Remove(manipulateButton);
             Grid.SetRow(contentGrid, 0);
             Grid.SetRowSpan(contentGrid, 2);
@@ -529,9 +527,6 @@ namespace PhenoPad.CustomControl
         public async void Delete_Click(object sender = null, RoutedEventArgs e = null)
         {
             ((Panel)this.Parent).Children.Remove(this);
-            if (commentID != -1) {
-                MainPage.Current.curPage.ehrPage.RemoveComment(this);
-            }
             await rootPage.curPage.AutoSaveAddin(null);
             await rootPage.curPage.refreshAddInList();
         }
@@ -711,6 +706,7 @@ namespace PhenoPad.CustomControl
             if (commentID != -1) {
                 inkCan.Height = this.Height;
                 inkCan.Width = this.Width;
+                TitleRelativePanel.Visibility = Visibility.Collapsed;
             }
 
             else if (!onlyView)
@@ -959,6 +955,30 @@ namespace PhenoPad.CustomControl
             }
         }
 
+        private async void ReEdit(object sender, TappedRoutedEventArgs e)
+        {
+            if (addinSlide.X > 0) {
+                Debug.WriteLine($"inkratio = {inkRatio}");
+                DoubleAnimation dx = (DoubleAnimation)EHRCommentSlidingAnimation.Children.ElementAt(0);
+                dx.By = -1 * commentslideX;
+                DoubleAnimation dy = (DoubleAnimation)EHRCommentSlidingAnimation.Children.ElementAt(1);
+                dy.By = -1 * commentslideY;
+                await EHRCommentSlidingAnimation.BeginAsync();
+                foreach (InkStroke s in inkCan.InkPresenter.StrokeContainer.GetStrokes())
+                    s.PointTransform = Matrix3x2.CreateScale(1, 1);
+
+                this.widthOrigin = 700;
+                this.heightOrigin = 150;
+                this.Width = this.widthOrigin;
+                this.Height = this.heightOrigin;
+                inkCan.Height = this.Height;
+                inkCan.Width = this.Width;
+                inkCan.InkPresenter.IsInputEnabled = true;
+               
+            }
+
+        }
+
         public async void SlideDown(double y) {
             DoubleAnimation dx = (DoubleAnimation)EHRCommentSlidingAnimation.Children.ElementAt(0);
             dx.By = 0;
@@ -967,37 +987,59 @@ namespace PhenoPad.CustomControl
             await EHRCommentSlidingAnimation.BeginAsync();
         }
 
-        private void ToggleMenu(object sender, TappedRoutedEventArgs e)
+        private void ToggleMenu(object sender, RoutedEventArgs e)
         {
             if (addinSlide.X > 0)
-            {
                 ehr.showCommentMenu(this, addinSlide.X, addinSlide.Y);
-            }
         }
 
-        private void CompressComment()
-        { //Shrinks the strokes in inkCan and readjusts the control frame size
+        private void HideMenu(object sender, RoutedEventArgs e) {
+            if (addinSlide.X > 0)
+                ehr.hideCommentMenu();
+        }
 
+        private async void CompressComment()
+        { //Shrinks the strokes in inkCan and readjusts the control frame size
             if (!hasImage) {
+                inkAnalyzer.AddDataForStrokes(inkCan.InkPresenter.StrokeContainer.GetStrokes());
+                await inkAnalyzer.AnalyzeAsync();
+                var inknodes = inkAnalyzer.AnalysisRoot.FindNodes(InkAnalysisNodeKind.Line);
                 foreach (InkStroke s in inkCan.InkPresenter.StrokeContainer.GetStrokes())
                     s.Selected = true;
                 Rect bound = inkCan.InkPresenter.StrokeContainer.BoundingRect;
-                    double ratio = bound.Height / COMMENT_HEIGHT;
-                    if (ratio >= 0.7)
-                    {
-                        ratio = 0.7;
-                        foreach (InkStroke s in inkCan.InkPresenter.StrokeContainer.GetStrokes())
-                            s.PointTransform = Matrix3x2.CreateScale((float)ratio, (float)ratio);
-                    }
+                if (inknodes.Count > 1)
+                    inkRatio = bound.Height / (2 * COMMENT_HEIGHT);
+                else
+                    inkRatio = bound.Height / COMMENT_HEIGHT;
+                if (inkRatio >= 0.7)
+                {
+                    inkRatio = 0.7;
+                    foreach (InkStroke s in inkCan.InkPresenter.StrokeContainer.GetStrokes())
+                        s.PointTransform = Matrix3x2.CreateScale((float)inkRatio, (float)inkRatio);
+                }
                 bound = inkCan.InkPresenter.StrokeContainer.BoundingRect;
-                Debug.WriteLine($"new height = {bound.Height}, new width = {bound.Width}");
                 inkCanvas.InkPresenter.StrokeContainer.MoveSelected(new Point(-1 * bound.X + 1, -1 * bound.Y + 1));
-                this.Height = COMMENT_HEIGHT;
+                if (inknodes.Count > 1)
+                    this.Height = 2 * COMMENT_HEIGHT;
+                else
+                    this.Height = COMMENT_HEIGHT;
                 this.Width = bound.X + bound.Width + 1 < MIN_WIDTH ? MIN_WIDTH + 1 : bound.X + bound.Width + 1 ;
                 this.heightOrigin = this.Height;
                 this.widthOrigin = this.Width;
+                inkAnalyzer.ClearDataForAllStrokes();
             }
         }
+
+        public async Task<double> GetCommentHeight() {
+            inkAnalyzer.AddDataForStrokes(inkCan.InkPresenter.StrokeContainer.GetStrokes());
+            await inkAnalyzer.AnalyzeAsync();
+            var inknodes = inkAnalyzer.AnalysisRoot.FindNodes(InkAnalysisNodeKind.Line);
+            if (inknodes.Count > 1)
+                return 2 * COMMENT_HEIGHT;
+            else
+                return COMMENT_HEIGHT;
+        }
+
 
         private void ShowCommentLine(object sender, PointerRoutedEventArgs e)
         {
