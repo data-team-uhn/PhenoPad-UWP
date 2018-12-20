@@ -340,8 +340,9 @@ namespace PhenoPad.CustomControl
                         if (comments[i].commentslideY - lastOffset < -LINE_HEIGHT)
                         {
                             Debug.WriteLine($"i > 0 exceeded");
-                            comments[i].commentslideY = -LINE_HEIGHT;
                             slideOffset = -(comments[i].commentslideY + LINE_HEIGHT);
+                            comments[i].commentslideY = -LINE_HEIGHT;
+                            Debug.WriteLine($"i > 0 final slide offset = {slideOffset}");
                         }
                         else
                         {
@@ -350,7 +351,7 @@ namespace PhenoPad.CustomControl
                         }
 
                     }
-                    comments[i].SlideVertical(slideOffset);
+                    comments[i].Slide(y:slideOffset);
 
 
 
@@ -370,6 +371,7 @@ namespace PhenoPad.CustomControl
             RefreshTextStyle();
             HideCommentLine();
             await MainPage.Current.curPage.AutoSaveAddin(null);
+            await FileManager.getSharedFileManager().DeleteAddInFile(notebookid, pageid, comment.name);
         }
 
         internal void ShowCommentLine(AddInControl comment)
@@ -425,7 +427,7 @@ namespace PhenoPad.CustomControl
                     else if (shift)
                     {
                         comment.commentslideY += overlap_offset;
-                        comment.SlideVertical(overlap_offset);
+                        comment.Slide(y:overlap_offset);
                     }
                     else if (comment.commentID > lastAddedCommentID && collides)
                     {
@@ -433,7 +435,7 @@ namespace PhenoPad.CustomControl
                         overlap_offset = (lastAdded.canvasTop + lastAdded.commentslideY + lastAdded.Height + 10) - (comment.canvasTop + comment.commentslideY) + 10;
                         Debug.WriteLine($"overlap offset = {overlap_offset}");
                         comment.commentslideY += overlap_offset;
-                        comment.SlideVertical(overlap_offset);
+                        comment.Slide(y:overlap_offset);
                         shift = true;
                     }
 
@@ -448,27 +450,27 @@ namespace PhenoPad.CustomControl
 
         private async void OnElementTapped(object sender = null, TappedRoutedEventArgs e = null)
         {/// Dismiss all pop-ups when tapping on canvas
-            inputgrid.Visibility = Visibility.Collapsed;
-            inputMarkup.Visibility = Visibility.Collapsed;
-            cpMenu.Visibility = Visibility.Collapsed;
-            RefreshTextStyle();
-            SelectionMenu.Visibility = Visibility.Collapsed;
-            ClearOperationStrokes();
-            await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () => {
-                if (curLineWordsStackPanel.Children.Count > 0)
+            await Dispatcher.RunAsync(CoreDispatcherPriority.High, () => {
+                if (inputInkCanvas.InkPresenter.StrokeContainer.GetStrokes().Count > 0)
                     InsertToEHR();
                 SlideCommentsToSide();
+                inputgrid.Visibility = Visibility.Collapsed;
+                inputMarkup.Visibility = Visibility.Collapsed;
+                cpMenu.Visibility = Visibility.Collapsed;
+                SelectionMenu.Visibility = Visibility.Collapsed;
+                ClearOperationStrokes();
+                if (popupCanvas.Children.Contains(lasso))
+                {
+                    popupCanvas.Children.Remove(lasso);
+                }
+                HideCommentLine();
+                //DeleteComment.Visibility = Visibility.Collapsed;
+                cur_selected = (-1, -1);
+                cur_highlight = (-1, -1);
+                cur_delete = (-1, -1);
+                current_index = -1;
+                RefreshTextStyle();
             });
-            if (popupCanvas.Children.Contains(lasso))
-            {
-                popupCanvas.Children.Remove(lasso);
-            }
-            HideCommentLine();
-            //DeleteComment.Visibility = Visibility.Collapsed;
-            cur_selected = (-1, -1);
-            cur_highlight = (-1, -1);
-            cur_delete = (-1, -1);
-            current_index = -1;
         }
 
         private async void TriggerAutoSave(object sender = null, object e = null)
@@ -491,13 +493,9 @@ namespace PhenoPad.CustomControl
 
         private void UndoOperation(object sender, RoutedEventArgs e)
         {
-            throw new NotImplementedException();
+            //todo
         }
 
-        private void RedoOperation(object sender, RoutedEventArgs e)
-        {
-            throw new NotImplementedException();
-        }
 
         #endregion
 
@@ -697,9 +695,16 @@ namespace PhenoPad.CustomControl
                     var range = EHRTextBox.Document.GetRange(comment.commentID - 1, comment.commentID);
                     Point pos;
                     range.GetPoint(HorizontalCharacterAlignment.Left, VerticalCharacterAlignment.Bottom, PointOptions.ClientCoordinates, out pos);
-                    double newY = (Math.Ceiling(pos.Y / LINE_HEIGHT) + 1) * LINE_HEIGHT;
+                    double newY = (Math.Ceiling(pos.Y / LINE_HEIGHT) + 1) * LINE_HEIGHT + 110;
+                    double xOffset = (pos.X + 10) - comment.canvasLeft;
+                    double yOffset = newY - comment.canvasTop ;
+                    comment.Slide(x: -xOffset, y: yOffset );
+
+                    comment.commentslideX -= xOffset;
+                    comment.commentslideY += yOffset;
                     comment.canvasLeft = pos.X + 10;
-                    comment.canvasTop = newY + 110;
+                    comment.canvasTop = newY;
+
                     Canvas.SetLeft(comment, comment.canvasLeft);
                     Canvas.SetTop(comment, comment.canvasTop);
                 }
@@ -743,6 +748,7 @@ namespace PhenoPad.CustomControl
             inputMarkup.Visibility = Visibility.Collapsed;
             inputInkCanvas.InkPresenter.StrokeContainer.Clear();
             curLineWordsStackPanel.Children.Clear();
+            SlideCommentsToSide();
             RefreshTextStyle();
         }
 
@@ -1344,14 +1350,8 @@ namespace PhenoPad.CustomControl
         private async Task<bool> analyzeInk(InkStroke lastStroke = null, bool serverFlag = false)
         {/// <summary> Analyze ink strokes contained in inkAnalyzer and add phenotype candidates from fetching API</summary>
 
-            //if (lastStroke == null) { 
-            //    PhenoMana.phenotypesCandidates.Clear();
-            //}
-            //Debug.WriteLine("analyzing...");
             if (inputInkAnalyzer.IsAnalyzing)
             {
-                // inkAnalyzer is being used 
-                // try again after some time by dispatcherTimer 
                 return false;
             }
             // analyze 
@@ -1360,8 +1360,7 @@ namespace PhenoPad.CustomControl
             if (result.Status == InkAnalysisStatus.Updated)
             {
                 //int line = linesToAnnotate.Dequeue();
-                IReadOnlyList<IInkAnalysisNode> lineNodes = inputInkAnalyzer.AnalysisRoot.FindNodes(InkAnalysisNodeKind.Line);
-
+                var lineNodes = inputInkAnalyzer.AnalysisRoot.FindNodes(InkAnalysisNodeKind.Line);
                 foreach (InkAnalysisLine line in lineNodes)
                 {
                     // only focus on current line
@@ -1393,47 +1392,18 @@ namespace PhenoPad.CustomControl
             inputRecogResult = newResult == null ? inputRecogResult : newResult;
 
             // HWR result UI
-            setUpCurrentLineResultUI(line);
-        }
-       
-        private async Task<List<HWRRecognizedText>> RecognizeLine(uint lineid, bool serverFlag)
-        {/// <summary>Recognize the line strokes in the input canvas</summary>
-            try
-            {
-                foreach (var stroke in inputInkCanvas.InkPresenter.StrokeContainer.GetStrokes())
-                {
-                    stroke.Selected = true;
-                }
-
-                //recognize selection
-                List<HWRRecognizedText> recognitionResults = await HWRManager.getSharedHWRManager().
-                    OnRecognizeAsync(inputInkCanvas.InkPresenter.StrokeContainer,
-                    InkRecognitionTarget.Selected, serverFlag);
-                return recognitionResults;
-            }
-            catch (Exception ex)
-            {
-                LogService.MetroLogger.getSharedLogger().Error($"Failed to recognize line ({lineid}): {ex.Message}");
-            }
-            return null;
-        }
-        
-        private void setUpCurrentLineResultUI(InkAnalysisLine line)
-        {/// <summary> Adds recognized words into recognized UI line </summary>
             Dictionary<string, List<string>> dict = HWRManager.getSharedHWRManager().getDictionary();
-            List<HWRRecognizedText> newResult = inputRecogResult;
             curLineWordsStackPanel.Children.Clear();
 
-            for (int index = 0; index < newResult.Count; index++)
+            for (int index = 0; index < inputRecogResult.Count; index++)
             {
-                string word = newResult[index].selectedCandidate;
-                Debug.WriteLine(word);
+                string word = inputRecogResult[index].selectedCandidate;
                 TextBlock tb = new TextBlock();
                 tb.VerticalAlignment = VerticalAlignment.Center;
                 tb.FontSize = 24;
                 //for detecting abbreviations
-                if (index != 0 && dict.ContainsKey(newResult[index - 1].selectedCandidate.ToLower()) && 
-                    dict[newResult[index - 1].selectedCandidate.ToLower()].Contains(word))
+                if (index != 0 && dict.ContainsKey(inputRecogResult[index - 1].selectedCandidate.ToLower()) &&
+                    dict[inputRecogResult[index - 1].selectedCandidate.ToLower()].Contains(word))
                 {
                     tb.Text = $"({word})";
                     tb.Foreground = new SolidColorBrush(Colors.DarkOrange);
@@ -1453,14 +1423,22 @@ namespace PhenoPad.CustomControl
                     alterFlyout.ShowAt((FrameworkElement)sender);
                 });
             }
-
-            //loading.Visibility = Visibility.Collapsed;
             curLineWordsStackPanel.Visibility = Visibility.Visible;
-            //curLineResultPanel.Visibility = Visibility.Visible;
-            //Canvas.SetLeft(curLineResultPanel, line.BoundingRect.Left);
-            //int lineNum = getLineNumByRect(line.BoundingRect);
-            //Canvas.SetTop(curLineResultPanel, (lineNum - 1) * LINE_HEIGHT);
+
         }
+
+        private async Task<List<HWRRecognizedText>> RecognizeLine(uint lineid, bool serverFlag)
+        {/// <summary>Recognize the line strokes in the input canvas</summary>
+
+            foreach (var stroke in inputInkCanvas.InkPresenter.StrokeContainer.GetStrokes())
+                stroke.Selected = true;
+
+            //recognize selection
+            List<HWRRecognizedText> recognitionResults = await HWRManager.getSharedHWRManager().
+                OnRecognizeAsync(inputInkCanvas.InkPresenter.StrokeContainer, InkRecognitionTarget.Selected, serverFlag);
+            return recognitionResults;
+            
+        }       
        
         private void alternativeListView_ItemClick(object sender, ItemClickEventArgs e)
         {/// <summary>Triggered when user changes a word's alternative in input panel </summary>
@@ -1472,59 +1450,6 @@ namespace PhenoPad.CustomControl
             inputRecogResult[showAlterOfWord].selectedCandidate = citem;
             TextBlock tb = (TextBlock)curLineWordsStackPanel.Children.ElementAt(showAlterOfWord);
             tb.Text = citem;
-        }
-
-        private async void annotateCurrentLineAndUpdateUI(string selected)
-        {
-            PhenotypeManager phenoMana = PhenotypeManager.getSharedPhenotypeManager();
-            // after get annotation, recognized text has also changed
-            Dictionary<string, Phenotype> annoResult = await phenoMana.annotateByNCRAsync(selected);
-            if (annoResult != null && annoResult.Count != 0)
-            {
-                Debug.WriteLine("has annoResult");
-                // update global annotations
-                foreach (var anno in annoResult.ToList())
-                {
-                    if (cachedAnnotation.ContainsKey(anno.Key))
-                        cachedAnnotation[anno.Key] = anno.Value;
-                    else
-                        cachedAnnotation.Add(anno.Key, anno.Value);
-                    // add to global candidate list
-                    anno.Value.sourceType = SourceType.Notes;
-                    phenoMana.addPhenotypeCandidate(anno.Value, SourceType.Notes);
-                }
-
-
-                curWordPhenoControlGrid.Visibility = Visibility.Visible;
-
-                if (curLineCandidatePheno.Count == 0 || phenoCtrlSlide.Y == 0)
-                {
-                    Debug.WriteLine($"current Y offset is at {phenoCtrlSlide.Y}, visibility is {curWordPhenoControlGrid.Visibility}");
-                    curWordPhenoAnimation.Begin();
-                }
-
-
-                foreach (var pheno in annoResult.Values.ToList())
-                {
-                    var temp = curLineCandidatePheno.Where(x => x == pheno).FirstOrDefault();
-                    pheno.state = PhenotypeManager.getSharedPhenotypeManager().getStateByHpid(pheno.hpId);
-                    if (temp == null)
-                    {
-                        curLineCandidatePheno.Add(pheno);
-                    }
-                    else
-                    {
-                        if (temp.state != pheno.state)
-                        {
-                            var ind = curLineCandidatePheno.IndexOf(temp);
-                            curLineCandidatePheno.Remove(temp);
-                            curLineCandidatePheno.Insert(ind, pheno);
-
-                        }
-                    }
-                }
-
-            }
         }
 
         #endregion

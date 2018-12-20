@@ -429,13 +429,10 @@
                 </Grid>
             </ScrollViewer>
 
-            <ScrollViewer Grid.Column="1" x:Name="EHRScrollViewer" Visibility="Collapsed"
-                        RelativePanel.AlignRightWithPanel="True"
-                        RelativePanel.AlignLeftWithPanel="True"
-                        RelativePanel.AlignBottomWithPanel="True"
-                        RelativePanel.AlignTopWithPanel="True"
+            <ScrollViewer Grid.Column="1" x:Name="EHRScrollViewer" x:FieldModifier="public" Visibility="Collapsed"
                         ZoomMode="Enabled" 
-                        MinZoomFactor="0.3"     
+                        MinZoomFactor="0.3"    
+                          MaxZoomFactor="2"
                         VerticalScrollMode="Enabled" 
                         VerticalScrollBarVisibility="Hidden" 
                         HorizontalScrollMode="Enabled" 
@@ -474,7 +471,7 @@
                                 Style="{StaticResource ButtonStyleaddin}">
                                 <Viewbox Name="AddInIcon" Stretch="Uniform" CanDrag="False">
                                     <customcontrol:AddInControl name="{x:Bind name}" notebookId="{x:Bind notebookId}" 
-                                                        viewOnly="True"
+                                                        viewOnly="True" CommentID="{x:Bind commentID}"
                                                         pageId="{x:Bind pageId}" />
                                 </Viewbox>
                             </Button>

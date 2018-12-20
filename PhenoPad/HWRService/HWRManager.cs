@@ -270,9 +270,7 @@ namespace PhenoPad.HWRService
         {
             string sentence = "";
             foreach (string word in lst)
-            {
                 sentence += word + " ";
-            }
             //taking off last space char
             sentence = sentence.Substring(0, sentence.Length - 1);
             return sentence;

@@ -258,7 +258,8 @@
                         <DataTemplate x:DataType="fileservice:ImageAndAnnotation">
                                 <Viewbox Stretch="Uniform" Width="200">
                                     <customcontrol:AddInControl name="{x:Bind name}" notebookId="{x:Bind notebookId}" 
-                                                                viewOnly="True" pageId="{x:Bind pageId}"/>
+                                                                viewOnly="True" CommentID="{x:Bind commentID}"
+                                                                pageId="{x:Bind pageId}"/>
                                 </Viewbox>
                             </DataTemplate>
                     </GridView.ItemTemplate>

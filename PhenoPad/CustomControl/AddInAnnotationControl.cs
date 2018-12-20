@@ -125,9 +125,9 @@ namespace PhenoPad.CustomControl
             this.PointerEntered += ShowMenu;
             //this.PointerExited += HideCommentLine;
             this.PointerExited += HideMenu;
-
+            this.PointerCaptureLost += HideMenu;
             contentGrid.Tapped += HideMenu;
-            contentGrid.Tapped += ReEdit;
+            contentGrid.PointerPressed += ReEdit;
             Canvas.SetZIndex(this, 99);
 
             TitleRelativePanel.Visibility = Visibility.Collapsed;
@@ -172,7 +172,7 @@ namespace PhenoPad.CustomControl
             }
         }
 
-        public async void ReEdit(object sender = null, TappedRoutedEventArgs e = null)
+        public async void ReEdit(object sender = null, RoutedEventArgs e = null)
         {
             if (addinSlide.X > 0)
             {
@@ -201,7 +201,7 @@ namespace PhenoPad.CustomControl
                 Rect bound = inkCan.InkPresenter.StrokeContainer.BoundingRect;
                 inkCanvas.InkPresenter.StrokeContainer.MoveSelected(new Point(-1 * bound.X + 1, -1 * bound.Y + 1));
 
-                this.widthOrigin = DEFAULT_COMMENT_WIDTH;
+                this.widthOrigin = bound.Width < DEFAULT_COMMENT_WIDTH? DEFAULT_COMMENT_WIDTH : bound.Width + 5;
                 this.heightOrigin = DEFAULT_COMMENT_HEIGHT;
                 this.Width = this.widthOrigin;
                 this.Height = this.heightOrigin;
@@ -213,10 +213,10 @@ namespace PhenoPad.CustomControl
 
         }
 
-        public async Task SlideVertical(double y)
+        public async Task Slide(double x = 0, double y = 0)
         {
             DoubleAnimation dx = (DoubleAnimation)EHRCommentSlidingAnimation.Children.ElementAt(0);
-            dx.By = 0;
+            dx.By = x;
             DoubleAnimation dy = (DoubleAnimation)EHRCommentSlidingAnimation.Children.ElementAt(1);
             dy.By = y;
             await EHRCommentSlidingAnimation.BeginAsync();
@@ -257,6 +257,7 @@ namespace PhenoPad.CustomControl
         private void RemoveComment(object sender, RoutedEventArgs e) {
             if (addinSlide.X > 0) {
                 ehr.RemoveComment(this);
+
             }
 
         }
@@ -273,15 +274,16 @@ namespace PhenoPad.CustomControl
                     s.Selected = true;
                 Rect bound = inkCan.InkPresenter.StrokeContainer.BoundingRect;
                 Debug.WriteLine($"Number of lines detected = {inknodes.Count}, bound height = {bound.Height}\n");
-
+                inkRatio = bound.Width / COMMENT_WIDTH;
+                Debug.WriteLine($"comment width ratio = {inkRatio}");
                 if (inknodes.Count <= 1 && bound.Height <= (1.3) * COMMENT_HEIGHT)
                 {
-                    inkRatio = bound.Height / COMMENT_HEIGHT;
+                    inkRatio = Math.Min( bound.Height / COMMENT_HEIGHT , inkRatio);
                     this.Height = COMMENT_HEIGHT;
                 }
                 else
                 {
-                    inkRatio = bound.Height / (2 * COMMENT_HEIGHT);
+                    inkRatio = Math.Min(bound.Height / (2 * COMMENT_HEIGHT), inkRatio);
                     this.Height = 2 * COMMENT_HEIGHT;
                 }
                 if (inkRatio >= 0.7)
@@ -292,7 +294,7 @@ namespace PhenoPad.CustomControl
                 }
                 bound = inkCan.InkPresenter.StrokeContainer.BoundingRect;
                 inkCanvas.InkPresenter.StrokeContainer.MoveSelected(new Point(-1 * bound.X + 1, -1 * bound.Y + 1));
-                this.Width = COMMENT_WIDTH;
+                this.Width = bound.Width < COMMENT_WIDTH? COMMENT_WIDTH : bound.Width + 5;
                 this.heightOrigin = this.Height;
                 this.widthOrigin = this.Width;
                 inkAnalyzer.ClearDataForAllStrokes();

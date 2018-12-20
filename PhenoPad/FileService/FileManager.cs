@@ -237,19 +237,16 @@ namespace PhenoPad.FileService
         {
             try
             {
-                StorageFile notefile;
+                StorageFile notefile = null;
                 string filepath = GetNoteFilePath(notebookId, notePageId, fileType, name);
-                //Debug.WriteLine($"getting {filepath}");
-
-                notefile = await ROOT_FOLDER.GetFileAsync(filepath);
-                if (notefile == null)
-                    return null;
-                else
-                    return notefile;
+                var item = await ROOT_FOLDER.TryGetItemAsync(filepath);
+                if (item != null)
+                    notefile = await ROOT_FOLDER.GetFileAsync(filepath);
+                return notefile;
             }
             catch (Exception e)
             {
-                //LogService.MetroLogger.getSharedLogger().Error($"Failed to get {filepath}:{e}+{e.Message}");
+                LogService.MetroLogger.getSharedLogger().Error($"Failed to get file:{e}+{e.Message}");
                 return null;
             }
         }
@@ -967,6 +964,27 @@ namespace PhenoPad.FileService
                 LogService.MetroLogger.getSharedLogger().Error($"Failed to delete notebook: {id}:{e.Message}");
                 return false;
             }           
+        }
+
+        public async Task<bool> DeleteAddInFile(string notebookId, string pageId, string name) {
+            try
+            {
+                string strokepath = GetNoteFilePath(notebookId, pageId, NoteFileType.ImageAnnotation,name);
+                string imagepath = GetNoteFilePath(notebookId, pageId, NoteFileType.Image, name);
+                var s = await ROOT_FOLDER.TryGetItemAsync(strokepath);
+                if (s != null)
+                    await s.DeleteAsync();
+                var i = await ROOT_FOLDER.TryGetItemAsync(imagepath);
+                if (i != null)
+                    await i.DeleteAsync();
+                return true;
+            }
+            catch (Exception e)
+            {
+                LogService.MetroLogger.getSharedLogger().Error($"Failed to delete addin file: {e}:{e.Message}");
+                return false;
+            }
+
         }
 
         #endregion

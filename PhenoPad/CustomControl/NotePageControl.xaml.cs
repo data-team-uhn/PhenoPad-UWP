@@ -275,7 +275,7 @@ namespace PhenoPad.CustomControl
             textNoteEditBox.FontSize = 32;
             format.SetLineSpacing(LineSpacingRule.Exactly, 37.5f);
             textNoteEditBox.Document.SetDefaultParagraphFormat(format);
-            EHRScrollViewer.ChangeView(0, 50, 0.645f, true);
+            EHRScrollViewer.ViewChanged += notifySize;
             // disable moving strokes for now
             //selectionRectangle.ManipulationMode = ManipulationModes.TranslateX | ManipulationModes.TranslateY;
             //selectionRectangle.ManipulationStarted += SelectionRectangle_ManipulationStarted;
@@ -284,19 +284,28 @@ namespace PhenoPad.CustomControl
 
         }
 
+        private void notifySize(object sender, ScrollViewerViewChangedEventArgs e)
+        {
+            Debug.WriteLine(e.IsIntermediate);
+        }
+
+
+
 
         #region UI Display
         // ============================== UI DISPLAYS HANDLER ==============================================//
 
         public async Task SwitchToEHR(StorageFile file) {
-            await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () => {
-                this.ehrPage = new EHRPageControl(file, this);
-                //EHRScrollViewer.Content = ehrPage;
-                EHROutputGrid.Children.Add(ehrPage);
-                scrollViewer.Visibility = Visibility.Collapsed;
-                EHRScrollViewer.ChangeView(0, 50, 0.645f, true);
-                EHRScrollViewer.Visibility = Visibility.Visible;
+            this.ehrPage = new EHRPageControl(file, this);
+            //EHRScrollViewer.Content = ehrPage;
+            EHROutputGrid.Children.Add(ehrPage);
+            scrollViewer.Visibility = Visibility.Collapsed;
+
+            await Dispatcher.RunAsync(CoreDispatcherPriority.High, () => {
+                EHRScrollViewer.ChangeView(0, 50, 0.645f, false);//changeview by itself does not work for current windows version
+                EHRScrollViewer.ZoomToFactor(0.6f); 
             });
+            EHRScrollViewer.Visibility = Visibility.Visible;
         }
 
         // draw background lines for notes

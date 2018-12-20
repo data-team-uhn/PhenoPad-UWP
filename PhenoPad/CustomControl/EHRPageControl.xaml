@@ -96,7 +96,7 @@
                 <Grid>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="60"/>
-                        <RowDefinition Height="150"/>
+                        <RowDefinition Height="200"/>
                         <RowDefinition Height="90"/>
                     </Grid.RowDefinitions>
                     <Grid.ColumnDefinitions>
@@ -151,11 +151,9 @@
                                 RelativePanel.AlignLeftWithPanel="True">
                             <SymbolIcon Symbol="Add" Foreground="ForestGreen"/>
                         </Button>
-
-
                     </Grid>
 
-                    <Grid Grid.Row="1" Background="WhiteSmoke" Margin="0 5 0 0" BorderBrush="DarkGray"
+                    <Grid Grid.Row="1" Background="WhiteSmoke" BorderBrush="DarkGray" Padding="0 10 0 0"
                           BorderThickness="1" CornerRadius="10" >
                         <Canvas x:Name="inputCanvasbg" />
                         <InkCanvas x:Name="inputInkCanvas" />
@@ -225,80 +223,6 @@
             <!--Cursor Icon Markup-->
             <Grid x:Name="inputMarkup" Visibility="Collapsed">
                 <FontIcon FontWeight="ExtraBold" FontSize="40" Glyph="&#xE878;" Foreground="DodgerBlue"/>
-            </Grid>
-
-            <Grid x:Name="curWordPhenoControlGrid" Height="40" HorizontalAlignment="Right" 
-                                  Background="WhiteSmoke"  Padding="5" BorderBrush="LightGray" BorderThickness="0" 
-                                  CornerRadius="10">
-                <Grid.RenderTransform>
-                    <TranslateTransform x:Name="phenoCtrlSlide" Y="0" />
-                </Grid.RenderTransform>
-                <ListView  Padding="0 0 0 0" IsItemClickEnabled="False"
-                                          ScrollViewer.HorizontalScrollMode="Enabled"
-                                          ScrollViewer.VerticalScrollMode="Disabled"
-                                          ScrollViewer.HorizontalScrollBarVisibility="Hidden"
-                                          ScrollViewer.VerticalScrollBarVisibility="Hidden"
-                                          ScrollViewer.IsHorizontalRailEnabled="True"
-                                          x:Name="curLineCandidatePhenoListView" ItemsSource="{x:Bind curLineCandidatePheno, Mode=OneWay}">
-                    <ListView.ItemsPanel>
-                        <ItemsPanelTemplate>
-                            <VirtualizingStackPanel  Orientation="Horizontal"/>
-                        </ItemsPanelTemplate>
-                    </ListView.ItemsPanel>
-                    <ListView.ItemTemplate>
-                        <DataTemplate x:DataType="phenotypeservice:Phenotype">
-                            <customcontrol:PhenotypeBriefControl phenotypeName="{x:Bind name}" 
-                                                                                 phenotypeId="{x:Bind hpId}" phenotypeState="{x:Bind state}" 
-                                                                                 sourceType="{x:Bind sourceType}" presentPosition="Inline" />
-                        </DataTemplate>
-                    </ListView.ItemTemplate>
-                    <ListView.ItemContainerStyle>
-                        <Style TargetType="ListViewItem">
-                            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
-                            <Setter Property="VerticalContentAlignment" Value="Stretch" />
-                            <Setter Property="Margin" Value="5,0,5,0" />
-                            <Setter Property="Padding" Value="0,0,0,0" />
-                            <Setter Property="MinHeight" Value="20" />
-                            <Setter Property="MinWidth" Value="0" />
-                            <Setter Property="Template">
-                                <Setter.Value>
-                                    <ControlTemplate TargetType="ListViewItem">
-                                        <ListViewItemPresenter CheckBrush="{ThemeResource ListViewItemCheckBrush}"
-                                           ContentMargin="{TemplateBinding Padding}"
-                                           CheckMode="{ThemeResource ListViewItemCheckMode}"
-                                           ContentTransitions="{TemplateBinding ContentTransitions}"
-                                           CheckBoxBrush="{ThemeResource ListViewItemCheckBoxBrush}"
-                                           DragForeground="{ThemeResource ListViewItemDragForeground}"
-                                           DragOpacity="{ThemeResource ListViewItemDragThemeOpacity}"
-                                           DragBackground="{ThemeResource ListViewItemDragBackground}"
-                                           DisabledOpacity="{ThemeResource ListViewItemDisabledThemeOpacity}"
-                                           FocusVisualPrimaryBrush="{TemplateBinding FocusVisualPrimaryBrush}"
-                                           FocusVisualSecondaryThickness="{TemplateBinding FocusVisualSecondaryThickness}"
-                                           FocusBorderBrush="{ThemeResource ListViewItemFocusBorderBrush}"
-                                           FocusVisualMargin="{TemplateBinding FocusVisualMargin}"
-                                           FocusVisualPrimaryThickness="{TemplateBinding FocusVisualPrimaryThickness}"
-                                           FocusSecondaryBorderBrush="{ThemeResource ListViewItemFocusSecondaryBorderBrush}"
-                                           FocusVisualSecondaryBrush="{TemplateBinding FocusVisualSecondaryBrush}"
-                                           HorizontalContentAlignment="{TemplateBinding HorizontalContentAlignment}"
-                                           Control.IsTemplateFocusTarget="True"
-                                           PointerOverForeground="{ThemeResource ListViewItemForegroundPointerOver}"
-                                           PressedBackground="{StaticResource Button_Background}"
-                                           PlaceholderBackground="{ThemeResource ListViewItemPlaceholderBackground}"
-                                           PointerOverBackground="{StaticResource Button_Background}"
-                                           ReorderHintOffset="{ThemeResource ListViewItemReorderHintThemeOffset}"
-                                           SelectedPressedBackground="{StaticResource Button_Background}"
-                                           SelectionCheckMarkVisualEnabled="{ThemeResource ListViewItemSelectionCheckMarkVisualEnabled}"
-                                           SelectedForeground="LightBlue"
-                                           SelectedPointerOverBackground="{StaticResource Button_Background}"
-                                           SelectedBackground="WhiteSmoke"
-                                           VerticalContentAlignment="{TemplateBinding VerticalContentAlignment}" />
-                                    </ControlTemplate>
-                                </Setter.Value>
-                            </Setter>
-                        </Style>
-                    </ListView.ItemContainerStyle>
-                </ListView>
-
             </Grid>
 
         </Canvas>

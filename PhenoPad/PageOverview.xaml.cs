@@ -27,6 +27,7 @@ using Windows.UI.Xaml.Media.Imaging;
 using Windows.UI.Xaml.Navigation;
 using PhenoPad.LogService;
 using Windows.Storage.Pickers;
+using System.Threading.Tasks;
 
 // The Blank Page item template is documented at https://go.microsoft.com/fwlink/?LinkId=234238
 
@@ -100,7 +101,8 @@ namespace PhenoPad
             openPicker.FileTypeFilter.Add(".txt");
             // Show the file picker.
             StorageFile file = await openPicker.PickSingleFileAsync();
-            this.Frame.Navigate(typeof(MainPage), file);
+            if (file != null)
+                this.Frame.Navigate(typeof(MainPage), file);
         }
 
         private async void notebookList_ItemClick(object sender, ItemClickEventArgs e)
@@ -119,6 +121,7 @@ namespace PhenoPad
 
 
             List<ImageAndAnnotation> images = await FileManager.getSharedFileManager().GetAllImageAndAnnotationObjects(clickNotebook.id);
+            images = images.Where(x => x.commentID == -1).ToList();
             if (images.Count > 0)
             {
                 ImageAnnotationGridView.Visibility = Visibility.Visible;
@@ -140,7 +143,9 @@ namespace PhenoPad
             var notebookId = (sender as Button).Tag;
             LogService.MetroLogger.getSharedLogger().Info($"Opening notebook ID { notebookId }");
             if (notebookId != null)
+            {
                 this.Frame.Navigate(typeof(MainPage), notebookId);
+            }
         }
 
         private async void UploadServerButton_Click(object sender, RoutedEventArgs e)

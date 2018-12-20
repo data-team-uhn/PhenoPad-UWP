@@ -360,7 +360,9 @@ namespace PhenoPad
         /// </summary>
         protected async override void OnNavigatedTo(NavigationEventArgs e)
         {
-            var nid= e.Parameter as string;
+            LoadingPopup.IsOpen = true;
+
+            var nid = e.Parameter as string;
             StorageFile file = e.Parameter as StorageFile;
 
             if (nid == "__new__") {
@@ -381,6 +383,8 @@ namespace PhenoPad
                 FileManager.getSharedFileManager().currentNoteboookId = nid;
                 await Dispatcher.RunAsync(CoreDispatcherPriority.High, this.InitializeNotebookFromDisk);
             }
+            await Task.Delay(TimeSpan.FromSeconds(3));
+            LoadingPopup.IsOpen = false;
             return;                
         }
 
@@ -1136,6 +1140,8 @@ namespace PhenoPad
 
         private async void BackButton_Click(object sender, RoutedEventArgs e)
         {
+            
+
             // save note
             await this.saveNoteToDisk();
 

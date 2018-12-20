@@ -182,6 +182,22 @@ namespace PhenoPad.CustomControl
          new PropertyMetadata(null)
        );
 
+        public int CommentID
+        {
+            get { return (int)GetValue(commentIDProperty); }
+            set
+            {
+                SetValue(commentIDProperty, value);
+            }
+        }
+
+        public static readonly DependencyProperty commentIDProperty = DependencyProperty.Register(
+         "commentID",
+         typeof(int),
+         typeof(TextBlock),
+         new PropertyMetadata(null)
+       );
+
         public double imgratio
         {
             get { return (double)GetValue(imgratioProperty); }
@@ -212,6 +228,8 @@ namespace PhenoPad.CustomControl
             try
             {
                 this.InitializeComponent();
+                commentID = -1;
+                
             }
             catch (Exception e)
             {
@@ -440,6 +458,7 @@ namespace PhenoPad.CustomControl
             ((Panel)this.Parent).Children.Remove(this);
             await rootPage.curPage.AutoSaveAddin(null);
             await rootPage.curPage.refreshAddInList();
+            await FileManager.getSharedFileManager().DeleteAddInFile(notebookId, pageId, name);
         }
 
         public async void Minimize_Click(object sender, RoutedEventArgs e)
@@ -606,62 +625,73 @@ namespace PhenoPad.CustomControl
        
         private void InitiateInkCanvas(bool onlyView = false, double scaleX = 1, double scaleY = 1)
         {/// <summary>Initializes inkcanvas attributes for the add-in panel based on  whether item will be editable or not.</summary>
-            isInitialized = true;
 
-            if (hasImage || onlyView)
-              hideScrollViewer();
+            Debug.WriteLine($"initiate ink canvas onlyview = {onlyView}, commentID = {commentID}");
+
+            isInitialized = true;
 
             scrollViewer.Visibility = Visibility.Visible;
             inkCan.Visibility = Visibility.Visible;
 
-            if (commentID != -1) {
+
+            if (hasImage || onlyView)
+            {
+                hideScrollViewer();
+            }
+
+            if (commentID != -1)
+            {
                 inkCan.Height = this.Height;
                 inkCan.Width = this.Width;
                 TitleRelativePanel.Visibility = Visibility.Collapsed;
             }
+            else {
+                if (!onlyView)
+                {// added from note page, need editing       
+                 // Set supported input type to default using both moush and pen
+                    inkCanvas.InkPresenter.InputDeviceTypes =
+                        Windows.UI.Core.CoreInputDeviceTypes.Mouse |
+                        Windows.UI.Core.CoreInputDeviceTypes.Pen;
 
-            else if (!onlyView)
-            {// added from note page, need editing       
-                // Set supported input type to default using both moush and pen
-                inkCanvas.InkPresenter.InputDeviceTypes =
-                    Windows.UI.Core.CoreInputDeviceTypes.Mouse |
-                    Windows.UI.Core.CoreInputDeviceTypes.Pen;
-
-                // Set initial ink stroke attributes and updates
-                InkDrawingAttributes drawingAttributes = new InkDrawingAttributes();
-                drawingAttributes.Color = Colors.Black;
-                drawingAttributes.IgnorePressure = false;
-                drawingAttributes.FitToCurve = true;
-                inkCanvas.InkPresenter.UpdateDefaultDrawingAttributes(drawingAttributes);
-                //setting current active canvas to 
-                inkToolbar.TargetInkCanvas = inkCanvas;
-                inkToolbar.Visibility = Visibility.Visible;
-            }
-            else
-            {// only for viewing on page overview page / addin collection dock
-                inkCanvas.InkPresenter.InputDeviceTypes = Windows.UI.Core.CoreInputDeviceTypes.None;
-                if (hasImage)
-                {//when loading an image, had to manually adjust dimension to display full size strokes
-                    TranslateTransform tt = new TranslateTransform();
-                    //tt.Y = -24;
-                    //contentGrid.RenderTransform = tt;
-                    this.Width = 400;
-                    this.Height = (int)(this.Width / imgratio);
-                    inkCan.Height = this.Height;
-                    inkCan.Width = this.Width;
-                    Debug.WriteLine(inkCan.Width + "," + inkCan.Height);
+                    // Set initial ink stroke attributes and updates
+                    InkDrawingAttributes drawingAttributes = new InkDrawingAttributes();
+                    drawingAttributes.Color = Colors.Black;
+                    drawingAttributes.IgnorePressure = false;
+                    drawingAttributes.FitToCurve = true;
+                    inkCanvas.InkPresenter.UpdateDefaultDrawingAttributes(drawingAttributes);
+                    //setting current active canvas to 
+                    inkToolbar.TargetInkCanvas = inkCanvas;
+                    inkToolbar.Visibility = Visibility.Visible;
                 }
                 else
-                {//adjust ink canvas size/position to display full stroke view
-                    Rect bound = inkCanvas.InkPresenter.StrokeContainer.BoundingRect;
-                    double ratio = bound.Width / bound.Height;
-                    inkCan.Height = bound.Height + 10;
-                    inkCan.Width = bound.Width + 10;
-                    foreach (InkStroke st in inkCanvas.InkPresenter.StrokeContainer.GetStrokes())
-                        st.Selected = true;
-                    inkCanvas.InkPresenter.StrokeContainer.MoveSelected(new Point(-bound.Left, -bound.Top));
+                {// only for viewing on page overview page / addin collection dock
+                    inkCanvas.InkPresenter.IsInputEnabled = false;
+                    if (hasImage)
+                    {//when loading an image, had to manually adjust dimension to display full size strokes
+                        TranslateTransform tt = new TranslateTransform();
+                        //tt.Y = -24;
+                        //contentGrid.RenderTransform = tt;
+                        this.Width = 400;
+                        this.Height = (int)(this.Width / imgratio);
+                        inkCan.Height = this.Height;
+                        inkCan.Width = this.Width;
+                        Debug.WriteLine(inkCan.Width + "," + inkCan.Height);
+                    }
+                    else
+                    {//adjust ink canvas size/position to display full stroke view
+
+                        Rect bound = inkCanvas.InkPresenter.StrokeContainer.BoundingRect;
+                        double ratio = bound.Width / bound.Height;
+                        inkCan.Height = bound.Height + 10;
+                        inkCan.Width = bound.Width + 10;
+                        foreach (InkStroke st in inkCanvas.InkPresenter.StrokeContainer.GetStrokes())
+                            st.Selected = true;
+                        inkCanvas.InkPresenter.StrokeContainer.MoveSelected(new Point(-bound.Left, -bound.Top));
+                    }
                 }
+
             }
+
         }
        
         public async void InitializeFromImage(WriteableBitmap wb, bool onlyView = false)

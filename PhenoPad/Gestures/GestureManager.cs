@@ -45,7 +45,6 @@ namespace PhenoPad.Gestures
         }
 
         private async void InitializeRecognizer() {
-            Debug.WriteLine($"strokes path = {GESTURE_PATH}");
             await recognizer.LoadGestureFromPath(GESTURE_PATH);
         }
 

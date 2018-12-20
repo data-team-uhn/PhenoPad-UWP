@@ -105,6 +105,7 @@ namespace PhenoPad
             SurfaceMicRadioButton_Checked(null, null);
             // create file sturcture for this page
             await FileManager.getSharedFileManager().CreateNotePage(notebookObject, curPageIndex.ToString());
+            await Task.Delay(TimeSpan.FromSeconds(3));
             curPage.Visibility = Visibility.Visible;
         }
 
@@ -217,9 +218,11 @@ namespace PhenoPad
                 else {
                     //current implementation assumes if there's ehr, it must be on first page
                     inkCanvas = notePages[0].ehrPage.annotations;
+
                     //curPage.ehrPage.SlideCommentsToSide();
                 }
                 MainPageInkBar.TargetInkCanvas = inkCanvas;
+                await Task.Delay(TimeSpan.FromSeconds(3));
                 curPage.Visibility = Visibility.Visible;
             }
             catch (NullReferenceException ne)
@@ -280,7 +283,7 @@ namespace PhenoPad
             currentMode = WritingMode;
             modeTextBlock.Text = WritingMode;
             AbbreviationON_Checked(null, null);
-
+            await Task.Delay(TimeSpan.FromSeconds(3));
             curPage.Visibility = Visibility.Visible;
         }
 
@@ -311,7 +314,6 @@ namespace PhenoPad
             bool result2 = false;
             try
             {
-                MetroLogger.getSharedLogger().Info($"Saving notebook {notebookId} ...");
                 // save note pages one by one
                 foreach (var page in notePages)
                 {
