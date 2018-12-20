@@ -144,12 +144,6 @@ namespace PhenoPad.CustomControl
             DrawingButton_Click(null, null);
         }
 
-        #region EHR Comment Exclusive
-
-        private void StrokesCollected(InkPresenter sender, InkStrokesCollectedEventArgs args)
-        {
-            //inkAnalyzer.AddDataForStrokes(args.Strokes);
-        }
 
         public async void SlideToRight()
         {
@@ -173,7 +167,7 @@ namespace PhenoPad.CustomControl
         }
 
         public async void ReEdit(object sender = null, RoutedEventArgs e = null)
-        {
+        {//Slides comment back and re-enables edit mode
             if (addinSlide.X > 0)
             {
                 //if there's a comment currently at edit mode, slide it back to avoid position shifting errors
@@ -194,10 +188,9 @@ namespace PhenoPad.CustomControl
 
                 foreach (InkStroke s in inkCan.InkPresenter.StrokeContainer.GetStrokes())
                 {
-                    s.PointTransform = Matrix3x2.CreateScale(1, 1);
+                    s.PointTransform = Matrix3x2.CreateScale(1, 1);//zooms back to original size
                     s.Selected = true;
                 }
-
                 Rect bound = inkCan.InkPresenter.StrokeContainer.BoundingRect;
                 inkCanvas.InkPresenter.StrokeContainer.MoveSelected(new Point(-1 * bound.X + 1, -1 * bound.Y + 1));
 
@@ -228,7 +221,6 @@ namespace PhenoPad.CustomControl
             {
                 Grid.SetColumn(contentGrid, 0);
                 Grid.SetColumnSpan(contentGrid, 1);
-                //ehr.showCommentMenu(this, addinSlide.X, addinSlide.Y);
                 ehr.ShowCommentLine(this);
                 OutlineGrid.BorderBrush = new SolidColorBrush(BORDER_ACTIVE);
                 OutlineGrid.CornerRadius = new CornerRadius(5);
@@ -240,26 +232,19 @@ namespace PhenoPad.CustomControl
         
         private void HideMenu(object sender = null, RoutedEventArgs e = null)
         {
-            if (addinSlide.X > 0)
-            {
-                Grid.SetColumn(contentGrid, 0);
-                Grid.SetColumnSpan(contentGrid, 2);
-                //ehr.hideCommentMenu();
-                ehr.HideCommentLine();
-                OutlineGrid.BorderBrush = new SolidColorBrush(BORDER_INACTIVE);
-                OutlineGrid.CornerRadius = new CornerRadius(5);
-                OutlineGrid.BorderThickness = new Thickness(1);
-                Canvas.SetZIndex(this, 90);
-                DeleteComment.Visibility = Visibility.Collapsed;
-            }
+            Grid.SetColumn(contentGrid, 0);
+            Grid.SetColumnSpan(contentGrid, 2);
+            ehr.HideCommentLine();
+            OutlineGrid.BorderBrush = new SolidColorBrush(BORDER_INACTIVE);
+            OutlineGrid.CornerRadius = new CornerRadius(5);
+            OutlineGrid.BorderThickness = new Thickness(1);
+            Canvas.SetZIndex(this, 90);
+            DeleteComment.Visibility = Visibility.Collapsed;
         }
 
         private void RemoveComment(object sender, RoutedEventArgs e) {
-            if (addinSlide.X > 0) {
+            if (addinSlide.X > 0) 
                 ehr.RemoveComment(this);
-
-            }
-
         }
 
         private async void CompressComment()
@@ -273,10 +258,9 @@ namespace PhenoPad.CustomControl
                 foreach (InkStroke s in inkCan.InkPresenter.StrokeContainer.GetStrokes())
                     s.Selected = true;
                 Rect bound = inkCan.InkPresenter.StrokeContainer.BoundingRect;
-                Debug.WriteLine($"Number of lines detected = {inknodes.Count}, bound height = {bound.Height}\n");
+                Debug.WriteLine($"Number of lines detected = {inknodes.Count},height ratio = {bound.Height / DEFAULT_COMMENT_HEIGHT}\n");
                 inkRatio = bound.Width / COMMENT_WIDTH;
-                Debug.WriteLine($"comment width ratio = {inkRatio}");
-                if (inknodes.Count <= 1 && bound.Height <= (1.3) * COMMENT_HEIGHT)
+                if (inknodes.Count <= 1 && bound.Height <= (0.8) * DEFAULT_COMMENT_HEIGHT)
                 {
                     inkRatio = Math.Min( bound.Height / COMMENT_HEIGHT , inkRatio);
                     this.Height = COMMENT_HEIGHT;
@@ -302,25 +286,17 @@ namespace PhenoPad.CustomControl
         }
 
         public async Task<double> GetCommentHeight()
-        {
+        {//Gets the compressed comment height without actually compressing the comment
+
             inkAnalyzer.AddDataForStrokes(inkCan.InkPresenter.StrokeContainer.GetStrokes());
             await inkAnalyzer.AnalyzeAsync();
             var inknodes = inkAnalyzer.AnalysisRoot.FindNodes(InkAnalysisNodeKind.Line);
             Rect bound = inkCan.InkPresenter.StrokeContainer.BoundingRect;
 
-            if (inknodes.Count <= 1 && bound.Height <= (1.3)*COMMENT_HEIGHT)
+            if (inknodes.Count <= 1 && bound.Height <= (0.8) * DEFAULT_COMMENT_HEIGHT)
                 return COMMENT_HEIGHT;
             else
                 return 2 * COMMENT_HEIGHT;
         }
-
-        #endregion
-
-
-
-
-
-
-
     }
 }

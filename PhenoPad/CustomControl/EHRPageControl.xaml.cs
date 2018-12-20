@@ -191,6 +191,7 @@ namespace PhenoPad.CustomControl
                     else
                         text += p + Environment.NewLine;
                 }
+                text = text.TrimEnd() + " ";
                 EHRTextBox.Document.SetText(TextSetOptions.None, text);
                 await FileManager.getSharedFileManager().SaveEHRText(notebookid, pageid, this);
                 EHRFormats formats = await FileManager.getSharedFileManager().LoadEHRFormats(notebookid, pageid);
@@ -761,7 +762,7 @@ namespace PhenoPad.CustomControl
 
             string all_text = getEHRText();
 
-            if (current_index == all_text.Length - 1)
+            if (current_index == all_text.Length)
             { //inserting at end of text
                 all_text = all_text.Substring(0, all_text.Length).TrimEnd() + " ";
                 EHRTextBox.Document.SetText(TextSetOptions.None, all_text + text);
@@ -1137,25 +1138,36 @@ namespace PhenoPad.CustomControl
                         var pos = new Point(bounding.X + bounding.Width / 2 - 10, bounding.Y - LINE_HEIGHT);
                         var range = EHRTextBox.Document.GetRangeFromPoint(pos, PointOptions.ClientCoordinates);
                         string text = getEHRText();
-                        Debug.WriteLine($"detected fir letter: -{text.Substring(range.StartPosition, 1)}-");
-                        bool isFormatted = CheckForFormat(range.StartPosition, range.StartPosition + 1, pos);
-                        if (!isFormatted)
+                        if (range.StartPosition == text.Length)
                         {
-                            current_index = GetNearestSpaceIndex(range.StartPosition);
-                            AddInControl inserted = comments.Where(x => x.commentID == current_index).FirstOrDefault();
-                            if (inserted == null)
-                            {// available for new insert, show input grid
-                                range = EHRTextBox.Document.GetRange(current_index - 1, current_index);
-                                range.GetPoint(HorizontalCharacterAlignment.Left, VerticalCharacterAlignment.Baseline,
-                                                PointOptions.ClientCoordinates, out pos);
-                                ShowInputPanel(pos);
-                            }
-                            else
+                            range = EHRTextBox.Document.GetRange(range.StartPosition, range.StartPosition);
+                            range.GetPoint(HorizontalCharacterAlignment.Left, VerticalCharacterAlignment.Baseline,
+                                                    PointOptions.ClientCoordinates, out pos);
+                            current_index = text.Length;
+                            ShowInputPanel(pos);
+                        }
+                        else {
+                            Debug.WriteLine($"detected fir letter: -{text.Substring(range.StartPosition, 1)}-");
+                            bool isFormatted = CheckForFormat(range.StartPosition, range.StartPosition + 1, pos);
+                            if (!isFormatted)
                             {
-                                if (inserted.anno_type == AnnotationType.RawInsert && inserted.canvasLeft + inserted.addinSlide.X > EHR_TEXTBOX_WIDTH.Value)
-                                    inserted.ReEdit();
+                                current_index = GetNearestSpaceIndex(range.StartPosition);
+                                AddInControl inserted = comments.Where(x => x.commentID == current_index).FirstOrDefault();
+                                if (inserted == null)
+                                {// available for new insert, show input grid
+                                    range = EHRTextBox.Document.GetRange(current_index - 1, current_index);
+                                    range.GetPoint(HorizontalCharacterAlignment.Left, VerticalCharacterAlignment.Baseline,
+                                                    PointOptions.ClientCoordinates, out pos);
+                                    ShowInputPanel(pos);
+                                }
+                                else
+                                {
+                                    if (inserted.anno_type == AnnotationType.RawInsert && inserted.canvasLeft + inserted.addinSlide.X > EHR_TEXTBOX_WIDTH.Value)
+                                        inserted.ReEdit();
+                                }
                             }
                         }
+
                     }
                     else if (gesture == StrokeType.HorizontalLine)
                         SelectTextInBound(bounding);
@@ -1387,8 +1399,11 @@ namespace PhenoPad.CustomControl
             curLineWordsStackPanel.Children.Clear();
             HWRManager.getSharedHWRManager().clearCache();
 
-            // hwr
-            List<HWRRecognizedText> newResult = await RecognizeLine(line.Id, serverRecog);
+            foreach (var stroke in inputInkCanvas.InkPresenter.StrokeContainer.GetStrokes())
+                stroke.Selected = true;
+
+            //recognize selection
+            List<HWRRecognizedText> newResult = await HWRManager.getSharedHWRManager().OnRecognizeAsync(inputInkCanvas.InkPresenter.StrokeContainer, InkRecognitionTarget.Selected, serverRecog);
             inputRecogResult = newResult == null ? inputRecogResult : newResult;
 
             // HWR result UI
@@ -1424,21 +1439,7 @@ namespace PhenoPad.CustomControl
                 });
             }
             curLineWordsStackPanel.Visibility = Visibility.Visible;
-
         }
-
-        private async Task<List<HWRRecognizedText>> RecognizeLine(uint lineid, bool serverFlag)
-        {/// <summary>Recognize the line strokes in the input canvas</summary>
-
-            foreach (var stroke in inputInkCanvas.InkPresenter.StrokeContainer.GetStrokes())
-                stroke.Selected = true;
-
-            //recognize selection
-            List<HWRRecognizedText> recognitionResults = await HWRManager.getSharedHWRManager().
-                OnRecognizeAsync(inputInkCanvas.InkPresenter.StrokeContainer, InkRecognitionTarget.Selected, serverFlag);
-            return recognitionResults;
-            
-        }       
        
         private void alternativeListView_ItemClick(object sender, ItemClickEventArgs e)
         {/// <summary>Triggered when user changes a word's alternative in input panel </summary>

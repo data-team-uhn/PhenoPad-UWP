@@ -275,7 +275,6 @@ namespace PhenoPad.CustomControl
             textNoteEditBox.FontSize = 32;
             format.SetLineSpacing(LineSpacingRule.Exactly, 37.5f);
             textNoteEditBox.Document.SetDefaultParagraphFormat(format);
-            EHRScrollViewer.ViewChanged += notifySize;
             // disable moving strokes for now
             //selectionRectangle.ManipulationMode = ManipulationModes.TranslateX | ManipulationModes.TranslateY;
             //selectionRectangle.ManipulationStarted += SelectionRectangle_ManipulationStarted;
@@ -283,12 +282,6 @@ namespace PhenoPad.CustomControl
             //selectionRectangle.ManipulationCompleted += SelectionRectangle_ManipulationCompleted;      
 
         }
-
-        private void notifySize(object sender, ScrollViewerViewChangedEventArgs e)
-        {
-            Debug.WriteLine(e.IsIntermediate);
-        }
-
 
 
 
