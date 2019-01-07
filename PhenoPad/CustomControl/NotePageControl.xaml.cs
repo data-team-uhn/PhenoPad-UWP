@@ -959,7 +959,7 @@ namespace PhenoPad.CustomControl
                 if (ia.commentID != -1)
                     canvasAddIn = new AddInControl(ia.name, ehrPage, ia.commentID, ia.anno_type);// need to update this commengID when impleting saving
                 else
-                    canvasAddIn = new AddInControl(ia.name, notebookId, pageId, ia.widthOrigin, ia.heightOrigin);
+                    canvasAddIn = new AddInControl(ia.name, notebookId, pageId, ia.width, ia.height);
             }
 
             await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () => {
@@ -1466,7 +1466,7 @@ namespace PhenoPad.CustomControl
                 string metapath = FileManager.getSharedFileManager().GetNoteFilePath(notebookId, pageId, NoteFileType.ImageAnnotationMeta);
                 result3 = await FileManager.getSharedFileManager().SaveObjectSerilization(metapath, imageList, typeof(List<ImageAndAnnotation>));
 
-                
+
 
                 return result1 && result2 && result3;
             }
@@ -1476,6 +1476,7 @@ namespace PhenoPad.CustomControl
                 Debug.WriteLine(e.Message);
                 return false;
             }
+
         }
 
         /// <summary>

@@ -36,7 +36,7 @@ namespace PhenoPad.LogService
             {
                 //Custom Layout defined in LoggerCustomLayout.cs
                 var loggingConfiguration = new LoggingConfiguration { IsEnabled = true };            
-                loggingConfiguration.AddTarget(LogLevel.Trace, LogLevel.Fatal, new StreamingFileTarget(new CustomLayout()));
+                loggingConfiguration.AddTarget(LogLevel.Info, LogLevel.Fatal, new StreamingFileTarget(new CustomLayout()));
                 loggingConfiguration.AddTarget(LogLevel.Trace, LogLevel.Fatal, new DebugTarget(new CustomLayout()));
                 //
                 logManager = LogManagerFactory.CreateLogManager(loggingConfiguration);
@@ -65,7 +65,7 @@ namespace PhenoPad.LogService
                 "{hour.integer}‎:‎{minute.integer(2)}‎:‎{second.integer(2)}");
             DateTime localTime = info.TimeStamp.LocalDateTime;
             var formatted = formatter.Format(localTime);
-            return $"{info.SequenceID}|{formatted}|{info.Level}|{info.Logger}|{info.Message}";
+            return $"{info.SequenceID}|{formatted}|{info.Logger}|{info.Level}|{info.Message}";
         }
     }
 }

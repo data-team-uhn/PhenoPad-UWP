@@ -38,7 +38,7 @@ namespace PhenoPad.CustomControl
     public sealed partial class AddInControl : UserControl
     {
         public AnnotationType anno_type;
-        public double DEFAULT_COMMENT_HEIGHT = 150;
+        public double DEFAULT_COMMENT_HEIGHT = 180;
         public double DEFAULT_COMMENT_WIDTH = 650;
         public double COMMENT_HEIGHT = 60;
         public double COMMENT_WIDTH = 500;
@@ -104,6 +104,7 @@ namespace PhenoPad.CustomControl
             drawingAttributes.IgnorePressure = false;
             drawingAttributes.FitToCurve = true;
             inkCanvas.InkPresenter.UpdateDefaultDrawingAttributes(drawingAttributes);
+            inkCanvas.InkPresenter.StrokesCollected += inkCanvas_StrokesCollected;
 
 
             //control transform group binding
@@ -144,12 +145,11 @@ namespace PhenoPad.CustomControl
             DrawingButton_Click(null, null);
         }
 
-
         public async void SlideToRight()
         {
             if (addinSlide.X == 0)
             {
-                if (this.Height == 150)
+                if (this.Height >= DEFAULT_COMMENT_HEIGHT)
                     await Dispatcher.RunAsync(Windows.UI.Core.CoreDispatcherPriority.Normal, CompressComment);
                 Canvas.SetZIndex(this,90);
                 OutlineGrid.BorderBrush = new SolidColorBrush(BORDER_INACTIVE);
@@ -193,9 +193,7 @@ namespace PhenoPad.CustomControl
                 }
                 Rect bound = inkCan.InkPresenter.StrokeContainer.BoundingRect;
                 inkCanvas.InkPresenter.StrokeContainer.MoveSelected(new Point(-1 * bound.X + 1, -1 * bound.Y + 1));
-
                 this.widthOrigin = bound.Width < DEFAULT_COMMENT_WIDTH? DEFAULT_COMMENT_WIDTH : bound.Width + 5;
-                this.heightOrigin = DEFAULT_COMMENT_HEIGHT;
                 this.Width = this.widthOrigin;
                 this.Height = this.heightOrigin;
                 inkCan.Height = this.Height;
@@ -206,7 +204,7 @@ namespace PhenoPad.CustomControl
 
         }
 
-        public async Task Slide(double x = 0, double y = 0)
+        public async void Slide(double x = 0, double y = 0)
         {
             DoubleAnimation dx = (DoubleAnimation)EHRCommentSlidingAnimation.Children.ElementAt(0);
             dx.By = x;
@@ -260,27 +258,40 @@ namespace PhenoPad.CustomControl
                 Rect bound = inkCan.InkPresenter.StrokeContainer.BoundingRect;
                 Debug.WriteLine($"Number of lines detected = {inknodes.Count},height ratio = {bound.Height / DEFAULT_COMMENT_HEIGHT}\n");
                 inkRatio = bound.Width / COMMENT_WIDTH;
-                if (inknodes.Count <= 1 && bound.Height <= (0.8) * DEFAULT_COMMENT_HEIGHT)
+                if (inknodes.Count <= 1 && bound.Height <= (0.5) * DEFAULT_COMMENT_HEIGHT)
                 {
-                    inkRatio = Math.Min( bound.Height / COMMENT_HEIGHT , inkRatio);
+                    inkRatio = COMMENT_HEIGHT / ( bound.Height + bound.Top);
+                    Debug.WriteLine($"single, ratio = {inkRatio}");
+                    if (inkRatio >= 0.6)
+                    {
+                        inkRatio = 0.6;
+                        foreach (InkStroke s in inkCan.InkPresenter.StrokeContainer.GetStrokes())
+                            s.PointTransform = Matrix3x2.CreateScale((float)inkRatio, (float)inkRatio);
+                    }
                     this.Height = COMMENT_HEIGHT;
                 }
                 else
                 {
-                    inkRatio = Math.Min(bound.Height / (2 * COMMENT_HEIGHT), inkRatio);
-                    this.Height = 2 * COMMENT_HEIGHT;
-                }
-                if (inkRatio >= 0.7)
-                {
-                    inkRatio = 0.7;
+                    int line;
+                    if (inknodes.Count > 1)
+                        line = inknodes.Count;
+                    else
+                        line = (int)((bound.Height) / COMMENT_HEIGHT);
+                    //if (line > 2)
+                    //    line -= 2;
+                    inkRatio = (bound.Height)/(line * COMMENT_HEIGHT);
+                    if (inkRatio >= 0.8)
+                        inkRatio = 0.8;
                     foreach (InkStroke s in inkCan.InkPresenter.StrokeContainer.GetStrokes())
                         s.PointTransform = Matrix3x2.CreateScale((float)inkRatio, (float)inkRatio);
+
+                    Debug.WriteLine($"multiple, ratio = {inkRatio}");
+                    this.Height =(line) * COMMENT_HEIGHT;
                 }
+
                 bound = inkCan.InkPresenter.StrokeContainer.BoundingRect;
-                inkCanvas.InkPresenter.StrokeContainer.MoveSelected(new Point(-1 * bound.X + 1, -1 * bound.Y + 1));
+                inkCanvas.InkPresenter.StrokeContainer.MoveSelected(new Point(-1 * bound.X + 1, -1 * bound.Y));
                 this.Width = bound.Width < COMMENT_WIDTH? COMMENT_WIDTH : bound.Width + 5;
-                this.heightOrigin = this.Height;
-                this.widthOrigin = this.Width;
                 inkAnalyzer.ClearDataForAllStrokes();
             }
         }
@@ -293,10 +304,28 @@ namespace PhenoPad.CustomControl
             var inknodes = inkAnalyzer.AnalysisRoot.FindNodes(InkAnalysisNodeKind.Line);
             Rect bound = inkCan.InkPresenter.StrokeContainer.BoundingRect;
 
-            if (inknodes.Count <= 1 && bound.Height <= (0.8) * DEFAULT_COMMENT_HEIGHT)
+            if (inknodes.Count <= 1 && bound.Height <= (0.5) * DEFAULT_COMMENT_HEIGHT)
                 return COMMENT_HEIGHT;
-            else
-                return 2 * COMMENT_HEIGHT;
+            else {
+                int line;
+                if (inknodes.Count > 1)
+                    line = inknodes.Count;
+                else
+                    line = (int)((bound.Height) / COMMENT_HEIGHT);
+                return line * COMMENT_HEIGHT;
+            }
         }
+
+        private void inkCanvas_StrokesCollected(InkPresenter sender, InkStrokesCollectedEventArgs args)
+        {
+            Rect bound = inkCan.InkPresenter.StrokeContainer.BoundingRect;
+            if (bound.Top + bound.Height > 0.8 * this.Height) {
+                this.Height += COMMENT_HEIGHT;
+                this.heightOrigin = this.Height;
+                inkCanvas.Height += COMMENT_HEIGHT;
+            }
+
+        }
+
     }
 }

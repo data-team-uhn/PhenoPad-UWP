@@ -67,7 +67,8 @@ namespace PhenoPad
         /// </summary>
         public async void InitializeNotebook()
         {
-            NotifyUser("Creating Notebook...",NotifyType.StatusMessage,3);
+            LoadingPopup.IsOpen = true;
+            //NotifyUser("Creating Notebook...",NotifyType.StatusMessage,3);
             MetroLogger.getSharedLogger().Info("Initialize a new notebook.");
             PhenoMana.clearCache();
 
@@ -106,6 +107,7 @@ namespace PhenoPad
             // create file sturcture for this page
             await FileManager.getSharedFileManager().CreateNotePage(notebookObject, curPageIndex.ToString());
             await Task.Delay(TimeSpan.FromSeconds(3));
+            LoadingPopup.IsOpen = false;
             curPage.Visibility = Visibility.Visible;
         }
 
@@ -114,7 +116,8 @@ namespace PhenoPad
         /// </summary>
         public async void InitializeNotebookFromDisk()
         {
-            NotifyUser("Loading Notebook ...", NotifyType.StatusMessage, 3);
+            LoadingPopup.IsOpen = true;
+            //NotifyUser("Loading Notebook ...", NotifyType.StatusMessage, 3);
             MetroLogger.getSharedLogger().Info("Initializing notebook from disk ...");
             PhenoMana.clearCache();
             try
@@ -223,6 +226,7 @@ namespace PhenoPad
                 }
                 MainPageInkBar.TargetInkCanvas = inkCanvas;
                 await Task.Delay(TimeSpan.FromSeconds(3));
+                LoadingPopup.IsOpen = false;
                 curPage.Visibility = Visibility.Visible;
             }
             catch (NullReferenceException ne)
@@ -284,6 +288,7 @@ namespace PhenoPad
             modeTextBlock.Text = WritingMode;
             AbbreviationON_Checked(null, null);
             await Task.Delay(TimeSpan.FromSeconds(3));
+            LoadingPopup.IsOpen = false;
             curPage.Visibility = Visibility.Visible;
         }
 

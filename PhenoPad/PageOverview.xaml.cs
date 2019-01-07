@@ -25,7 +25,6 @@ using Windows.UI.Xaml.Input;
 using Windows.UI.Xaml.Media;
 using Windows.UI.Xaml.Media.Imaging;
 using Windows.UI.Xaml.Navigation;
-using PhenoPad.LogService;
 using Windows.Storage.Pickers;
 using System.Threading.Tasks;
 
@@ -189,17 +188,17 @@ namespace PhenoPad
             var id = (string)args.SwipeControl.Tag;
             try
             {
-                MetroLogger.getSharedLogger().Info($"Deleting {id}.");
+                LogService.MetroLogger.getSharedLogger().Info($"Deleting {id}.");
                 bool isSuccess = await FileManager.getSharedFileManager().DeleteNotebookById(id);
                 if (isSuccess)
                 {
                     reloadNotebookList();
                     MessageGrid.Visibility = Visibility.Visible;
-                    MetroLogger.getSharedLogger().Info($"Successfully deleted {id}.");
+                    LogService.MetroLogger.getSharedLogger().Info($"Successfully deleted {id}.");
                 }
             }
             catch (Exception e) {
-                MetroLogger.getSharedLogger().Error($"Failed to delete {id}: {e.Message}.");
+                LogService.MetroLogger.getSharedLogger().Error($"Failed to delete {id}: {e.Message}.");
             }
         }
         #endregion

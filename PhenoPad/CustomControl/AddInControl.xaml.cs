@@ -626,13 +626,9 @@ namespace PhenoPad.CustomControl
         private void InitiateInkCanvas(bool onlyView = false, double scaleX = 1, double scaleY = 1)
         {/// <summary>Initializes inkcanvas attributes for the add-in panel based on  whether item will be editable or not.</summary>
 
-            Debug.WriteLine($"initiate ink canvas onlyview = {onlyView}, commentID = {commentID}");
-
             isInitialized = true;
-
             scrollViewer.Visibility = Visibility.Visible;
             inkCan.Visibility = Visibility.Visible;
-
 
             if (hasImage || onlyView)
             {
@@ -679,7 +675,6 @@ namespace PhenoPad.CustomControl
                     }
                     else
                     {//adjust ink canvas size/position to display full stroke view
-
                         Rect bound = inkCanvas.InkPresenter.StrokeContainer.BoundingRect;
                         double ratio = bound.Width / bound.Height;
                         inkCan.Height = bound.Height + 10;

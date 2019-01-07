@@ -82,7 +82,6 @@ namespace PhenoPad
         Symbol LassoSelect = (Symbol)0xEF20;
         Symbol TouchWriting = (Symbol)0xED5F;
 
-        private ILogger logger = LogService.MetroLogger.getSharedLogger();
         private List<NotePageControl> notePages;
         private List<Button> pageIndexButtons;
         private SimpleOrientationSensor _simpleorientation;
@@ -191,19 +190,19 @@ namespace PhenoPad
             var result = await messageDialog.ShowAsync();
             if ((int)result.Id == 0)
             {
-                logger.Info("Saving and exiting app ...");
+                LogService.MetroLogger.getSharedLogger().Info("Saving and exiting app ...");
                 //only saves the notes if in editing stage
                 if (notebookId != null)
                     await this.saveNoteToDisk();
                 Application.Current.Exit();
             }
             else if ((int)result.Id == 1) {
-                logger.Info("Exiting app without saving ...");
+                LogService.MetroLogger.getSharedLogger().Info("Exiting app without saving ...");
                 Application.Current.Exit();
             }
             else
             {
-                logger.Info("Canceled Exiting app");
+                LogService.MetroLogger.getSharedLogger().Info("Canceled Exiting app");
             }
         }
 
@@ -1140,12 +1139,13 @@ namespace PhenoPad
 
         private async void BackButton_Click(object sender, RoutedEventArgs e)
         {
-            
 
+            LoadingPopup.IsOpen = true;
             // save note
             await this.saveNoteToDisk();
-
             UIWebSocketClient.getSharedUIWebSocketClient().disconnect();
+            await Task.Delay(TimeSpan.FromSeconds(1));
+            LoadingPopup.IsOpen = false;
             //On_BackRequested();
             this.Frame.Navigate(typeof(PageOverview));
 

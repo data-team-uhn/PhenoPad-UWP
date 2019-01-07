@@ -41,13 +41,17 @@ namespace PhenoPad.CustomControl
 {
     public sealed partial class EHRPageControl : UserControl
     {
+        enum InsertMode {
+            Handwriting,
+            typing
+        }
         #region Class Attributes
 
-        private double EHR_HEIGHT = 4000;
+        private double EHR_HEIGHT = 3000;
         private double EHR_WIDTH = 2000;
         public GridLength EHR_TEXTBOX_WIDTH = new GridLength(1200);
         public float LINE_HEIGHT = 50;
-
+        private InsertMode insertMode;
         private Polyline lasso;
 
         private float UNPROCESSED_OPACITY = 0.5f;
@@ -105,7 +109,7 @@ namespace PhenoPad.CustomControl
             }
 
             parentControl = parent;
-
+            insertMode = InsertMode.Handwriting;
             this.notebookid = parent.notebookId;
             this.pageid = parent.pageId;
 
@@ -116,7 +120,7 @@ namespace PhenoPad.CustomControl
             inkCanvas.InkPresenter.UpdateDefaultDrawingAttributes(drawingAttributes);
             inkCanvas.UpdateLayout();
 
-            inkCanvas.InkPresenter.InputDeviceTypes = CoreInputDeviceTypes.Pen;
+            inkCanvas.InkPresenter.InputDeviceTypes = CoreInputDeviceTypes.Pen | CoreInputDeviceTypes.Mouse;
 
             inkCanvas.Tapped += OnElementTapped;
             inkCanvas.DoubleTapped += ShowCPMenu;
@@ -144,6 +148,8 @@ namespace PhenoPad.CustomControl
             autosaveDispatcherTimer.Tick += TriggerAutoSave;
             autosaveDispatcherTimer.Interval = TimeSpan.FromSeconds(3); //setting stroke auto save interval to be 1 sec
 
+            EHRTextBox.SizeChanged += CheckExtendPage;
+
             inserts = new List<List<int>>();// List<(start, length)>
             highlights = new List<List<int>>();// List<(start, length)>
             deletes = new List<List<int>>();// List<(start, length)>
@@ -162,6 +168,7 @@ namespace PhenoPad.CustomControl
             this.SetUpEHRFile(file);
             this.DrawBackgroundLines();
         }
+
 
         #endregion
 
@@ -265,6 +272,8 @@ namespace PhenoPad.CustomControl
 
             inputgrid.Visibility = Visibility.Visible;
             inputMarkup.Visibility = Visibility.Visible;
+            if (insertMode == InsertMode.typing)
+                inputTypeBox.Focus(FocusState.Pointer);
         }
 
         private void ShowCPMenu(object sender, DoubleTappedRoutedEventArgs e)
@@ -445,6 +454,45 @@ namespace PhenoPad.CustomControl
             autosaveDispatcherTimer.Start();
         }
 
+        private void ToggleInsertMode(object sender, RoutedEventArgs e)
+        {
+            if (insertMode == InsertMode.Handwriting)
+            {
+                inputCanvasbg.Visibility = Visibility.Collapsed;
+                inputInkCanvas.Visibility = Visibility.Collapsed;
+                inputTypeBox.KeyDown +=(object obj, KeyRoutedEventArgs ke) => {
+                    if (ke.Key == Windows.System.VirtualKey.Enter) {
+                        InsertToEHRClick();
+                    }
+                };
+                insertSymbol.Symbol = Symbol.Edit;
+                insertMode = InsertMode.typing;
+                inputTypeBox.Visibility = Visibility.Visible;
+                inputTypeBox.AcceptsReturn = false;
+                inputTypeBox.Focus(FocusState.Pointer);
+            }
+            else {
+                inputCanvasbg.Visibility = Visibility.Visible;
+                inputInkCanvas.Visibility = Visibility.Visible;
+                inputTypeBox.Visibility = Visibility.Collapsed;
+                insertMode = InsertMode.Handwriting;
+                insertSymbol.Symbol = Symbol.Keyboard;
+
+            }
+        }
+
+        private void CheckExtendPage(object sender, SizeChangedEventArgs e)
+        {
+            Debug.WriteLine($"size changed ! new height = {e.NewSize.Height}");
+            if (e.NewSize.Height + 500 > EHR_HEIGHT)
+            {
+                EHRRootGrid.Height = e.NewSize.Height + 500;
+            }
+            this.DrawBackgroundLines();
+            this.UpdateLayout();
+        }
+
+
         #endregion
 
         #region Gesture Operations
@@ -477,7 +525,8 @@ namespace PhenoPad.CustomControl
         private async void TriggerAutoSave(object sender = null, object e = null)
         {/// Trigger parent NotePageControl's auto-save to save all progress
             autosaveDispatcherTimer.Stop();
-            await MainPage.Current.curPage.SaveToDisk();
+            if (MainPage.Current.curPage != null)
+                await MainPage.Current.curPage.SaveToDisk();
         }
 
         private void RemovePasteFormat(object sender = null, TextControlPasteEventArgs e = null)
@@ -693,21 +742,23 @@ namespace PhenoPad.CustomControl
                     annotated[i][0] += length;
                     annotated[i][1] += length;
                     //shift the comment panel's left-top position according to new starting index;
-                    var range = EHRTextBox.Document.GetRange(comment.commentID - 1, comment.commentID);
+                    var range = EHRTextBox.Document.GetRange(comment.commentID, comment.commentID + 1);
                     Point pos;
                     range.GetPoint(HorizontalCharacterAlignment.Left, VerticalCharacterAlignment.Bottom, PointOptions.ClientCoordinates, out pos);
                     double newY = (Math.Ceiling(pos.Y / LINE_HEIGHT) + 1) * LINE_HEIGHT + 110;
                     double xOffset = (pos.X + 10) - comment.canvasLeft;
                     double yOffset = newY - comment.canvasTop ;
-                    comment.Slide(x: -xOffset, y: yOffset );
-
+                    Debug.WriteLine($"after insert, Yoffset = {yOffset}");
+                    if (yOffset != 0) {
+                        comment.Slide(y: yOffset);
+                        comment.commentslideY += yOffset - LINE_HEIGHT;
+                        comment.canvasTop = newY;
+                        Canvas.SetTop(comment, comment.canvasTop);
+                    }
+                    comment.Slide(x: -xOffset);
                     comment.commentslideX -= xOffset;
-                    comment.commentslideY += yOffset;
                     comment.canvasLeft = pos.X + 10;
-                    comment.canvasTop = newY;
-
                     Canvas.SetLeft(comment, comment.canvasLeft);
-                    Canvas.SetTop(comment, comment.canvasTop);
                 }
 
             }
@@ -753,11 +804,21 @@ namespace PhenoPad.CustomControl
             RefreshTextStyle();
         }
 
-        private void InsertToEHRClick(object sender, RoutedEventArgs e) {
+        private void InsertToEHRClick(object sender = null, RoutedEventArgs e = null) {
             string text = "";
-            foreach (HWRRecognizedText word in inputRecogResult)
+            if (insertMode == InsertMode.Handwriting)
             {
-                text += word.selectedCandidate + " ";
+                foreach (HWRRecognizedText word in inputRecogResult)
+                    text += word.selectedCandidate + " ";
+            }
+            else
+            {
+                string typeText;
+                inputTypeBox.Document.GetText(TextGetOptions.None, out typeText);
+                text = (typeText.TrimStart()).TrimEnd() + " ";
+                if (text[0] == ' ')
+                    text = text.Substring(1);//for some reason there's a white space at index 0 that won't be trimmed
+                inputTypeBox.Document.SetText(TextSetOptions.None, "");
             }
 
             string all_text = getEHRText();
@@ -767,14 +828,10 @@ namespace PhenoPad.CustomControl
                 all_text = all_text.Substring(0, all_text.Length).TrimEnd() + " ";
                 EHRTextBox.Document.SetText(TextSetOptions.None, all_text + text);
             }
-
             else
             {
-                //guarantees that first_half is trimmed with ending space character
-                string first_half = all_text.Substring(0, current_index + 1);
-                //guarantees that second_half is trimmed beginning with no space character
-                string rest = all_text.Substring(current_index + 1);
-                EHRTextBox.Document.SetText(TextSetOptions.None, first_half + text + rest);
+                string result = all_text.Insert(current_index + 1, text);
+                EHRTextBox.Document.SetText(TextSetOptions.None, result);
             }
 
             //clears the previous input
@@ -785,7 +842,6 @@ namespace PhenoPad.CustomControl
             inputInkCanvas.InkPresenter.StrokeContainer.Clear();
             curLineWordsStackPanel.Children.Clear();
             ClearOperationStrokes();
-
         }
 
         private void ClearInput(object sender, RoutedEventArgs e) {
@@ -1221,6 +1277,11 @@ namespace PhenoPad.CustomControl
 
         private async void inputInkCanvas_StrokesCollected(InkPresenter sender, InkStrokesCollectedEventArgs args)
         {
+            Rect bound = inputInkCanvas.InkPresenter.StrokeContainer.BoundingRect;
+            if (bound.Height > inputInkCanvas.Height * 0.8)
+                inputCanvasRow.Height = new GridLength(inputCanvasRow.Height.Value + (double)LINE_HEIGHT);
+
+
             foreach (var s in args.Strokes)
             {
                 //Instantly analyze ink inputs
