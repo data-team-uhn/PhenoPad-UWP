@@ -59,10 +59,12 @@ namespace PhenoPad.Gestures
             else if (bound.Width / bound.Height > 3)
             {
                 List<InkPoint> pts = s.GetInkPoints().ToList();
-                InkPoint pre_point = pts[0];
+                //to prevent error spikes at the beginning/end of a stroke, only focus on mid-60% of the points
+                int sections = (int)(pts.Count * 0.2); 
+                InkPoint pre_point = pts[sections];
                 int spike_count = 0;
                 int direction = 1;
-                for (int i = 0; i < pts.Count; i += 3)
+                for (int i = sections; i < (pts.Count - sections); i += 2)
                 {
                     if (direction == 1 && pts[i].Position.X < pre_point.Position.X)
                     {
@@ -76,7 +78,8 @@ namespace PhenoPad.Gestures
                     }
                     pre_point = pts[i];
                 }
-                if (spike_count > 3)
+                Debug.WriteLine($"Recognizer's spike count = {spike_count}");
+                if (spike_count > 0)
                     return "zigzag";
                 else
                     return "hline";

@@ -640,6 +640,7 @@ namespace PhenoPad.CustomControl
                 inkCan.Height = this.Height;
                 inkCan.Width = this.Width;
                 TitleRelativePanel.Visibility = Visibility.Collapsed;
+
             }
             else {
                 if (!onlyView)
