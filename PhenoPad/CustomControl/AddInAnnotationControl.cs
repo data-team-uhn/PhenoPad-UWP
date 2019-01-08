@@ -38,8 +38,8 @@ namespace PhenoPad.CustomControl
     public sealed partial class AddInControl : UserControl
     {
         public AnnotationType anno_type;
-        public double DEFAULT_COMMENT_HEIGHT = 180;
-        public double DEFAULT_COMMENT_WIDTH = 650;
+        public static double DEFAULT_COMMENT_HEIGHT = 180;
+        public static double DEFAULT_COMMENT_WIDTH = 650;
         public double COMMENT_HEIGHT = 60;
         public double COMMENT_WIDTH = 400;
         public Color BORDER_ACTIVE;
@@ -49,7 +49,7 @@ namespace PhenoPad.CustomControl
         public double commentslideY;
         public double inkRatio;
 
-        public int commentID;
+        public int commentID = -1;
         public EHRPageControl ehr;
 
         /// <summary>
@@ -147,7 +147,7 @@ namespace PhenoPad.CustomControl
         {
             if (addinSlide.X == 0)
             {
-                if (this.Height >= DEFAULT_COMMENT_HEIGHT && this.Width == this.DEFAULT_COMMENT_WIDTH)
+                if (this.Height >= DEFAULT_COMMENT_HEIGHT && this.Width >= DEFAULT_COMMENT_WIDTH)
                     await Dispatcher.RunAsync(Windows.UI.Core.CoreDispatcherPriority.Normal, CompressComment);
                 Canvas.SetZIndex(this,90);
                 OutlineGrid.BorderBrush = new SolidColorBrush(BORDER_INACTIVE);
@@ -248,6 +248,7 @@ namespace PhenoPad.CustomControl
         { //Shrinks the strokes in inkCan and readjusts the control frame size
             if (!hasImage)
             {
+                Debug.WriteLine(Environment.NewLine);
                 ehr.HideCommentLine();
                 inkAnalyzer.AddDataForStrokes(inkCan.InkPresenter.StrokeContainer.GetStrokes());
                 await inkAnalyzer.AnalyzeAsync();
@@ -256,14 +257,14 @@ namespace PhenoPad.CustomControl
                     s.Selected = true;
 
                 Rect bound = inkCan.InkPresenter.StrokeContainer.BoundingRect;
-                Debug.WriteLine($"Number of lines detected = {inknodes.Count},height ratio = {bound.Height / DEFAULT_COMMENT_HEIGHT}\n");
+                Debug.WriteLine($"Number of lines detected = {inknodes.Count},height ratio = {bound.Height / DEFAULT_COMMENT_HEIGHT}");
                 inkRatio = bound.Width / COMMENT_WIDTH;
 
                 //Detected less/equal one line of strokes and the bound is less than a line height,
                 //In this case treat it as a single line of annotation
-                if (inknodes.Count <= 1 && bound.Height <= (0.5) * DEFAULT_COMMENT_HEIGHT)
+                if (inknodes.Count <= 1 && bound.Height <= COMMENT_HEIGHT * 1.5)
                 {
-                    inkRatio = COMMENT_HEIGHT / ( bound.Height);
+                    inkRatio = Math.Min( COMMENT_HEIGHT / (bound.Height + 10) , bound.Height / (COMMENT_HEIGHT + 10));
                     Debug.WriteLine($"single, ratio = {inkRatio}");
                     this.Height = COMMENT_HEIGHT;
                 }
@@ -271,25 +272,26 @@ namespace PhenoPad.CustomControl
                 {
                     int line;
                     //use InkAnalyzer's line count if available, o.w. estimate line using bound height
-                    line = inknodes.Count > 1 ? inknodes.Count : (int)(Math.Ceiling((bound.Height) / COMMENT_HEIGHT));
-                    inkRatio = Math.Min( (bound.Height)/(line * COMMENT_HEIGHT), line*COMMENT_HEIGHT / bound.Height);
+                    line = inknodes.Count >= 1 ? inknodes.Count : (int)(Math.Ceiling((bound.Height) / COMMENT_HEIGHT));
+                    inkRatio = Math.Min((bound.Height) / (line * COMMENT_HEIGHT + 10), (line * COMMENT_HEIGHT) / (bound.Height + 10));
                     Debug.WriteLine($"multiple, #lines = {line}, ratio = {inkRatio}");
                     //recalculate number of lines relative to compressed strokes
-                    line = (int)(Math.Ceiling((bound.Height * inkRatio) / COMMENT_HEIGHT));
+                    if (inknodes.Count < 1)
+                        line = (int)(Math.Ceiling((bound.Height * inkRatio + 2) / COMMENT_HEIGHT));
+                    Debug.WriteLine($"recalculated, #lines = {line}");
                     this.Height = (line) * COMMENT_HEIGHT;
                 }
-                //further compresses the strokes and apply point compression to all strokes
+                //further compresses the strokes if calculated ratio is over 60%
                 if (inkRatio > 0.6)
-                {
                     inkRatio = 0.6;
-                    foreach (InkStroke s in inkCan.InkPresenter.StrokeContainer.GetStrokes())
-                        s.PointTransform = Matrix3x2.CreateScale((float)inkRatio, (float)inkRatio);
-                }
+                foreach (InkStroke s in inkCan.InkPresenter.StrokeContainer.GetStrokes())
+                    s.PointTransform = Matrix3x2.CreateScale((float)inkRatio, (float)inkRatio);
 
                 bound = inkCan.InkPresenter.StrokeContainer.BoundingRect;
                 inkCanvas.InkPresenter.StrokeContainer.MoveSelected(new Point(-1 * bound.X + 1, -1 * bound.Y));
                 this.Width = bound.Width < COMMENT_WIDTH? COMMENT_WIDTH : bound.Width + 5;
                 inkAnalyzer.ClearDataForAllStrokes();
+                Debug.WriteLine(Environment.NewLine);
             }
         }
 
@@ -302,19 +304,19 @@ namespace PhenoPad.CustomControl
             Rect bound = inkCan.InkPresenter.StrokeContainer.BoundingRect;
 
             //estimated single line
-            if (inknodes.Count <= 1 && bound.Height <= (0.5) * DEFAULT_COMMENT_HEIGHT)
+            if (inknodes.Count <= 1 && bound.Height <= COMMENT_HEIGHT * 1.5)
                 return COMMENT_HEIGHT;
             //estimated multiple line
             else {
                 int line;
-                line = inknodes.Count > 1 ? inknodes.Count: (int)(Math.Ceiling((bound.Height) / COMMENT_HEIGHT));
-                inkRatio = Math.Min((bound.Height) / (line * COMMENT_HEIGHT), line * COMMENT_HEIGHT / bound.Height);
+                line = inknodes.Count >= 1 ? inknodes.Count: (int)(Math.Ceiling((bound.Height) / COMMENT_HEIGHT));
+                inkRatio = Math.Min((bound.Height) / (line * COMMENT_HEIGHT + 10), (line * COMMENT_HEIGHT) / (bound.Height + 10));
                 //recalculate number of lines relative to compressed strokes
-                line = (int)(Math.Ceiling((bound.Height * inkRatio) / COMMENT_HEIGHT));
+                if (inknodes.Count < 1)
+                    line = (int)(Math.Ceiling((bound.Height * inkRatio + 2) / COMMENT_HEIGHT));
                 return (line) * COMMENT_HEIGHT;
             }
         }
-
         private void inkCanvas_StrokesCollected(InkPresenter sender, InkStrokesCollectedEventArgs args)
         {
             //detects if user input has reached maximum height and extend if necessary

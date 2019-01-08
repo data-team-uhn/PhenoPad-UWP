@@ -959,7 +959,7 @@ namespace PhenoPad.CustomControl
                 if (ia.commentID != -1)
                     canvasAddIn = new AddInControl(ia.name, ehrPage, ia.commentID, ia.anno_type);// need to update this commengID when impleting saving
                 else
-                    canvasAddIn = new AddInControl(ia.name, notebookId, pageId, ia.width, ia.height);
+                    canvasAddIn = new AddInControl(ia.name, notebookId, pageId, ia.widthOrigin, ia.heightOrigin);
             }
 
             await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () => {
@@ -1043,7 +1043,8 @@ namespace PhenoPad.CustomControl
                 canvasAddIn.InitializeFromImage(wb);
         }
 
-        public AddInControl NewEHRCommentControl(double left, double top, int commentID, AnnotationType type) {
+        public AddInControl NewEHRCommentControl(double left, double top, int commentID, AnnotationType type)
+        {
             string name = FileManager.getSharedFileManager().CreateUniqueName();
             AddInControl comment = new AddInControl(name, this.ehrPage, commentID, type);
             comment.canvasLeft = left;

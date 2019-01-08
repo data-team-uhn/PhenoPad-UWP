@@ -32,6 +32,7 @@ using System.Text.RegularExpressions;
 using DCSoft.RTF;
 using PhenoPad.PhenotypeService;
 using System.Collections.ObjectModel;
+using System.Numerics;
 
 //using System.Drawing;
 
@@ -165,6 +166,10 @@ namespace PhenoPad.CustomControl
             inputRecogResult = new List<HWRRecognizedText>();
             lastOperationStrokeIDs = new List<uint>();
 
+            this.insertMode = InsertMode.Handwriting;
+            TypeToggleBtn.IsChecked = false;
+            HWToggleBtn.IsChecked = true;
+
             this.SetUpEHRFile(file);
             this.DrawBackgroundLines();
         }
@@ -271,6 +276,7 @@ namespace PhenoPad.CustomControl
             Canvas.SetLeft(inputMarkup, p.X - 5);
             Canvas.SetTop(inputMarkup, newY);
 
+            inputgrid.Opacity = 1;
             inputgrid.Visibility = Visibility.Visible;
             inputMarkup.Visibility = Visibility.Visible;
             if (insertMode == InsertMode.typing)
@@ -466,7 +472,8 @@ namespace PhenoPad.CustomControl
                         InsertToEHRClick();
                     }
                 };
-                insertSymbol.Symbol = Symbol.Edit;
+                TypeToggleBtn.IsChecked = true;
+                HWToggleBtn.IsChecked = false;
                 insertMode = InsertMode.typing;
                 inputTypeBox.Visibility = Visibility.Visible;
                 inputTypeBox.AcceptsReturn = false;
@@ -477,7 +484,9 @@ namespace PhenoPad.CustomControl
                 inputInkCanvas.Visibility = Visibility.Visible;
                 inputTypeBox.Visibility = Visibility.Collapsed;
                 insertMode = InsertMode.Handwriting;
-                insertSymbol.Symbol = Symbol.Keyboard;
+                TypeToggleBtn.IsChecked = false;
+                HWToggleBtn.IsChecked = true;
+
 
             }
         }
@@ -504,15 +513,14 @@ namespace PhenoPad.CustomControl
                 if (inputInkCanvas.InkPresenter.StrokeContainer.GetStrokes().Count > 0)
                     InsertToEHR();
                 SlideCommentsToSide();
-                inputgrid.Visibility = Visibility.Collapsed;
+                //inputgrid.Visibility = Visibility.Collapsed;
+                inputgrid.Opacity = 0;
                 inputMarkup.Visibility = Visibility.Collapsed;
                 cpMenu.Visibility = Visibility.Collapsed;
                 SelectionMenu.Visibility = Visibility.Collapsed;
                 ClearOperationStrokes();
                 if (popupCanvas.Children.Contains(lasso))
-                {
                     popupCanvas.Children.Remove(lasso);
-                }
                 HideCommentLine();
                 //DeleteComment.Visibility = Visibility.Collapsed;
                 cur_selected = (-1, -1);
@@ -770,8 +778,12 @@ namespace PhenoPad.CustomControl
         private async void InsertToEHR(object sender = null, DoubleTappedRoutedEventArgs e = null)
         {///Adds the raw insert as an annotation comment
             var strokes = inputInkCanvas.InkPresenter.StrokeContainer.GetStrokes();
+            //double ratio = inputInkCanvas.InkPresenter.StrokeContainer.BoundingRect.Width / inputInkCanvas.ActualWidth;
+            //ratio *= AddInControl.DEFAULT_COMMENT_WIDTH / inputInkCanvas.ActualWidth;
+            //Debug.WriteLine($"storke ratio = {ratio}");
             foreach (InkStroke s in strokes) {
                 s.Selected = true;
+                //s.PointTransform = Matrix3x2.CreateScale((float)ratio, (float)ratio);
             }
             inputInkCanvas.InkPresenter.StrokeContainer.CopySelectedToClipboard();
             var range = EHRTextBox.Document.GetRange(current_index - 1, current_index);
@@ -782,7 +794,7 @@ namespace PhenoPad.CustomControl
             comment.commentslideX = EHR_TEXTBOX_WIDTH.Value - pos.X + 10;
             comment.commentslideY = -LINE_HEIGHT;
             annotated.Add(new List<int>() { current_index, current_index + 1 });
-            comment.inkCan.InkPresenter.StrokeContainer.PasteFromClipboard(new Point(2,2));
+            comment.inkCan.InkPresenter.StrokeContainer.PasteFromClipboard(new Point(1,1));
 
             this.comments = comments.OrderBy(x => x.commentID).ToList();
             foreach (AddInControl c in comments)
@@ -802,7 +814,7 @@ namespace PhenoPad.CustomControl
             inputMarkup.Visibility = Visibility.Collapsed;
             inputInkCanvas.InkPresenter.StrokeContainer.Clear();
             curLineWordsStackPanel.Children.Clear();
-            SlideCommentsToSide();
+            //SlideCommentsToSide();
             RefreshTextStyle();
         }
 
@@ -1147,6 +1159,20 @@ namespace PhenoPad.CustomControl
             lastOperationStrokeIDs.Clear();
         }
 
+        private void ClearAllFormats(object sender, RoutedEventArgs e) {
+            Button btn = (Button)sender;
+            TextBlock text = (TextBlock)btn.Content;
+            if (text.Text == "Clear Deletes") {
+                this.deletes.Clear();
+            }
+            else if (text.Text == "Clear Highlights") {
+                this.highlights.Clear();
+            }
+            RefreshTextStyle();
+            cpMenu.Visibility = Visibility.Collapsed;
+            autosaveDispatcherTimer.Start();
+        }
+
         public string getEHRText()
         {/// Returns the current non-formatted text in EHR text box as string
 
@@ -1353,8 +1379,8 @@ namespace PhenoPad.CustomControl
             var range1 = EHRTextBox.Document.GetRangeFromPoint(start, PointOptions.ClientCoordinates);
             var range2 = EHRTextBox.Document.GetRangeFromPoint(end, PointOptions.ClientCoordinates);
 
-            int sel_start = range1.StartPosition;
-            int sel_end = range2.StartPosition;
+            int sel_start = GetNearestSpaceIndex(range1.StartPosition) + 1;
+            int sel_end = GetNearestSpaceIndex(range2.StartPosition) + 1;
 
             Debug.WriteLine($"highlighting at: start = {sel_start}, end = {sel_end}");
             HighlightTextInRange(sel_start, sel_end);
