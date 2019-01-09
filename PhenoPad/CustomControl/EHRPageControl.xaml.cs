@@ -213,8 +213,11 @@ namespace PhenoPad.CustomControl
                     this.highlights = formats.highlights;
                     this.deletes = formats.deletes;
                     this.annotated = formats.annotates;
-                    RefreshTextStyle();
+                    await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, RefreshTextStyle);
                 }
+                //After loading text, performs phenotype detection
+                AnalyzePhenotype();
+
             }
             //for taking care of non-existing saved format record files
             catch (FileNotFoundException) { }
@@ -849,6 +852,10 @@ namespace PhenoPad.CustomControl
                 EHRTextBox.Document.SetText(TextSetOptions.None, result);
             }
 
+            //Analyzes the new inserted text for Phenotypes
+            AnalyzePhenotype(text);
+
+
             //clears the previous input
             UpdateRecordListInsert(current_index + 1, text.Length);
             UpdateRecordMerge();
@@ -858,6 +865,7 @@ namespace PhenoPad.CustomControl
             curLineWordsStackPanel.Children.Clear();
             ClearOperationStrokes();
         }
+
 
         private void ClearInput(object sender, RoutedEventArgs e)
         {//Clears all recognized input and strokes in the inputcanvas panel
@@ -1453,7 +1461,27 @@ namespace PhenoPad.CustomControl
             int space_index = rest.IndexOf(' ');
             return space_index;
         }
-           
+
+        public async void AnalyzePhenotype(string text = "")
+        {
+            //by default analyzes whole EHR text
+            if (text == "")
+            {
+                text = getEHRText();
+                MainPage.Current.NotifyUser("Analyzing Phenotypes from EHR ...", NotifyType.StatusMessage, 7);
+            }
+            Dictionary<string, Phenotype> annoResult = await parentControl.PhenoMana.annotateByNCRAsync(text);
+            if (annoResult != null && annoResult.Count != 0)
+            {
+                foreach (var pp in annoResult.Values)
+                {
+                    pp.sourceType = SourceType.Notes;
+                    parentControl.PhenoMana.addPhenotypeCandidate(pp, SourceType.Notes);
+                }
+            }
+        }
+
+
         private async Task<bool> analyzeInk(InkStroke lastStroke = null, bool serverFlag = false)
         {/// <summary> Analyze ink strokes contained in inkAnalyzer and add phenotype candidates from fetching API</summary>
 

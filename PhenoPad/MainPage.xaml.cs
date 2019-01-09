@@ -790,7 +790,12 @@ namespace PhenoPad
             setPageIndexText();
             setNotePageIndex(curPageIndex);
             PhenoMana.phenotypesCandidates.Clear();
-            aPage.initialAnalyze();
+
+            if (aPage.ehrPage == null)
+                aPage.initialAnalyze();
+            else
+                aPage.ehrPage.AnalyzePhenotype();
+            
             aPage.Visibility = Visibility.Visible;
         }
 
@@ -1208,7 +1213,7 @@ namespace PhenoPad
             this.StreamButton.IsEnabled = false;
             SurfaceMicRadioBtn.IsChecked = true;
             //this.StreamButton.IsEnabled = true;
-            NotifyUser("Using Surface microphone", NotifyType.StatusMessage, 2);
+           // NotifyUser("Using Surface microphone", NotifyType.StatusMessage, 2);
         }
 
         private void ExterMicRadioButton_Checked(object sender, RoutedEventArgs e)

@@ -624,7 +624,7 @@ namespace PhenoPad
                 }
                 else
                 {
-                    MetroLogger.getSharedLogger().Error($"Loaded transcript_{i}.");
+                    Debug.WriteLine($"Loaded transcript_{i}.");
                     this.conversations.AddRange(messages);
                 }
             }
