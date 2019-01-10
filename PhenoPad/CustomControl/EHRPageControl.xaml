@@ -87,7 +87,7 @@
         <InkCanvas x:Name="annotations" x:FieldModifier="public" Grid.Column="1" />
 
         <!--insert text pop up-->
-        <Canvas x:Name="popupCanvas" Grid.ColumnSpan="2">
+        <Canvas x:Name="popupCanvas" x:FieldModifier="public" Grid.ColumnSpan="2">
 
             <!--<Button Style="{StaticResource ButtonStyle1}" x:Name="DeleteComment" Visibility="Collapsed" 
                     Click="RemoveComment" Background="WhiteSmoke">
@@ -216,6 +216,15 @@
                         <TextBlock Text="Annotate" FontWeight="SemiBold" FontSize="18" />
                     </Button>
                 </Grid>
+
+                <Grid CornerRadius="10" BorderBrush="Gray" BorderThickness="1" Background="WhiteSmoke">
+                    <Button Style="{StaticResource ButtonStyle1}" Width="200" Padding="20 10 20 10" Background="WhiteSmoke"
+                        Click="AnalyzePhenotypeOnLine"
+                            HorizontalContentAlignment="Center" VerticalContentAlignment="Center">
+                        <TextBlock Text="Search Phenotype" FontWeight="SemiBold" FontSize="18" />
+                    </Button>
+                </Grid>
+
 
             </StackPanel>
             

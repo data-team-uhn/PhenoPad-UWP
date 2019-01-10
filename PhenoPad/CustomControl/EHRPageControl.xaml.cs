@@ -74,6 +74,7 @@ namespace PhenoPad.CustomControl
         private int showAlterOfWord = -1;
         private int current_index;//the most current pen position to text
         private (int, int) cur_selected;//most current selected phrase
+        private string cur_selectedText;
         private (int, int) cur_highlight;
         private (int, int) cur_delete;
         private AddInControl cur_comment;
@@ -215,9 +216,11 @@ namespace PhenoPad.CustomControl
                     this.annotated = formats.annotates;
                     await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, RefreshTextStyle);
                 }
-                //After loading text, performs phenotype detection
-                AnalyzePhenotype();
-
+                //After loading text, performs phenotype detection on each sentence
+                String[] sentences = getEHRText().Split(".");
+                foreach (string s in sentences) {
+                    AnalyzePhenotype(s);
+                }
             }
             //for taking care of non-existing saved format record files
             catch (FileNotFoundException) { }
@@ -505,6 +508,12 @@ namespace PhenoPad.CustomControl
             this.UpdateLayout();
         }
 
+        private void AnalyzePhenotypeOnLine(object sender, RoutedEventArgs e) {
+            SelectionMenu.Visibility = Visibility.Collapsed;
+            parentControl.RecognizeSelection(cur_selectedText);
+
+        }
+
 
         #endregion
 
@@ -531,6 +540,7 @@ namespace PhenoPad.CustomControl
                 cur_delete = (-1, -1);
                 current_index = -1;
                 RefreshTextStyle();
+                //parentControl.ClearBriefPhenotypeEHR();
             });
         }
 
@@ -1014,7 +1024,6 @@ namespace PhenoPad.CustomControl
 
         private void SelectTextInBound(Rect bounding)
         {//selects a range of EHR text based on a given rectangle
-
             //making the start and end range smaller to avoid over-sensitive range detections
             Point start = new Point(bounding.X + 10, bounding.Y - LINE_HEIGHT - 20);
             Point end = new Point(bounding.X + bounding.Width - 30, bounding.Y - LINE_HEIGHT - 20);
@@ -1028,10 +1037,16 @@ namespace PhenoPad.CustomControl
             int sel_end = sub_text2.IndexOf(" ") + range2.StartPosition + 1;
 
             var sel_range = EHRTextBox.Document.GetRange(sel_start, sel_end);
+            //sets NotePageControl's selection bound to this line of text
+            Rect b;
+            int h;
+            sel_range.GetRect(PointOptions.ClientCoordinates, out b, out h);
+            parentControl.boundingRect = b;
 
             sel_range.CharacterFormat.Underline = UnderlineType.ThickDash;
             sel_range.CharacterFormat.ForegroundColor = Colors.Orange;
             cur_selected = (sel_start, sel_end);
+            cur_selectedText = getEHRText().Substring(sel_start, sel_end - sel_start).Trim(Environment.NewLine.ToCharArray());
             highlightState = CheckIsHighlighted(sel_start, sel_end);
             highlightText.Text = highlightState;
             deleteState = CheckIsDeleted(sel_start, sel_end);
@@ -1464,19 +1479,24 @@ namespace PhenoPad.CustomControl
 
         public async void AnalyzePhenotype(string text = "")
         {
+            string[] sentences;
             //by default analyzes whole EHR text
-            if (text == "")
+            if (text.Length == 0)
             {
-                text = getEHRText();
+                sentences = getEHRText().Split('.');
                 MainPage.Current.NotifyUser("Analyzing Phenotypes from EHR ...", NotifyType.StatusMessage, 7);
             }
-            Dictionary<string, Phenotype> annoResult = await parentControl.PhenoMana.annotateByNCRAsync(text);
-            if (annoResult != null && annoResult.Count != 0)
-            {
-                foreach (var pp in annoResult.Values)
+            else
+                sentences = new string[] {text};
+            foreach (string p in sentences) {
+                Dictionary<string, Phenotype> annoResult = await parentControl.PhenoMana.annotateByNCRAsync(p);
+                if (annoResult != null && annoResult.Count != 0)
                 {
-                    pp.sourceType = SourceType.Notes;
-                    parentControl.PhenoMana.addPhenotypeCandidate(pp, SourceType.Notes);
+                    foreach (var pp in annoResult.Values)
+                    {
+                        pp.sourceType = SourceType.Notes;
+                        parentControl.PhenoMana.addPhenotypeCandidate(pp, SourceType.Notes);
+                    }
                 }
             }
         }

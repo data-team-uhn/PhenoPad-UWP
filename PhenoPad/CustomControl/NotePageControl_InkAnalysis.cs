@@ -264,7 +264,7 @@ namespace PhenoPad.CustomControl
         /// <summary>
         /// Recognize selected strokes within the selected bounding rectangle and searches for possible phenotypes.
         /// </summary>
-        private async void RecognizeSelection()
+        public async void RecognizeSelection(string text = "")
         {
             selectionCanvas.Children.Clear();
 
@@ -272,7 +272,7 @@ namespace PhenoPad.CustomControl
                 return;
 
             //recogPhenoFlyout.ShowAt(rectangle);
-            string str = await recognizeSelection();
+            string str = text.Length == 0? await recognizeSelection(): text;
 
             if (!str.Equals(String.Empty) && !str.Equals(""))
             {
@@ -283,25 +283,47 @@ namespace PhenoPad.CustomControl
                 PopupCommandBar.Width = Math.Max(boundingRect.Width, PopupCommandBar.MinWidth);
                 //Canvas.SetLeft(recognizedPhenoBriefPanel, Math.Max(boundingRect.X, boundingRect.X));
                 //Canvas.SetTop(recognizedPhenoBriefPanel, boundingRect.Y + boundingRect.Height);
-
-                selectionCanvas.Children.Add(PopupCommandBar);
-                selectionCanvas.Children.Add(recognizedPhenoBriefPanel);
-
                 selectionRectangle.Width = boundingRect.Width;
                 selectionRectangle.Height = boundingRect.Height;
                 //selectionRectangleTranform = new TranslateTransform();
                 //selectionRectangle.RenderTransform = this.selectionRectangleTranform;
 
-                selectionCanvas.Children.Add(selectionRectangle);
-                Canvas.SetLeft(selectionRectangle, boundingRect.Left);
-                Canvas.SetTop(selectionRectangle, boundingRect.Top);
-                //TestC.Children.Add(selectionRectangle);
 
+
+                if (ehrPage != null)
+                {
+                    Canvas.SetLeft(selectionRectangle, boundingRect.Left + 10);
+                    Canvas.SetTop(selectionRectangle, boundingRect.Bottom);
+                    //Canvas.SetTop(PopupCommandBar, boundingRect.Y - PopupCommandBar.Height + ehrPage.LINE_HEIGHT);
+                    //ehrPage.popupCanvas.Children.Add(PopupCommandBar);
+                    if (!ehrPage.popupCanvas.Children.Contains(selectionRectangle))
+                        ehrPage.popupCanvas.Children.Add(selectionRectangle);
+                    if (!ehrPage.popupCanvas.Children.Contains(recognizedPhenoBriefPanel))
+                        ehrPage.popupCanvas.Children.Add(recognizedPhenoBriefPanel);
+                    selectionRectangle.Visibility = Visibility.Collapsed;
+
+                }
+                else {
+                    Canvas.SetLeft(selectionRectangle, boundingRect.Left);
+                    Canvas.SetTop(selectionRectangle, boundingRect.Top);
+
+                    selectionCanvas.Children.Add(PopupCommandBar);
+                    selectionCanvas.Children.Add(recognizedPhenoBriefPanel);
+                    selectionCanvas.Children.Add(selectionRectangle);
+                    //TestC.Children.Add(selectionRectangle);
+
+                }
                 var recogPhenoFlyout = (Flyout)this.Resources["PhenotypeSelectionFlyout"];
                 recognizedResultTextBlock.Text = str;
-                recogPhenoFlyout.ShowAt(selectionRectangle);
                 searchPhenotypes(str);
+                recogPhenoFlyout.ShowAt(selectionRectangle);
+
             }
+        }
+
+        public void ClearBriefPhenotypeEHR() {
+            recognizedPhenoBriefPanel.Visibility = Visibility.Collapsed;
+            selectionRectangle.Visibility = Visibility.Collapsed;
         }
 
         /// <summary>

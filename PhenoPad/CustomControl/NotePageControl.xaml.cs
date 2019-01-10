@@ -79,7 +79,7 @@ namespace PhenoPad.CustomControl
         public float PAGE_WIDTH = 1400;
 
         private DoubleCollection UNPROCESSED_DASH = new DoubleCollection() { 5, 2 };
-        private Rect boundingRect;
+        public Rect boundingRect;
         //TranslateTransform selectionRectangleTranform;
         private Polyline lasso;
         Symbol LassoSelect = (Symbol)0xEF20;

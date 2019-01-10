@@ -280,7 +280,7 @@ namespace PhenoPad
         /// </summary>
         private void modeTextBlock_PointerEntered(object sender, PointerRoutedEventArgs e)
         {
-            if (!ifViewMode)
+            if (!ifViewMode && curPage != null)
             {
                 curPage.showRecognizedTextCanvas();
                 modeTextBlock.Text = ViewMode;
@@ -791,7 +791,7 @@ namespace PhenoPad
             setNotePageIndex(curPageIndex);
             PhenoMana.phenotypesCandidates.Clear();
 
-            if (aPage.ehrPage == null)
+            if (curPage.ehrPage == null)
                 aPage.initialAnalyze();
             else
                 aPage.ehrPage.AnalyzePhenotype();
