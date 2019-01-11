@@ -49,7 +49,7 @@ namespace PhenoPad.HWRService
         Dictionary<string, List<string>> abbrDict;
         List<HWRRecognizedText> lastServerRecog;
         //default Abbreviation detection IP Address
-        Uri ipAddr = new Uri("http://104.41.139.54:8000/");
+        Uri ipAddr = new Uri("http://137.135.117.253:8000/");
 
 
         /// <summary>

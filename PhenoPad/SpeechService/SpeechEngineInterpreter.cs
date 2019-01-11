@@ -85,7 +85,7 @@ namespace PhenoPad.SpeechService
                 }
                 else
                 {
-                    votes[i] = 0;
+                    votes[i] = 1;
                 }
             }
 
@@ -111,7 +111,7 @@ namespace PhenoPad.SpeechService
 
         private List<WordSpoken> words = new List<WordSpoken>();      // all words detected
         private List<Pair<TimeInterval, int>> diarization = new List<Pair<TimeInterval, int>>();    // a list of intervals that have speaker identified
-        private List<Pair<double, int>> diarizationSmallSeg = new List<Pair<double, int>>();        // Pair<start time, speaker>
+        private List<Pair<int, int>> diarizationSmallSeg = new List<Pair<int, int>>();        // Pair<start time, speaker>
         private int diarizationWordIndex = 0;                     // word index that need to be assigned speaker
         private int constructDiarizedSentenceIndex = 0;           // word index to construct diarized index
         private int latestSentenceIndex = 0;                      // word index that has not been diarized
@@ -444,18 +444,33 @@ namespace PhenoPad.SpeechService
             double prev = 0;
             if (this.diarizationSmallSeg.Count > 0)
             {
-                prev = this.diarizationSmallSeg.Last().first + 0.1;
+                prev = (double)(this.diarizationSmallSeg.Last().first) / (double)(10.0) + 0.1;
             }
-
-            // fill empty ones, just in case
-            for (double i = prev; i < interval.start; i += 0.1)
+            if (interval.start >= prev)
             {
-                this.diarizationSmallSeg.Add(new Pair<double, int>(i, -1));
+                // fill empty ones, just in case
+                for (int i = Convert.ToInt32(prev * 10); i < Convert.ToInt32(interval.start * 10); i += 1)
+                {
+                    this.diarizationSmallSeg.Add(new Pair<int, int>(i, -1));
+                    Debug.WriteLine("addedSmallSegIndex: " + (diarizationSmallSeg.Count - 1));
+                    Debug.WriteLine("diarizationSmallSeg added: " + (i, -1));
+                }
+
+                for (int i = Convert.ToInt32(interval.start * 10); i < Convert.ToInt32(interval.end * 10); i += 1)
+                {
+                    this.diarizationSmallSeg.Add(new Pair<int, int>(i, speaker));
+                    Debug.WriteLine("addedSmallSegIndex: " + (diarizationSmallSeg.Count - 1));
+                    Debug.WriteLine("diarizationSmallSeg added: " + (i, speaker));
+                }
             }
-
-            for (double i = interval.start; i < interval.end; i += 0.1)
+            else
             {
-                this.diarizationSmallSeg.Add(new Pair<double, int>(i, speaker));
+                for (int i = Convert.ToInt32(prev * 10); i < Convert.ToInt32(interval.end * 10); i += 1)
+                {
+                    this.diarizationSmallSeg.Add(new Pair<int, int>(i, speaker));
+                    Debug.WriteLine("addedSmallSegIndex: " + (diarizationSmallSeg.Count - 1));
+                    Debug.WriteLine("diarizationSmallSeg added: " + (i, speaker));
+                }
             }
         }
 
