@@ -1294,8 +1294,6 @@ namespace PhenoPad.CustomControl
                         EHRTextBox.Document.GetText(TextGetOptions.None, out text);
                         Debug.WriteLine($"detected fir letter: -{text.Substring(range.StartPosition, 1)}-");
                         current_index = range.StartPosition;
-                        //if (text.Substring(range.StartPosition, 1) == " ")
-                        //    InsertNewLineToEHR();
                     }
                 }
             }

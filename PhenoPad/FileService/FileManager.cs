@@ -628,7 +628,7 @@ namespace PhenoPad.FileService
                 if (notePage.ehrPage == null)
                     isSuccessful = await saveStrokes(strokesFile, notePage.inkCan);
                 else
-                    isSuccessful = await saveStrokes(strokesFile, notePage.ehrPage.inkCanvas);
+                    isSuccessful = await saveStrokes(strokesFile, notePage.ehrPage.annotations);
 
             }
             catch (Exception e)
@@ -874,7 +874,7 @@ namespace PhenoPad.FileService
                     if (notePage.ehrPage == null)
                         isSuccessful = await loadStrokes(strokesFile, notePage.inkCan);
                     else
-                        isSuccessful = await loadStrokes(strokesFile, notePage.ehrPage.inkCanvas);
+                        isSuccessful = await loadStrokes(strokesFile, notePage.ehrPage.annotations);
 
                 }
                 else
