@@ -99,7 +99,7 @@ namespace PhenoPad
         private int doctor = 0;
         bool speechEngineRunning = false;
         private DispatcherTimer audioTimer = new DispatcherTimer();
-        
+
 
         public SpeechManager speechManager = SpeechManager.getSharedSpeechManager();
         /// <summary>
@@ -326,6 +326,27 @@ namespace PhenoPad
         }
 
         /// <summary>
+        /// Invoked when user presses the Microphone button on sidebar, requests speech engine connection
+        /// as well as connection to remote server for speech recognition
+        /// </summary>
+        private void AudioStreamButton_Clicked(object sender, RoutedEventArgs e)
+        {
+            //Temporarily disables audio button for avoiding frequent requests
+            audioButton.IsEnabled = false;
+
+            //NOTE that since we cannot use both internal/external micriphone at the same time
+            //we will use the speechEngineRunning as a flag to indicate if audio is working
+            //at the moment
+
+            // use external microphone
+            if (ConfigService.ConfigService.getConfigService().IfUseExternalMicrophone())
+                changeSpeechEngineState_BT();
+            // use internal microphone
+            else
+                changeSpeechEngineState();
+        }
+
+        /// <summary>
         /// Switch speech engine state for blue tooth devices
         /// </summary>
         /// <param name="state">current state of speech engine</param>
@@ -333,16 +354,48 @@ namespace PhenoPad
         {
             try
             {
-                if (speechEngineRunning == false)
-                {                 
-                    await BluetoothService.BluetoothService.getBluetoothService().sendBluetoothMessage("audio start manager_id=666");
-                    SpeechManager.getSharedSpeechManager().ReceiveASRResults();                 
+                if (!bluetoonOn)
+                {
+                    //BluetoothProgresssBox.Text = "Connecting to Raspberry Pi";
+                    //serverConnectButton.IsEnabled = false;
+                    //BluetoothProgress.IsActive = true;
+                    //BluetoothComplete.Visibility = Visibility.Collapsed;
+                    uiClinet = UIWebSocketClient.getSharedUIWebSocketClient();
+                    bool uiResult = await uiClinet.ConnectToServer();
+                    if (!uiResult)
+                    {
+                        LogService.MetroLogger.getSharedLogger().Error("UIClient failed to connect.");
+                    }
+                    this.bluetoothService = BluetoothService.BluetoothService.getBluetoothService();
+                    await this.bluetoothService.Initialize();
                 }
+
                 else
-                {                    
+                {
+                    uiClinet.disconnect();
                     await BluetoothService.BluetoothService.getBluetoothService().sendBluetoothMessage("audio stop");
                     SpeechManager.getSharedSpeechManager().StopASRResults();
+                    bool result = this.bluetoothService.CloseConnection();
+                    if (result)
+                    {
+                        this.bluetoothService = null;
+                        this.bluetoonOn = false;
+                        bluetoothInitialized(false);
+                        setStatus("bluetooth");
+                        //BluetoothProgresssBox.Text = "Disconnected Raspberry Pi";
+                        //BluetoothComplete.Visibility = Visibility.Visible;
+                        //BluetoothProgress.IsActive = false;
+                        NotifyUser("Bluetooth Connection disconnected.", NotifyType.StatusMessage, 2);
+                    }
+                    else
+                    {
+                        NotifyUser("Bluetooth Connection failed to disconnect.", NotifyType.ErrorMessage, 2);
+                    }
+                    this.onAudioEnded();
+
                 }
+
+
             }
             catch (Exception e)
             {
@@ -350,6 +403,14 @@ namespace PhenoPad
             }
 
         }
+
+        public async void StartAudioAfterBluetooth() {
+            if (speechEngineRunning == false)
+            {
+                await BluetoothService.BluetoothService.getBluetoothService().sendBluetoothMessage("audio start manager_id=666");
+                SpeechManager.getSharedSpeechManager().ReceiveASRResults();
+            } 
+         }
 
         public void onAudioStarted() {
             speechEngineRunning = true;
@@ -406,27 +467,16 @@ namespace PhenoPad
         {
             if (item == "bluetooth")
             {
-                this.BluetoothProgress.IsActive = this.bluetoonOn? false:true;
-                this.BluetoothComplete.Visibility = this.bluetoonOn? Visibility.Visible:Visibility.Collapsed;
-                this.bluetoothStatusText.Text = this.bluetoonOn ? "ON" : "OFF";
-                if (bluetoonOn && this.bluetoothService.rpi_ipaddr != null) {
-                    // show ip address of 
-                    PiIPAddress.Text = BluetoothService.BluetoothService.getBluetoothService().GetPiIP();
-                }
+                //this.BluetoothProgress.IsActive = this.bluetoonOn? false:true;
+                //this.BluetoothComplete.Visibility = this.bluetoonOn? Visibility.Visible:Visibility.Collapsed;
+                ////this.bluetoothStatusText.Text = this.bluetoonOn ? "ON" : "OFF";
+                //if (bluetoonOn && this.bluetoothService.rpi_ipaddr != null) {
+                //    // show ip address of 
+                //    PiIPAddress.Text = BluetoothService.BluetoothService.getBluetoothService().GetPiIP();
+                //}
                     
             }
-            /***
-            else if (item == "diarization")
-            {
-                this.DiarizationProgress.IsActive = false;
-                this.DiarizationComplete.Visibility = Visibility.Visible;
-            }
-            else if (item == "recognition")
-            {
-                this.RecognitionProgress.IsActive = false;
-                this.RecognitionComplete.Visibility = Visibility.Visible;
-            }
-            **/
+
             else if (item == "ready")
             {
                 this.audioButton.IsEnabled = true;
@@ -444,9 +494,7 @@ namespace PhenoPad
             this.shutterButton.IsEnabled = val;
             this.audioButton.IsEnabled = val;
             if (val)
-            {
                 setStatus("bluetooth");
-            }
         }
 
         /// <summary>

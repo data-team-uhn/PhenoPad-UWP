@@ -683,28 +683,9 @@ namespace PhenoPad
             }
         }
 
-        /// <summary>
-        /// Invoked when user presses the Microphone button on sidebar, requests speech engine connection
-        /// as well as connection to remote server for speech recognition
-        /// </summary>
-        private void AudioStreamButton_Clicked(object sender, RoutedEventArgs e)
-        {
-            //Temporarily disables audio button for avoiding frequent requests
-            audioButton.IsEnabled = false;
-            
-            //NOTE that since we cannot use both internal/external micriphone at the same time
-            //we will use the speechEngineRunning as a flag to indicate if audio is working
-            //at the moment
 
-            // use external microphone
-            if (ConfigService.ConfigService.getConfigService().IfUseExternalMicrophone())
-                changeSpeechEngineState_BT();
-            // use internal microphone
-            else
-                changeSpeechEngineState();
-        }
 
-        public void ReEnableAudioButton(object sender, object e)
+        public void ReEnableAudioButton(object sender = null, object e = null)
         {
             this.audioButton.IsEnabled = true;
         }
@@ -1210,7 +1191,7 @@ namespace PhenoPad
         {
             ConfigService.ConfigService.getConfigService().UseInternalMic();
             this.audioButton.IsEnabled = true;
-            this.serverConnectButton.IsEnabled = false;
+            //this.serverConnectButton.IsEnabled = false;
             this.StreamButton.IsEnabled = false;
             SurfaceMicRadioBtn.IsChecked = true;
             //this.StreamButton.IsEnabled = true;
@@ -1221,9 +1202,8 @@ namespace PhenoPad
         {
             ConfigService.ConfigService.getConfigService().UseExternalMic();
             this.StreamButton.IsEnabled = false;
-            this.serverConnectButton.IsEnabled = true;
             this.shutterButton.IsEnabled = false;
-            this.audioButton.IsEnabled = false;
+            this.audioButton.IsEnabled = true;
             ExternalMicRadioBtn.IsChecked = true;
             //NotifyUser("Using external microphone", NotifyType.StatusMessage, 2);
         }
@@ -1243,46 +1223,45 @@ namespace PhenoPad
         }
 
         //Invoked when click on bluetoon button;
-        private async void ServerConnectButton_Click(object sender, RoutedEventArgs e)
-        {
-            if (!bluetoonOn)
-            {
-                BluetoothProgresssBox.Text = "Connecting to Raspberry Pi";
-                serverConnectButton.IsEnabled = false;
-                BluetoothProgress.IsActive = true;
-                BluetoothComplete.Visibility = Visibility.Collapsed;
-                uiClinet = UIWebSocketClient.getSharedUIWebSocketClient();
-                bool uiResult = await uiClinet.ConnectToServer();
-                if (!uiResult)
-                {
-                    LogService.MetroLogger.getSharedLogger().Error("UIClient failed to connect.");
-                }
-                this.bluetoothService = BluetoothService.BluetoothService.getBluetoothService();
-                await this.bluetoothService.Initialize();
+        //private async void ServerConnectButton_Click(object sender = null, RoutedEventArgs e= null)
+        //{
+        //    if (!bluetoonOn)
+        //    {
+        //        BluetoothProgresssBox.Text = "Connecting to Raspberry Pi";
+        //        serverConnectButton.IsEnabled = false;
+        //        BluetoothProgress.IsActive = true;
+        //        BluetoothComplete.Visibility = Visibility.Collapsed;
+        //        uiClinet = UIWebSocketClient.getSharedUIWebSocketClient();
+        //        bool uiResult = await uiClinet.ConnectToServer();
+        //        if (!uiResult)
+        //        {
+        //            LogService.MetroLogger.getSharedLogger().Error("UIClient failed to connect.");
+        //        }
+        //        this.bluetoothService = BluetoothService.BluetoothService.getBluetoothService();
+        //        await this.bluetoothService.Initialize();
                 
-            }
-            else {
-                uiClinet.disconnect();
-                bool result = this.bluetoothService.CloseConnection();               
-                if (result)
-                {
-                    this.bluetoothService = null;
-                    this.bluetoonOn = false;
-                    bluetoothInitialized(false);
-                    setStatus("bluetooth");
-                    BluetoothProgresssBox.Text = "Disconnected Raspberry Pi";
-                    BluetoothComplete.Visibility = Visibility.Visible;
-                    BluetoothProgress.IsActive = false;
+        //    }
+        //    else {
+        //        uiClinet.disconnect();
+        //        bool result = this.bluetoothService.CloseConnection();               
+        //        if (result)
+        //        {
+        //            this.bluetoothService = null;
+        //            this.bluetoonOn = false;
+        //            bluetoothInitialized(false);
+        //            setStatus("bluetooth");
+        //            BluetoothProgresssBox.Text = "Disconnected Raspberry Pi";
+        //            BluetoothComplete.Visibility = Visibility.Visible;
+        //            BluetoothProgress.IsActive = false;
                     
-                    NotifyUser("Bluetooth Connection disconnected.", NotifyType.StatusMessage, 2);
-                }
-                else {
-                    NotifyUser("Bluetooth Connection failed to disconnect.", NotifyType.ErrorMessage, 2);
-                }
-                
-            }
+        //            NotifyUser("Bluetooth Connection disconnected.", NotifyType.StatusMessage, 2);
+        //        }
+        //        else {
+        //            NotifyUser("Bluetooth Connection failed to disconnect.", NotifyType.ErrorMessage, 2);
+        //        }                
+        //    }
 
-        }
+        //}
 
         private void CameraButton_Click(object sender, RoutedEventArgs e)
         {

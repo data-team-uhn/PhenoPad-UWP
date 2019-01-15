@@ -241,15 +241,14 @@
 
                     <StackPanel  Orientation="Vertical" VerticalAlignment="Bottom" Grid.Row="2" Grid.Column="0" Background="Transparent">
 
-                        <Button Style="{StaticResource ButtonStyle1}" Height="60" 
+                        <!--<Button Style="{StaticResource ButtonStyle1}" Height="60" 
                                 ToolTipService.ToolTip="Connect/Disconnect to Rasberry pi"
                                 x:Name="serverConnectButton" x:FieldModifier="public"
-                                Foreground="Black"  
+                                Foreground="Black"                               
                                 Background="{StaticResource Left_Panel_Title_BG}" 
-                                Click="ServerConnectButton_Click" IsEnabled="True">
+                                IsEnabled="False">
                             <Button.Flyout>
                                 <Flyout Placement="Right">
-
                                     <Grid>
                                         <Grid.ColumnDefinitions>
                                             <ColumnDefinition Width="200"/>
@@ -281,20 +280,21 @@
                                 </Flyout>
                             </Button.Flyout>
                                  
-                            <Grid>
+                            --><!--<Grid>
                                 <StackPanel>
                                     <FontIcon FontSize="24" FontFamily="Segoe MDL2 Assets" Glyph="&#xE702;" HorizontalAlignment="Left" Width="20" Height="20" VerticalAlignment="Top">
                                     </FontIcon>
                                     <TextBlock FontSize="12" Name="bluetoothStatusText" Text="OFF"></TextBlock>
 
                                 </StackPanel>
-                            </Grid>
-                        </Button>
+                            </Grid>--><!--
+                        </Button>-->
 
 
                         <ToggleButton  Height="60" HorizontalAlignment="Stretch" ToolTipService.ToolTip="Start/Stop Audio"
                                        Style="{StaticResource MyToggleButtonStyle2}" Background="{StaticResource Left_Panel_Title_BG}" 
                                        x:Name="audioButton" x:FieldModifier="public"  IsEnabled="False" Click="AudioStreamButton_Clicked">
+                            
                             <StackPanel>
                                 <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE720;" HorizontalAlignment="Left" Width="21"/>
                                 <TextBlock FontSize="12" Name="audioStatusText" Text="OFF"></TextBlock>

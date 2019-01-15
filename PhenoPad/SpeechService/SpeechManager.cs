@@ -187,10 +187,7 @@ namespace PhenoPad.SpeechService
                     // do the work in the loop
                     string serverResult = await speechResultsSocket.ReceiveMessageUsingStreamWebSocket();
 
-                    // Debug.WriteLine("Got server message");
-
                     serverResult = serverResult.Replace('-', '_');     // So that we can parse objects
-
                     accumulator += serverResult;
 
 
@@ -281,6 +278,7 @@ namespace PhenoPad.SpeechService
             {          
                 cancellationSource.Cancel();
                 await speechResultsSocket.CloseConnnction();
+                await this.SaveTranscriptions();
                 SpeechPage.Current.setSpeakerButtonEnabled(false);
                 MainPage.Current.onAudioEnded();
             }
@@ -504,7 +502,7 @@ namespace PhenoPad.SpeechService
                         fileInputNode.Stop();
 
                     graph.Stop();
-                    speechStreamSocket.CloseConnnction();
+                    await speechStreamSocket.CloseConnnction();
                     // await BluetoothService.BluetoothService.getBluetoothService().sendBluetoothMessage("audio end");
                     /**
 

@@ -189,8 +189,8 @@ namespace PhenoPad.WebSocketService
         MainPage rootPage = MainPage.Current;
 
         // !!WARNING !! server address changes every time
-        private string serverAddress = "phenopad.ccm.sickkids.ca";
-        private string serverPort = "8888";
+        private string serverAddress;
+        private string serverPort;
         private uint ERROR_INTERNET_OPERATION_CANCELLED = 0x80072EF1;
         NetworkAdapter networkAdapter;
         public StreamWebSocket streamSocket;
@@ -240,17 +240,14 @@ namespace PhenoPad.WebSocketService
             //socket.SetRequestHeader("content-type", "audio/x-raw");
             try
             {
-                //Task connectTask = this.streamSocket.ConnectAsync(new Uri("ws://" + this.serverAddress + ":" + this.serverPort +
-                //                            "/client/ws/speech_result"+
-                //                            "?content-type=audio%2Fx-raw%2C+layout%3D%28string%29interleaved%2C+rate%3D%28int%2916000%2C+format%3D%28string%29S16LE%2C+channels%3D%28int%291&manager_id=666")).AsTask();
                 Debug.WriteLine(serverAddress);
                 Debug.WriteLine(serverPort + Environment.NewLine);
 
                 Task connectTask = this.streamSocket.ConnectAsync(new Uri("ws://" + serverAddress + ":" + serverPort +
                                            "/client/ws/speech_result" +
                                            "?content-type=audio%2Fx-raw%2C+layout%3D%28string%29interleaved%2C+rate%3D%28int%2916000%2C+format%3D%28string%29S16LE%2C+channels%3D%28int%291&manager_id=666")).AsTask();
-
-
+                //Task connectTask = this.streamSocket.ConnectAsync(new Uri("ws://" + serverAddress + ":" + serverPort +
+                //           "/client/ws/speech_result")).AsTask();
 
                 await connectTask;
                 if (connectTask.Exception != null)
@@ -261,7 +258,7 @@ namespace PhenoPad.WebSocketService
             }
             catch (Exception e)
             {
-                LogService.MetroLogger.getSharedLogger().Error(e.Message);
+                LogService.MetroLogger.getSharedLogger().Error("SpeechResultsSocket: "+e.Message);
                 streamSocket.Dispose();
                 streamSocket = null;
                 return false;

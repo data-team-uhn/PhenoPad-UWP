@@ -95,7 +95,6 @@ namespace PhenoPad.WebSocketService
                 Uri url = new Uri(getUI_URI());
                 LogService.MetroLogger.getSharedLogger().Info($"Connecting to: {url.ToString()}...");
                 Task connectTask = client.ConnectAsync(url).AsTask();
-                MainPage.Current.NotifyUser("Connecting to speech engine, please wait ...", NotifyType.StatusMessage, 2);
 
                 await connectTask;
                 this.dataWriter = new DataWriter(client.OutputStream);
@@ -122,7 +121,6 @@ namespace PhenoPad.WebSocketService
         private async void clientClosedHandler(Windows.Networking.Sockets.IWebSocket sender, 
                                                 Windows.Networking.Sockets.WebSocketClosedEventArgs args)
         {
-            MainPage.Current.NotifyUser("Websocket connection is closed.", NotifyType.ErrorMessage, 1);
             LogService.MetroLogger.getSharedLogger().Info("WebSocket_Closed; Code: " + args.Code + ", Reason: \"" + args.Reason + "\"");
             // Add additional code here to handle the WebSocket being closed.
         }
