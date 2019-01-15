@@ -156,7 +156,8 @@ namespace PhenoPad
             ASRAddrInput.Text = serverPath;
 
             //by default using internal microphone and with abbreviation detections
-            SurfaceMicRadioButton_Checked(null,null);
+            //SurfaceMicRadioButton_Checked(null,null);
+            //ExterMicRadioButton_Checked(null, null);
             AbbreviationON_Checked(null, null);
 
             //When user clicks X while in mainpage, auto-saves all current process and exits the program.
@@ -1205,7 +1206,7 @@ namespace PhenoPad
         }
 
        
-        private void SurfaceMicRadioButton_Checked(object sender, RoutedEventArgs e)
+        private void SurfaceMicRadioButton_Checked(object sender = null, RoutedEventArgs e = null)
         {
             ConfigService.ConfigService.getConfigService().UseInternalMic();
             this.audioButton.IsEnabled = true;
@@ -1216,7 +1217,7 @@ namespace PhenoPad
            // NotifyUser("Using Surface microphone", NotifyType.StatusMessage, 2);
         }
 
-        private void ExterMicRadioButton_Checked(object sender, RoutedEventArgs e)
+        private void ExterMicRadioButton_Checked(object sender = null, RoutedEventArgs e = null)
         {
             ConfigService.ConfigService.getConfigService().UseExternalMic();
             this.StreamButton.IsEnabled = false;
@@ -1224,7 +1225,7 @@ namespace PhenoPad
             this.shutterButton.IsEnabled = false;
             this.audioButton.IsEnabled = false;
             ExternalMicRadioBtn.IsChecked = true;
-            NotifyUser("Using external microphone", NotifyType.StatusMessage, 2);
+            //NotifyUser("Using external microphone", NotifyType.StatusMessage, 2);
         }
 
         private void AbbreviationON_Checked(object sender, RoutedEventArgs e) {

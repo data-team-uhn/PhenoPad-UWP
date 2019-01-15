@@ -906,8 +906,10 @@
                 <TextBlock Text="Microphone:" Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="1"
                         VerticalAlignment="Center" HorizontalAlignment="Right"/>
                 <StackPanel Orientation="Horizontal" Grid.Row="2" Grid.Column="1" Grid.ColumnSpan="2" Margin="30 0 0 0" Spacing="20" HorizontalAlignment="Stretch">
-                    <RadioButton Content="Surface Microphone" Tag="Surface Microphone" Name="SurfaceMicRadioBtn"  GroupName="MicSwitcher" Checked="SurfaceMicRadioButton_Checked"/>
-                    <RadioButton Content="External Microphone" Tag="External Microphone" Name="ExternalMicRadioBtn" GroupName="MicSwitcher" Checked="ExterMicRadioButton_Checked"/>
+                    <RadioButton Content="Surface Microphone" Tag="Surface Microphone" Name="SurfaceMicRadioBtn"  
+                                 GroupName="MicSwitcher" Checked="SurfaceMicRadioButton_Checked"/>
+                    <RadioButton Content="External Microphone" Tag="External Microphone" Name="ExternalMicRadioBtn" 
+                                 GroupName="MicSwitcher" Checked="ExterMicRadioButton_Checked"/>
                 </StackPanel>
                 <TextBlock Text="ASR server:" Grid.Row="3" Grid.Column="0"
                         VerticalAlignment="Center" HorizontalAlignment="Right"/>

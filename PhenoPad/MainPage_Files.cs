@@ -102,8 +102,11 @@ namespace PhenoPad
 
             currentMode = WritingMode;
             modeTextBlock.Text = WritingMode;
-            //by default uses internal microphone
-            SurfaceMicRadioButton_Checked(null, null);
+            bool cur_mic = ConfigService.ConfigService.getConfigService().IfUseExternalMicrophone();
+            if (cur_mic == false)
+                SurfaceMicRadioButton_Checked();
+            else
+                ExterMicRadioButton_Checked();
             // create file sturcture for this page
             await FileManager.getSharedFileManager().CreateNotePage(notebookObject, curPageIndex.ToString());
             await Task.Delay(TimeSpan.FromSeconds(3));
@@ -133,7 +136,13 @@ namespace PhenoPad
                 //Gets all stored pages and notebook object from the disk
                 List<string> pageIds = await FileManager.getSharedFileManager().GetPageIdsByNotebook(notebookId);
 
-                SurfaceMicRadioButton_Checked(null, null);
+                bool cur_mic = ConfigService.ConfigService.getConfigService().IfUseExternalMicrophone();
+                if (cur_mic == false) 
+                    SurfaceMicRadioButton_Checked();
+                else
+                    ExterMicRadioButton_Checked();
+
+
                 //if (notebookObject != null)
                 noteNameTextBox.Text = notebookObject.name;
 

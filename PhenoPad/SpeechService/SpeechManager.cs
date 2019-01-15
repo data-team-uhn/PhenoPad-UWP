@@ -183,7 +183,7 @@ namespace PhenoPad.SpeechService
                 while (true && !cancellationToken.IsCancellationRequested)
                 {
                     // don't run again for 
-                    await Task.Delay(500);
+                    await Task.Delay(100);
                     // do the work in the loop
                     string serverResult = await speechResultsSocket.ReceiveMessageUsingStreamWebSocket();
 
@@ -240,7 +240,6 @@ namespace PhenoPad.SpeechService
                                 Debug.WriteLine(frame.ToString());
                                 Debug.WriteLine(frame.GetFileName().ToString());
                                 Debug.WriteLine(frame.GetFileLineNumber().ToString());
-                                //Debug.WriteLine(accumulator);
                                 Debug.WriteLine("===SERIOUS PROBLEM!====");
                             }
 

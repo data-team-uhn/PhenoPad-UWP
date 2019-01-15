@@ -240,17 +240,28 @@ namespace PhenoPad.WebSocketService
             //socket.SetRequestHeader("content-type", "audio/x-raw");
             try
             {
-                Task connectTask = this.streamSocket.ConnectAsync(new Uri("ws://" + this.serverAddress + ":" + this.serverPort +
-                                            "/client/ws/speech_result")).AsTask();
+                //Task connectTask = this.streamSocket.ConnectAsync(new Uri("ws://" + this.serverAddress + ":" + this.serverPort +
+                //                            "/client/ws/speech_result"+
+                //                            "?content-type=audio%2Fx-raw%2C+layout%3D%28string%29interleaved%2C+rate%3D%28int%2916000%2C+format%3D%28string%29S16LE%2C+channels%3D%28int%291&manager_id=666")).AsTask();
+                Debug.WriteLine(serverAddress);
+                Debug.WriteLine(serverPort + Environment.NewLine);
+
+                Task connectTask = this.streamSocket.ConnectAsync(new Uri("ws://" + serverAddress + ":" + serverPort +
+                                           "/client/ws/speech_result" +
+                                           "?content-type=audio%2Fx-raw%2C+layout%3D%28string%29interleaved%2C+rate%3D%28int%2916000%2C+format%3D%28string%29S16LE%2C+channels%3D%28int%291&manager_id=666")).AsTask();
+
+
 
                 await connectTask;
+                if (connectTask.Exception != null)
+                    LogService.MetroLogger.getSharedLogger().Error("connectTask.Exception:" + connectTask.Exception.Message);
                 dataWriter = new DataWriter(this.streamSocket.OutputStream);
 
                 return true;
             }
             catch (Exception e)
             {
-                Debug.WriteLine(e.Message);
+                LogService.MetroLogger.getSharedLogger().Error(e.Message);
                 streamSocket.Dispose();
                 streamSocket = null;
                 return false;
@@ -269,7 +280,6 @@ namespace PhenoPad.WebSocketService
             {
                 dataWriter.WriteBytes(message);
                 await dataWriter.StoreAsync();
-
                 return true;
             }
             catch (Exception ex)

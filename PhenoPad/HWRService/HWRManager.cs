@@ -88,7 +88,8 @@ namespace PhenoPad.HWRService
         }
 
         public void setIPAddr(Uri newAddr) {
-            ipAddr = newAddr; 
+            if (newAddr.IsAbsoluteUri)
+                ipAddr = newAddr; 
         }
 
         public string getIPAddr() {

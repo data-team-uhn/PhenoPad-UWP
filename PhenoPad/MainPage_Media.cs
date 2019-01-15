@@ -335,7 +335,7 @@ namespace PhenoPad
             {
                 if (speechEngineRunning == false)
                 {                 
-                    await BluetoothService.BluetoothService.getBluetoothService().sendBluetoothMessage("audio start");
+                    await BluetoothService.BluetoothService.getBluetoothService().sendBluetoothMessage("audio start manager_id=666");
                     SpeechManager.getSharedSpeechManager().ReceiveASRResults();                 
                 }
                 else
