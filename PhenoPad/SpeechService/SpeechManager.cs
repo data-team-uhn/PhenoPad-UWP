@@ -144,7 +144,7 @@ namespace PhenoPad.SpeechService
         /// </summary>
         public async void ReceiveASRResults()
         {
-            MainPage.Current.NotifyUser("Connecting to speech result server...", NotifyType.StatusMessage, 3);
+            MainPage.Current.NotifyUser("Connecting to speech result server...", NotifyType.StatusMessage, 1);
 
             bool succeed = false;
             try {
@@ -160,15 +160,27 @@ namespace PhenoPad.SpeechService
             if (!succeed)
             {
                 MainPage.Current.NotifyUser("Failed to connect to speech result server.", NotifyType.ErrorMessage, 3);
-                MainPage.Current.ReEnableAudioButton(null,null);
+                if (MainPage.Current.bluetoonOn) {
+                    //if bluetooth is connected, disconnect bluetooth and lets user to try again later
+                    await BluetoothService.BluetoothService.getBluetoothService().sendBluetoothMessage("audio stop");
+                    bool result = MainPage.Current.bluetoothService.CloseConnection();
+                    if (result)
+                    {
+                        MainPage.Current.bluetoothService = null;
+                        MainPage.Current.bluetoonOn = false;
+                        MainPage.Current.bluetoothInitialized(false);
+                        MainPage.Current.setStatus("bluetooth");
+                        MainPage.Current.NotifyUser("Bluetooth Connection disconnected.", NotifyType.StatusMessage, 2);
+                        MainPage.Current.onAudioEnded();
+                    }
+                }
+                MainPage.Current.ReEnableAudioButton();
                 return;
             }
 
             MainPage.Current.onAudioStarted();
             SpeechPage.Current.setSpeakerButtonEnabled(true);
             SpeechPage.Current.adjustSpeakerCount(2);
-
-
             cancellationSource = new CancellationTokenSource();
             CancellationToken cancellationToken = cancellationSource.Token;                 // need this to actually cancel reading from websocketS
 
@@ -349,8 +361,8 @@ namespace PhenoPad.SpeechService
                 }
             }
 
-           await CreateAudioGraph();
-           // await BluetoothService.BluetoothService.getBluetoothService().sendBluetoothMessage("audio start");
+            await CreateAudioGraph();
+            // await BluetoothService.BluetoothService.getBluetoothService().sendBluetoothMessage("audio start");
 
             // Wait 10 seconds so that the server has time to create a worker
             // else you'll see lots of audio delays
@@ -411,7 +423,6 @@ namespace PhenoPad.SpeechService
                          accumulator = outAccumulator;
 
                          // Only process if we have valid JSON
-                         // Only process if we have valid JSON
                          if (json.Length != 0)
                          {
                              try
@@ -424,7 +435,6 @@ namespace PhenoPad.SpeechService
 
                                  //{'diarization': [{'start': 7.328, 'speaker': 0, 'end': 9.168000000000001, 'angle': 152.97781134625265}], 'diarization_incremental': True} 
 
-
                                  //Debug.WriteLine(json);
                                  //Debug.WriteLine(parsedSpeech.ToString());
 
@@ -432,9 +442,7 @@ namespace PhenoPad.SpeechService
 
                                  // TODO Find a more legitimate way to fire an UI change?
 
-                                 await Windows.ApplicationModel.Core.CoreApplication.MainView.CoreWindow.Dispatcher.RunAsync(CoreDispatcherPriority.Normal,
-                                    () =>
-                                    {
+                                 await Windows.ApplicationModel.Core.CoreApplication.MainView.CoreWindow.Dispatcher.RunAsync(CoreDispatcherPriority.Normal,() =>{
                                         EngineHasResult.Invoke(this, speechInterpreter);
                                     }
                                     );
@@ -460,9 +468,7 @@ namespace PhenoPad.SpeechService
                                  json = json.Replace('_', '-');
                                  var diaResult = JsonConvert.DeserializeObject<DiarizationJSON>(json);
                                  speechInterpreter.processDiaJson(diaResult);
-                                 await Windows.ApplicationModel.Core.CoreApplication.MainView.CoreWindow.Dispatcher.RunAsync(CoreDispatcherPriority.Normal,
-                                   () =>
-                                   {
+                                 await Windows.ApplicationModel.Core.CoreApplication.MainView.CoreWindow.Dispatcher.RunAsync(CoreDispatcherPriority.Normal,() => {
                                        EngineHasResult.Invoke(this, speechInterpreter);
                                    }
                                    );
@@ -483,7 +489,6 @@ namespace PhenoPad.SpeechService
                  }
              }, cancellationToken);
             //Task.Run(() => speechStreamSocket.ReceiveMessageUsingStreamWebSocket(), TaskCreationOptions.LongRunning);
-
             return true;
         }
         private SemaphoreSlim endSemaphoreSlim = new SemaphoreSlim(1);
@@ -716,13 +721,10 @@ namespace PhenoPad.SpeechService
                     dataWriter.DetachStream();
                 }
                 await outputStream.FlushAsync();
-
                 RecordingCreated.Invoke(this, savedFile);
             }
 
         }
-
-
 
         private async Task CreateAudioGraph()
         {
@@ -1018,8 +1020,6 @@ namespace PhenoPad.SpeechService
                 }
             }
         }
-
-
 
         public void AddFakeSpeechResults()
         {

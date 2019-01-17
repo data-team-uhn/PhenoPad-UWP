@@ -159,6 +159,7 @@
     <Compile Include="LogService\FileLoggingSessionScenario.cs" />
     <Compile Include="LogService\MetroLogger.cs" />
     <Compile Include="LogService\LoggingScenarioEventArgs.cs" />
+    <Compile Include="LogService\OperationLog.cs" />
     <Compile Include="MainPage_Files.cs" />
     <Compile Include="MainPage_Media.cs" />
     <Compile Include="MainPage_WebSocket.cs" />

@@ -207,6 +207,26 @@ namespace PhenoPad.FileService
             }
         }
 
+        /// <summary>
+        /// Gets the operation log file under local folder, if such file does not exist, creates a new one and returns it
+        /// </summary>
+        public async Task<StorageFile> GetOperationLogFile() {
+            try { 
+                StorageFolder folder = null;
+                //StorageFolder localFolder = ApplicationData.Current.LocalFolder;
+                string filepath = ROOT_FOLDER.Name + "OperationLogs/";
+                var item = await ROOT_FOLDER.TryGetItemAsync(filepath);
+                if (item == null)
+                    folder = await ROOT_FOLDER.GetFolderAsync(filepath);
+                StorageFile file = await ROOT_FOLDER.CreateFileAsync(filepath + "OPLogs.txt", CreationCollisionOption.OpenIfExists);
+                return file;
+            }
+            catch (Exception ex)
+            {
+                LogService.MetroLogger.getSharedLogger().Error($"Failed to get operation logs: {ex.Message}");
+                return null;
+            }
+        }
 
         /// <summary>
         /// Creates and returns a new local file for given Notebook, returns null if failed.

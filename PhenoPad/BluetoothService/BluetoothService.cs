@@ -49,7 +49,7 @@ namespace PhenoPad.BluetoothService
             bool blueConnected = await checkConnection();
             if (!blueConnected)
             {
-                rootPage.NotifyUser("Trying to connect Raspberry Pi through bluetooth.", NotifyType.StatusMessage, 1);
+                rootPage.NotifyUser("Connecting to Raspberry Pi through Bluetooth.", NotifyType.StatusMessage, 7);
                 await InitiateConnection();
             }
             else
@@ -99,22 +99,17 @@ namespace PhenoPad.BluetoothService
                                 return;
                             }
                             var rfcommServices = await bluetoothDevice.GetRfcommServicesForIdAsync(RfcommServiceId.FromUuid(Constants.RfcommChatServiceUuid), BluetoothCacheMode.Uncached);
-
                             var attempNum = 1;
                             while (attempNum <= 6) {
                                 if (rfcommServices.Services.Count > 0)
                                 {
+                                    LogService.MetroLogger.getSharedLogger().Info("Found rfcommService.");
                                     blueService = rfcommServices.Services[0];
                                     break;
                                 }
                                 else if (attempNum == 6) {
-                                    await Task.Delay(200);
                                     rootPage.audioButton.IsEnabled = true;
                                     rootPage.audioButton.IsChecked = false;
-                                    //rootPage.serverConnectButton.IsEnabled = true;
-                                    //rootPage.BluetoothProgresssBox.Text = "Connection Failed";
-                                    //rootPage.BluetoothProgress.IsActive = false;
-                                    //rootPage.BluetoothComplete.Visibility = Windows.UI.Xaml.Visibility.Collapsed;
                                     rootPage.bluetoonOn = false;
                                     return;
                                 }                             
@@ -151,7 +146,7 @@ namespace PhenoPad.BluetoothService
                                 Debug.WriteLine("Writing message " + temp.ToString() + " via Bluetooth");
                                 await dataWriter.StoreAsync();
                                 this.initialized = true;
-                                rootPage.NotifyUser("Bluetooth Connected", NotifyType.StatusMessage, 2);
+                                rootPage.NotifyUser("Connected", NotifyType.StatusMessage, 1);
                                 rootPage.bluetoonOn = true;
                                 rootPage.bluetoothInitialized(true);
                                 //rootPage.serverConnectButton.IsEnabled = true;
@@ -197,7 +192,6 @@ namespace PhenoPad.BluetoothService
                 });
 
             });
-
             deviceWatcher.Start();
         }
 

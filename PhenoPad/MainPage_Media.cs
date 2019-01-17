@@ -334,10 +334,6 @@ namespace PhenoPad
             //Temporarily disables audio button for avoiding frequent requests
             audioButton.IsEnabled = false;
 
-            //NOTE that since we cannot use both internal/external micriphone at the same time
-            //we will use the speechEngineRunning as a flag to indicate if audio is working
-            //at the moment
-
             // use external microphone
             if (ConfigService.ConfigService.getConfigService().IfUseExternalMicrophone())
                 changeSpeechEngineState_BT();
@@ -350,49 +346,44 @@ namespace PhenoPad
         /// Switch speech engine state for blue tooth devices
         /// </summary>
         /// <param name="state">current state of speech engine</param>
-        private async void changeSpeechEngineState_BT()
+        public async void changeSpeechEngineState_BT()
         {
             try
             {
                 if (!bluetoonOn)
                 {
-                    //BluetoothProgresssBox.Text = "Connecting to Raspberry Pi";
-                    //serverConnectButton.IsEnabled = false;
-                    //BluetoothProgress.IsActive = true;
-                    //BluetoothComplete.Visibility = Visibility.Collapsed;
-                    uiClinet = UIWebSocketClient.getSharedUIWebSocketClient();
-                    bool uiResult = await uiClinet.ConnectToServer();
-                    if (!uiResult)
-                    {
-                        LogService.MetroLogger.getSharedLogger().Error("UIClient failed to connect.");
-                    }
+                    //temporarily disables for debugging reseasons
+                    //=====
+                    //uiClinet = UIWebSocketClient.getSharedUIWebSocketClient();
+                    //bool uiResult = await uiClinet.ConnectToServer();
+                    //if (!uiResult)
+                    //{
+                    //    LogService.MetroLogger.getSharedLogger().Error("UIClient failed to connect.");
+                    //}
+                    //=====
                     this.bluetoothService = BluetoothService.BluetoothService.getBluetoothService();
                     await this.bluetoothService.Initialize();
                 }
 
                 else
                 {
-                    uiClinet.disconnect();
+                    //uiClinet.disconnect();
                     await BluetoothService.BluetoothService.getBluetoothService().sendBluetoothMessage("audio stop");
                     SpeechManager.getSharedSpeechManager().StopASRResults();
-                    bool result = this.bluetoothService.CloseConnection();
+                    bool result = bluetoothService.CloseConnection();
                     if (result)
                     {
-                        this.bluetoothService = null;
-                        this.bluetoonOn = false;
+                        bluetoothService = null;
+                        bluetoonOn = false;
                         bluetoothInitialized(false);
                         setStatus("bluetooth");
-                        //BluetoothProgresssBox.Text = "Disconnected Raspberry Pi";
-                        //BluetoothComplete.Visibility = Visibility.Visible;
-                        //BluetoothProgress.IsActive = false;
                         NotifyUser("Bluetooth Connection disconnected.", NotifyType.StatusMessage, 2);
                     }
                     else
                     {
                         NotifyUser("Bluetooth Connection failed to disconnect.", NotifyType.ErrorMessage, 2);
                     }
-                    this.onAudioEnded();
-
+                    onAudioEnded();
                 }
 
 
@@ -417,7 +408,7 @@ namespace PhenoPad
             NotifyUser("Audio service started.", NotifyType.StatusMessage, 3);
             LogService.MetroLogger.getSharedLogger().Info("Audio started.");
             audioStatusText.Text = "ON";
-            ReEnableAudioButton(null, null);
+            ReEnableAudioButton();
             audioButton.IsChecked = true;
         }
 
@@ -426,8 +417,9 @@ namespace PhenoPad
             NotifyUser("Audio service ended.", NotifyType.StatusMessage, 3);
             LogService.MetroLogger.getSharedLogger().Info("Audio stopped.");
             audioStatusText.Text = "OFF";
-            ReEnableAudioButton(null, null);
+            ReEnableAudioButton();
             audioButton.IsChecked = false;
+            audioButton.IsEnabled = true;
         }
 
         /// <summary>

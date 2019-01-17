@@ -705,12 +705,18 @@ namespace PhenoPad.SpeechService
         // save transcriptions
         public async Task SaveCurrentConversationsToDisk()
         {
-            if (currentConversation.Count > 0)
-            {
+            int finalCount = 0;
+            foreach (TextMessage msg in currentConversation) {
+                if (msg.IsFinal)
+                    finalCount++;
+            }
+            Debug.WriteLine($"saving transcripts: number of final messages = {finalCount}");
+            if (currentConversation.Count > 0 && finalCount > 0)
+            {//only save transcripts if there are finalized messages
 
                 try
                 {
-                    LogService.MetroLogger.getSharedLogger().Info($"Saving current conversation to transcript_{this.conversationIndex}");
+                    LogService.MetroLogger.getSharedLogger().Info($"Saving final messages of current conversation to transcript_{this.conversationIndex}");
                     string fpath = FileManager.getSharedFileManager().GetNoteFilePath(
                       FileManager.getSharedFileManager().currentNoteboookId,
                       "",

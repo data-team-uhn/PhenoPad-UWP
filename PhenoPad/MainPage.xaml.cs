@@ -687,7 +687,7 @@ namespace PhenoPad
 
         public void ReEnableAudioButton(object sender = null, object e = null)
         {
-            this.audioButton.IsEnabled = true;
+            audioButton.IsEnabled = true;
         }
 
 

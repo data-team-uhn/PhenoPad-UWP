@@ -628,8 +628,9 @@ namespace PhenoPad
                 List<TextMessage> messages = await FileManager.getSharedFileManager().GetSavedTranscriptsFromXML(this.notebookId, fName);
                 if (messages == null)
                 {
-                    MetroLogger.getSharedLogger().Error($"Failed to load transcript_{i}, file may not exist.");
-                    NotifyUser($"Failed to load transcript_{i}, file may be empty.", NotifyType.StatusMessage, 2);
+                    //this is not really a problem because there might be cases when a conversaiton has no final messages
+                    //and will save an empty XML transcript
+                    MetroLogger.getSharedLogger().Error($"Failed to load transcript_{i}, file may not exist or is empty.");
                 }
                 else
                 {

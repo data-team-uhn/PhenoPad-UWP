@@ -11,8 +11,9 @@ namespace PhenoPad.LogService
 {
     class MetroLogger
     {
-        public static ILogger logger;
+        public static ILogger logger; //For program debugging purpose
         public static ILogManager logManager;
+
 
         /// <summary>
         /// Gets the static logger with given type.
@@ -25,10 +26,8 @@ namespace PhenoPad.LogService
             // The type of calling instance can be either a class (if predefined in class properties),
             // or the type of method if straight calling by using Metrologger.getsharedlogger() in some method.
             if (name == null) {
- 
                 StackFrame frame = new StackFrame(1);
                 name = frame.GetMethod().DeclaringType;
-
             }
 
             //First time calling, need to create the logger
