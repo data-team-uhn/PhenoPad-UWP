@@ -618,7 +618,6 @@ namespace PhenoPad
         /// </summary>
         public async void updatePastConversation() {
             int count = notebookObject.audioCount;
-            //Debug.WriteLine($"audio count = {notebookObject.audioCount}");
             String fName = prefix;
             this.conversations = new List<TextMessage>();
             for (int i = 1 ; i <= count; i++)

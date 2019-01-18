@@ -354,12 +354,12 @@ namespace PhenoPad
                 {
                     //temporarily disables for debugging reseasons
                     //=====
-                    //uiClinet = UIWebSocketClient.getSharedUIWebSocketClient();
-                    //bool uiResult = await uiClinet.ConnectToServer();
-                    //if (!uiResult)
-                    //{
-                    //    LogService.MetroLogger.getSharedLogger().Error("UIClient failed to connect.");
-                    //}
+                    uiClinet = UIWebSocketClient.getSharedUIWebSocketClient();
+                    bool uiResult = await uiClinet.ConnectToServer();
+                    if (!uiResult)
+                    {
+                        LogService.MetroLogger.getSharedLogger().Error("UIClient failed to connect.");
+                    }
                     //=====
                     this.bluetoothService = BluetoothService.BluetoothService.getBluetoothService();
                     await this.bluetoothService.Initialize();

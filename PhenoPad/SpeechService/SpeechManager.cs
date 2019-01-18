@@ -663,7 +663,7 @@ namespace PhenoPad.SpeechService
 
             Debug.WriteLine("Output file to " + savedFile.Path.ToString());
 
-            var stream = await savedFile.OpenAsync(Windows.Storage.FileAccessMode.ReadWrite);
+            var stream = await savedFile.OpenAsync(FileAccessMode.ReadWrite);
 
             using (IOutputStream outputStream = stream.GetOutputStreamAt(0))
             {

@@ -18,6 +18,9 @@ namespace PhenoPad.LogService
     /// </summary>
     class OperationLogger
     {
+        //https://github.com/serilog/serilog/wiki/Structured-Data
+
+        
         private static OperationLogger logger;
         private static List<String> CacheLogs;
 
