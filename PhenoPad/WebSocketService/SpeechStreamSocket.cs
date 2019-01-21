@@ -142,6 +142,18 @@ namespace PhenoPad.WebSocketService
             return returnMessage;
         }
 
+        public async Task<bool> TrySendData() {
+            try {
+                Encoding ascii = Encoding.ASCII;
+                dataWriter.WriteBytes(ascii.GetBytes("Hello"));
+                await dataWriter.StoreAsync();
+                return true;
+            }
+            catch (Exception) {
+                return false;
+            }
+        }
+
         /// <summary>
         /// Gets the current datas from stream socket and dispose for disconnection.
         /// </summary>
@@ -159,13 +171,15 @@ namespace PhenoPad.WebSocketService
                 //dataWriter.DetachStream();
                 //}
                 //Debug.WriteLine("Sending data using StreamWebSocket: " + message.Length.ToString() + " bytes");
-                streamSocket.Dispose();
-                streamSocket = null;
             }
             catch (Exception ex)
             {
                 LogService.MetroLogger.getSharedLogger().Error("Failed to close speech stream socket:" + ex.Message);
-                MainPage.Current.NotifyUser("Failed to close websocket.", NotifyType.ErrorMessage, 2);
+                //MainPage.Current.NotifyUser("Failed to close websocket.", NotifyType.ErrorMessage, 2);
+            }
+            finally {
+                streamSocket.Dispose();
+                streamSocket = null;
             }
         }
        /// <summary>

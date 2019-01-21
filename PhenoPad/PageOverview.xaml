@@ -59,7 +59,7 @@
                         HorizontalAlignment="Stretch"  VerticalAlignment="Stretch">
                     <StackPanel Orientation="Horizontal" >
                         <FontIcon FontSize="25" FontFamily="Segoe MDL2 Assets" Glyph="&#xE896;"/>
-                        <TextBlock Margin="10 0 0 0" FontSize="25" >Import EHR</TextBlock>
+                        <TextBlock Margin="10 0 0 0" FontSize="25" >Edit EHR</TextBlock>
                     </StackPanel>
                 </Button>
             </Border>

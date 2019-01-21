@@ -46,7 +46,8 @@ namespace PhenoPad.SpeechService
         //private string serverAddress = "54.226.217.30";
         private string serverAddress = "phenopad.ccm.sickkids.ca";
         private string serverPort = "8888";
-
+        public static string DEFAULT_SERVER = "phenopad.ccm.sickkids.ca";
+        public static string DEFAULT_PORT = "8888";
         public static SpeechManager sharedSpeechManager;
         
         public Conversation conversation = new Conversation();
@@ -142,7 +143,7 @@ namespace PhenoPad.SpeechService
         /// connect to client/speech/results
         /// only receive results without sending audio signals
         /// </summary>
-        public async void ReceiveASRResults()
+        public async Task ReceiveASRResults()
         {
             MainPage.Current.NotifyUser("Connecting to speech result server...", NotifyType.StatusMessage, 1);
 
@@ -164,15 +165,15 @@ namespace PhenoPad.SpeechService
                     //if bluetooth is connected, disconnect bluetooth and lets user to try again later
                     await BluetoothService.BluetoothService.getBluetoothService().sendBluetoothMessage("audio stop");
                     bool result = MainPage.Current.bluetoothService.CloseConnection();
-                    if (result)
-                    {
-                        MainPage.Current.bluetoothService = null;
-                        MainPage.Current.bluetoonOn = false;
-                        MainPage.Current.bluetoothInitialized(false);
-                        MainPage.Current.setStatus("bluetooth");
-                        MainPage.Current.NotifyUser("Bluetooth Connection disconnected.", NotifyType.StatusMessage, 2);
-                        MainPage.Current.onAudioEnded();
-                    }
+                    //if (result)
+                    //{
+                    //    MainPage.Current.bluetoothService = null;
+                    //    MainPage.Current.bluetoonOn = false;
+                    //    MainPage.Current.bluetoothInitialized(false);
+                    //    MainPage.Current.setStatus("bluetooth");
+                    //    MainPage.Current.NotifyUser("Bluetooth Connection disconnected.", NotifyType.StatusMessage, 2);
+                    //    MainPage.Current.onAudioEnded();
+                    //}
                 }
                 MainPage.Current.ReEnableAudioButton();
                 return;
@@ -182,7 +183,9 @@ namespace PhenoPad.SpeechService
             SpeechPage.Current.setSpeakerButtonEnabled(true);
             SpeechPage.Current.adjustSpeakerCount(2);
             cancellationSource = new CancellationTokenSource();
-            CancellationToken cancellationToken = cancellationSource.Token;                 // need this to actually cancel reading from websocketS
+            // need this to actually cancel reading from websocketS
+
+            CancellationToken cancellationToken = cancellationSource.Token;                 
 
             this.speechInterpreter.newConversation();
 
@@ -198,10 +201,9 @@ namespace PhenoPad.SpeechService
                     await Task.Delay(100);
                     // do the work in the loop
                     string serverResult = await speechResultsSocket.ReceiveMessageUsingStreamWebSocket();
-
-                    serverResult = serverResult.Replace('-', '_');     // So that we can parse objects
+                    // So that we can parse objects
+                    serverResult = serverResult.Replace('-', '_');     
                     accumulator += serverResult;
-
 
                     // Seems like if we don't do this we won't get all the packages
                     bool doParsing = true;
@@ -214,24 +216,17 @@ namespace PhenoPad.SpeechService
                         if (json.Length != 0)
                         {
                             try
-                            {
-                                // need - not _ here... =. =
-                               
+                            {                               
                                 Debug.WriteLine("Result from speech: " + json);
                                 var parsedSpeech = JsonConvert.DeserializeObject<SpeechEngineJSON>(json);
                                 parsedSpeech.original = json;
-
                                 //{'diarization': [{'start': 7.328, 'speaker': 0, 'end': 9.168000000000001, 'angle': 152.97781134625265}], 'diarization_incremental': True} 
-
-
-                                //Debug.WriteLine(json);
-                                //Debug.WriteLine(parsedSpeech.ToString());
 
                                 speechInterpreter.processJSON(parsedSpeech);
 
                                 // TODO Find a more legitimate way to fire an UI change?
 
-                                await Windows.ApplicationModel.Core.CoreApplication.MainView.CoreWindow.Dispatcher.RunAsync(CoreDispatcherPriority.Normal,
+                                await Windows.ApplicationModel.Core.CoreApplication.MainView.CoreWindow.Dispatcher.RunAsync(CoreDispatcherPriority.High,
                                    () =>
                                    {
                                        EngineHasResult.Invoke(this, speechInterpreter);
@@ -284,7 +279,7 @@ namespace PhenoPad.SpeechService
             return;
         }
 
-        public async void StopASRResults()
+        public async Task StopASRResults()
         {
             try
             {          
@@ -316,7 +311,7 @@ namespace PhenoPad.SpeechService
                 }
                 catch (Exception e)
                 {
-                    LogService.MetroLogger.getSharedLogger().Error("Failed to connect to specch engine:"+e.Message);
+                    LogService.MetroLogger.getSharedLogger().Error(e.Message);
                 }
 
                 if (!succeed)
@@ -349,7 +344,7 @@ namespace PhenoPad.SpeechService
                     {
                         MainPage.Current.NotifyUser("Connection cancelled", NotifyType.ErrorMessage, 2);
                         attemptConnection = false;
-                        MainPage.Current.ReEnableAudioButton(null, null);
+                        MainPage.Current.ReEnableAudioButton();
                         MainPage.Current.audioButton.IsChecked = false;
                         return false;
                     }
@@ -367,6 +362,7 @@ namespace PhenoPad.SpeechService
             // Wait 10 seconds so that the server has time to create a worker
             // else you'll see lots of audio delays
             await Task.Delay(5000);
+
             SpeechPage.Current.setSpeakerButtonEnabled(true);           
             SpeechPage.Current.adjustSpeakerCount(2);
             //Triggers audio started event handler in Mainpage to switch necessary interface layout
@@ -534,13 +530,15 @@ namespace PhenoPad.SpeechService
 
                     SpeechPage.Current.setSpeakerButtonEnabled(false);
                     //Triggers audio started event handler in Mainpage to switch necessary interface layout
-                    MainPage.Current.onAudioEnded();
                 }
+                MainPage.Current.onAudioEnded();
+
                 return true;
             }
             catch (Exception e) {
                 LogService.MetroLogger.getSharedLogger().Error("Error while ending audio:"+e.Message);
-                MainPage.Current.NotifyUser("Failed to disconnect", NotifyType.ErrorMessage, 2);
+                MainPage.Current.onAudioEnded();
+
                 return false;
             }
         }
@@ -954,9 +952,10 @@ namespace PhenoPad.SpeechService
             bool result = await speechStreamSocket.SendBytesAsync(bs);
             if (!result)
             {
+                LogService.MetroLogger.getSharedLogger().Error("sendBytes in SpeechManager failed");
                 try
                 {
-                    await this.EndAudio("");
+                  await this.EndAudio("");
                 } catch (Exception e)
                 {
                     Debug.WriteLine(e.Message);

@@ -27,6 +27,7 @@ using Windows.UI.Xaml.Media.Imaging;
 using Windows.UI.Xaml.Navigation;
 using Windows.Storage.Pickers;
 using System.Threading.Tasks;
+using Windows.UI.Popups;
 
 // The Blank Page item template is documented at https://go.microsoft.com/fwlink/?LinkId=234238
 
@@ -95,13 +96,32 @@ namespace PhenoPad
 
         private async void ImportEHR_Click(object sender, RoutedEventArgs e) {
             LogService.MetroLogger.getSharedLogger().Info("Importing EHR from local...");
-            FileOpenPicker openPicker = new FileOpenPicker();
-            openPicker.SuggestedStartLocation = PickerLocationId.DocumentsLibrary;
-            openPicker.FileTypeFilter.Add(".txt");
-            // Show the file picker.
-            StorageFile file = await openPicker.PickSingleFileAsync();
-            if (file != null)
-                this.Frame.Navigate(typeof(MainPage), file);
+
+            var messageDialog = new MessageDialog("Import EHR text from?");
+            messageDialog.Commands.Add(new UICommand("From File") { Id = 0 });
+            messageDialog.Commands.Add(new UICommand("From Paste") { Id = 1 });
+            messageDialog.Commands.Add(new UICommand("Cancel") { Id = 2 });
+            // Set the command that will be invoked by default
+            messageDialog.DefaultCommandIndex = 0;
+            // Set the command to be invoked when escape is pressed
+            messageDialog.CancelCommandIndex = 2;
+            // Show the message dialog
+            var result = await messageDialog.ShowAsync();
+            if ((int)result.Id == 0)
+            {
+                FileOpenPicker openPicker = new FileOpenPicker();
+                openPicker.SuggestedStartLocation = PickerLocationId.DocumentsLibrary;
+                openPicker.FileTypeFilter.Add(".txt");
+                // Show the file picker.
+                StorageFile file = await openPicker.PickSingleFileAsync();
+                if (file != null)
+                    this.Frame.Navigate(typeof(MainPage), file);
+            }
+            else if ((int)result.Id == 1) {
+                this.Frame.Navigate(typeof(MainPage), null);
+            }
+
+
         }
 
         private async void notebookList_ItemClick(object sender, ItemClickEventArgs e)

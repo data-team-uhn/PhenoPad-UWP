@@ -155,10 +155,10 @@ namespace PhenoPad
                                 SpeechManager.getSharedSpeechManager().getServerPort();
             ASRAddrInput.Text = serverPath;
 
-            //by default using internal microphone and with abbreviation detections
-            //SurfaceMicRadioButton_Checked(null,null);
-            //ExterMicRadioButton_Checked(null, null);
             AbbreviationON_Checked(null, null);
+
+            //initializes bluetooth
+            changeSpeechEngineState_BT();
 
             //When user clicks X while in mainpage, auto-saves all current process and exits the program.
             Windows.UI.Core.Preview.SystemNavigationManagerPreview.GetForCurrentView().CloseRequested +=
@@ -370,7 +370,7 @@ namespace PhenoPad
                 this.loadFromDisk = false;
                 await Dispatcher.RunAsync(CoreDispatcherPriority.High, this.InitializeNotebook);
             }
-            else if (file != null)
+            else if (e.Parameter == null || file != null)
             {//is a file for importing EHR
                 Debug.WriteLine("create EHR");
                 await Dispatcher.RunAsync(CoreDispatcherPriority.High, () => { this.InitializeEHRNote(file); });
@@ -683,13 +683,13 @@ namespace PhenoPad
             }
         }
 
-
-
-        public void ReEnableAudioButton(object sender = null, object e = null)
+        public async void ReEnableAudioButton(object sender = null, object e = null)
         {
+            await Task.Delay(TimeSpan.FromSeconds(1));
             audioButton.IsEnabled = true;
+            audioButton.IsChecked = false;
+            audioStatusText.Text = "OFF";
         }
-
 
         //=======================================SWITCHING NOTE PAGES========================================
         private async void AddPageButton_Click(object sender, RoutedEventArgs e)
@@ -851,55 +851,31 @@ namespace PhenoPad
         private void ChangeServerHWR_Click(object sender, RoutedEventArgs e) {
             string newAddr = HWRAddrInput.Text;
             HWRService.HWRManager.getSharedHWRManager().setIPAddr(new Uri(newAddr));
+            NotifyUser("HWR Server address has been changed",NotifyType.StatusMessage,1);
         }
 
         private void ChangeServerASR_Click(object sender, RoutedEventArgs e) {
             string text = ASRAddrInput.Text;
-
             string ipResult = "";
             string portResult = "";
 
-            if (text.ToLower().IndexOf("sickkid") != -1)
-            {
-                if (text.ToLower().IndexOf("speechengine") != -1)
-                {
-                    ipResult = "speechengine.ccm.sickkids.ca";
-                    portResult = "8888";
-                }
-                else
-                {
-                    ipResult = "phenopad.ccm.sickkids.ca";
-                    portResult = "8888";
-                }
-
+            int colonIndex = text.IndexOf(':');
+            if (text != string.Empty && colonIndex != -1)
+            {               
+                ipResult = text.Substring(0, colonIndex).Trim();
+                portResult = text.Substring(colonIndex + 1).Trim();
             }
-            else
-            {
-                if (text != "" && text != string.Empty)
-                {
-                    int colonIndex = text.IndexOf(':');
-
-                    // Only entered server address
-                    if (colonIndex == -1)
-                    {
-                        //SpeechManager.getSharedSpeechManager().setServerAddress(text.Trim());
-
-                        ipResult = text.Trim();
-                        portResult = "8888";
-                    }
-                    // address and port both here
-                    else
-                    {
-                        ipResult = text.Substring(0, colonIndex).Trim();
-                        portResult = text.Substring(colonIndex + 1).Trim();
-                    }
-                }
+            else {
+                NotifyUser("Invalid ASR address, will use default setting", NotifyType.ErrorMessage, 2);
+                ipResult = SpeechManager.DEFAULT_SERVER;
+                portResult = SpeechManager.DEFAULT_PORT;
+                ASRAddrInput.Text = SpeechManager.DEFAULT_SERVER + ":" + SpeechManager.DEFAULT_PORT;
             }
             SpeechManager.getSharedSpeechManager().setServerAddress(ipResult);
             SpeechManager.getSharedSpeechManager().setServerPort(portResult);
-
             AppConfigurations.saveSetting("serverIP", ipResult);
             AppConfigurations.saveSetting("serverPort", portResult);
+            NotifyUser("ASR Server address has been changed", NotifyType.StatusMessage, 1);
         }
 
         private void SettingsClose_Click(object sender, RoutedEventArgs e) {

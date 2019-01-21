@@ -329,14 +329,30 @@ namespace PhenoPad
         /// Invoked when user presses the Microphone button on sidebar, requests speech engine connection
         /// as well as connection to remote server for speech recognition
         /// </summary>
-        private void AudioStreamButton_Clicked(object sender, RoutedEventArgs e)
+        private async void AudioStreamButton_Clicked(object sender, RoutedEventArgs e)
         {
             //Temporarily disables audio button for avoiding frequent requests
             audioButton.IsEnabled = false;
 
             // use external microphone
-            if (ConfigService.ConfigService.getConfigService().IfUseExternalMicrophone())
-                changeSpeechEngineState_BT();
+            if (ConfigService.ConfigService.getConfigService().IfUseExternalMicrophone()) {
+                if (!bluetoonOn)
+                {
+                    NotifyUser("Bluetooth is not connected, cannot use External Microphone.", NotifyType.ErrorMessage, 2);
+                    ReEnableAudioButton();
+                }
+                else
+                {
+                    if (speechEngineRunning)
+                    {
+                        await BluetoothService.BluetoothService.getBluetoothService().sendBluetoothMessage("audio stop");
+                        await SpeechManager.getSharedSpeechManager().StopASRResults();
+                    }
+                    else {
+                        StartAudioAfterBluetooth();
+                    }
+                }
+            }
             // use internal microphone
             else
                 changeSpeechEngineState();
@@ -357,9 +373,7 @@ namespace PhenoPad
                     uiClinet = UIWebSocketClient.getSharedUIWebSocketClient();
                     bool uiResult = await uiClinet.ConnectToServer();
                     if (!uiResult)
-                    {
                         LogService.MetroLogger.getSharedLogger().Error("UIClient failed to connect.");
-                    }
                     //=====
                     this.bluetoothService = BluetoothService.BluetoothService.getBluetoothService();
                     await this.bluetoothService.Initialize();
@@ -367,9 +381,7 @@ namespace PhenoPad
 
                 else
                 {
-                    //uiClinet.disconnect();
-                    await BluetoothService.BluetoothService.getBluetoothService().sendBluetoothMessage("audio stop");
-                    SpeechManager.getSharedSpeechManager().StopASRResults();
+                    uiClinet.disconnect();
                     bool result = bluetoothService.CloseConnection();
                     if (result)
                     {
@@ -382,7 +394,7 @@ namespace PhenoPad
                     else
                     {
                         NotifyUser("Bluetooth Connection failed to disconnect.", NotifyType.ErrorMessage, 2);
-                    }
+                    }                   
                     onAudioEnded();
                 }
 
@@ -399,16 +411,17 @@ namespace PhenoPad
             if (speechEngineRunning == false)
             {
                 await BluetoothService.BluetoothService.getBluetoothService().sendBluetoothMessage("audio start manager_id=666");
-                SpeechManager.getSharedSpeechManager().ReceiveASRResults();
+                await SpeechManager.getSharedSpeechManager().ReceiveASRResults();
             } 
          }
 
         public void onAudioStarted() {
             speechEngineRunning = true;
+            //ReEnableAudioButton();
             NotifyUser("Audio service started.", NotifyType.StatusMessage, 3);
             LogService.MetroLogger.getSharedLogger().Info("Audio started.");
+            audioButton.IsEnabled = true;
             audioStatusText.Text = "ON";
-            ReEnableAudioButton();
             audioButton.IsChecked = true;
         }
 
@@ -446,7 +459,7 @@ namespace PhenoPad
             catch (Exception ex)
             {
                 LogService.MetroLogger.getSharedLogger().Error("Failed to start/stop audio: " + ex.Message);
-                ReEnableAudioButton(null, null);
+                ReEnableAudioButton();
             }
 
         }

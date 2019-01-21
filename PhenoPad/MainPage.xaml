@@ -240,55 +240,17 @@
                     </StackPanel>
 
                     <StackPanel  Orientation="Vertical" VerticalAlignment="Bottom" Grid.Row="2" Grid.Column="0" Background="Transparent">
-
-                        <!--<Button Style="{StaticResource ButtonStyle1}" Height="60" 
-                                ToolTipService.ToolTip="Connect/Disconnect to Rasberry pi"
-                                x:Name="serverConnectButton" x:FieldModifier="public"
-                                Foreground="Black"                               
-                                Background="{StaticResource Left_Panel_Title_BG}" 
-                                IsEnabled="False">
-                            <Button.Flyout>
-                                <Flyout Placement="Right">
-                                    <Grid>
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="200"/>
-                                            <ColumnDefinition Width="*"/>
-                                            <ColumnDefinition Width="Auto"/>
-                                        </Grid.ColumnDefinitions>
-
-                                        <Grid.RowDefinitions>
-                                            <RowDefinition Height="*"/>
-                                            <RowDefinition Height="*"/>
-                                            <RowDefinition Height="*"/>
-                                        </Grid.RowDefinitions>
-
-                                        <TextBlock Grid.Row="0" Grid.Column="0" x:Name="BluetoothProgresssBox" 
-                                                       x:FieldModifier="public" Text="Connecting to Raspberry Pi" 
-                                                       Margin="5"/>
-
-                                        <ProgressRing Grid.Row="0" Grid.Column="1" Margin="5" 
-                                                          x:Name="BluetoothProgress" x:FieldModifier="public" 
-                                                          IsActive="True"/>
-
-                                        <BitmapIcon Grid.Row="0" Grid.Column="1" Width="32" Height="32"
-                                                UriSource="ms-appx:///Assets/checkmark.png" 
-                                                x:Name="BluetoothComplete" x:FieldModifier="public" Visibility="Collapsed"/>
-
-                                        <TextBlock Grid.Row="0" Grid.Column="2" Text="" Name="PiIPAddress" Margin="5"/>
-                                    </Grid>
-
-                                </Flyout>
-                            </Button.Flyout>
                                  
-                            --><!--<Grid>
-                                <StackPanel>
-                                    <FontIcon FontSize="24" FontFamily="Segoe MDL2 Assets" Glyph="&#xE702;" HorizontalAlignment="Left" Width="20" Height="20" VerticalAlignment="Top">
-                                    </FontIcon>
-                                    <TextBlock FontSize="12" Name="bluetoothStatusText" Text="OFF"></TextBlock>
-
-                                </StackPanel>
-                            </Grid>--><!--
-                        </Button>-->
+                        <Grid Height="auto" Padding="5">
+                            <StackPanel>
+                                <FontIcon x:Name="bluetoothicon" x:FieldModifier="public"
+                                          FontSize="24" FontFamily="Segoe MDL2 Assets" Glyph="&#xE702;"
+                                          Foreground="{StaticResource WORD_DARK}"
+                                          HorizontalAlignment="Left" Width="20" Height="20" VerticalAlignment="Top"/>
+                                <ProgressRing x:Name="bluetoothprogress" x:FieldModifier="public" 
+                                              Visibility="Collapsed" IsActive="True"/>
+                            </StackPanel>
+                        </Grid>
 
 
                         <ToggleButton  Height="60" HorizontalAlignment="Stretch" ToolTipService.ToolTip="Start/Stop Audio"
