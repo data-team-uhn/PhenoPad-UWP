@@ -247,7 +247,7 @@
                                           FontSize="24" FontFamily="Segoe MDL2 Assets" Glyph="&#xE702;"
                                           Foreground="{StaticResource WORD_DARK}"
                                           HorizontalAlignment="Left" Width="20" Height="20" VerticalAlignment="Top"/>
-                                <ProgressRing x:Name="bluetoothprogress" x:FieldModifier="public" 
+                                <ProgressRing x:Name="bluetoothprogress" x:FieldModifier="public" Opacity="0"
                                               Visibility="Collapsed" IsActive="True"/>
                             </StackPanel>
                         </Grid>
@@ -311,7 +311,8 @@
 
                             <ListView.ItemTemplate>
                                 <DataTemplate x:DataType="phenotypeservice:Phenotype">
-                                    <customcontrol:PhenotypeControl phenotypeName="{x:Bind name}" phenotypeId="{x:Bind hpId}" phenotypeState="{x:Bind state}" sourceType="Saved"></customcontrol:PhenotypeControl>
+                                    <customcontrol:PhenotypeControl phenotypeName="{x:Bind name}" phenotypeId="{x:Bind hpId}" phenotypeState="{x:Bind state}" 
+                                                                    sourceType="Saved"></customcontrol:PhenotypeControl>
                                 </DataTemplate>
                             </ListView.ItemTemplate>
                             <ListView.ItemContainerStyle>
@@ -327,7 +328,8 @@
 
                     <Grid Name="QuickView2" Height="auto" Background="White" Grid.Row="1" Grid.Column="1" >
 
-                        <ListView ScrollViewer.VerticalScrollBarVisibility="Hidden" x:Name="suggestedPhenoListView"  ItemsSource="{x:Bind PhenoMana.suggestedPhenotypes, Mode=OneWay}">
+                        <ListView ScrollViewer.VerticalScrollBarVisibility="Hidden" x:Name="suggestedPhenoListView"  
+                                  ItemsSource="{x:Bind PhenoMana.suggestedPhenotypes, Mode=OneWay}">
 
                             <ListView.Header>
                                 <controls:ScrollHeader Mode="Sticky" TargetListViewBase="{x:Bind suggestedPhenoListView}">
@@ -340,7 +342,10 @@
 
                             <ListView.ItemTemplate>
                                 <DataTemplate x:DataType="phenotypeservice:Phenotype">
-                                    <customcontrol:PhenotypeControl phenotypeName="{x:Bind name}" phenotypeId="{x:Bind hpId}" phenotypeState="{x:Bind state}" sourceType="Suggested"></customcontrol:PhenotypeControl>
+                                    <customcontrol:PhenotypeControl phenotypeName="{x:Bind name}" 
+                                                                    phenotypeId="{x:Bind hpId}" 
+                                                                    phenotypeState="{x:Bind state}" 
+                                                                    sourceType="Suggested"></customcontrol:PhenotypeControl>
                                 </DataTemplate>
                             </ListView.ItemTemplate>
                             <ListView.ItemContainerStyle>

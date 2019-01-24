@@ -49,6 +49,7 @@ using Windows.Media.Editing;
 using System.Runtime.InteropServices.WindowsRuntime;
 using MetroLog;
 using Microsoft.Toolkit.Uwp.UI.Animations;
+using PhenoPad.LogService;
 
 namespace PhenoPad
 {
@@ -157,7 +158,7 @@ namespace PhenoPad
 
             AbbreviationON_Checked(null, null);
 
-            //initializes bluetooth
+            //initializes bluetooth on first mainpage startup
             changeSpeechEngineState_BT();
 
             //When user clicks X while in mainpage, auto-saves all current process and exits the program.

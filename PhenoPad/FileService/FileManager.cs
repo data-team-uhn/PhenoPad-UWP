@@ -16,6 +16,7 @@ using System.Runtime.InteropServices.WindowsRuntime;
 using Windows.Graphics.Display;
 using System.Threading;
 using System.Xml;
+using PhenoPad.LogService;
 
 namespace PhenoPad.FileService
 {
@@ -34,7 +35,8 @@ namespace PhenoPad.FileService
         Meta,
         ImageAnnotationMeta,
         EHR,
-        EHRFormat
+        EHRFormat,
+        OperationLog
     };
 
     /// <summary>
@@ -48,6 +50,7 @@ namespace PhenoPad.FileService
         private string STROKE_FILE_NAME = "strokes.gif";
         private string EHR_FILE_NAME = "ehr.txt";
         private string EHR_FORMAT_NAME = "ehrformat.xml";
+        private string OPERATION_LOG_NAME = "OperationLogs.txt";
         private string PHENOTYPE_FILE_NAME = "phenotypes.txt";
         private string NOTENOOK_NAME_PREFIX = "note_";
         private string NOTE_META_FILE = "meta.xml";
@@ -210,21 +213,38 @@ namespace PhenoPad.FileService
         /// <summary>
         /// Gets the operation log file under local folder, if such file does not exist, creates a new one and returns it
         /// </summary>
-        public async Task<StorageFile> GetOperationLogFile() {
+        public async Task<StorageFile> GetOperationLogFile(string notebookId) {
             try { 
-                StorageFolder folder = null;
                 //StorageFolder localFolder = ApplicationData.Current.LocalFolder;
-                string filepath = ROOT_FOLDER.Name + "OperationLogs/";
+                string filepath = GetNoteFilePath(notebookId, "", NoteFileType.OperationLog);
                 var item = await ROOT_FOLDER.TryGetItemAsync(filepath);
                 if (item == null)
-                    folder = await ROOT_FOLDER.GetFolderAsync(filepath);
-                StorageFile file = await ROOT_FOLDER.CreateFileAsync(filepath + "OPLogs.txt", CreationCollisionOption.OpenIfExists);
-                return file;
+                {
+                    StorageFile file = await ROOT_FOLDER.CreateFileAsync(filepath, CreationCollisionOption.OpenIfExists);
+                    return file;
+                }
+                return (StorageFile)item;
+           
             }
             catch (Exception ex)
             {
                 LogService.MetroLogger.getSharedLogger().Error($"Failed to get operation logs: {ex.Message}");
                 return null;
+            }
+        }
+
+        public async Task<bool> AppendLogToFile(List<string> cachedLogs, string notebookId) {
+            try {
+                StorageFile logFile = await GetOperationLogFile(notebookId);
+                while (logFile == null)
+                    logFile = await GetOperationLogFile(notebookId);
+                await FileIO.AppendLinesAsync(logFile, cachedLogs);
+                return true;
+
+            }
+            catch (Exception e) {
+                LogService.MetroLogger.getSharedLogger().Error("FileManager:" + e.Message);
+                return false;
             }
         }
 
@@ -337,6 +357,9 @@ namespace PhenoPad.FileService
                     break;
                 case NoteFileType.EHRFormat:
                     filename = EHR_FORMAT_NAME;
+                    break;
+                case NoteFileType.OperationLog:
+                    filename = OPERATION_LOG_NAME;
                     break;
             }
 

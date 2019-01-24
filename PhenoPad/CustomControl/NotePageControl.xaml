@@ -105,7 +105,10 @@
                     <ListView x:Name="recognizedPhenoListView"  Height="300" HorizontalAlignment="Stretch" Visibility="Collapsed">
                         <ListView.ItemTemplate>
                             <DataTemplate x:DataType="phenotypeservice:Phenotype">
-                                <local:PhenotypeControl phenotypeName="{x:Bind name}" phenotypeId="{x:Bind hpId}" phenotypeState="{x:Bind state}" sourceType="Notes"></local:PhenotypeControl>
+                                <local:PhenotypeControl phenotypeName="{x:Bind name}" 
+                                                        phenotypeId="{x:Bind hpId}" 
+                                                        phenotypeState="{x:Bind state}" 
+                                                        sourceType="Notes"></local:PhenotypeControl>
                             </DataTemplate>
                         </ListView.ItemTemplate>
                         <ListView.ItemContainerStyle>

@@ -72,7 +72,7 @@ namespace PhenoPad.BluetoothService
         private async Task InitiateConnection()
         {
             var serviceInfoCollection = await DeviceInformation.FindAllAsync(RfcommDeviceService.GetDeviceSelector(RfcommServiceId.SerialPort), new string[] { "System.Devices.AepService.AepId" });
-            Debug.WriteLine("line 71");
+            //Debug.WriteLine("line 71");
             foreach (var serviceInfo in serviceInfoCollection)
             {
                 var deviceInfo = await DeviceInformation.CreateFromIdAsync((string)serviceInfo.Properties["System.Devices.AepService.AepId"]);
@@ -192,7 +192,7 @@ namespace PhenoPad.BluetoothService
 
             }
 
-            Debug.WriteLine("line 75");
+            //Debug.WriteLine("line 75");
             // Request additional properties
             string[] requestedProperties = new string[] { "System.Devices.Aep.DeviceAddress", "System.Devices.Aep.IsConnected" };
             deviceWatcher = DeviceInformation.CreateWatcher("(System.Devices.Aep.ProtocolId:=\"{e0cbf06c-cd8b-4647-bb8a-263b43f0f974}\")", requestedProperties, DeviceInformationKind.AssociationEndpoint);

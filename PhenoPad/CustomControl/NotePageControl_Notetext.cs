@@ -246,7 +246,7 @@ namespace PhenoPad.CustomControl
 
         public void refreshWordList() {
             _wordStrings.Clear();
-            foreach (HWRRecognizedText rt in HwrResult) {
+            foreach (HWRRecognizedText rt in _hwrResult) {
                 _wordStrings.Add(rt.selectedCandidate);
                 Debug.WriteLine($"refreshing,new word={rt.selectedCandidate}");
             }
@@ -266,39 +266,40 @@ namespace PhenoPad.CustomControl
             // annotationByWord.Add(Tuple.Create(p, windex.Item1, windex.Item2));
         }
 
-        public void updateHwrResult(int wordind, int selectind, int previousInd = -1)
+        public void updateHwrResult(int wordind, int selectind, string previous = "")
         {
             Dictionary<string, List<string>> dict = HWRManager.getSharedHWRManager().getDictionary();
-            this.HwrResult[wordind].selectedIndex = selectind;
+            _hwrResult[wordind].selectedIndex = selectind;
             //Updating an alternative of an abbreviation
-            if (previousInd != -1)
+            if (previous != "")
             {
-                string previous = this.HwrResult[wordind].candidateList[previousInd];//previously selected alternative
+                //string previous = this.HwrResult[wordind].candidateList[previousInd];//previously selected alternative
                 //Debug.WriteLine($"previous key: {(HwrResult[wordind - 1].selectedCandidate).ToLower()}");
-                int index = dict[HwrResult[wordind-1].selectedCandidate.ToLower()].IndexOf(previous);
+                int index = dict[_hwrResult[wordind-1].selectedCandidate.ToLower()].IndexOf(previous);
                 if (index != -1)
                 {
-                    string selected = this.HwrResult[wordind].candidateList[selectind]; //currently selected alternative
-                    this.HwrResult[wordind].selectedCandidate = selected;
+                    string selected = _hwrResult[wordind].candidateList[selectind]; //currently selected alternative
+                    _hwrResult[wordind].selectedCandidate = selected;
                     //Debug.WriteLine($"\n new alter:{this.HwrResult[wordind].selectedCandidate}");
                     // update 
-                    _wordStrings[wordind] = this.HwrResult[wordind].selectedCandidate;
+                    _wordStrings[wordind] = _hwrResult[wordind].selectedCandidate;
                     _text = String.Join(" ", _wordStrings);
                 }
             }
             //Updating a normal word or the short form of abbreviation
             else {
-                string selected = this.HwrResult[wordind].candidateList[selectind]; //currently selected alternative
+                string selected = _hwrResult[wordind].candidateList[selectind]; //currently selected alternative
                 //if currently selected an abbreviation short form, need to delete the previous abbreviation.
-                if (wordind + 1 != this.HwrResult.Count && dict.ContainsKey(this.HwrResult[wordind].selectedCandidate.ToLower())) {
+                if (wordind + 1 != _hwrResult.Count && dict.ContainsKey(_hwrResult[wordind].selectedCandidate.ToLower())) {
                     Debug.WriteLine("will delete the nxt phrase");
-                    this.HwrResult.RemoveAt(wordind + 1);
+                    _hwrResult.RemoveAt(wordind + 1);
                     _wordStrings.RemoveAt(wordind + 1);
                 }
 
-                this.HwrResult[wordind].selectedCandidate = selected;
-                _wordStrings[wordind] = this.HwrResult[wordind].selectedCandidate;
+                _hwrResult[wordind].selectedCandidate = selected;
+                _wordStrings[wordind] = _hwrResult[wordind].selectedCandidate;
                 _text = String.Join(" ", _wordStrings);
+                Debug.WriteLine($"new line = {Text}");
             }
             return;
         }

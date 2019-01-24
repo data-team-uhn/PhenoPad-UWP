@@ -335,7 +335,7 @@ namespace PhenoPad.HWRService
             {
                 LogService.MetroLogger.getSharedLogger().Error(e + e.Message);
             }
-            return null;
+            return null;            
         }
 
         public List<HWRRecognizedText> processAbbr(List<Abbreviation> abbrs, List<HWRRecognizedText> recog)

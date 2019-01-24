@@ -109,6 +109,8 @@ namespace PhenoPad
                 ExterMicRadioButton_Checked();
             // create file sturcture for this page
             await FileManager.getSharedFileManager().CreateNotePage(notebookObject, curPageIndex.ToString());
+            OperationLogger.getOpLogger().SetCurrentNoteID(notebookId);
+
             await Task.Delay(TimeSpan.FromSeconds(3));
             LoadingPopup.IsOpen = false;
             curPage.Visibility = Visibility.Visible;
@@ -233,6 +235,7 @@ namespace PhenoPad
 
                     //curPage.ehrPage.SlideCommentsToSide();
                 }
+                OperationLogger.getOpLogger().SetCurrentNoteID(notebookId);
                 MainPageInkBar.TargetInkCanvas = inkCanvas;
                 await Task.Delay(TimeSpan.FromSeconds(3));
                 LoadingPopup.IsOpen = false;
@@ -292,6 +295,7 @@ namespace PhenoPad
             await curPage.SwitchToEHR(file);
             inkCanvas = curPage.ehrPage.annotations;
             MainPageInkBar.TargetInkCanvas = inkCanvas;
+            OperationLogger.getOpLogger().SetCurrentNoteID(notebookId);
 
             currentMode = WritingMode;
             modeTextBlock.Text = WritingMode;

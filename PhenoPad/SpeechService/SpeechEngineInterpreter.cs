@@ -7,6 +7,7 @@ using System.Diagnostics;
 using Windows.UI.Core;
 using PhenoPad.PhenotypeService;
 using PhenoPad.FileService;
+using PhenoPad.LogService;
 
 namespace PhenoPad.SpeechService
 {
@@ -110,8 +111,9 @@ namespace PhenoPad.SpeechService
         public Conversation realtimeConversation;       // right hand temporary result panel
 
         private List<WordSpoken> words = new List<WordSpoken>();      // all words detected
-        private List<Pair<TimeInterval, int>> diarization = new List<Pair<TimeInterval, int>>();    // a list of intervals that have speaker identified
-        private List<Pair<int, int>> diarizationSmallSeg = new List<Pair<int, int>>();        // Pair<start time, speaker>
+        // a list of intervals that have speaker identified
+        private List<Pair<TimeInterval, int>> diarization = new List<Pair<TimeInterval, int>>();    
+        public List<Pair<int, int>> diarizationSmallSeg = new List<Pair<int, int>>();        // Pair<start time, speaker>
         private int diarizationWordIndex = 0;                     // word index that need to be assigned speaker
         private int constructDiarizedSentenceIndex = 0;           // word index to construct diarized index
         private int latestSentenceIndex = 0;                      // word index that has not been diarized
@@ -160,8 +162,13 @@ namespace PhenoPad.SpeechService
 
             phenosTask.ContinueWith(_ =>
             {
+
                 if (phenosTask.Result == null)
                     return;
+                //only log from speech if there are phenotypes detected,otherwise would be really crowded
+                if (phenosTask.Result.Keys.Count() > 0)
+                    OperationLogger.getOpLogger().Log(OperationType.Speech, text, phenosTask.Result);
+
                 List<Phenotype> list = new List<Phenotype>();
                 foreach(var key in phenosTask.Result.Keys)
                 {
@@ -326,17 +333,6 @@ namespace PhenoPad.SpeechService
             if (diaJson != null && diaJson.end != -1)
             {
                 bool full = false;
-                /*** received retrained results, not need for microphone array
-                if (!json.result.diarization_incremental)
-                {
-                    //Debug.WriteLine("Received new diarization. Removing previous results.");
-                    this.diarization.Clear();
-                    this.diarizationSmallSeg.Clear();
-                    this.diarizationWordIndex = 0;
-                    this.constructDiarizedSentenceIndex = 0;
-                    full = true;
-                }
-                ***/
                 //foreach (var d in json.result.diarization)
                 //{
                 int speaker = diaJson.speaker;
@@ -452,15 +448,15 @@ namespace PhenoPad.SpeechService
                 for (int i = Convert.ToInt32(prev * 10); i < Convert.ToInt32(interval.start * 10); i += 1)
                 {
                     this.diarizationSmallSeg.Add(new Pair<int, int>(i, -1));
-                    Debug.WriteLine("addedSmallSegIndex: " + (diarizationSmallSeg.Count - 1));
-                    Debug.WriteLine("diarizationSmallSeg added: " + (i, -1));
+                    //Debug.WriteLine("addedSmallSegIndex: " + (diarizationSmallSeg.Count - 1));
+                    //Debug.WriteLine("diarizationSmallSeg added: " + (i, -1));
                 }
 
                 for (int i = Convert.ToInt32(interval.start * 10); i < Convert.ToInt32(interval.end * 10); i += 1)
                 {
                     this.diarizationSmallSeg.Add(new Pair<int, int>(i, speaker));
-                    Debug.WriteLine("addedSmallSegIndex: " + (diarizationSmallSeg.Count - 1));
-                    Debug.WriteLine("diarizationSmallSeg added: " + (i, speaker));
+                    //Debug.WriteLine("addedSmallSegIndex: " + (diarizationSmallSeg.Count - 1));
+                    //Debug.WriteLine("diarizationSmallSeg added: " + (i, speaker));
                 }
             }
             else
@@ -468,8 +464,8 @@ namespace PhenoPad.SpeechService
                 for (int i = Convert.ToInt32(prev * 10); i < Convert.ToInt32(interval.end * 10); i += 1)
                 {
                     this.diarizationSmallSeg.Add(new Pair<int, int>(i, speaker));
-                    Debug.WriteLine("addedSmallSegIndex: " + (diarizationSmallSeg.Count - 1));
-                    Debug.WriteLine("diarizationSmallSeg added: " + (i, speaker));
+                    //Debug.WriteLine("addedSmallSegIndex: " + (diarizationSmallSeg.Count - 1));
+                    //Debug.WriteLine("diarizationSmallSeg added: " + (i, speaker));
                 }
             }
         }

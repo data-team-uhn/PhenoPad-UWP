@@ -229,7 +229,7 @@ namespace PhenoPad.CustomControl
         /// </summary>
         private async Task<string> recognizeSelection()
         {
-            Debug.WriteLine("\n recognizeSelection triggered\n");
+            //Debug.WriteLine("\n recognizeSelection triggered\n");
             IReadOnlyList<InkStroke> currentStrokes = inkCanvas.InkPresenter.StrokeContainer.GetStrokes();
             if (currentStrokes.Count > 0)
             {
@@ -379,12 +379,12 @@ namespace PhenoPad.CustomControl
         /// <param name="e"></param>
         private async void TriggerRecogServer(object sender, object e)
         {
-            Debug.WriteLine("\n TRIGGER TICKED, WILL ANALYZE THROUGH SERVER...\n");
+            //Debug.WriteLine("\n TRIGGER TICKED, WILL ANALYZE THROUGH SERVER...\n");
             
             recognizeTimer.Stop();
             if (inkAnalyzer.IsAnalyzing)
             {
-                Debug.WriteLine("ink still analyzing-trigger");
+                //Debug.WriteLine("ink still analyzing-trigger");
                 // inkAnalyzer is being used 
                 // try again after some time by dispatcherTimer 
                 recognizeTimer.Start();
@@ -403,7 +403,7 @@ namespace PhenoPad.CustomControl
                     // current line
                     if (curStroke != null && line.GetStrokeIds().Contains(curStroke.Id))
                     {
-                        Debug.WriteLine("\nfound line.");
+                        //Debug.WriteLine("\nfound line.");
                         // set up for current line
                         HWRManager.getSharedHWRManager().setRequestType(true);
                         recognizeAndSetUpUIForLine(line, false, serverRecog:true);
@@ -424,7 +424,7 @@ namespace PhenoPad.CustomControl
             // switch to another line, clear result of current line
             if (line.Id != showingResultOfLine)
             {
-                Debug.WriteLine("Switching to a different line.");
+                //Debug.WriteLine("Switching to a different line.");
                 curLineCandidatePheno.Clear();
                 curLineWordsStackPanel.Children.Clear();
                 HWRManager.getSharedHWRManager().clearCache();
@@ -436,14 +436,14 @@ namespace PhenoPad.CustomControl
 
             if (idToNoteLine.ContainsKey(line.Id))
             {  // existing line
-                Debug.WriteLine("Existing line");
+                //Debug.WriteLine("Existing line");
                 NoteLine nl = idToNoteLine[line.Id];
                 nl.HwrResult = await RecognizeLine(line.Id, serverRecog);
-                Debug.WriteLine("recogresult="+nl.HwrResult[0].selectedCandidate);
+                //Debug.WriteLine("recogresult="+nl.HwrResult[0].selectedCandidate);
             }
             else
             {
-                Debug.WriteLine("Creating a new line");
+                //Debug.WriteLine("Creating a new line");
                 //new line
                 NoteLine nl = new NoteLine(line);
                 phenoCtrlSlide.Y = 0;
@@ -456,12 +456,13 @@ namespace PhenoPad.CustomControl
                 nl.HwrResult = await RecognizeLine(line.Id, serverRecog);
                 idToNoteLine[line.Id] = nl;
             }
+            //OperationLogger.getOpLogger().Log(OperationType.StrokeRecognition, line.RecognizedText);
 
             // HWR result UI
             setUpCurrentLineResultUI(line);
             // annotation and UI
             annotateCurrentLineAndUpdateUI(line);
-
+            //logging recognized text to logger
 
             if (indetails)
             {
@@ -537,7 +538,7 @@ namespace PhenoPad.CustomControl
                     else
                     {
                         //you need this else statement for debugging reasons...
-                        Debug.WriteLine(drawNode.DrawingKind);
+                        //Debug.WriteLine(drawNode.DrawingKind);
                     }
                 }
                 // delete all strokes that are too large, like drawings
@@ -721,13 +722,11 @@ namespace PhenoPad.CustomControl
         public async void initialAnalyze()
         {
             rootPage.NotifyUser("Analyzing current page ...", NotifyType.StatusMessage, 2);
-            Debug.WriteLine("changed page, will analyze strokes");
             inkAnalyzer = new InkAnalyzer();
             inkAnalyzer.AddDataForStrokes(inkCan.InkPresenter.StrokeContainer.GetStrokes());
             bool result = false;
             while (!result)
                 result = await analyzeInk(serverFlag:true);//will be using server side HWR upon page load
-            Debug.WriteLine("done initial analyze, result = " + result);
         }
 
         /// <summary>
@@ -740,7 +739,7 @@ namespace PhenoPad.CustomControl
             //    PhenoMana.phenotypesCandidates.Clear();
             //}
             dispatcherTimer.Stop();
-            Debug.WriteLine("analyzing...");
+            //Debug.WriteLine("analyzing...");
             if (inkAnalyzer.IsAnalyzing)
             {
                 // inkAnalyzer is being used 
@@ -771,7 +770,7 @@ namespace PhenoPad.CustomControl
                     // recognize all lines
                     else
                     {
-                        Debug.WriteLine("Analyzing all lines...");
+                        //Debug.WriteLine("Analyzing all lines...");
                         if (!idToNoteLine.ContainsKey(line.Id))
                         {
                             //new line
@@ -780,9 +779,10 @@ namespace PhenoPad.CustomControl
                             var hwrresult = await RecognizeLine(line.Id, serverFlag);
                             nl.HwrResult = hwrresult;
                             idToNoteLine[line.Id] = nl;
-                            Debug.WriteLine("fetching from API...");
+                            //Debug.WriteLine("fetching from API...");
                             Dictionary<string, Phenotype> annoResult = await PhenoMana.annotateByNCRAsync(idToNoteLine.GetValueOrDefault(line.Id).Text);
-                            Debug.WriteLine(annoResult.Count);
+                            OperationLogger.getOpLogger().Log(OperationType.Recognition, nl.Text, annoResult);
+
                             if (annoResult != null && annoResult.Count != 0)
                             {
                                 int lineNum = getLineNumByRect(line.BoundingRect);
@@ -936,7 +936,7 @@ namespace PhenoPad.CustomControl
 
             for (int index = 0; index < newResult.Count; index++) {
                 string word = newResult[index].selectedCandidate;
-                Debug.WriteLine(word);
+                //Debug.WriteLine(word);
                 TextBlock tb = new TextBlock();
                 tb.VerticalAlignment = VerticalAlignment.Center;
                 tb.FontSize = 16;
@@ -962,38 +962,6 @@ namespace PhenoPad.CustomControl
                 });
             }
 
-
-            //foreach (var word in wordlist)
-            //{
-            //    int index = wordlist.IndexOf(word);
-            //    //words that are new to the line
-
-            //        TextBlock tb = new TextBlock();
-            //        tb.VerticalAlignment = VerticalAlignment.Center;
-            //        tb.FontSize = 16;
-            //        //for detecting abbreviations
-            //        if (index != 0 && dict.ContainsKey(wordlist[index - 1].ToLower()) && dict[wordlist[index - 1].ToLower()].Contains(word))
-            //        {
-            //            tb.Text = $"({word})";
-            //            tb.Foreground = new SolidColorBrush(Colors.DarkOrange);
-            //        }
-            //        else
-            //        {
-            //            tb.Text = word;
-            //        }
-
-            //        curLineWordsStackPanel.Children.Add(tb);
-            //        //Binding event listener to each text block
-            //        tb.Tapped += ((object sender, TappedRoutedEventArgs e) => {
-            //            int wi = curLineWordsStackPanel.Children.IndexOf((TextBlock)sender);
-            //            var alterFlyout = (Flyout)this.Resources["ChangeAlternativeFlyout"];
-            //            showAlterOfWord = wi;
-            //            alternativeListView.ItemsSource = idToNoteLine[showingResultOfLine].HwrResult[wi].candidateList;
-            //            alterFlyout.ShowAt((FrameworkElement)sender);
-            //        });
-
-            //}
-
             loading.Visibility = Visibility.Collapsed;
             curLineWordsStackPanel.Visibility = Visibility.Visible;
             curLineResultPanel.Visibility = Visibility.Visible;
@@ -1009,26 +977,35 @@ namespace PhenoPad.CustomControl
 
             var citem = (string)e.ClickedItem;
             int ind = alternativeListView.Items.IndexOf(citem);
-            int previous = -1;
+            int previous = curLine.HwrResult[showAlterOfWord].selectedIndex;
+            string old_form = curLine.HwrResult[showAlterOfWord].selectedCandidate;
+            string term = "";
+            if (showAlterOfWord - 1 >= 0)
+                term = curLine.HwrResult[showAlterOfWord - 1].selectedCandidate;
+
             //When changing the alternative of an abbreviation, just change result UI and re-annotate
             //note that all words in an extended form of an abbereviation will contains at least one space
             //this is a faster way of identifying an abbreviation, but feel free to change if there's better way of
             //doing so.
-            if (citem.Contains(" "))
+            if (dict.ContainsKey(term.ToLower()) && dict[term.ToLower()].Contains(old_form))
             {
                 Debug.WriteLine("\nchanging alternative of an abbreviation.\n");
-                previous = curLine.HwrResult[showAlterOfWord].selectedIndex;
-                curLine.updateHwrResult(showAlterOfWord, ind, previous);
+                curLine.updateHwrResult(showAlterOfWord, ind, old_form);
+                string new_form = curLine.HwrResult[showAlterOfWord].selectedCandidate;
+                string parsed = OperationLogger.getOpLogger().ParseCandidateList(curLine.HwrResult[showAlterOfWord].candidateList);
+                OperationLogger.getOpLogger().Log(OperationType.Abbreviation,curLine.Text ,term ,old_form ,new_form ,ind.ToString(),parsed);
             }
-            if (previous == -1) {
+            else{
                 Debug.WriteLine("\nchanging a normal word in dispaly.\n");
                 //HWRManager.getSharedHWRManager().setRequestType(false);
                 await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () => {
-                    curLine.updateHwrResult(showAlterOfWord, ind, previous);
+                    curLine.updateHwrResult(showAlterOfWord, ind);
                 });
+                string new_form = curLine.HwrResult[showAlterOfWord].selectedCandidate;
+                OperationLogger.getOpLogger().Log(OperationType.Alternative, old_form, new_form, ind.ToString());
                 curLine.HwrResult = await HWRManager.getSharedHWRManager().ReRecognizeAsync(curLine.HwrResult);
-            }
 
+            }
 
             // HWR result UI
             setUpCurrentLineResultUI(curLineObject);
@@ -1043,9 +1020,10 @@ namespace PhenoPad.CustomControl
         {
             // after get annotation, recognized text has also changed
             Dictionary<string, Phenotype> annoResult = await PhenoMana.annotateByNCRAsync(idToNoteLine.GetValueOrDefault(line.Id).Text);
+            OperationLogger.getOpLogger().Log(OperationType.Recognition, idToNoteLine.GetValueOrDefault(line.Id).Text, annoResult);
+
             if (annoResult != null && annoResult.Count != 0)
             {
-                Debug.WriteLine("has annoResult");
                 // update global annotations
                 foreach (var anno in annoResult.ToList())
                 {
@@ -1076,7 +1054,7 @@ namespace PhenoPad.CustomControl
 
                 if (curLineCandidatePheno.Count == 0 || phenoCtrlSlide.Y == 0)
                 {
-                    Debug.WriteLine($"current Y offset is at {phenoCtrlSlide.Y}, visibility is {curWordPhenoControlGrid.Visibility}");
+                    //Debug.WriteLine($"current Y offset is at {phenoCtrlSlide.Y}, visibility is {curWordPhenoControlGrid.Visibility}");
                     curWordPhenoAnimation.Begin();
                 }
 

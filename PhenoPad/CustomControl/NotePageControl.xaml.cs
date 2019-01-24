@@ -348,9 +348,7 @@ namespace PhenoPad.CustomControl
             if (this.ehrPage == null)
             {
                 ClearSelectionAsync();
-                Debug.WriteLine("page loaded");
-                //scrollViewer.ChangeView(null, 100, null, true);
-                //sideScrollView.ChangeView(null, 100, null, true);
+                //Debug.WriteLine("page loaded");
                 EHRScrollViewer.ChangeView(0, 50, 0.645f, true);
                 EHRScrollViewer.Visibility = Visibility.Collapsed;
                 scrollViewer.Visibility = Visibility.Visible;
@@ -602,9 +600,11 @@ namespace PhenoPad.CustomControl
                         //marking the current stroke for later server recognition
                         curStroke = s;
                         //here we need instant call to analyze ink for the specified line input
-                        await analyzeInk(s);                    
+                        await analyzeInk(s);
+                        OperationLogger.getOpLogger().Log(OperationType.Stroke, s.Id.ToString());
                     }
-                }                
+                }
+
             }
             else
             {//processing strokes selected with left mouse lasso strokes

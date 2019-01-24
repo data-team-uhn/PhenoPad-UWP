@@ -146,7 +146,7 @@ namespace PhenoPad.SpeechService
         public async Task ReceiveASRResults()
         {
             MainPage.Current.NotifyUser("Connecting to speech result server...", NotifyType.StatusMessage, 1);
-
+            Debug.WriteLine($"starting ============={speechInterpreter.diarizationSmallSeg.Count()}");
             bool succeed = false;
             try {
                 speechResultsSocket = new SpeechResultsSocket(this.serverAddress, this.serverPort);
@@ -288,6 +288,8 @@ namespace PhenoPad.SpeechService
                 await this.SaveTranscriptions();
                 SpeechPage.Current.setSpeakerButtonEnabled(false);
                 MainPage.Current.onAudioEnded();
+                Debug.WriteLine($"ENDING ============={speechInterpreter.diarizationSmallSeg.Count()}");
+                this.speechInterpreter = new SpeechEngineInterpreter(this.conversation, this.realtimeConversation);
             }
             catch (Exception e)
             {
