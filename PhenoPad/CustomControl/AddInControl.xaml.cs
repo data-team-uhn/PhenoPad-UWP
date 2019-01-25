@@ -805,7 +805,7 @@ namespace PhenoPad.CustomControl
         }
         public void hideControlPanel()
         {
-            if (isInitialized) ;
+            //if (isInitialized)
             //this.ControlStackPanel.Visibility = Visibility.Collapsed;
         }
         public void showMovingGrid(object sender, RoutedEventArgs e)

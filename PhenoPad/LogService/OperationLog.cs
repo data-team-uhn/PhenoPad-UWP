@@ -32,12 +32,10 @@ namespace PhenoPad.LogService
         public static List<string> CacheLogs;
         public static string CurrentNotebook;
         private DispatcherTimer FlushTimer;
-
+        //this is for removing duplicate HWR logs
+        private string lastHWRLog;
 
         public OperationLogger() {
-            CacheLogs = new List<string>();
-
-           
         }
 
         public static OperationLogger getOpLogger() {
@@ -56,12 +54,14 @@ namespace PhenoPad.LogService
         public void InitializeLogFile(bool overwrite = false) {
             CacheLogs = new List<string>();
             FlushTimer = new DispatcherTimer();
-            //FlushTimer.Tick += FlushLogToDisk;
-            FlushTimer.Interval = TimeSpan.FromSeconds(10);
+            FlushTimer.Tick += FlushLogToDisk;
+            //triggers flush log every second
+            FlushTimer.Interval = TimeSpan.FromSeconds(1);
             CurrentNotebook = null;
+            lastHWRLog = "";
             string time = GetTimeStamp();
-            Debug.WriteLine($"initialized shared oplogger, time = {time}");
         }
+
 
         public void SetCurrentNoteID(string notebookId) {
             CurrentNotebook = notebookId;
@@ -79,43 +79,61 @@ namespace PhenoPad.LogService
         /// <summary>
         /// Logs an operation based on its type with varying number of arguments
         /// </summary>
-        public async void Log(OperationType opType, params string[] args) {
+        public void Log(OperationType opType, params string[] args) {
             string log = "";
             switch (opType) {
                 case OperationType.Stroke:
-                    //args format= (string:numberOfStrokes)
+                    //args format= (args0:strokeID)
                     Debug.Assert(args.Count() == 1);
-                    log = $"{GetTimeStamp()}|Stroke|{args[0]}";
+                    log = $"{GetTimeStamp()}|Stroke| {args[0]}";
                     break;
                 case OperationType.Recognition:
-                    //args format= ( string:recognized text, string: parsed pair of phenotype extraction in format key:phenotype) 
+                    //args format= ( args0:recognized text, args1: {keyword:Phenotype}) 
                     Debug.Assert(args.Count() == 2);
-                    log = $"{GetTimeStamp()}|HWRRecognition|\"{args[0]}\" {args[1]}";
+                    log = $"{GetTimeStamp()}|HWRRecognition| {args[0]} | {args[1]}";
                     break;
                 case OperationType.Speech:
-                    //args format = ( string:recognized text, string: parsed pair of phenotype extraction in format key:phenotype) 
+                    //args format = ( args0:transcript, args1: {keyword:Phenotype}) 
                     Debug.Assert(args.Count() == 2);
-                    log = $"{GetTimeStamp()}|Speech|From \"{args[0]}\" detected {args[1]}";
+                    log = $"{GetTimeStamp()}|Speech| {args[0]} | {args[1]}";
                     break;
                 case OperationType.Phenotype:
-                    //args[3] format= (string:source, string:{added/deleted/Y/N}, string:{Phenotype} )
+                    //args format= (args0:source, args1:{added/deleted/Y/N}, args2:{keyword:Phenotype} )
                     Debug.Assert(args.Count() == 3);
-                    log = $"{GetTimeStamp()}|Phenotype|From {args[0]} {args[1]} <{args[2]}>";
+                    log = $"{GetTimeStamp()}|Phenotype| {args[0]} | {args[1]} | {args[2]}";
                     break;
                 case OperationType.Abbreviation:
-                    //args[3] format= (string: context sentence, string:shortTerm, string:DefaultExtendedForm, string:selectedExtendedForm, string:selectedRank, string: list of candidates )
+                    //args format= (string: context sentence, string:shortTerm, string:DefaultExtendedForm, string:selectedExtendedForm, string:selectedRank, string: list of candidates )
                     Debug.Assert(args.Count() == 6);
-                    log = $"{GetTimeStamp()}|Abbreviation|{args[0]} | {args[1]}, {args[2]} | {args[3]} |{args[4]}| {args[5]}";
+                    log = $"{GetTimeStamp()}|Abbreviation| {args[0]} | {args[1]}, {args[2]} | {args[3]} | {args[4]} | {args[5]}";
                     break;
                 case OperationType.Alternative:
+                    //args format= (args0:original text, args1:selected text, args2:candidate rank )
                     Debug.Assert(args.Count() == 3);
-                    log = $"{GetTimeStamp()}|Alternative|{args[0]} was changed to {args[1]} at rank {args[2]}";
+                    log = $"{GetTimeStamp()}|Alternative| {args[0]} | {args[1]} | {args[2]}";
                     break;
             }
-            CacheLogs.Add(log);
-            Debug.WriteLine(log);
-            //for now triggers instant line logging
-            await FlushLogToDisk();
+            //only adds the log if it's got different content from the previous log
+            if (!CheckIfSameLog(log)) {
+                CacheLogs.Add(log);
+                lastHWRLog = log;
+                Debug.WriteLine(log);
+            }
+            if (! FlushTimer.IsEnabled)
+                FlushTimer.Start();
+        }
+
+        private bool CheckIfSameLog(string log) {
+            if (lastHWRLog == string.Empty)
+                return false;
+
+            var lastLog = lastHWRLog.Split('|');
+            var curLog = log.Split('|');
+            for (int i = 1; i < lastLog.Count(); i++) {
+                if (lastLog[i] != curLog[i])
+                    return false;
+            }
+            return true;
         }
 
         private string GetTimeStamp()
@@ -141,23 +159,21 @@ namespace PhenoPad.LogService
         /// <summary>
         /// Flushes the logs in current program to local disk
         /// </summary>
-        public async Task FlushLogToDisk(object sender = null, object e = null) {
+        public async void FlushLogToDisk(object sender = null, object e = null) {
+            Debug.WriteLine($"flushing, current number of logs = {CacheLogs.Count()}");
+            FlushTimer.Stop();
             if (CacheLogs.Count > 0) {
                 bool done = await FileManager.getSharedFileManager().AppendLogToFile(CacheLogs, CurrentNotebook);
                 if (done)
                     CacheLogs.Clear();
                 else
-                    MetroLogger.getSharedLogger().Error($"{this.GetType().ToString()},failed to flush cachelogs");
+                    MetroLogger.getSharedLogger().Error($"{this.GetType().ToString()},failed to flush cachelogs, will try to flush in the next flushing interval");
             }
-        }
-
-        public void DeleteLogFile() {
-            //TODO 
-        }
+        }      
 
         internal void Log(OperationType type, string recognized,Dictionary<string, Phenotype> annoResult)
         {
-            string pairs = "|";
+            string pairs = "";
             foreach (var item in annoResult) {
                 pairs += $"{item.Key}:{item.Value.name},";
             }

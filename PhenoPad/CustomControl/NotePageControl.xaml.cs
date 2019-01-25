@@ -575,11 +575,9 @@ namespace PhenoPad.CustomControl
             if (!leftLasso)
             {//processing strokes inputs
                 //dispatcherTimer.Stop();
-                //operationDispathcerTimer.Stop();
-               
+                //operationDispathcerTimer.Stop();            
                 foreach (var s in args.Strokes)
-                {
-                    
+                {                   
                     //Process strokes that excess maximum height for recognition
                     if (s.BoundingRect.Height > MAX_WRITING)
                     {

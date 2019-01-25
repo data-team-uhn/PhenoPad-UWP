@@ -343,7 +343,6 @@ namespace PhenoPad.CustomControl
             annotated.Remove(commentRecord);
             //shifts the Y position for all comments before the deleted comment
             comments = comments.OrderBy(c => c.commentID).ToList();
-            bool shift = true;
             comments.Remove(comment);
 
             for (int i = 0; i < comments.Count; i ++)
@@ -375,19 +374,6 @@ namespace PhenoPad.CustomControl
 
                     }
                     comments[i].Slide(y:slideOffset);
-
-
-
-                    ////only slides up the comment if the offset has not exceeded it's original offset (-LINE_HEIGHT)
-                    //if ((comments[i].canvasTop + slideOffset >= comments[i].canvasTop - LINE_HEIGHT))
-                    //{
-                    //    comments[i].commentslideY = slideOffset;
-                    //    comments[i].SlideVertical(slideOffset);
-                    //}
-                    //else {
-                    //    //sets sequential shift flag to false to prevent comments overlapping eachother
-                    //    shift = false;
-                    //}
                 }
             }
             cur_comment = null;

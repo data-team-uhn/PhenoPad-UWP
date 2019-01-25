@@ -156,27 +156,29 @@ namespace PhenoPad.SpeechService
                 //this is to handle some url problems
                 LogService.MetroLogger.getSharedLogger().Error("Failed to connect to speech result socket:" + e.Message);
             }
-
-
-            if (!succeed)
+            //looping this connection attempt until user prompts to cancel
+            while (!succeed)
             {
-                MainPage.Current.NotifyUser("Failed to connect to speech result server.", NotifyType.ErrorMessage, 3);
-                if (MainPage.Current.bluetoonOn) {
-                    //if bluetooth is connected, disconnect bluetooth and lets user to try again later
-                    await BluetoothService.BluetoothService.getBluetoothService().sendBluetoothMessage("audio stop");
-                    bool result = MainPage.Current.bluetoothService.CloseConnection();
-                    //if (result)
-                    //{
-                    //    MainPage.Current.bluetoothService = null;
-                    //    MainPage.Current.bluetoonOn = false;
-                    //    MainPage.Current.bluetoothInitialized(false);
-                    //    MainPage.Current.setStatus("bluetooth");
-                    //    MainPage.Current.NotifyUser("Bluetooth Connection disconnected.", NotifyType.StatusMessage, 2);
-                    //    MainPage.Current.onAudioEnded();
-                    //}
+                var messageDialog = new MessageDialog($"Failed to connect to ASR {serverAddress}:{serverPort}.\n Would you like to retry connection?");
+                messageDialog.Title = "CONNECTION ERROR";
+                messageDialog.Commands.Add(new UICommand("YES") { Id = 0 });
+                messageDialog.Commands.Add(new UICommand("NO") { Id = 1 });
+                // Set the command that will be invoked by default
+                messageDialog.DefaultCommandIndex = 0;
+                // Set the command to be invoked when escape is pressed
+                messageDialog.CancelCommandIndex = 1;
+
+                // Show the message dialog
+                var result = await messageDialog.ShowAsync();
+
+                if (! ((int)result.Id == 0))
+                {
+                    MainPage.Current.NotifyUser("Connection cancelled", NotifyType.ErrorMessage, 2);
+                    MainPage.Current.ReEnableAudioButton();
+                    return;
                 }
-                MainPage.Current.ReEnableAudioButton();
-                return;
+                else
+                    succeed = await speechResultsSocket.ConnectToServer();
             }
 
             MainPage.Current.onAudioStarted();
@@ -285,11 +287,11 @@ namespace PhenoPad.SpeechService
             {          
                 cancellationSource.Cancel();
                 await speechResultsSocket.CloseConnnction();
-                await this.SaveTranscriptions();
+                await SaveTranscriptions();
                 SpeechPage.Current.setSpeakerButtonEnabled(false);
                 MainPage.Current.onAudioEnded();
                 Debug.WriteLine($"ENDING ============={speechInterpreter.diarizationSmallSeg.Count()}");
-                this.speechInterpreter = new SpeechEngineInterpreter(this.conversation, this.realtimeConversation);
+                speechInterpreter = new SpeechEngineInterpreter(this.conversation, this.realtimeConversation);
             }
             catch (Exception e)
             {

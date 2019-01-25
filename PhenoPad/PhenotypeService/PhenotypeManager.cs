@@ -646,7 +646,7 @@ namespace PhenoPad.PhenotypeService
             Uri requestUri = new Uri("https://ncr.ccm.sickkids.ca/curr/annotate/?text=" + str);
 
             //Send the GET request asynchronously and retrieve the response as a string.
-            Windows.Web.Http.HttpResponseMessage httpResponse = new Windows.Web.Http.HttpResponseMessage();
+            HttpResponseMessage httpResponse = new HttpResponseMessage();
             string httpResponseBody = "";
 
             try
@@ -674,7 +674,7 @@ namespace PhenoPad.PhenotypeService
             {
                 httpResponseBody = "Error: " + ex.HResult.ToString("X") + " Message: " + ex.Message;
                 rootPage.NotifyUser(httpResponseBody, NotifyType.ErrorMessage, 3);
-                LogService.MetroLogger.getSharedLogger().Error("Failed to annotate by NCR, " + httpResponseBody);
+                MetroLogger.getSharedLogger().Error("Failed to annotate by NCR, " + httpResponseBody);
             }
             return null;
         }
@@ -682,7 +682,7 @@ namespace PhenoPad.PhenotypeService
         public async Task<List<Phenotype>> giveSuggestions()
         {
             //Create an HTTP client object
-            Windows.Web.Http.HttpClient httpClient = new Windows.Web.Http.HttpClient();
+            HttpClient httpClient = new HttpClient();
 
             //Add a user-agent header to the GET request. 
             var headers = httpClient.DefaultRequestHeaders;
@@ -710,7 +710,7 @@ namespace PhenoPad.PhenotypeService
             Uri requestUri = new Uri(urlstr);
 
             //Send the GET request asynchronously and retrieve the response as a string.
-            Windows.Web.Http.HttpResponseMessage httpResponse = new Windows.Web.Http.HttpResponseMessage();
+            HttpResponseMessage httpResponse = new HttpResponseMessage();
             string httpResponseBody = "";
 
             try

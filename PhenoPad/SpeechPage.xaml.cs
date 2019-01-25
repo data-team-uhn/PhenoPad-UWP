@@ -157,16 +157,14 @@ namespace PhenoPad
         // This method is called by the Set accessor of each property.
         // The CallerMemberName attribute that is applied to the optional propertyName
         // parameter causes the property name of the caller to be substituted as an argument.
-        private void NotifyPropertyChanged([CallerMemberName] String propertyName = "")
+        private async void NotifyPropertyChanged([CallerMemberName] String propertyName = "")
         {
             if (PropertyChanged != null)
             {
-                Windows.ApplicationModel.Core.CoreApplication.MainView.CoreWindow.Dispatcher.RunAsync(CoreDispatcherPriority.Normal,
-                () =>
+                await Windows.ApplicationModel.Core.CoreApplication.MainView.CoreWindow.Dispatcher.RunAsync(CoreDispatcherPriority.Normal,() =>
                 {
                     PropertyChanged(this, new PropertyChangedEventArgs(propertyName));
-                }
-                );
+                });
             }
         }
     }
@@ -557,10 +555,10 @@ namespace PhenoPad
             () =>
             {
                 this._mediaPlayerElement.Source = MediaSource.CreateFromStorageFile(args);
-                        this._mediaPlayerElement.Visibility = Visibility.Visible;
-                        this.mediaText.Visibility = Visibility.Visible;
-                        this.loadedMedia = args.Name;
-                        this.mediaText.Text = args.Name;
+                this._mediaPlayerElement.Visibility = Visibility.Visible;
+                this.mediaText.Visibility = Visibility.Visible;
+                this.loadedMedia = args.Name;
+                this.mediaText.Text = args.Name;
             }
             );
         }
