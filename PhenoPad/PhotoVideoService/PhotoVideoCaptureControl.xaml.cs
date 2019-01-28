@@ -473,7 +473,7 @@ namespace PhenoPad.PhotoVideoService
                     else
                     {
                         await CleanupCameraAsync();
-                        await CleanupUiAsync();
+                        CleanupUiAsync();
                     }
                 };
                 _setupTask = setupAsync();
@@ -503,10 +503,9 @@ namespace PhenoPad.PhotoVideoService
         /// Unregisters event handlers for hardware buttons and orientation sensors, allows the StatusBar (on Phone) to show, and removes the page orientation lock
         /// </summary>
         /// <returns></returns>
-        private async Task CleanupUiAsync()
+        private void CleanupUiAsync()
         {
             UnregisterEventHandlers();
-
 
             // Revert orientation preferences
             DisplayInformation.AutoRotationPreferences = DisplayOrientations.None;

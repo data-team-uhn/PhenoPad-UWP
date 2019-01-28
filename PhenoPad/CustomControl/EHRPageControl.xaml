@@ -230,16 +230,16 @@
             
             <!--Copy/Paste pop up-->
             <StackPanel x:Name="cpMenu" Visibility="Collapsed" Spacing="10" Orientation="Vertical"  >
-                <Grid CornerRadius="20" BorderThickness="2" BorderBrush="LightGray" Background="White">
+                <Grid CornerRadius="20" BorderThickness="2" BorderBrush="LightGray" Background="White" Visibility="Collapsed">
                     <Button Style="{StaticResource ButtonStyle1}" Background="WhiteSmoke"  Width="250" Height="100"
-                            Click="ClearAllFormats"
+                            Click="ClearAllFormats" 
                             HorizontalContentAlignment="Center" VerticalContentAlignment="Center">
                         <TextBlock Text="Clear Deletes" FontWeight="SemiBold" FontSize="30" />
                     </Button>
                 </Grid>
-                <Grid CornerRadius="20" BorderThickness="2" BorderBrush="LightGray" Background="White">
+                <Grid CornerRadius="20" BorderThickness="2" BorderBrush="LightGray" Background="White" Visibility="Collapsed">
                     <Button Style="{StaticResource ButtonStyle1}" Background="WhiteSmoke"  Width="250" Height="100"
-                            Click="ClearAllFormats"
+                            Click="ClearAllFormats" Visibility="Collapsed"
                             HorizontalContentAlignment="Center" VerticalContentAlignment="Center">
                         <TextBlock Text="Clear Highlights" FontWeight="SemiBold" FontSize="30" />
                     </Button>

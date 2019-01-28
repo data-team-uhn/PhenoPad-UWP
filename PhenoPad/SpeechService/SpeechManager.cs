@@ -171,7 +171,7 @@ namespace PhenoPad.SpeechService
                 // Show the message dialog
                 var result = await messageDialog.ShowAsync();
 
-                if (! ((int)result.Id == 0))
+                if (!((int)result.Id == 0))
                 {
                     MainPage.Current.NotifyUser("Connection cancelled", NotifyType.ErrorMessage, 2);
                     MainPage.Current.ReEnableAudioButton();

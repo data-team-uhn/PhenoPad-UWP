@@ -353,18 +353,18 @@ namespace PhenoPad.CustomControl
                     if (i == 0) {
                         slideOffset =  -(comments[i].commentslideY + LINE_HEIGHT);
                         comments[i].commentslideY = -LINE_HEIGHT;
-                        Debug.WriteLine($"i=0 slideoffset = {slideOffset}");
+                        //Debug.WriteLine($"i=0 slideoffset = {slideOffset}");
                     }
                     else
                     {
                         double lastOffset = (comments[i].canvasTop + comments[i].commentslideY) - (comments[i - 1].canvasTop + comments[i-1].commentslideY + comments[i - 1].Height + 20);
-                        Debug.WriteLine($"i > 0 lastOffset = {lastOffset}");
+                        //Debug.WriteLine($"i > 0 lastOffset = {lastOffset}");
                         if (comments[i].commentslideY - lastOffset < -LINE_HEIGHT)
                         {
-                            Debug.WriteLine($"i > 0 exceeded");
+                            //Debug.WriteLine($"i > 0 exceeded");
                             slideOffset = -(comments[i].commentslideY + LINE_HEIGHT);
                             comments[i].commentslideY = -LINE_HEIGHT;
-                            Debug.WriteLine($"i > 0 final slide offset = {slideOffset}");
+                            //Debug.WriteLine($"i > 0 final slide offset = {slideOffset}");
                         }
                         else
                         {

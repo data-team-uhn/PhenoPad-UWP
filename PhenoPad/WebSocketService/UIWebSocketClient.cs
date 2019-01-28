@@ -118,7 +118,7 @@ namespace PhenoPad.WebSocketService
             this.client = null;
         }
 
-        private async void clientClosedHandler(Windows.Networking.Sockets.IWebSocket sender, 
+        private void clientClosedHandler(Windows.Networking.Sockets.IWebSocket sender, 
                                                 Windows.Networking.Sockets.WebSocketClosedEventArgs args)
         {
             LogService.MetroLogger.getSharedLogger().Info("WebSocket_Closed; Code: " + args.Code + ", Reason: \"" + args.Reason + "\"");
@@ -152,8 +152,7 @@ namespace PhenoPad.WebSocketService
         }
 
 
-        private async void clientMessageReceivedHandler(Windows.Networking.Sockets.MessageWebSocket sender, 
-                                Windows.Networking.Sockets.MessageWebSocketMessageReceivedEventArgs args)
+        private async void clientMessageReceivedHandler(MessageWebSocket sender, MessageWebSocketMessageReceivedEventArgs args)
         {
             try
             {
@@ -162,7 +161,6 @@ namespace PhenoPad.WebSocketService
                     dataReader.UnicodeEncoding = Windows.Storage.Streams.UnicodeEncoding.Utf8;
                     string message = dataReader.ReadString(dataReader.UnconsumedBufferLength);
                     Debug.WriteLine("Message received from MessageWebSocket: " + message);
-
                     var parsed = this.tryParseUIMessage(message);
 
                     if (parsed.GetType() == typeof(ServerStatusRootObject))
@@ -192,9 +190,9 @@ namespace PhenoPad.WebSocketService
                         ManagerIDRootObject json = (ManagerIDRootObject)(parsed);
                         if (json.manager_id != null)
                         {
-                            this.manager_id = json.manager_id;
-                            BluetoothService.BluetoothService.getBluetoothService().sendBluetoothMessage("manager_id " + this.manager_id);
-                            BluetoothService.BluetoothService.getBluetoothService().sendBluetoothMessage("server_ip " + UIWebSocketClient.serverAddress);
+                            manager_id = json.manager_id;
+                            await BluetoothService.BluetoothService.getBluetoothService().sendBluetoothMessage("manager_id " + this.manager_id);
+                            await BluetoothService.BluetoothService.getBluetoothService().sendBluetoothMessage("server_ip " + serverAddress);
                         }
                     }
                 }
@@ -217,9 +215,10 @@ namespace PhenoPad.WebSocketService
                     var parsedSpeech = JsonConvert.DeserializeObject<ServerStatusRootObject>(message);
                     result = parsedSpeech;
                 }
-                catch (Exception ex)
+                catch (Exception e)
                 {
                     Debug.WriteLine("Message of length " + message.Length.ToString() + " cannot be parsed as ServerStatusRootObject");
+                    LogService.MetroLogger.getSharedLogger().Error("tryParseUIMessage:" + e.Message);
                 }
             }
             
@@ -236,7 +235,6 @@ namespace PhenoPad.WebSocketService
                     Debug.WriteLine("Message of length " + message.Length.ToString() + " cannot be parsed as ManagerIDRootObject");
                 }
             }
-
             return result;
         }
     }

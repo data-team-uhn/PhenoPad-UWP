@@ -263,7 +263,7 @@ namespace PhenoPad.PhenotypeService
 
         }
 
-        public async Task<bool> deletePhenotypeByIndex(int idx)
+        public bool deletePhenotypeByIndex(int idx)
         {
             if (savedPhenotypes == null || idx < 0 || idx >= savedPhenotypes.Count)
                 return false;

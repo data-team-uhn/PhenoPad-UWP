@@ -147,7 +147,7 @@ namespace PhenoPad.FileService
                 obj = (Notebook) await LoadObjectFromSerilization(metafile, typeof(Notebook));
                 return obj;
             }
-            catch (Exception e) {
+            catch (Exception) {
                 return null;
             }
         }
@@ -166,7 +166,7 @@ namespace PhenoPad.FileService
                 else
                     return null;
             }
-            catch (Exception e) {
+            catch (Exception) {
                 //LogService.MetroLogger.getSharedLogger().Error($"{notebookId}-{pageId}:{e}:{e.Message}");
                 return null;
             }
