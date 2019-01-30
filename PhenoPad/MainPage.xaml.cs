@@ -161,6 +161,11 @@ namespace PhenoPad
             //initializes bluetooth on first mainpage startup
             changeSpeechEngineState_BT();
 
+            audioTimer = new DispatcherTimer();
+            //waits 3 seconds before re-enabling microphone button
+            audioTimer.Interval = TimeSpan.FromSeconds(3);
+            audioTimer.Tick += onAudioStarted;
+
             //When user clicks X while in mainpage, auto-saves all current process and exits the program.
             Windows.UI.Core.Preview.SystemNavigationManagerPreview.GetForCurrentView().CloseRequested +=
             async (sender, args) =>
@@ -394,44 +399,62 @@ namespace PhenoPad
         /// </summary>
         protected async override void OnNavigatingFrom(NavigatingCancelEventArgs e)
         {
-            if (curPage != null) 
-                curPage.Visibility = Visibility.Collapsed;
-            CloseCandidate();
-            notePages = null;
-            notebookId = null;
-            // clear page index panel
-            clearPageIndexPanel();
-            inkCanvas = null;
-            curPage = null;
-            PhenotypeManager.getSharedPhenotypeManager().phenotypesCandidates.Clear();
-            SpeechManager.getSharedSpeechManager().cleanUp();
 
             // Microsoft ASR, not used for now
-            if (this.speechRecognizer != null)
-            {
-                if (isListening)
-                {
-                    await this.speechRecognizer.ContinuousRecognitionSession.CancelAsync();
-                    isListening = false;
+            //if (this.speechRecognizer != null)
+            //{
+            //    if (isListening)
+            //    {
+            //        await this.speechRecognizer.ContinuousRecognitionSession.CancelAsync();
+            //        isListening = false;
+            //    }
+
+            //    //cmdBarTextBlock.Text = "";
+
+            //    speechRecognizer.ContinuousRecognitionSession.Completed -= ContinuousRecognitionSession_Completed;
+            //    speechRecognizer.ContinuousRecognitionSession.ResultGenerated -= ContinuousRecognitionSession_ResultGenerated;
+            //    speechRecognizer.HypothesisGenerated -= SpeechRecognizer_HypothesisGenerated;
+            //    speechRecognizer.StateChanged -= SpeechRecognizer_StateChanged;
+
+            //    this.speechRecognizer.Dispose();
+            //    this.speechRecognizer = null;
+            //}
+            await Dispatcher.RunAsync(CoreDispatcherPriority.High, async ()=> {
+                if (speechEngineRunning)
+                {//close all audio services before navigating
+                    Debug.WriteLine("on leaving mainpage");
+                    if (bluetoonOn)
+                    {
+                        Debug.WriteLine("disconnecting audio before leaving bluetooth");
+
+                        //await BluetoothService.BluetoothService.getBluetoothService().sendBluetoothMessage("audio stop");
+                        //becaise we are no longer in mainpage, does not need to reload past conversation
+                        await SpeechManager.getSharedSpeechManager().StopASRResults(false);
+                    }
+                    else
+                    {
+                        Debug.WriteLine("disconnecting audio before leaving internal microphone");
+                        AudioStreamButton_Clicked();
+                        //bool result = await SpeechManager.getSharedSpeechManager().EndAudio(notebookId);
+                        //Debug.WriteLine(result);
+                    }
+
                 }
-
-                //cmdBarTextBlock.Text = "";
-
-                speechRecognizer.ContinuousRecognitionSession.Completed -= ContinuousRecognitionSession_Completed;
-                speechRecognizer.ContinuousRecognitionSession.ResultGenerated -= ContinuousRecognitionSession_ResultGenerated;
-                speechRecognizer.HypothesisGenerated -= SpeechRecognizer_HypothesisGenerated;
-                speechRecognizer.StateChanged -= SpeechRecognizer_StateChanged;
-
-                this.speechRecognizer.Dispose();
-                this.speechRecognizer = null;
-            }
-
-            if (speechEngineRunning)
-            {
-                await this.speechManager.EndAudio(notebookId);
-                speechEngineRunning = false;
-            }
-
+                if (curPage != null) {
+                    curPage.Visibility = Visibility.Collapsed;
+                    await saveNoteToDisk();
+                }
+                PhenotypeManager.getSharedPhenotypeManager().clearCache();
+                //PhenotypeManager.getSharedPhenotypeManager().phenotypesCandidates.Clear();
+                SpeechManager.getSharedSpeechManager().cleanUp();
+                CloseCandidate();
+                notePages = null;
+                notebookId = null;
+                // clear page index panel
+                clearPageIndexPanel();
+                inkCanvas = null;
+                curPage = null;
+            });
         }
 
         /// <summary>
@@ -1106,7 +1129,7 @@ namespace PhenoPad
 
             LoadingPopup.IsOpen = true;
             // save note
-            await this.saveNoteToDisk();
+            //await this.saveNoteToDisk();
             UIWebSocketClient.getSharedUIWebSocketClient().disconnect();
             await Task.Delay(TimeSpan.FromSeconds(1));
             LoadingPopup.IsOpen = false;

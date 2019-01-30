@@ -166,7 +166,10 @@ namespace PhenoPad
                 MetroLogger.getSharedLogger().Info($"App is suspended.");
                 var deferral = e.SuspendingOperation.GetDeferral();
                 if (MainPage.Current != null)
+                {
                     await MainPage.Current.saveNoteToDisk();
+                    await MainPage.Current.KillAudioService();
+                }
                 deferral.Complete();
             }
         }

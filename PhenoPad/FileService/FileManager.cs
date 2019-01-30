@@ -17,6 +17,7 @@ using Windows.Graphics.Display;
 using System.Threading;
 using System.Xml;
 using PhenoPad.LogService;
+using PhenoPad.SpeechService;
 
 namespace PhenoPad.FileService
 {
@@ -36,7 +37,8 @@ namespace PhenoPad.FileService
         ImageAnnotationMeta,
         EHR,
         EHRFormat,
-        OperationLog
+        OperationLog,
+        NoteText
     };
 
     /// <summary>
@@ -54,6 +56,7 @@ namespace PhenoPad.FileService
         private string PHENOTYPE_FILE_NAME = "phenotypes.txt";
         private string NOTENOOK_NAME_PREFIX = "note_";
         private string NOTE_META_FILE = "meta.xml";
+        private string NOTE_TEXT_FILE = "text.txt";
         public string currentNoteboookId = "";
         //setting application data root folder as the default disk access location
         private StorageFolder ROOT_FOLDER = ApplicationData.Current.LocalFolder;
@@ -197,15 +200,21 @@ namespace PhenoPad.FileService
         public async Task<List<TextMessage>> GetSavedTranscriptsFromXML(string notebookId,string name = "")
         {
             try {
-                var trans = await GetNoteFile(notebookId, "", NoteFileType.Transcriptions, name);
-                object obj = await LoadObjectFromSerilization(trans, typeof(List<TextMessage>));
-                if (obj != null)
-                {
-                    return obj as List<TextMessage>;
+                List < TextMessage > msg = new List<TextMessage>();
+                string transcriptPath = $"{notebookId}\\Transcripts";
+                StorageFolder folder = await ROOT_FOLDER.GetFolderAsync(transcriptPath);
+                Debug.WriteLine("transcript folder ="+folder.Path);
+                IReadOnlyList<StorageFile> fileList = await folder.GetFilesAsync();
+                SpeechManager.getSharedSpeechManager().setAudioIndex(fileList.Count);
+                foreach (StorageFile file in fileList) {
+                    List<TextMessage> obj = await LoadObjectFromSerilization(file, typeof(List<TextMessage>)) as List<TextMessage>;
+                    if (obj != null)
+                        msg.AddRange(obj);
                 }
-                return null;
+                return msg;
             }
-            catch (Exception) {
+            catch (Exception e) {
+                MetroLogger.getSharedLogger().Error( e + e.Message);
                 return null;
             }
         }
@@ -321,7 +330,7 @@ namespace PhenoPad.FileService
                     foldername += @"Audio\";
                     break;
                 case NoteFileType.Transcriptions:
-                    foldername += @"Audio\";
+                    foldername += @"Transcripts\";
                     break;
             }
 
@@ -360,6 +369,9 @@ namespace PhenoPad.FileService
                     break;
                 case NoteFileType.OperationLog:
                     filename = OPERATION_LOG_NAME;
+                    break;
+                case NoteFileType.NoteText:
+                    filename = NOTE_TEXT_FILE;
                     break;
             }
 
@@ -503,6 +515,7 @@ namespace PhenoPad.FileService
             {
                 var notebookFolder = await ROOT_FOLDER.CreateFolderAsync(notebookId, CreationCollisionOption.OpenIfExists);
                 await notebookFolder.CreateFolderAsync("Audio", CreationCollisionOption.OpenIfExists);
+                await notebookFolder.CreateFolderAsync("Transcripts", CreationCollisionOption.OpenIfExists);
 
                 Debug.WriteLine("Notebook Folder is " + notebookFolder);
                 Notebook nb = new Notebook(notebookId);
@@ -511,8 +524,7 @@ namespace PhenoPad.FileService
             }
             catch (Exception)
             {
-                LogService.MetroLogger.getSharedLogger().Error($"Failed to create notebook {notebookId}");
-                Debug.WriteLine("Failed to crate notebook");
+                MetroLogger.getSharedLogger().Error($"Failed to create notebook {notebookId}");
                 return false;
             }
             Debug.WriteLine($"Successfully created notebook {notebookId}");
@@ -706,6 +718,24 @@ namespace PhenoPad.FileService
             }
             return true;
 
+        }
+
+        public async Task<bool> SaveNoteText(string notebookId, string pageId, string text) {
+            try
+            {
+                string textPath = GetNoteFilePath(notebookId, pageId, NoteFileType.NoteText);
+                StorageFile textFile = await ROOT_FOLDER.CreateFileAsync(textPath, CreationCollisionOption.ReplaceExisting);
+                //saves text to local .txt file
+                await FileIO.WriteTextAsync(textFile, text);
+            }
+            catch (Exception e)
+            {
+                LogService.MetroLogger.getSharedLogger().Error(
+                    $"Failed to save note text, notebook: {notebookId}, page: {pageId}, details: "
+                    + e.Message);
+                return false;
+            }
+            return true;
         }
 
         SemaphoreSlim serilizationSS = new SemaphoreSlim(1);
@@ -984,6 +1014,26 @@ namespace PhenoPad.FileService
             {
                 LogService.MetroLogger.getSharedLogger().Error($"Failed to load strokes:{e.Message}.");
                 return false;
+            }
+        }
+
+        public async Task<string> LoadNoteText(string notebookId, string pageId)
+        {
+            try
+            {
+                string textPath = GetNoteFilePath(notebookId, pageId, NoteFileType.NoteText);
+                StorageFile textFile = await ROOT_FOLDER.GetFileAsync(textPath);
+                //saves text to local .txt file
+
+                string text = await FileIO.ReadTextAsync(textFile);
+                return text;
+            }
+            catch (Exception e)
+            {
+                LogService.MetroLogger.getSharedLogger().Error(
+                    $"Failed to load note text, notebook: {notebookId}, page: {pageId}, details: "
+                    + e.Message);
+                return "";
             }
         }
 

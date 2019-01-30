@@ -149,25 +149,8 @@ namespace PhenoPad
                 noteNameTextBox.Text = notebookObject.name;
 
                 //Gets the possible stored conversation transcripts from XML meta
-                SpeechManager.getSharedSpeechManager().setAudioIndex(notebookObject.audioCount);
-                String fName = prefix;
-                this.conversations = new List<TextMessage>();
-                for (int i = 1; i <= notebookObject.audioCount; i++)
-                {
-                    //the audio index starts with 1 instead of 0
-                    fName = prefix + i.ToString();
-                    List<TextMessage> messages = await FileManager.getSharedFileManager().GetSavedTranscriptsFromXML(notebookId, fName);
-                    if (messages == null)
-                    {
-                        MetroLogger.getSharedLogger().Error($"Failed to load transcript_{i}, file may not exist or is empty.");
-                    }
-                    else
-                    {
-                        Debug.WriteLine($"Loaded transcript_{i}.");
-                        this.conversations.AddRange(messages);
-                    }
-                }
-                pastchatView.ItemsSource = this.conversations;
+                conversations =  await FileManager.getSharedFileManager().GetSavedTranscriptsFromXML(notebookId);
+                pastchatView.ItemsSource = conversations;
                 SpeechPage.Current.updateChat();
 
                 //Gets all saved phenotypes from XML meta
@@ -189,6 +172,8 @@ namespace PhenoPad
                     aPage.pageId = pageIds[i];
                     aPage.notebookId = notebookId;
 
+                    string text = await FileManager.getSharedFileManager().LoadNoteText(notebookId, pageIds[i]);
+                    aPage.setTextNoteEditBox(text);
                     //check if there's an EHR file in the page
                     StorageFile ehr = await FileManager.getSharedFileManager().GetNoteFileNotCreate(notebookId, i.ToString(), NoteFileType.EHR);
                     if (ehr == null) {
@@ -621,28 +606,9 @@ namespace PhenoPad
         /// Gets saved transcripts from disk and updates the past conversations panel
         /// </summary>
         public async void updatePastConversation() {
-            int count = notebookObject.audioCount;
-            String fName = prefix;
-            this.conversations = new List<TextMessage>();
-            for (int i = 1 ; i <= count; i++)
-            {          
-                //the audio index starts with 1 instead of 0
-                fName = prefix + i.ToString();
-                List<TextMessage> messages = await FileManager.getSharedFileManager().GetSavedTranscriptsFromXML(this.notebookId, fName);
-                if (messages == null)
-                {
-                    //this is not really a problem because there might be cases when a conversaiton has no final messages
-                    //and will save an empty XML transcript
-                    MetroLogger.getSharedLogger().Error($"Failed to load transcript_{i}, file may not exist or is empty.");
-                }
-                else
-                {
-                    Debug.WriteLine($"Loaded transcript_{i}.");
-                    this.conversations.AddRange(messages);
-                }
-            }
+            conversations = await FileManager.getSharedFileManager().GetSavedTranscriptsFromXML(notebookId);
+            pastchatView.ItemsSource = conversations;
             SpeechPage.Current.updateChat();
-            pastchatView.ItemsSource = this.conversations;
         }
     }
 }

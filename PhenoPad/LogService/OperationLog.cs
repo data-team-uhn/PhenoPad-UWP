@@ -6,6 +6,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Windows.UI.Core;
 using Windows.UI.Xaml;
 
 namespace PhenoPad.LogService
@@ -19,6 +20,7 @@ namespace PhenoPad.LogService
         Phenotype,
         Stroke,
         Speech,
+        ASR,
         Recognition
     }
     /// <summary>
@@ -79,7 +81,7 @@ namespace PhenoPad.LogService
         /// <summary>
         /// Logs an operation based on its type with varying number of arguments
         /// </summary>
-        public void Log(OperationType opType, params string[] args) {
+        public async void Log(OperationType opType, params string[] args) {
             string log = "";
             switch (opType) {
                 case OperationType.Stroke:
@@ -96,6 +98,10 @@ namespace PhenoPad.LogService
                     //args format = ( args0:transcript, args1: {keyword:Phenotype}) 
                     Debug.Assert(args.Count() == 2);
                     log = $"{GetTimeStamp()}|Speech| {args[0]} | {args[1]}";
+                    break;
+                case OperationType.ASR:
+                    Debug.Assert(args.Count() == 1);
+                    log = $"{GetTimeStamp()}|ASR| {args[0]} ";
                     break;
                 case OperationType.Phenotype:
                     //args format= (args0:source, args1:{added/deleted/Y/N}, args2:{keyword:Phenotype} )
@@ -119,8 +125,14 @@ namespace PhenoPad.LogService
                 lastHWRLog = log;
                 Debug.WriteLine(log);
             }
-            if (! FlushTimer.IsEnabled)
-                FlushTimer.Start();
+            await Windows.ApplicationModel.Core.CoreApplication.MainView.CoreWindow.Dispatcher.RunAsync(CoreDispatcherPriority.Normal,
+                () =>
+                {
+                    if (!FlushTimer.IsEnabled)
+                        FlushTimer.Start();
+                }
+                );
+            
         }
 
         private bool CheckIfSameLog(string log) {
@@ -160,7 +172,6 @@ namespace PhenoPad.LogService
         /// Flushes the logs in current program to local disk
         /// </summary>
         public async void FlushLogToDisk(object sender = null, object e = null) {
-            Debug.WriteLine($"flushing, current number of logs = {CacheLogs.Count()}");
             FlushTimer.Stop();
             if (CacheLogs.Count > 0) {
                 bool done = await FileManager.getSharedFileManager().AppendLogToFile(CacheLogs, CurrentNotebook);

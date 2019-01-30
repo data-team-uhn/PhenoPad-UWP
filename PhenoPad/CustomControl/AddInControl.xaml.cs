@@ -359,6 +359,7 @@ namespace PhenoPad.CustomControl
 
             bool canSize_Top = Height - e.Delta.Translation.Y * deltaModifier >= MIN_HEIGHT &&
                 Height - e.Delta.Translation.Y * deltaModifier >= inkCan.Height - strokeBounding.Top + 48;
+            bool noStroke = inkCanvas.InkPresenter.StrokeContainer.GetStrokes().Count() == 0;
             
             //For resizing addins with image plugins
             if (_bottomSide && _rightSide && hasImage)
@@ -375,30 +376,40 @@ namespace PhenoPad.CustomControl
             }
 
             //Dealing with single sided extensions for drawing mode
-            if (_topSide && !hasImage && canSize_Top)
+            if ( _topSide && !hasImage)
             {
-                this.Height -= e.Delta.Translation.Y * deltaModifier;
-                inkCan.Height = this.Height - 48;
-                Canvas.SetTop(this, top + e.Delta.Translation.Y * deltaModifier);
-                this.canvasTop = Canvas.GetTop(this.inkCan);
-                inkCanvas.InkPresenter.StrokeContainer.MoveSelected(new Point(0, -e.Delta.Translation.Y * deltaModifier));
+                if (canSize_Top || noStroke) {
+                    this.Height -= e.Delta.Translation.Y * deltaModifier;
+                    inkCan.Height = this.Height - 48;
+                    Canvas.SetTop(this, top + e.Delta.Translation.Y * deltaModifier);
+                    this.canvasTop = Canvas.GetTop(this.inkCan);
+                    inkCanvas.InkPresenter.StrokeContainer.MoveSelected(new Point(0, -e.Delta.Translation.Y * deltaModifier));
+                }
             }
-            if (_leftSide && !hasImage && canSize_Left)
+            if (_leftSide && !hasImage )
             {
-                this.Width -= e.Delta.Translation.X * deltaModifier;
-                inkCan.Width -= e.Delta.Translation.X * deltaModifier;
-                Canvas.SetLeft(this, left + e.Delta.Translation.X * deltaModifier);
-                inkCanvas.InkPresenter.StrokeContainer.MoveSelected(new Point(-e.Delta.Translation.X * deltaModifier, 0));
+                if (canSize_Left || noStroke) {
+                    this.Width -= e.Delta.Translation.X * deltaModifier;
+                    inkCan.Width -= e.Delta.Translation.X * deltaModifier;
+                    Canvas.SetLeft(this, left + e.Delta.Translation.X * deltaModifier);
+                    inkCanvas.InkPresenter.StrokeContainer.MoveSelected(new Point(-e.Delta.Translation.X * deltaModifier, 0));
+
+                }
             }
-            if (_bottomSide && !hasImage && canSize_Bottom)
+            if ( _bottomSide && !hasImage )
             {
-                this.Height += e.Delta.Translation.Y * deltaModifier;
-                inkCan.Height += e.Delta.Translation.Y * deltaModifier;
+                if (canSize_Bottom || noStroke) {
+                    this.Height += e.Delta.Translation.Y * deltaModifier;
+                    inkCan.Height += e.Delta.Translation.Y * deltaModifier;
+
+                }
             }
-            if (_rightSide && !hasImage && canSize_Right)
+            if ( _rightSide && !hasImage)
             {
-                this.Width += e.Delta.Translation.X * deltaModifier;
-                inkCan.Width += e.Delta.Translation.X * deltaModifier;
+                if (canSize_Right || noStroke) {
+                    this.Width += e.Delta.Translation.X * deltaModifier;
+                    inkCan.Width += e.Delta.Translation.X * deltaModifier;
+                }
             }
         }
         /// <summary>

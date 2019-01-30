@@ -29,7 +29,7 @@ namespace PhenoPad.PhenotypeService
         public ObservableCollection<Phenotype> phenotypesInSpeech;
         public ObservableCollection<Phenotype> phenotypesSpeechCandidates;
 
-        private MainPage rootPage = MainPage.Current;
+        //private MainPage rootPage = MainPage.Current;
         public ObservableCollection<Phenotype> phenotypesCandidates;
 
         DispatcherTimer autosavetimer;
@@ -68,11 +68,11 @@ namespace PhenoPad.PhenotypeService
             phenotypesInNote.Clear();
             phenotypesInSpeech.Clear();
             phenotypesCandidates.Clear();
-            rootPage = MainPage.Current;
+            //rootPage = MainPage.Current;
         }
 
         public async void autosaver_tick(object sender = null, object e = null) {
-            await rootPage.AutoSavePhenotypes();
+            await MainPage.Current.AutoSavePhenotypes();
             autosavetimer.Stop();
         }
 
@@ -146,7 +146,7 @@ namespace PhenoPad.PhenotypeService
                 }
             }           
            
-            rootPage.OpenCandidate();
+            MainPage.Current.OpenCandidate();
             //autosavetimer.Start();
             return;
         }
@@ -164,7 +164,7 @@ namespace PhenoPad.PhenotypeService
             {
                 //savedPhenotypes.Add(pheno);
                 savedPhenotypes.Insert(0, pheno);
-                rootPage.NotifyUser(pheno.name + " is added.", NotifyType.StatusMessage, 2);
+                MainPage.Current.NotifyUser(pheno.name + " is added.", NotifyType.StatusMessage, 2);
             }
 
 
@@ -231,8 +231,7 @@ namespace PhenoPad.PhenotypeService
                    
                 }
             }
-            if(rootPage != null)
-                rootPage.NotifyUser("Saved phenotypes are loaded.", NotifyType.StatusMessage, 2);
+            MainPage.Current.NotifyUser("Saved phenotypes are loaded.", NotifyType.StatusMessage, 2);
             updateSuggestionAndDifferential();
         }
 
@@ -286,7 +285,7 @@ namespace PhenoPad.PhenotypeService
                 temp.state = -1;
             temp = savedPhenotypes.Where(x => x == pheno).FirstOrDefault();
             if (temp != null) {
-                rootPage.NotifyUser(temp.name + " is deleted.", NotifyType.StatusMessage, 2);
+                MainPage.Current.NotifyUser(temp.name + " is deleted.", NotifyType.StatusMessage, 2);
                 return savedPhenotypes.Remove(temp);
             }
             temp = phenotypesCandidates.Where(x => x == pheno).FirstOrDefault();
@@ -409,11 +408,12 @@ namespace PhenoPad.PhenotypeService
                     pp.state = -1;
                     int ind = phenotypesCandidates.IndexOf(temp);
                     phenotypesCandidates.Remove(temp);
-                    phenotypesCandidates.Insert(ind, pp);
+                    //phenotypesCandidates.Insert(ind, pp);
                 }
             }
-
-            OperationLogger.getOpLogger().Log(OperationType.Phenotype, type.ToString(), "removed", target.name);
+            //target is null only when deleting a phenotype with state -1 in the curline recognition bar
+            if (target != null)
+                OperationLogger.getOpLogger().Log(OperationType.Phenotype, type.ToString(), "removed", target.name);
 
             autosavetimer.Start();
 
@@ -614,7 +614,7 @@ namespace PhenoPad.PhenotypeService
             catch (Exception ex)
             {
                 httpResponseBody = "Error: " + ex.HResult.ToString("X") + " Message: " + ex.Message;
-                rootPage.NotifyUser("Error: failed to parse results from PhenoTips", NotifyType.ErrorMessage, 2);
+                MainPage.Current.NotifyUser("Error: failed to parse results from PhenoTips", NotifyType.ErrorMessage, 2);
                 LogService.MetroLogger.getSharedLogger().Error("Failed to search phenotypes by PhenoTips, " + httpResponseBody);
             }
             return null;
@@ -673,7 +673,7 @@ namespace PhenoPad.PhenotypeService
             catch (Exception ex)
             {
                 httpResponseBody = "Error: " + ex.HResult.ToString("X") + " Message: " + ex.Message;
-                rootPage.NotifyUser(httpResponseBody, NotifyType.ErrorMessage, 3);
+                MainPage.Current.NotifyUser(httpResponseBody, NotifyType.ErrorMessage, 3);
                 MetroLogger.getSharedLogger().Error("Failed to annotate by NCR, " + httpResponseBody);
             }
             return null;

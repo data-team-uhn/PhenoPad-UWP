@@ -244,7 +244,7 @@
                     <!-- Inking area -->
 
                     <Canvas x:Name="backgroundCanvas" />
-                    <Grid x:Name="textEditGrid" Visibility="Collapsed">
+                    <Grid x:Name="textEditGrid" Visibility="Visible">
                         <Grid.RowDefinitions>
                             <RowDefinition Height="*"/>
                         </Grid.RowDefinitions>
@@ -253,6 +253,7 @@
                         </Grid.ColumnDefinitions>
                         <RichEditBox Style="{StaticResource MyRichEditBoxStyle}" Background="Transparent" 
                                      x:Name="textNoteEditBox" TextChanged="TextNoteEdit_TextChanged" 
+                                     IsEnabled="False"
                                      BorderThickness="0">
                         </RichEditBox>
                     </Grid>

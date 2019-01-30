@@ -436,8 +436,11 @@ namespace PhenoPad.CustomControl
 
         #region Typing mode
         //============================= TYPING MODE ===================================/
-        public void setTextNoteEditBox()
+        public void setTextNoteEditBox(string text)
         {
+            textNoteEditBox.Document.SetText(TextSetOptions.None, text);
+            if (text != "")
+                textNoteEditBox.Visibility = Visibility.Visible;
 
         }
 
@@ -449,15 +452,17 @@ namespace PhenoPad.CustomControl
             //inkCanvas.SetValue(Canvas.ZIndexProperty, 1);
             textNoteEditBox.IsReadOnly = false;
             textNoteEditBox.IsTapEnabled = false;
+            textNoteEditBox.IsEnabled = true;
         }
 
         public void hideTextEditGrid()
         {
-            textEditGrid.Visibility = Visibility.Collapsed;
+            //textEditGrid.Visibility = Visibility.Collapsed;
             //textEditGrid.SetValue(Canvas.ZIndexProperty, 1);
             //inkCanvas.SetValue(Canvas.ZIndexProperty, 2);
             textNoteEditBox.IsReadOnly = true;
             textNoteEditBox.IsTapEnabled = false;
+            textNoteEditBox.IsEnabled = false;
         }
 
         #endregion
@@ -1465,6 +1470,10 @@ namespace PhenoPad.CustomControl
                 string metapath = FileManager.getSharedFileManager().GetNoteFilePath(notebookId, pageId, NoteFileType.ImageAnnotationMeta);
                 result3 = await FileManager.getSharedFileManager().SaveObjectSerilization(metapath, imageList, typeof(List<ImageAndAnnotation>));
 
+                //saving typed text, if there's any
+                string notetext;
+                textNoteEditBox.Document.GetText(TextGetOptions.None, out notetext);
+                await FileManager.getSharedFileManager().SaveNoteText(notebookId, pageId, notetext);
 
 
                 return result1 && result2 && result3;

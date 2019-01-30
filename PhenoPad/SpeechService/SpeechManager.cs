@@ -26,6 +26,7 @@ using Newtonsoft.Json;
 using Windows.UI.Core;
 using Windows.UI.Popups;
 using Windows.Storage.Streams;
+using PhenoPad.LogService;
 //using Newtonsoft.Json.Linq;   // Seems like we only need JSON parsing
 
 namespace PhenoPad.SpeechService
@@ -75,14 +76,14 @@ namespace PhenoPad.SpeechService
         public SpeechManager()
         {
             object val = AppConfigurations.readSetting("serverIP");
-            Debug.WriteLine(val);
+            //Debug.WriteLine(val);
             if (val != null && ((string)val).Length != 0)
             {
                 this.serverAddress = (string)val;
             }
 
             object val2 = AppConfigurations.readSetting("serverPort");
-            Debug.WriteLine(val2);
+            //Debug.WriteLine(val2);
             if (val2 != null && ((string)val).Length != 0)
             {
                 this.serverPort = (string)val2;
@@ -174,6 +175,8 @@ namespace PhenoPad.SpeechService
                 if (!((int)result.Id == 0))
                 {
                     MainPage.Current.NotifyUser("Connection cancelled", NotifyType.ErrorMessage, 2);
+                    await BluetoothService.BluetoothService.getBluetoothService().sendBluetoothMessage("audio stop");
+                    await Task.Delay(TimeSpan.FromSeconds(1));
                     MainPage.Current.ReEnableAudioButton();
                     return;
                 }
@@ -181,7 +184,7 @@ namespace PhenoPad.SpeechService
                     succeed = await speechResultsSocket.ConnectToServer();
             }
 
-            MainPage.Current.onAudioStarted();
+            MainPage.Current.audioTimer.Start();
             SpeechPage.Current.setSpeakerButtonEnabled(true);
             SpeechPage.Current.adjustSpeakerCount(2);
             cancellationSource = new CancellationTokenSource();
@@ -190,7 +193,7 @@ namespace PhenoPad.SpeechService
             CancellationToken cancellationToken = cancellationSource.Token;                 
 
             this.speechInterpreter.newConversation();
-
+            OperationLogger.getOpLogger().Log(OperationType.ASR, "Started");
             await Task.Run(async () =>
             {
                 // Weird issue but seems to be some buffer issue
@@ -281,15 +284,17 @@ namespace PhenoPad.SpeechService
             return;
         }
 
-        public async Task StopASRResults()
+        public async Task StopASRResults(bool reload = true)
         {
             try
             {          
                 cancellationSource.Cancel();
+                await BluetoothService.BluetoothService.getBluetoothService().sendBluetoothMessage("audio stop");
                 await speechResultsSocket.CloseConnnction();
-                await SaveTranscriptions();
+                await SaveTranscriptions(reload);
                 SpeechPage.Current.setSpeakerButtonEnabled(false);
                 MainPage.Current.onAudioEnded();
+                OperationLogger.getOpLogger().Log(OperationType.ASR, "Ended");
                 Debug.WriteLine($"ENDING ============={speechInterpreter.diarizationSmallSeg.Count()}");
                 speechInterpreter = new SpeechEngineInterpreter(this.conversation, this.realtimeConversation);
             }
@@ -315,7 +320,7 @@ namespace PhenoPad.SpeechService
                 }
                 catch (Exception e)
                 {
-                    LogService.MetroLogger.getSharedLogger().Error(e.Message);
+                    MetroLogger.getSharedLogger().Error(e.Message);
                 }
 
                 if (!succeed)
@@ -361,7 +366,6 @@ namespace PhenoPad.SpeechService
             }
 
             await CreateAudioGraph();
-            // await BluetoothService.BluetoothService.getBluetoothService().sendBluetoothMessage("audio start");
 
             // Wait 10 seconds so that the server has time to create a worker
             // else you'll see lots of audio delays
@@ -370,7 +374,8 @@ namespace PhenoPad.SpeechService
             SpeechPage.Current.setSpeakerButtonEnabled(true);           
             SpeechPage.Current.adjustSpeakerCount(2);
             //Triggers audio started event handler in Mainpage to switch necessary interface layout
-            MainPage.Current.onAudioStarted();
+            MainPage.Current.audioTimer.Start();
+            OperationLogger.getOpLogger().Log(OperationType.ASR, "Started");
 
             startGraph();
             if (useFile)
@@ -536,7 +541,7 @@ namespace PhenoPad.SpeechService
                     //Triggers audio started event handler in Mainpage to switch necessary interface layout
                 }
                 MainPage.Current.onAudioEnded();
-
+                OperationLogger.getOpLogger().Log(OperationType.ASR, "Ended");
                 return true;
             }
             catch (Exception e) {
@@ -554,7 +559,7 @@ namespace PhenoPad.SpeechService
             SpeechPage.Current.setSpeakerButtonEnabled(true);
             SpeechPage.Current.adjustSpeakerCount(2);
             //Triggers audio started event handler in Mainpage to switch necessary interface layout
-            MainPage.Current.onAudioStarted();
+            MainPage.Current.audioTimer.Start();
 
             await Task.Delay(TimeSpan.FromSeconds(2));
             this.speechInterpreter.newConversation();
@@ -647,12 +652,14 @@ namespace PhenoPad.SpeechService
 
 
         //==================================================================================================================
-        public async Task SaveTranscriptions()
+        public async Task SaveTranscriptions(bool reload=true)
         {
             LogService.MetroLogger.getSharedLogger().Info("Saving transriptions for audio_" + getAudioCount());
             await this.speechInterpreter.SaveCurrentConversationsToDisk();
-            MainPage.Current.updateAudioMeta();
-            MainPage.Current.updatePastConversation();
+            if (reload) {
+                MainPage.Current.updateAudioMeta();
+                MainPage.Current.updatePastConversation();
+            }
         }
       
         public async void writeToFile(string notebookid)

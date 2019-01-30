@@ -180,6 +180,7 @@ namespace PhenoPad.SpeechService
                     //Debug.WriteLine("We detected at least " + list[0].name);
 
                     list.Reverse();
+                    //need this runasync function otherwise will give threading error
                     Windows.ApplicationModel.Core.CoreApplication.MainView.CoreWindow.Dispatcher.RunAsync(CoreDispatcherPriority.Normal,
                     () =>
                     {
@@ -189,6 +190,7 @@ namespace PhenoPad.SpeechService
                         }
                     }
                     );
+
                 }
             });
         }
@@ -712,17 +714,19 @@ namespace PhenoPad.SpeechService
 
                 try
                 {
-                    LogService.MetroLogger.getSharedLogger().Info($"Saving final messages of current conversation to transcript_{this.conversationIndex}");
+                    MetroLogger.getSharedLogger().Info($"Saving final messages of current conversation to transcript_{this.conversationIndex}");
                     string fpath = FileManager.getSharedFileManager().GetNoteFilePath(
                       FileManager.getSharedFileManager().currentNoteboookId,
                       "",
                       NoteFileType.Transcriptions,
                       "transcriptions_" + conversationIndex);
+                    Debug.WriteLine("transcript will be saved to " + fpath);
                     var result = await FileManager.getSharedFileManager().SaveObjectSerilization(fpath, currentConversation, typeof(List<TextMessage>));
+                    Debug.WriteLine("transcript save result = " + result);
                 }
                 catch (Exception e)
                 {
-                    LogService.MetroLogger.getSharedLogger().Error("Failed to save current conversations transcriptions into disk: " + e.Message);
+                    MetroLogger.getSharedLogger().Error("Failed to save current conversations transcriptions into disk: " + e.Message);
                 }
             }
            }
