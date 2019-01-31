@@ -472,15 +472,17 @@ namespace PhenoPad.CustomControl
             await FileManager.getSharedFileManager().DeleteAddInFile(notebookId, pageId, name);
         }
 
-        public async void Minimize_Click(object sender, RoutedEventArgs e)
+        public async void Minimize_Click(object sender = null, RoutedEventArgs e = null)
         {
             this.inDock = true;
+            var element_Visual_Relative = MainPage.Current.curPage.TransformToVisual(MainPage.Current);
+            Point point  = element_Visual_Relative.TransformPoint(new Point(0, 0));
             DoubleAnimation da = (DoubleAnimation)addinPanelHideAnimation.Children.ElementAt(0);
-            da.By = rootPage.ActualWidth - (this.canvasLeft + this.dragTransform.X);
+            da.By = point.X + MainPage.Current.curPage.ActualWidth - (this.canvasLeft + this.dragTransform.X);
 
-            await rootPage.curPage.AutoSaveAddin(this.name);
-            await rootPage.curPage.refreshAddInList();
-                rootPage.curPage.quickShowDock();
+            await MainPage.Current.curPage.AutoSaveAddin(this.name);
+            await MainPage.Current.curPage.refreshAddInList();
+            MainPage.Current.curPage.quickShowDock();
             await addinPanelHideAnimation.BeginAsync();
             this.Visibility = Visibility.Collapsed;
         }
@@ -489,25 +491,41 @@ namespace PhenoPad.CustomControl
         /// <summary>
         /// Need this funciton for resetting hidden add-in the slide animation offset upon every launch
         /// </summary>
-        public async void OnOpenShowDock() {
+        public async Task OnOpenShowDock() {
             if (MainPage.Current.curPage != null) {
+                var element_Visual_Relative = MainPage.Current.curPage.TransformToVisual(MainPage.Current);
+                Point point = element_Visual_Relative.TransformPoint(new Point(0, 0));
                 DoubleAnimation da = (DoubleAnimation)addinPanelHideAnimation.Children.ElementAt(0);
-                da.By = rootPage.ActualWidth - (this.canvasLeft + this.dragTransform.X);
-                MainPage.Current.curPage.quickShowDock();
+                da.By = point.X + MainPage.Current.curPage.ActualWidth - (this.canvasLeft + this.dragTransform.X);
+                Debug.WriteLine( $"=======================on open show dock, by = {da.By}");
+                //MainPage.Current.curPage.quickShowDock();
                 await addinPanelHideAnimation.BeginAsync();
                 this.Visibility = Visibility.Collapsed;
             }
+            return;
         }
 
         public async void Maximize_Addin() {
             if (this.inDock) {
                 this.inDock = false;
+                var element_Visual_Relative = MainPage.Current.curPage.TransformToVisual(MainPage.Current);
+                Point point = element_Visual_Relative.TransformPoint(new Point(0, 0));
+                DoubleAnimation da = (DoubleAnimation)addinPanelShowAnimation.Children.ElementAt(0);
+                DoubleAnimation daHide = (DoubleAnimation)addinPanelHideAnimation.Children.ElementAt(0);
+                //for handling first time loading from disk
+                if ( ! (daHide.By > 0)) {
+                    Duration temp = daHide.Duration;
+                    daHide.Duration -= daHide.Duration;
+                    daHide.By = point.X + MainPage.Current.curPage.ActualWidth - (this.canvasLeft + this.dragTransform.X);
+                    await addinPanelHideAnimation.BeginAsync();
+                    daHide.Duration = temp;
+                }
+                da.By = daHide.By * (-1);
+
                 this.Visibility = Visibility.Visible;
-                DoubleAnimation da = (DoubleAnimation) addinPanelShowAnimation.Children.ElementAt(0);
-                da.By = -1 * (rootPage.ActualWidth - (this.canvasLeft +  this.dragTransform.X));
-                await rootPage.curPage.AutoSaveAddin(this.name);
+                await MainPage.Current.curPage.AutoSaveAddin(this.name);
                 await addinPanelShowAnimation.BeginAsync();
-                rootPage.curPage.quickShowDock();
+                MainPage.Current.curPage.quickShowDock();
             }
         }
 

@@ -953,7 +953,7 @@ namespace PhenoPad.CustomControl
         /// <summary>
         /// Loads pre-saved addin controls from disk using deserialized ImageAndAnnotation object.
         /// </summary>
-        public async void loadAddInControl(ImageAndAnnotation ia)
+        public void loadAddInControl(ImageAndAnnotation ia)
         {
             AddInControl canvasAddIn;
             if (ehrPage == null)
@@ -965,7 +965,7 @@ namespace PhenoPad.CustomControl
                     canvasAddIn = new AddInControl(ia.name, notebookId, pageId, ia.widthOrigin, ia.heightOrigin);
             }
 
-            await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () => {
+            //await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () => {
                 //Manually setting pre-saved configuration of the add-in control
                 canvasAddIn.Height = ia.height;
                 canvasAddIn.Width = ia.width;
@@ -984,19 +984,13 @@ namespace PhenoPad.CustomControl
                 Canvas.SetTop(canvasAddIn, ia.canvasTop);
 
                 canvasAddIn.inDock = ia.inDock;
-                if (ia.inDock)
-                {
+                if (ia.inDock)               
                     canvasAddIn.Visibility = Visibility.Collapsed;
-                    Canvas.SetLeft(canvasAddIn, ia.canvasLeft);
-                    //need to manually trigger hidden slide animation to initialize slide offsets
-                    canvasAddIn.OnOpenShowDock();
-                }
-                else
-                    Canvas.SetLeft(canvasAddIn, ia.canvasLeft);
+                Canvas.SetLeft(canvasAddIn, ia.canvasLeft);
                 canvasAddIn.viewFactor.ScaleX = ia.zoomFactorX;
                 canvasAddIn.viewFactor.ScaleY = ia.zoomFactorY;
 
-            });
+            //});
             if (ehrPage == null)
                 userControlCanvas.Children.Add(canvasAddIn);
             else

@@ -156,9 +156,7 @@ namespace PhenoPad
                 //Gets all saved phenotypes from XML meta
                 List<Phenotype> phenos = await FileManager.getSharedFileManager().GetSavedPhenotypeObjectsFromXML(notebookId);
                 if (phenos != null && phenos.Count > 0)
-                {
                     PhenotypeManager.getSharedPhenotypeManager().addPhenotypesFromFile(phenos);
-                }
 
                 // Process loading note pages one by one
                 notePages = new List<NotePageControl>();

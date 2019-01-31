@@ -567,6 +567,8 @@ namespace PhenoPad
         /// </summary>
         private void OnChatViewContainerContentChanging(ListViewBase sender, ContainerContentChangingEventArgs args)
         {
+            Debug.WriteLine("mainpage ==== chatlistview container content changed");
+
             if (args.InRecycleQueue) return;
             TextMessage message = (TextMessage)args.Item;
 
@@ -575,25 +577,15 @@ namespace PhenoPad
 
             if (message.IsNotFinal)
             {
-                args.ItemContainer.HorizontalAlignment = Windows.UI.Xaml.HorizontalAlignment.Right;
+                args.ItemContainer.HorizontalAlignment = HorizontalAlignment.Right;
             }
             else
             {
-                args.ItemContainer.HorizontalAlignment = (message.Speaker == doctor) ? Windows.UI.Xaml.HorizontalAlignment.Right : Windows.UI.Xaml.HorizontalAlignment.Left;
+                args.ItemContainer.HorizontalAlignment = (message.Speaker == doctor) ? HorizontalAlignment.Right : HorizontalAlignment.Left;
+                UpdateLayout();
+                //chatView.ScrollIntoView(chatView.Items[chatView.Items.Count - 1]);
             }
 
-            /*if (message.Speaker != 99 && message.Speaker != -1 && message.Speaker > maxSpeaker)
-            {
-                Debug.WriteLine("Detected speaker " + message.Speaker.ToString());
-                for (var i = maxSpeaker + 1; i <= message.Speaker; i++)
-                {
-                    ComboBoxItem item = new ComboBoxItem();
-                    item.Background = (Windows.UI.Xaml.Media.Brush)Application.Current.Resources["Background_" + i.ToString()];
-                    item.Content = "Speaker " + (i + 1).ToString();
-                    this.speakerBox.Items.Add(item);
-                }
-                maxSpeaker = (int)message.Speaker;
-            }*/
         }
 
         private async void PreviewMultiMedia()

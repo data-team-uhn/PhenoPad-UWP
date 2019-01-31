@@ -628,7 +628,6 @@ namespace PhenoPad.SpeechService
                         ConversationIndex = this.conversationIndex
                     };
                     messages.Add(m);
-                    Debug.WriteLine(m.DisplayTime);
                 }
             }
 

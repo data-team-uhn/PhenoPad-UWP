@@ -164,7 +164,6 @@ namespace PhenoPad.BluetoothService
                             cancellationSource.Cancel();
                         cancellationSource = new CancellationTokenSource();
                         CancellationToken cancellationToken = cancellationSource.Token;
-
                         await Task.Run(async () =>
                         {
                             while (true && !cancellationToken.IsCancellationRequested)

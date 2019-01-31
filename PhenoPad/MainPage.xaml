@@ -364,8 +364,6 @@
 
 
                         <ListView x:Name="diseaseListView" ScrollViewer.VerticalScrollBarVisibility="Hidden" ItemsSource="{x:Bind PhenoMana.predictedDiseases}">
-
-
                             <ListView.Header>
                                 <controls:ScrollHeader Mode="Sticky" TargetListViewBase="{x:Bind diseaseListView}">
                                     <StackPanel Background="White" BorderThickness="0 1 0 0" BorderBrush="{StaticResource Left_Panel_Title_BG}">
@@ -401,16 +399,16 @@
                         </Grid.RowDefinitions>
 
                         <TextBlock Text="Current Conversation" FontSize="16" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="10" />
+                        <!--colored speech bubbles-->
                             <local:ChatListView x:Name="chatView" Visibility="Visible" Background="White"  Grid.Row="0"
                             IncrementalLoadingThreshold="2" 
-                            Margin="0 50 0 0"
-                            ScrollViewer.VerticalScrollBarVisibility="Hidden">
+                            Margin="0 50 0 0"                                           
+                            ContainerContentChanging="OnChatViewContainerContentChanging">
                             <ListView.ItemsPanel>
                                 <ItemsPanelTemplate>
                                     <ItemsStackPanel ItemsUpdatingScrollMode="KeepLastItemInView"  VerticalAlignment="Bottom"/>
                                 </ItemsPanelTemplate>
                             </ListView.ItemsPanel>
-
                             <ListView.ItemContainerStyle>
                                 <Style TargetType="ListViewItem">
                                     <Setter Property="Padding" Value="0"/>
@@ -427,11 +425,10 @@
 
                             <ListView.ItemTemplate>
                                 <DataTemplate x:DataType="local:TextMessage">
-                                    <Grid Margin="6">
+                                    <Grid Margin="0" Padding="10">
                                         <Grid.RowDefinitions>
                                             <RowDefinition Height="Auto" />
                                         </Grid.RowDefinitions>
-
                                         <Grid.ColumnDefinitions>
                                             <ColumnDefinition Width="Auto"/>
                                         </Grid.ColumnDefinitions>
@@ -439,38 +436,38 @@
                                         <!--Finalized message color-->
                                         <Border CornerRadius="10">
                                             <Grid
-                            Grid.Row="0"
-                            Grid.Column="0"
-                            Background="{Binding Converter={StaticResource bcConverter}}"
-                            Visibility="{x:Bind Path=IsFinal}"/>
+                                            Grid.Row="0"
+                                            Grid.Column="0"
+                                            Background="{Binding Converter={StaticResource bcConverter}}"
+                                            Visibility="{x:Bind Path=IsFinal}"/>
                                         </Border>
 
                                         <!--Not finalized message color-->
                                         <Border CornerRadius="10">
                                             <Grid
-                            Grid.Row="0"
-                            Grid.Column="0"
-                            Background="{StaticResource Background_Temp}"
-                            Visibility="{x:Bind Path=IsNotFinal}"/>
+                                            Grid.Row="0"
+                                            Grid.Column="0"
+                                            Background="{StaticResource Background_Temp}"
+                                            Visibility="{x:Bind Path=IsNotFinal}"/>
                                         </Border>
 
                                         <Grid MaxWidth="260" MinWidth="100"
-                            Grid.Row="0"
-                            Grid.Column="0">
+                                            Grid.Row="0"
+                                            Grid.Column="0">
                                             <Grid.RowDefinitions>
                                                 <RowDefinition Height="Auto"/>
                                             </Grid.RowDefinitions>
 
                                             <TextBlock
-                                Text="{x:Bind Body}"
-                                Grid.Row="0"
-                                Grid.Column="0"
-                                TextWrapping="Wrap"
+                                            Text="{x:Bind Body}"
+                                            Grid.Row="0"
+                                            Grid.Column="0"
+                                            TextWrapping="Wrap"
                                
-                                FontSize="16"
-                                Padding="3"
-                                VerticalAlignment="Center"
-                                Foreground="Black"/>
+                                            FontSize="16"
+                                            Padding="10"
+                                            VerticalAlignment="Center"
+                                            Foreground="Black"/>
                                         </Grid>
 
 
@@ -478,7 +475,8 @@
                                 </DataTemplate>
                             </ListView.ItemTemplate>
                         </local:ChatListView>
-                                    <local:ChatListView x:Name="realtimeChatView" Grid.Row="1" Background="White"
+                        <!--gray realtime speech bubbles-->
+                            <local:ChatListView x:Name="realtimeChatView" Grid.Row="1" Background="White"
                             IncrementalLoadingThreshold="2" 
                             ScrollViewer.VerticalScrollBarVisibility="Hidden">
                                         <ListView.ItemsPanel>
@@ -490,7 +488,7 @@
                                         <ListView.ItemContainerStyle>
                                             <Style TargetType="ListViewItem">
                                                 <Setter Property="HorizontalContentAlignment" Value="Stretch" />
-                                                <Setter Property="Padding" Value="0"/>
+                                                <Setter Property="Padding" Value="3"/>
                                                 <Setter Property="Margin" Value="0"/>
                                             </Style>
                                         </ListView.ItemContainerStyle>
@@ -501,18 +499,9 @@
 
                                         <ListView.ItemTemplate>
                                             <DataTemplate x:DataType="local:TextMessage">
-                                                <Grid Margin="6">
+                                    <Grid Margin="2">
 
-                                                    <!--Right/Bottom polygon-->
-                                                    <!--<Polygon
-                            Grid.Row="1"
-                            Fill="LightSlateGray"
-                            HorizontalAlignment="Right"
-                            Points="0,0 18,0 18,18"
-                            Visibility="Visible"
-                            Margin="0,0,10,0"/>-->
-
-                                                    <!--Message color-->
+                                        <!--Message color-->
                                                     <Grid
                             Grid.Row="0"
                             Background="LightGray"/>
@@ -530,8 +519,8 @@
                                 Grid.Column="0"
                                 TextWrapping="Wrap"
                                
-                                FontSize="18"
-                                Padding="3"
+                                FontSize="13"
+                                Padding="5"
                                 VerticalAlignment="Center"
                                 Foreground="Black"/>
 
