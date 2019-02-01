@@ -42,6 +42,7 @@ using Windows.UI.Xaml.Hosting;
 using Windows.Graphics.Display;
 using PhenoPad.LogService;
 using MetroLog;
+using Windows.UI.Xaml.Media.Animation;
 
 namespace PhenoPad.CustomControl
 {
@@ -477,8 +478,6 @@ namespace PhenoPad.CustomControl
 
                 selectionCanvas.Children.Add(PopupCommandBar);
                 selectionCanvas.Children.Add(recognizedPhenoBriefPanel);
-
-
 
                 selectionRectangle.Width = boundingRect.Width;
                 selectionRectangle.Height = boundingRect.Height;
@@ -1055,6 +1054,8 @@ namespace PhenoPad.CustomControl
                 if (curLineCandidatePheno.Count == 0 || phenoCtrlSlide.Y == 0)
                 {
                     //Debug.WriteLine($"current Y offset is at {phenoCtrlSlide.Y}, visibility is {curWordPhenoControlGrid.Visibility}");
+                    phenoCtrlSlide.Y = 0;
+                    ((DoubleAnimation)curWordPhenoAnimation.Children[0]).By = - 45;
                     curWordPhenoAnimation.Begin();
                 }
 

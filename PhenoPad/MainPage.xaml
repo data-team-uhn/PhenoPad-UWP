@@ -210,9 +210,9 @@
             <SplitView.Pane>
                 <Grid Name="QuickViewGrid" BorderThickness="0 0 0 0" Background="Transparent">
                     <Grid.RowDefinitions>
-                        <RowDefinition Height="400"/>
-                        <RowDefinition Height="*"/>
-                        <RowDefinition Height="250"/>
+                        <RowDefinition Height="5*"/>
+                        <RowDefinition Height="3*"/>
+                        <RowDefinition Height="2*"/>
                     </Grid.RowDefinitions>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="40"/>
@@ -239,7 +239,8 @@
                         </ToggleButton>
                     </StackPanel>
 
-                    <StackPanel  Orientation="Vertical" VerticalAlignment="Bottom" Grid.Row="2" Grid.Column="0" Background="Transparent">
+                    <StackPanel  Orientation="Vertical" 
+                                 VerticalAlignment="Bottom" Grid.Row="1" Grid.RowSpan="2" Grid.Column="0" Background="Transparent">
                                  
                         <Grid Height="auto" Padding="5">
                             <StackPanel>
@@ -389,26 +390,35 @@
                         </ListView>
                     </Grid>
 
-                    <Grid Name="speechQuickView" Grid.Row="0" Grid.Column="1" 
+                    <Grid x:Name="speechQuickView" x:FieldModifier="public" Grid.Row="0" Grid.Column="1" 
                           Grid.RowSpan="3" Visibility="Collapsed" Padding="5" 
                           Background="White">
                         
                         <Grid.RowDefinitions>
-                            <RowDefinition Height="*"></RowDefinition>
-                            <RowDefinition Height="Auto"></RowDefinition>
+                            <RowDefinition Height="8*"></RowDefinition>
+                            <RowDefinition Height="2*"></RowDefinition>
                         </Grid.RowDefinitions>
 
-                        <TextBlock Text="Current Conversation" FontSize="16" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="10" />
+                        <!--<TextBlock Text="Current Conversation" FontSize="16" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="10" />-->
                         <!--colored speech bubbles-->
                             <local:ChatListView x:Name="chatView" Visibility="Visible" Background="White"  Grid.Row="0"
                             IncrementalLoadingThreshold="2" 
-                            Margin="0 50 0 0"                                           
+                            ScrollViewer.VerticalScrollBarVisibility="Hidden"
                             ContainerContentChanging="OnChatViewContainerContentChanging">
                             <ListView.ItemsPanel>
                                 <ItemsPanelTemplate>
                                     <ItemsStackPanel ItemsUpdatingScrollMode="KeepLastItemInView"  VerticalAlignment="Bottom"/>
                                 </ItemsPanelTemplate>
                             </ListView.ItemsPanel>
+                                
+                            <ListView.Header>
+                                <controls:ScrollHeader Mode="Sticky" TargetListViewBase="{x:Bind savedPhenoListView}">
+                                    <StackPanel Background="White">
+                                        <TextBlock  Foreground="{StaticResource WORD_DARKER}" Text="Realtime Conversation" FontSize="16" FontWeight="SemiBold" Padding="5"/>
+                                    </StackPanel>
+                                </controls:ScrollHeader>
+                            </ListView.Header>
+
                             <ListView.ItemContainerStyle>
                                 <Style TargetType="ListViewItem">
                                     <Setter Property="Padding" Value="0"/>
@@ -425,7 +435,7 @@
 
                             <ListView.ItemTemplate>
                                 <DataTemplate x:DataType="local:TextMessage">
-                                    <Grid Margin="0" Padding="10">
+                                    <Grid Margin="0" Padding="5">
                                         <Grid.RowDefinitions>
                                             <RowDefinition Height="Auto" />
                                         </Grid.RowDefinitions>

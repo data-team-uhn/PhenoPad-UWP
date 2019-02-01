@@ -55,6 +55,7 @@ namespace PhenoPad.BluetoothService
                 await InitiateConnection();
                 while (!initialized)
                 {//continuously loop until we connect to raspberry pi
+                    LogService.MetroLogger.getSharedLogger().Info("Could not discover Bluetooh device, trying again...");
                     StopWatcher();
                     await InitiateConnection();
                 }
@@ -105,7 +106,6 @@ namespace PhenoPad.BluetoothService
                             }
                             else
                             {
-                                LogService.MetroLogger.getSharedLogger().Info("Could not discover Bluetooh server on the remote device, trying again...");
                                 await Task.Delay(TimeSpan.FromSeconds(3));
                             }
                         }

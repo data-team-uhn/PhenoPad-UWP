@@ -274,11 +274,10 @@ namespace PhenoPad
         /// </summary>
         private void modeTextBlock_PointerExited(object sender, PointerRoutedEventArgs e)
         {
-            if (!ifViewMode)
+            if (!ifViewMode && curPage != null)
             {
                 curPage.hideRecognizedTextCanvas();
                 modeTextBlock.Text = currentMode;
-
             }
         }
 

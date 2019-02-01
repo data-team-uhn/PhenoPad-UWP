@@ -230,13 +230,12 @@ namespace PhenoPad.SpeechService
                                 speechInterpreter.processJSON(parsedSpeech);
 
                                 // TODO Find a more legitimate way to fire an UI change?
-
-                                await Windows.ApplicationModel.Core.CoreApplication.MainView.CoreWindow.Dispatcher.RunAsync(CoreDispatcherPriority.High,
-                                   () =>
-                                   {
-                                       EngineHasResult.Invoke(this, speechInterpreter);
-                                   }
-                                   );
+                                //await Windows.ApplicationModel.Core.CoreApplication.MainView.CoreWindow.Dispatcher.RunAsync(CoreDispatcherPriority.High,
+                                //   () =>
+                                //   {
+                                //       EngineHasResult.Invoke(this, speechInterpreter);
+                                //   }
+                                //   );
 
                                 continue;
 
@@ -273,13 +272,22 @@ namespace PhenoPad.SpeechService
                         }
                         else
                         {
-                            // didn't get a valid JSON, wait for more packages
                             doParsing = false;
                         }
                     }
 
                 }
             }, cancellationToken);
+
+            if (cancellationToken.IsCancellationRequested)
+            {
+                MetroLogger.getSharedLogger().Info("ASR connection requested cancellation");
+            }
+            //probably some error happened that disconnectes the ASR, stops ASR before processing
+            else {
+                MetroLogger.getSharedLogger().Error("ASR encountered some problem, will call StopASRRsults ...");
+                await StopASRResults(false);
+            }
 
             return;
         }
@@ -300,7 +308,7 @@ namespace PhenoPad.SpeechService
             }
             catch (Exception e)
             {
-                LogService.MetroLogger.getSharedLogger().Error($"Failed stopping bluetooth ASR:"+ e.Message);
+                MetroLogger.getSharedLogger().Error($"Failed stopping bluetooth ASR:"+ e.Message);
             }
         }
         // ================================== AUDIO START / STOP FOR USING INTERNAL MICROPHONE =============================
@@ -412,12 +420,8 @@ namespace PhenoPad.SpeechService
                      // do the work in the loop
                      string serverResult = await speechStreamSocket.ReceiveMessageUsingStreamWebSocket();
 
-                    // Debug.WriteLine("Got server message");
-
                      serverResult = serverResult.Replace('-', '_');     // So that we can parse objects
-
                      accumulator += serverResult;
-
 
                      // Seems like if we don't do this we won't get all the packages
                      bool doParsing = true;
@@ -489,12 +493,22 @@ namespace PhenoPad.SpeechService
                              // didn't get a valid JSON, wait for more packages
                              doParsing = false;
                          }
-                     }
-                     
+                     }                    
                  }
              }, cancellationToken);
-            //Task.Run(() => speechStreamSocket.ReceiveMessageUsingStreamWebSocket(), TaskCreationOptions.LongRunning);
-            return true;
+
+            if (cancellationToken.IsCancellationRequested)
+            {
+                MetroLogger.getSharedLogger().Info("ASR connection requested cancellation");
+                return true;
+            }
+            //probably some error happened that disconnectes the ASR, stops ASR before processing
+            else
+            {
+                MetroLogger.getSharedLogger().Error("ASR encountered some problem, will call StopASRRsults ...");
+                await EndAudio(MainPage.Current.notebookId);
+                return false;
+            }
         }
         private SemaphoreSlim endSemaphoreSlim = new SemaphoreSlim(1);
         public async Task<bool> EndAudio(string notebookid)

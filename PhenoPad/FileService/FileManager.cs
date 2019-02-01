@@ -806,7 +806,7 @@ namespace PhenoPad.FileService
                 }
                 else
                 {
-                    LogService.MetroLogger.getSharedLogger().Error($"Failed to save strokes of InkCanvas.");
+                    MetroLogger.getSharedLogger().Error($"Failed to save strokes of InkCanvas.");
                     return false;
                 }
 

@@ -9,7 +9,7 @@
     xmlns:phenotypeservice="using:PhenoPad.PhenotypeService"
     xmlns:fileservice="using:PhenoPad.FileService"
     xmlns:local="using:PhenoPad.CustomControl"
-
+    xmlns:controls="using:Microsoft.Toolkit.Uwp.UI.Controls"
     mc:Ignorable="d"
     VerticalAlignment="Stretch" 
     HorizontalAlignment="Stretch"
@@ -454,21 +454,26 @@
             <Grid x:Name="addinBase" Grid.Column="1"  x:FieldModifier="public"
                 Visibility="Visible" Padding="5" Width="250"
                 Background="{StaticResource TITLE_BAR_WHITE}" HorizontalAlignment="Right"
+                
                 VerticalAlignment="Stretch">
 
                 <Grid.RenderTransform>
                     <TranslateTransform x:Name="slide" X="250"/>
                 </Grid.RenderTransform>
                     <Grid.RowDefinitions>
-                        <RowDefinition Height="50"/>
                         <RowDefinition Height="*"/>
 
                     </Grid.RowDefinitions>
 
-                <TextBlock VerticalAlignment="Top" Grid.Row="0" HorizontalAlignment="Left"                     
-                        FontSize="25" Foreground="Black" Margin="5" >Collections</TextBlock>
                 <ListView Name="addinlist" ScrollViewer.VerticalScrollBarVisibility="Hidden"
-                        Margin="0" Grid.Row="1">
+                        Margin="0" Grid.Row="0">
+                    <ListView.Header>
+                        <controls:ScrollHeader Mode="Sticky" TargetListViewBase="{x:Bind addinlist}">
+                                <TextBlock  Foreground="{StaticResource WORD_DARKER}" Text="Collection" FontSize="24" 
+                                            FontWeight="SemiBold" Padding="20 5 5 5"/>
+                        </controls:ScrollHeader>
+                    </ListView.Header>
+
                     <ListView.ItemTemplate>
                         <DataTemplate x:DataType="fileservice:ImageAndAnnotation">
                             <Button Click="addInIcon_Click" HorizontalAlignment="Center" Width="200" Margin="0" Padding="0"

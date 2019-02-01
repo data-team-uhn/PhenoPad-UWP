@@ -342,7 +342,7 @@ namespace PhenoPad.CustomControl
             double left = Canvas.GetLeft(this);
             double top = Canvas.GetTop(this);
             //used to adjust sizing magnitute depending on user's zoom magnitute
-            double deltaModifier = _curWidthRatio <= 0.6 ? 2.0 : 1.2;
+            double deltaModifier = 1.0 / _curWidthRatio;
             //preselects all strokes for transformation 
             foreach (InkStroke st in inkCanvas.InkPresenter.StrokeContainer.GetStrokes())
                 st.Selected = true;
@@ -441,7 +441,8 @@ namespace PhenoPad.CustomControl
         private void Moving_Delta(object sender, ManipulationDeltaRoutedEventArgs e) {
             if (!_isResizing)
             {
-                double deltaModifier = _curWidthRatio <= 0.6 ? 2.0 : 1.3;
+                //deals with dragging speed relative to current zoom ratio of notepage
+                double deltaModifier = (1.0 / _curWidthRatio);
                 Debug.WriteLine($"cur_ratio = {_curWidthRatio} modifier magnitute = {deltaModifier}");
                 this.dragTransform.X += e.Delta.Translation.X * deltaModifier;
                 this.dragTransform.Y += e.Delta.Translation.Y * deltaModifier;

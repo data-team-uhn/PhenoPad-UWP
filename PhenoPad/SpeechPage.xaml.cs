@@ -534,12 +534,12 @@ namespace PhenoPad
         public SpeechPage()
         {
             this.InitializeComponent();
-            SpeechPage.Current = this;
+            Current = this;
             mainpage = MainPage.Current;
             chatView.ItemsSource = mainpage.conversations;
             //chatView.ItemsSource = SpeechManager.getSharedSpeechManager().conversation;
             chatView.ContainerContentChanging += OnChatViewContainerContentChanging;
-            //realtimeChatView.ItemsSource = SpeechManager.getSharedSpeechManager().realtimeConversation;
+            //realtimeChatView.Children.Add(MainPage.Current.speechQuickView.c);
 
             SpeechManager.getSharedSpeechManager().EngineHasResult += SpeechPage_EngineHasResult;
             SpeechManager.getSharedSpeechManager().RecordingCreated += SpeechPage_RecordingCreated;

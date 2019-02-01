@@ -565,10 +565,8 @@ namespace PhenoPad
         /// <summary>
         /// Handles chat view container change event and displays the message on chat view container 
         /// </summary>
-        private void OnChatViewContainerContentChanging(ListViewBase sender, ContainerContentChangingEventArgs args)
+        private async void OnChatViewContainerContentChanging(ListViewBase sender, ContainerContentChangingEventArgs args)
         {
-            Debug.WriteLine("mainpage ==== chatlistview container content changed");
-
             if (args.InRecycleQueue) return;
             TextMessage message = (TextMessage)args.Item;
 
@@ -582,10 +580,12 @@ namespace PhenoPad
             else
             {
                 args.ItemContainer.HorizontalAlignment = (message.Speaker == doctor) ? HorizontalAlignment.Right : HorizontalAlignment.Left;
-                UpdateLayout();
-                //chatView.ScrollIntoView(chatView.Items[chatView.Items.Count - 1]);
+                //Need this dispatcher in-order to avoid threading errors
+                await CoreApplication.MainView.CoreWindow.Dispatcher.RunAsync(CoreDispatcherPriority.Normal,() =>{
+                    chatView.UpdateLayout();
+                    chatView.ScrollIntoView(chatView.Items[chatView.Items.Count - 1]);
+                });
             }
-
         }
 
         private async void PreviewMultiMedia()
