@@ -489,23 +489,6 @@ namespace PhenoPad.CustomControl
         }
 
 
-        /// <summary>
-        /// Need this funciton for resetting hidden add-in the slide animation offset upon every launch
-        /// </summary>
-        public async Task OnOpenShowDock() {
-            if (MainPage.Current.curPage != null) {
-                var element_Visual_Relative = MainPage.Current.curPage.TransformToVisual(MainPage.Current);
-                Point point = element_Visual_Relative.TransformPoint(new Point(0, 0));
-                DoubleAnimation da = (DoubleAnimation)addinPanelHideAnimation.Children.ElementAt(0);
-                da.By = point.X + MainPage.Current.curPage.ActualWidth - (this.canvasLeft + this.dragTransform.X);
-                Debug.WriteLine( $"=======================on open show dock, by = {da.By}");
-                //MainPage.Current.curPage.quickShowDock();
-                await addinPanelHideAnimation.BeginAsync();
-                this.Visibility = Visibility.Collapsed;
-            }
-            return;
-        }
-
         public async void Maximize_Addin() {
             if (this.inDock) {
                 this.inDock = false;

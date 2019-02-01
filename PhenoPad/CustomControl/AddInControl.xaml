@@ -41,7 +41,7 @@
             <Storyboard x:Name="addinPanelHideAnimation">
                 <DoubleAnimation Storyboard.TargetName="addinSlide" 
                                  Storyboard.TargetProperty="X"
-                                 Duration="0:0:0.5">
+                                 Duration="0:0:0.3">
                     <DoubleAnimation.EasingFunction>
                         <CircleEase EasingMode="EaseOut" />
                     </DoubleAnimation.EasingFunction>
@@ -49,7 +49,7 @@
                 <DoubleAnimation Storyboard.TargetName="OutlineGrid" 
                                  Storyboard.TargetProperty="Opacity"
                                  From="1.0" To="0.0"
-                                 Duration="0:0:0.5">
+                                 Duration="0:0:0.3">
                     <DoubleAnimation.EasingFunction>
                         <CircleEase EasingMode="EaseOut" />
                     </DoubleAnimation.EasingFunction>
@@ -59,7 +59,7 @@
             <Storyboard x:Name="addinPanelShowAnimation">
                 <DoubleAnimation Storyboard.TargetName="addinSlide" 
                                  Storyboard.TargetProperty="X"
-                                 Duration="0:0:0.4">
+                                 Duration="0:0:0.3">
                     <DoubleAnimation.EasingFunction>
                         <CircleEase EasingMode="EaseIn" />
                     </DoubleAnimation.EasingFunction>
@@ -67,7 +67,7 @@
                 <DoubleAnimation Storyboard.TargetName="OutlineGrid" 
                                  Storyboard.TargetProperty="Opacity"
                                  From="0.0" To="1.0"
-                                 Duration="0:0:0.4">
+                                 Duration="0:0:0.3">
                     <DoubleAnimation.EasingFunction>
                         <CircleEase EasingMode="EaseIn" />
                     </DoubleAnimation.EasingFunction>

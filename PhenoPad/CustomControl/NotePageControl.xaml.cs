@@ -780,8 +780,10 @@ namespace PhenoPad.CustomControl
         /// Returns the current note page's zoomed width in relation to control window frame
         /// </summary>
         public double getPageWindowRatio() {
-            Debug.WriteLine("zoom factor = " + scrollViewer.ZoomFactor);
-            return (inkCanvas.ActualWidth * scrollViewer.ZoomFactor)  / outputGrid.Width;
+            if (ehrPage != null) 
+                return (ehrPage.ActualWidth * EHRScrollViewer.ZoomFactor) / ehrPage.ActualWidth;
+            else
+                return (inkCanvas.ActualWidth * scrollViewer.ZoomFactor)  / outputGrid.Width;
         }
 
         private void SelectionRectangle_ManipulationCompleted(object sender, ManipulationCompletedRoutedEventArgs e)
