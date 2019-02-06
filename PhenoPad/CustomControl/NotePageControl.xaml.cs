@@ -75,7 +75,7 @@ namespace PhenoPad.CustomControl
         private int UNPROCESSED_RESOLUTION = 5;
         private Color DEFAULT_STROKE_COLOR = Colors.Black;
         private Color SELECTED_STROKE_COLOR = (Color) Application.Current.Resources["WORD_DARK_COLOR"];
-        public float PAGE_HEIGHT = 1980;
+        public float PAGE_HEIGHT = 2400;
         public float PAGE_WIDTH = 1400;
 
         private DoubleCollection UNPROCESSED_DASH = new DoubleCollection() { 5, 2 };
@@ -794,9 +794,7 @@ namespace PhenoPad.CustomControl
             var strokes = inkCanvas.InkPresenter.StrokeContainer.GetStrokes();
             foreach (var stroke in strokes)
                 if (stroke.Selected)
-                {
                     inkAnalyzer.ReplaceDataForStroke(stroke);
-                }
                     
             //dispatcherTimer.Start();
         }
@@ -962,7 +960,9 @@ namespace PhenoPad.CustomControl
                 canvasAddIn = new AddInControl(ia.name, notebookId, pageId, ia.widthOrigin, ia.heightOrigin);
             else {
                 if (ia.commentID != -1)
+                {
                     canvasAddIn = new AddInControl(ia.name, ehrPage, ia.commentID, ia.anno_type);// need to update this commengID when impleting saving
+                }
                 else
                     canvasAddIn = new AddInControl(ia.name, notebookId, pageId, ia.widthOrigin, ia.heightOrigin);
             }
@@ -994,11 +994,18 @@ namespace PhenoPad.CustomControl
 
             //});
             if (ehrPage == null)
+            {
                 userControlCanvas.Children.Add(canvasAddIn);
+                canvasAddIn.Visibility = ia.inDock ? Visibility.Collapsed : Visibility.Visible;
+            }
             else
             {
                 addinCanvasEHR.Children.Add(canvasAddIn);
-                if (canvasAddIn.commentID != -1) {
+                if (canvasAddIn.commentID != -1)
+                {
+                    canvasAddIn.inDock = false;
+                    canvasAddIn.Visibility = Visibility.Visible;
+
                     ehrPage.comments.Add(canvasAddIn);
                     canvasAddIn.SlideToRight();
                 }
@@ -1006,7 +1013,6 @@ namespace PhenoPad.CustomControl
             canvasAddIn.InitializeFromDisk(false);
 
             //If this addin was hidden during the last edit, auto hides it from initialization
-            canvasAddIn.Visibility = ia.inDock ? Visibility.Collapsed : Visibility.Visible;   
         }
 
         /// <summary>
@@ -1192,7 +1198,7 @@ namespace PhenoPad.CustomControl
             {
                 List<ImageAndAnnotation> imageAndAnno = await FileManager.getSharedFileManager().
                                               GetImgageAndAnnotationObjectFromXML(notebookId, pageId);
-                this.showAddIn(imageAndAnno);
+                showAddIn(imageAndAnno);
             }
             catch (Exception) {
             }
@@ -1412,9 +1418,6 @@ namespace PhenoPad.CustomControl
             Debug.WriteLine("ink analysis tick, will analyze ink ...");
             await analyzeInk();
         }
-
-
-
         #endregion
 
         #region Save Events

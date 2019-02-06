@@ -83,6 +83,8 @@ namespace PhenoPad.CustomControl
                 this.commentID = commentID;
                 commentslideX = 0;
                 commentslideY = 0;
+                addinSlide.X = 0;
+                addinSlide.Y = 0;
             }
 
             if (type == AnnotationType.Comment)
@@ -145,7 +147,8 @@ namespace PhenoPad.CustomControl
 
         public async void SlideToRight()
         {
-            if (addinSlide.X == 0)
+            Debug.WriteLine($"indock = {inDock}");
+            if (! inDock)
             {
                 if (this.Height >= DEFAULT_COMMENT_HEIGHT && this.Width >= DEFAULT_COMMENT_WIDTH)
                     await Dispatcher.RunAsync(Windows.UI.Core.CoreDispatcherPriority.Normal, CompressComment);
@@ -161,12 +164,13 @@ namespace PhenoPad.CustomControl
                 DoubleAnimation dy = (DoubleAnimation)EHRCommentSlidingAnimation.Children.ElementAt(1);
                 dy.By = commentslideY;
                 await EHRCommentSlidingAnimation.BeginAsync();
+                inDock = true;
             }
         }
 
         public async void ReEdit(object sender = null, RoutedEventArgs e = null)
         {//Slides comment back and re-enables edit mode
-            if (addinSlide.X > 0)
+            if (inDock)
             {
                 //if there's a comment currently at edit mode, slide it back to avoid position shifting errors
                 AddInControl lastActiveComment = ehr.comments.Where(x => x.commentID == ehr.lastAddedCommentID).FirstOrDefault();
@@ -197,6 +201,7 @@ namespace PhenoPad.CustomControl
                 inkCan.Width = this.Width;
                 Canvas.SetZIndex(this, 99);
                 inkCan.InkPresenter.IsInputEnabled = true;
+                inDock = false;
             }
 
         }

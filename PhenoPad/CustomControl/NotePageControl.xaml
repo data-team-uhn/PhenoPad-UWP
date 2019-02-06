@@ -226,16 +226,13 @@
             </ScrollViewer>
         
             <ScrollViewer Grid.Column="1"  x:Name="scrollViewer" 
-                RelativePanel.AlignRightWithPanel="True"
                 RelativePanel.AlignLeftWithPanel="True"
-                RelativePanel.AlignBottomWithPanel="True"
-                RelativePanel.AlignTopWithPanel="True"
                 ZoomMode="Enabled" 
                 MinZoomFactor="0.3" 
                 VerticalScrollMode="Enabled" 
                 VerticalScrollBarVisibility="Hidden" 
                 HorizontalScrollMode="Enabled" 
-                HorizontalScrollBarVisibility="Hidden"
+                HorizontalScrollBarVisibility="Auto"
                 ViewChanged="ScrollView_ViewChanged">
                 
                 <Grid x:Name="outputGrid" Margin="0 10 0 0" Padding="0 100 0 0" 
@@ -299,7 +296,7 @@
                     </Canvas>
 
                     <!-- Add in control panel -->
-                    <Canvas x:Name="userControlCanvas" />
+                    <Canvas x:Name="userControlCanvas"/>
 
 
                     <Canvas x:Name="recognizedTextCanvas"/>
