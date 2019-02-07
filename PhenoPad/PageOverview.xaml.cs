@@ -167,6 +167,14 @@ namespace PhenoPad
             }
         }
 
+        private void ViewButton_Click(object sender, RoutedEventArgs e) {
+
+            var notebookId = (sender as Button).Tag;
+            LogService.MetroLogger.getSharedLogger().Info($"Viewing notebook ID { notebookId }");
+            if (notebookId != null)
+                this.Frame.Navigate(typeof(NoteViewPage), notebookId);
+        }
+
         private async void UploadServerButton_Click(object sender, RoutedEventArgs e)
         {
 

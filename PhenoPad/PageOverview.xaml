@@ -102,10 +102,11 @@
                         <SwipeControl LeftItems="{StaticResource left}" Tag="{x:Bind id }">
                         <Grid>
                             <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="80"/>
+                                <ColumnDefinition Width="60"/>
                                 <ColumnDefinition Width="*"/>
                                 <ColumnDefinition Width="60"/>
-                            </Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="60"/>
+                                </Grid.ColumnDefinitions>
                             <Border Width="80" Height="80" Padding="5" >
                                 <!--<BitmapIcon UriSource="{x:Bind firstPageUri}"/>-->
                                     <FontIcon FontSize="25" FontWeight="ExtraBold" FontFamily="Segoe MDL2 Assets" Glyph="&#xE8A5;" />
@@ -117,9 +118,16 @@
                            FontSize="15" RelativePanel.AlignBottomWithPanel="True" Grid.Column="1"/>
 
                             </RelativePanel>
-                            
+                                <Button Style="{StaticResource MyButtonStyle}" x:Name="ViewButton" Tag="{x:Bind id}"  
+                                    Background="Transparent" Grid.Column="2" 
+                                    HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+                                    <TextBlock Foreground="{StaticResource WORD_DARK}">View</TextBlock>
+                                </Button>
 
-                            <Button Style="{StaticResource MyButtonStyle}" x:Name="OpenButton" Tag="{x:Bind id}"  Click="OpenButton_Click" Background="Transparent" Grid.Column="2" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+
+                                <Button Style="{StaticResource MyButtonStyle}" x:Name="OpenButton" Tag="{x:Bind id}"  
+                                    Click="OpenButton_Click" Background="Transparent" Grid.Column="3" 
+                                    HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
                                 <TextBlock Foreground="{StaticResource WORD_DARK}">Open</TextBlock>
                             </Button>
                         </Grid>

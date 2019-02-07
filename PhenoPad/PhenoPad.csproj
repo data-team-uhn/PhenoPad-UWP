@@ -163,6 +163,9 @@
     <Compile Include="MainPage_Files.cs" />
     <Compile Include="MainPage_Media.cs" />
     <Compile Include="MainPage_WebSocket.cs" />
+    <Compile Include="NoteViewPage.xaml.cs">
+      <DependentUpon>NoteViewPage.xaml</DependentUpon>
+    </Compile>
     <Compile Include="PageOverview.xaml.cs">
       <DependentUpon>PageOverview.xaml</DependentUpon>
     </Compile>
@@ -278,6 +281,10 @@
       <SubType>Designer</SubType>
     </Page>
     <Page Include="CustomControl\PhenotypeDetail.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="NoteViewPage.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
