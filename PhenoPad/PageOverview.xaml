@@ -120,6 +120,7 @@
                             </RelativePanel>
                                 <Button Style="{StaticResource MyButtonStyle}" x:Name="ViewButton" Tag="{x:Bind id}"  
                                     Background="Transparent" Grid.Column="2" 
+                                        Click="ViewButton_Click"
                                     HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
                                     <TextBlock Foreground="{StaticResource WORD_DARK}">View</TextBlock>
                                 </Button>

@@ -14,25 +14,38 @@
         </Grid.RowDefinitions>
 
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="*"/>
+            <ColumnDefinition Width="80"/>
+            <ColumnDefinition Width="2*"/>
+            <ColumnDefinition Width="8*"/>
         </Grid.ColumnDefinitions>
-        <Grid Name="TopMenuRelativePanel" Grid.Row="0" Background="{StaticResource TITLE_BAR_WHITE}">
+        <Grid Name="TopMenuRelativePanel" Grid.Row="0" Grid.ColumnSpan="3" 
+              Height="45"
+              Background="{StaticResource TITLE_BAR_WHITE}">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="200"></ColumnDefinition>
                 <ColumnDefinition Width="*"></ColumnDefinition>
                 <ColumnDefinition Width="Auto"></ColumnDefinition>
             </Grid.ColumnDefinitions>
-            <StackPanel Orientation="Horizontal" Grid.Column="0" >
+            <StackPanel Orientation="Horizontal" Grid.Column="0" Grid.ColumnSpan="2" >
                 <Button Name="BackButton" Width="40"  
+                        Click="BackButton_Clicked"
                         Background="{StaticResource Button_Background}" 
                         BorderThickness="0" VerticalAlignment="Stretch">
                     <SymbolIcon Symbol="Back"></SymbolIcon>
                 </Button>
                 <TextBox Name="noteNameTextBox" FontSize="18" Text="" Margin="5 0 0 0" 
-                         BorderThickness="0" Background="{StaticResource TITLE_BAR_WHITE}" 
+                         BorderThickness="0" Background="Transparent" 
+                         IsEnabled="False" 
                          VerticalAlignment="Center"/>
+
             </StackPanel>
         </Grid>
+        <!--Timeline/category bar-->
+        <Grid Grid.Column="1" Grid.Row="1" />
+        <!--Phenotypes section-->
+        <Grid Grid.Column="2" Grid.Row="1"/>
+        <!--Strokes Section-->
+        <Grid Grid.Column="3" Grid.Row="1"/>
 
     </Grid>
 </Page>
