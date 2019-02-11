@@ -200,5 +200,69 @@ namespace PhenoPad.LogService
             parsed = parsed.TrimEnd(',') + "]";
             return parsed;
         }
+
+        /// <summary>
+        /// parses a log line to operationitem to be displayed in view mode,
+        /// currently not all logs will be displayed
+        /// </summary>
+        /// <returns></returns>
+        public async Task<List<OperationItem>> ParseOperationItems(string notebookID) {
+            List<OperationItem> opitems = new List<OperationItem>();
+
+            List<string> logs = await FileManager.getSharedFileManager().GetLogStrings(notebookID);
+            if (logs != null)
+            {
+                //selective parse useful log for display
+                foreach (string line in logs) {
+                    Debug.WriteLine(line);
+
+                }
+            }
+
+
+
+
+            return opitems;
+        }
+    }
+
+    /// <summary>
+    /// A class that contains useful information of a logged operation
+    /// </summary>
+    class OperationItem {
+
+        public string notebookID;
+        public string pageID;
+        public OperationType type;
+        public TimeSpan timestamp;
+
+        //attributes for stroke
+        //two ways of arranging strokes:by lines recognized using HWR or timestamp (display whenever there's a gap of time)
+        public uint strokeID;
+        public int lineID; // probably need this for line ordering
+
+        //attributes for HWR/Speech
+        public string context;
+        public Dictionary<string, string> phenotypes;
+
+        //attributes for phenotypes
+        public string source;
+        public string phenotype;// maybe need to check with saved phenotypes and only display saved
+
+        public OperationItem()
+        {
+        }
+
+        public OperationItem(string notebookID, string pageID, OperationType type, TimeSpan time) {
+            this.notebookID = notebookID;
+            this.pageID = pageID;
+            this.type = type;
+            timestamp = time;
+            context = null;
+            phenotypes = new Dictionary<string, string>();
+            source = null;
+            phenotype = null;
+        }
+
     }
 }

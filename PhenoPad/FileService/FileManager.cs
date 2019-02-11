@@ -155,6 +155,22 @@ namespace PhenoPad.FileService
             }
         }
 
+        public async Task<List<string>> GetLogStrings(string notebookID) {
+            try
+            {
+                List<string> logs = new List<string>();
+                var file = await GetNoteFile(notebookID, "", NoteFileType.OperationLog);
+                var log = await FileIO.ReadLinesAsync(file);
+                foreach (string line in log)
+                    logs.Add(line.TrimEnd());
+                return logs;
+            }
+            catch (Exception e) {
+                MetroLogger.getSharedLogger().Error(e + e.Message);
+                return null;
+            }
+        }
+
         /// <summary>
         /// Returns all Image ad Annotations from XML meta file by Notebook ID and page IDs. Returns null if failed.
         /// </summary>

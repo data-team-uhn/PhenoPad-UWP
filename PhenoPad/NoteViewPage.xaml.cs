@@ -34,7 +34,6 @@ namespace PhenoPad
         public NoteViewPage()
         {
             this.InitializeComponent();
-
         }
         /// <summary>
         /// Initializes the Notebook when user navigated to MainPage.
@@ -64,7 +63,7 @@ namespace PhenoPad
         /// </summary>
         protected async override void OnNavigatingFrom(NavigatingCancelEventArgs e)
         {
-
+            //TODO
         }
 
         private async void LoadNotebook() {
@@ -73,17 +72,11 @@ namespace PhenoPad
 
                 //If notebook file exists, continues with loading...
                 notebookObject = await FileManager.getSharedFileManager().GetNotebookObjectFromXML(notebookId);
-
-                if (notebookObject == null)
-                {
-                    Debug.WriteLine("notebook Object is null");
-                }
-
                 //Gets all stored pages and notebook object from the disk
                 List<string> pageIds = await FileManager.getSharedFileManager().GetPageIdsByNotebook(notebookId);
-
-                //if (notebookObject != null)
                 noteNameTextBox.Text = notebookObject.name;
+                List<OperationItem> logs = await OperationLogger.getOpLogger().ParseOperationItems(notebookId);
+
 
             }
             catch (NullReferenceException ne)
