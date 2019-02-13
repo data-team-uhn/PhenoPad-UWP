@@ -78,6 +78,7 @@ namespace PhenoPad
                 noteNameTextBox.Text = notebookObject.name;
                 List<OperationItem> logs = await OperationLogger.getOpLogger().ParseOperationItems(notebookId);
 
+                //TODO: separate operation items based on type, then order by timespan and rearrange
                 List<OperationItem> phenotypes = logs.Where(x => x.type == "Phenotype").ToList();
 
 
