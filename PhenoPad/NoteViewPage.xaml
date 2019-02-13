@@ -5,6 +5,9 @@
     xmlns:local="using:PhenoPad"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:controls="using:Microsoft.Toolkit.Uwp.UI.Controls"
+    xmlns:phenotypeservice="using:PhenoPad.PhenotypeService"
+    xmlns:customcontrol="using:PhenoPad.CustomControl"
     mc:Ignorable="d">
 
     <Grid Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
@@ -43,7 +46,36 @@
         <!--Timeline/category bar-->
         <Grid Grid.Column="1" Grid.Row="1" />
         <!--Phenotypes section-->
-        <Grid Grid.Column="2" Grid.Row="1"/>
+        <Grid Grid.Column="2" Grid.Row="1">
+            <ListView ScrollViewer.VerticalScrollBarVisibility="Hidden" x:Name="PhenoListView" Padding="3 0" 
+                      >
+                <ListView.Header>
+                    <controls:ScrollHeader Mode="Sticky" TargetListViewBase="{x:Bind PhenoListView}">
+                        <StackPanel Background="White">
+                            <TextBlock  Foreground="{StaticResource WORD_DARKER}" Text="Saved phenotypes" FontSize="16" FontWeight="SemiBold" Padding="5"/>
+                        </StackPanel>
+                    </controls:ScrollHeader>
+                </ListView.Header>
+
+                <ListView.ItemTemplate>
+                    <DataTemplate x:DataType="phenotypeservice:Phenotype">
+                        <customcontrol:PhenotypeControl phenotypeName="{x:Bind name}" 
+                                                        phenotypeId="{x:Bind hpId}" 
+                                                        phenotypeState="{x:Bind state}" 
+                                                        sourceType="Saved"/>
+                    </DataTemplate>
+                </ListView.ItemTemplate>
+                <ListView.ItemContainerStyle>
+                    <Style TargetType="ListViewItem">
+                        <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                        <Setter Property="Margin" Value="0,0,0,0" />
+                        <Setter Property="Padding" Value="5,0,0,0" />
+                        <Setter Property="MinHeight" Value="20" />
+                    </Style>
+                </ListView.ItemContainerStyle>
+            </ListView>
+
+        </Grid>
         <!--Strokes Section-->
         <Grid Grid.Column="3" Grid.Row="1"/>
 

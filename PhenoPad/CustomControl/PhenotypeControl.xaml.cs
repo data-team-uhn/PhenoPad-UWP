@@ -88,6 +88,14 @@ namespace PhenoPad.CustomControl
             );
 
         private int localState;
+        public TimeSpan timespan;
+
+        public static readonly DependencyProperty phenotypeTimeSpanProperty = DependencyProperty.Register(
+            "phenotypeTimeSpan",
+            typeof(string),
+            typeof(TextBlock),
+            new PropertyMetadata(null)
+            );
 
         public PhenotypeControl()
         {
@@ -105,6 +113,16 @@ namespace PhenoPad.CustomControl
             sourceType = p.sourceType;
 
         }
+        /// <summary>
+        /// Setting a timespan for UI element for view mode
+        /// </summary>
+        /// <param name="time"></param>
+        public void setTimeSpan(TimeSpan time)
+        {
+            timespan = time;
+            Debug.WriteLine($"timespan of {Name} is {timespan} ...");
+        }
+
         // Add a phenotype
         private void AddBtn_Click(object sender, RoutedEventArgs e)
         {

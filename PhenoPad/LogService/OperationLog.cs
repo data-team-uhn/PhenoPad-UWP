@@ -1,4 +1,5 @@
-﻿using PhenoPad.FileService;
+﻿using PhenoPad.CustomControl;
+using PhenoPad.FileService;
 using PhenoPad.PhenotypeService;
 using System;
 using System.Collections.Generic;
@@ -216,6 +217,8 @@ namespace PhenoPad.LogService
             //Parsing information from log file
             List<string> logs = await FileManager.getSharedFileManager().GetLogStrings(notebookID);
 
+            List<Phenotype> savedPhenotypes = await FileManager.getSharedFileManager().GetSavedPhenotypeObjectsFromXML(notebookID);
+
             if (logs != null)
             {
                 //selective parse useful log for display
@@ -224,17 +227,27 @@ namespace PhenoPad.LogService
                     TimeSpan time;
                     TimeSpan.TryParse(segment[0], out time);
 
-                    Debug.WriteLine(segment[1]);
+                    //Debug.WriteLine(segment[1]);
                     //currently only interested in stroke and phenotypes
                     switch (segment[1]) {
                         case ("Stroke"):
                             break;
                         case ("Phenotype"):
-                            //check simuteneously if the certain phenotype is from speech or note 
+                            //check simuteneously if the certain phenotype is in saved phenotypes
+                            string name = segment[4].Trim();
+                            var match = savedPhenotypes.Where(x => x.name == name).FirstOrDefault();
+                            if (match != null) {
+                                //current problem: log may have multiple of same phenotypes
+                                Debug.WriteLine(match.name + "," + match.state);
+                                PhenotypeControl phenocontrol = new PhenotypeControl();
+                                phenocontrol.initByPhenotype(match);
+                                phenocontrol.timespan = time;
+                                OperationItem opitem = new OperationItem(notebookID,"","Phenotype",time);
+                                opitem.phenotype = phenocontrol;
+                                opitems.Add(opitem);
+                            }
                             break;
                     }
-                    OperationItem item = new OperationItem(notebookID, "", segment[1], time);
-
                 }
             }            
 
@@ -262,11 +275,10 @@ namespace PhenoPad.LogService
 
         //attributes for HWR/Speech
         public string context;
-        public Dictionary<string, string> phenotypes;
+        public PhenotypeControl phenotype;//list of UI elements for display
 
         //attributes for phenotypes
         public string source;
-        public string phenotype;// maybe need to check with saved phenotypes and only display saved
 
         public OperationItem()
         {
@@ -278,7 +290,6 @@ namespace PhenoPad.LogService
             this.type = type;
             timestamp = time;
             context = null;
-            phenotypes = new Dictionary<string, string>();
             source = null;
             phenotype = null;
         }

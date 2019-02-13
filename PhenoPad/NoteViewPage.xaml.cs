@@ -1,4 +1,5 @@
-﻿using PhenoPad.FileService;
+﻿using PhenoPad.CustomControl;
+using PhenoPad.FileService;
 using PhenoPad.LogService;
 using System;
 using System.Collections.Generic;
@@ -76,6 +77,8 @@ namespace PhenoPad
                 List<string> pageIds = await FileManager.getSharedFileManager().GetPageIdsByNotebook(notebookId);
                 noteNameTextBox.Text = notebookObject.name;
                 List<OperationItem> logs = await OperationLogger.getOpLogger().ParseOperationItems(notebookId);
+
+                List<OperationItem> phenotypes = logs.Where(x => x.type == "Phenotype").ToList();
 
 
             }
