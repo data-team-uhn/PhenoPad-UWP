@@ -207,17 +207,36 @@ namespace PhenoPad.LogService
         /// </summary>
         /// <returns></returns>
         public async Task<List<OperationItem>> ParseOperationItems(string notebookID) {
+
             List<OperationItem> opitems = new List<OperationItem>();
 
+            //Parsing information from speech conversation, need the time for matching detected phenotype
+            List<TextMessage> conversations = await FileManager.getSharedFileManager().GetSavedTranscriptsFromXML(notebookID);
+
+            //Parsing information from log file
             List<string> logs = await FileManager.getSharedFileManager().GetLogStrings(notebookID);
+
             if (logs != null)
             {
                 //selective parse useful log for display
                 foreach (string line in logs) {
-                    Debug.WriteLine(line);
+                    List<string> segment = line.Split('|').ToList();
+                    TimeSpan time;
+                    TimeSpan.TryParse(segment[0], out time);
+
+                    Debug.WriteLine(segment[1]);
+                    //currently only interested in stroke and phenotypes
+                    switch (segment[1]) {
+                        case ("Stroke"):
+                            break;
+                        case ("Phenotype"):
+                            //check simuteneously if the certain phenotype is from speech or note 
+                            break;
+                    }
+                    OperationItem item = new OperationItem(notebookID, "", segment[1], time);
 
                 }
-            }
+            }            
 
 
 
@@ -233,7 +252,7 @@ namespace PhenoPad.LogService
 
         public string notebookID;
         public string pageID;
-        public OperationType type;
+        public string type;
         public TimeSpan timestamp;
 
         //attributes for stroke
@@ -253,7 +272,7 @@ namespace PhenoPad.LogService
         {
         }
 
-        public OperationItem(string notebookID, string pageID, OperationType type, TimeSpan time) {
+        public OperationItem(string notebookID, string pageID, string type, TimeSpan time) {
             this.notebookID = notebookID;
             this.pageID = pageID;
             this.type = type;
