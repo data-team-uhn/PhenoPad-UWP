@@ -152,14 +152,15 @@ namespace PhenoPad.LogService
         private string GetTimeStamp()
         {
             DateTime now = DateTime.Now;
-            return string.Format(System.Globalization.CultureInfo.InvariantCulture,
-                                 "{0:D4}{1:D2}{2:D2}-{3:D2}{4:D2}{5:D2}",
-                                 now.Year,
-                                 now.Month,
-                                 now.Day,
-                                 now.Hour,
-                                 now.Minute,
-                                 now.Second);
+            return now.ToString();
+            //return string.Format(System.Globalization.CultureInfo.InvariantCulture,
+            //                     "{0:D4}{1:D2}{2:D2}-{3:D2}{4:D2}{5:D2}",
+            //                     now.Year,
+            //                     now.Month,
+            //                     now.Day,
+            //                     now.Hour,
+            //                     now.Minute,
+            //                     now.Second);
         }
 
         /// <summary>
@@ -224,9 +225,10 @@ namespace PhenoPad.LogService
                 //selective parse useful log for display
                 foreach (string line in logs) {
                     List<string> segment = line.Split('|').ToList();
-                    TimeSpan time;
-                    TimeSpan.TryParse(segment[0], out time);
-
+                    Debug.WriteLine(segment[0].Trim());
+                    DateTime time;
+                    DateTime.TryParse(segment[0].Trim(), out time);
+                    Debug.WriteLine(time+ " *** ");
                     //Debug.WriteLine(segment[1]);
                     //currently only interested in stroke and phenotypes
                     switch (segment[1]) {
@@ -235,15 +237,16 @@ namespace PhenoPad.LogService
                         case ("Phenotype"):
                             //check simuteneously if the certain phenotype is in saved phenotypes
                             string name = segment[4].Trim();
-                            var match = savedPhenotypes.Where(x => x.name == name).FirstOrDefault();
+                            Phenotype match = savedPhenotypes.Where(x => x.name == name).FirstOrDefault();
                             if (match != null) {
+                                match.time = time;
                                 //current problem: log may have multiple of same phenotypes
                                 Debug.WriteLine(match.name + "," + match.state);
-                                PhenotypeControl phenocontrol = new PhenotypeControl();
-                                phenocontrol.initByPhenotype(match);
-                                phenocontrol.timespan = time;
+                                //PhenotypeControl phenocontrol = new PhenotypeControl();
+                                //phenocontrol.initByPhenotype(match);
+                                //phenocontrol.timespan = time;
                                 OperationItem opitem = new OperationItem(notebookID,"","Phenotype",time);
-                                opitem.phenotype = phenocontrol;
+                                opitem.phenotype = match;
                                 opitems.Add(opitem);
                             }
                             break;
@@ -266,7 +269,7 @@ namespace PhenoPad.LogService
         public string notebookID;
         public string pageID;
         public string type;
-        public TimeSpan timestamp;
+        public DateTime timestamp;
 
         //attributes for stroke
         //two ways of arranging strokes:by lines recognized using HWR or timestamp (display whenever there's a gap of time)
@@ -275,7 +278,7 @@ namespace PhenoPad.LogService
 
         //attributes for HWR/Speech
         public string context;
-        public PhenotypeControl phenotype;//list of UI elements for display
+        public Phenotype phenotype;//list of UI elements for display
 
         //attributes for phenotypes
         public string source;
@@ -284,7 +287,7 @@ namespace PhenoPad.LogService
         {
         }
 
-        public OperationItem(string notebookID, string pageID, string type, TimeSpan time) {
+        public OperationItem(string notebookID, string pageID, string type, DateTime time) {
             this.notebookID = notebookID;
             this.pageID = pageID;
             this.type = type;

@@ -1,6 +1,7 @@
 ﻿using PhenoPad.CustomControl;
 using PhenoPad.FileService;
 using PhenoPad.LogService;
+using PhenoPad.PhenotypeService;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -10,7 +11,11 @@ using System.Runtime.InteropServices.WindowsRuntime;
 using System.Threading.Tasks;
 using Windows.Foundation;
 using Windows.Foundation.Collections;
+using Windows.Media.Core;
+using Windows.Media.Playback;
+using Windows.Networking.Sockets;
 using Windows.Storage;
+using Windows.Storage.Streams;
 using Windows.UI.Core;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
@@ -31,6 +36,8 @@ namespace PhenoPad
     {
         public string notebookId;
         private Notebook notebookObject;
+        public static string SERVER_ADDR = "137.135.117.253";
+        public static string SERVER_PORT = "8080";
 
         public NoteViewPage()
         {
@@ -56,6 +63,42 @@ namespace PhenoPad
                 await Dispatcher.RunAsync(CoreDispatcherPriority.High, LoadNotebook);
             }
             await Task.Delay(TimeSpan.FromSeconds(3));
+            StreamWebSocket streamSocket = new StreamWebSocket();
+            try
+            {
+                Uri serverUri = new Uri("ws://" + SERVER_ADDR + ":" + SERVER_PORT + "/client/ws/file_request" +
+                                           "?content-type=audio%2Fx-raw%2C+layout%3D%28string%29interleaved%2C+rate%3D%28int%2916000%2C+format%3D%28string%29S16LE%2C+channels%3D%28int%291&manager_id=666");
+                //Task connectTask = streamSocket.ConnectAsync(serverUri).AsTask();
+                //await connectTask;
+                //if (connectTask.Exception != null)
+                //    MetroLogger.getSharedLogger().Error("connectTask.Exception:" + connectTask.Exception.Message);
+                //Debug.WriteLine("connected");
+                //MediaPlayer player = new MediaPlayer();
+                //while (true) {
+                //    await Task.Delay(TimeSpan.FromSeconds(0.1));
+
+                //    uint length = 1000;     // Leave a large buffer
+                //    var readBuf = new Windows.Storage.Streams.Buffer((uint)length);
+                //    var readOp = await streamSocket.InputStream.ReadAsync(readBuf, (uint)length, InputStreamOptions.Partial);
+
+                //    DataReader readPacket = DataReader.FromBuffer(readBuf);
+                //    uint buffLen = readPacket.UnconsumedBufferLength;
+                //    if (buffLen != length)
+                //    {
+                //        Debug.WriteLine(buffLen);
+                //        // Construct the sound player
+                //        player.SetStreamSource(readPacket.ReadBuffer(buffLen).AsStream().AsRandomAccessStream());
+                //        player.Play();
+                //    }
+                //}
+            }
+            catch (Exception ex)
+            {
+                LogService.MetroLogger.getSharedLogger().Error("file result:"+ex+ex.Message);
+                streamSocket.Dispose();
+                streamSocket = null;
+            }
+
             return;
         }
 
@@ -80,7 +123,15 @@ namespace PhenoPad
 
                 //TODO: separate operation items based on type, then order by timespan and rearrange
                 List<OperationItem> phenotypes = logs.Where(x => x.type == "Phenotype").ToList();
-
+                Debug.WriteLine(phenotypes.Count);
+                List<Phenotype> saved = new List<Phenotype>();
+                foreach (OperationItem op in phenotypes) {
+                    if (saved.Contains(op.phenotype))
+                        saved.Remove(op.phenotype);
+                    saved.Add(op.phenotype);
+                }
+                saved = saved.OrderBy( p => p.time).ToList();
+                PhenoListView.ItemsSource = saved;
 
             }
             catch (NullReferenceException ne)

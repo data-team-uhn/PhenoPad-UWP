@@ -25,7 +25,7 @@ namespace PhenoPad.PhenotypeService
                 RaisePropertyChanged("state");
             }
         }**/
-    
+        public DateTime time;
 
 
         public Phenotype()
