@@ -44,7 +44,35 @@
             </StackPanel>
         </Grid>
         <!--Timeline/category bar-->
-        <Grid Grid.Column="1" Grid.Row="1" />
+        <Grid Grid.Column="1" Grid.Row="1" >
+            <ListView ScrollViewer.VerticalScrollBarVisibility="Hidden" x:Name="TimeListView" Padding="3 0" 
+                      >
+                <ListView.Header>
+                    <controls:ScrollHeader Mode="Sticky" TargetListViewBase="{x:Bind PhenoListView}">
+                        <StackPanel Background="White">
+                            <TextBlock  Foreground="{StaticResource WORD_DARKER}" Text="Timeline" FontSize="16" 
+                                        FontWeight="SemiBold" Padding="5"/>
+                        </StackPanel>
+                    </controls:ScrollHeader>
+                </ListView.Header>
+
+                <ListView.ItemTemplate>
+                    <DataTemplate x:DataType="phenotypeservice:Phenotype">
+                        <TextBlock Text="{x:Bind time}"/>
+                    </DataTemplate>
+                </ListView.ItemTemplate>
+                <ListView.ItemContainerStyle>
+                    <Style TargetType="ListViewItem">
+                        <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                        <Setter Property="Margin" Value="0,0,0,0" />
+                        <Setter Property="Padding" Value="5,0,0,0" />
+                        <Setter Property="MinHeight" Value="20" />
+                    </Style>
+                </ListView.ItemContainerStyle>
+            </ListView>
+
+
+        </Grid>
         <!--Phenotypes section-->
         <Grid Grid.Column="2" Grid.Row="1">
             <ListView ScrollViewer.VerticalScrollBarVisibility="Hidden" x:Name="PhenoListView" Padding="3 0" 

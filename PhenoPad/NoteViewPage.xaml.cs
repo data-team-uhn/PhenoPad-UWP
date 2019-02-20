@@ -130,8 +130,10 @@ namespace PhenoPad
                         saved.Remove(op.phenotype);
                     saved.Add(op.phenotype);
                 }
+                //sorts the phenotypes in ascending timeline order
                 saved = saved.OrderBy( p => p.time).ToList();
                 PhenoListView.ItemsSource = saved;
+                TimeListView.ItemsSource = saved;
 
             }
             catch (NullReferenceException ne)
