@@ -86,9 +86,9 @@ namespace PhenoPad.LogService
             string log = "";
             switch (opType) {
                 case OperationType.Stroke:
-                    //args format= (args0:strokeID)
-                    Debug.Assert(args.Count() == 1);
-                    log = $"{GetTimeStamp()}|Stroke| {args[0]}";
+                    //args format= (args0:strokeID, args1: strokeaStarttime, args2: strokeDuration)
+                    Debug.Assert(args.Count() == 3);
+                    log = $"{GetTimeStamp()}|Stroke| {args[0]} | {args[1]} | {args[2]}";
                     break;
                 case OperationType.Recognition:
                     //args format= ( args0:recognized text, args1: {keyword:Phenotype}) 
@@ -220,19 +220,37 @@ namespace PhenoPad.LogService
 
             List<Phenotype> savedPhenotypes = await FileManager.getSharedFileManager().GetSavedPhenotypeObjectsFromXML(notebookID);
 
+
             if (logs != null)
             {
                 //selective parse useful log for display
                 foreach (string line in logs) {
                     List<string> segment = line.Split('|').ToList();
-                    Debug.WriteLine(segment[0].Trim());
                     DateTime time;
                     DateTime.TryParse(segment[0].Trim(), out time);
-                    Debug.WriteLine(time+ " *** ");
                     //Debug.WriteLine(segment[1]);
                     //currently only interested in stroke and phenotypes
                     switch (segment[1]) {
                         case ("Stroke"):
+                            OperationItem lastStrokeGroup = opitems.Where(x => x.type == "Strokes").LastOrDefault();
+                            DateTime sStartTime;
+                            DateTime.TryParse(segment[3].Trim(), out sStartTime);
+                            TimeSpan duration;
+                            TimeSpan.TryParse(segment[4].Trim(), out duration);
+                            //new group of strokes
+                            if (lastStrokeGroup != null && sStartTime - lastStrokeGroup.timeEnd < TimeSpan.FromSeconds(2))
+                            {
+                                lastStrokeGroup.strokeID.Add((UInt32.Parse(segment[2].Trim())));
+                                lastStrokeGroup.timeEnd = sStartTime + duration + TimeSpan.FromSeconds(0.5);
+                                Debug.WriteLine($"parsing if: current number of stroke ids = {lastStrokeGroup.strokeID.Count}");
+                            }
+                            else {
+                                OperationItem opitem = new OperationItem(notebookID, "", "Strokes", sStartTime);
+                                opitem.strokeID.Add((UInt32.Parse(segment[2].Trim())));
+                                Debug.WriteLine($"parsing else: current number of stroke ids = {opitem.strokeID.Count}");
+                                opitem.timeEnd = sStartTime + duration;
+                                opitems.Add(opitem);
+                            }
                             break;
                         case ("Phenotype"):
                             //check simuteneously if the certain phenotype is in saved phenotypes
@@ -253,10 +271,6 @@ namespace PhenoPad.LogService
                     }
                 }
             }            
-
-
-
-
             return opitems;
         }
     }
@@ -270,10 +284,12 @@ namespace PhenoPad.LogService
         public string pageID;
         public string type;
         public DateTime timestamp;
+        public DateTime timeEnd;//for strokes
+        
 
         //attributes for stroke
         //two ways of arranging strokes:by lines recognized using HWR or timestamp (display whenever there's a gap of time)
-        public uint strokeID;
+        public List<uint> strokeID;
         public int lineID; // probably need this for line ordering
 
         //attributes for HWR/Speech
@@ -291,6 +307,7 @@ namespace PhenoPad.LogService
             this.notebookID = notebookID;
             this.pageID = pageID;
             this.type = type;
+            this.strokeID = new List<uint>();
             timestamp = time;
             context = null;
             source = null;

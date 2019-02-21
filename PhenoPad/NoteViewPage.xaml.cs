@@ -17,6 +17,7 @@ using Windows.Networking.Sockets;
 using Windows.Storage;
 using Windows.Storage.Streams;
 using Windows.UI.Core;
+using Windows.UI.Input.Inking;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
 using Windows.UI.Xaml.Controls.Primitives;
@@ -120,16 +121,52 @@ namespace PhenoPad
                 List<string> pageIds = await FileManager.getSharedFileManager().GetPageIdsByNotebook(notebookId);
                 noteNameTextBox.Text = notebookObject.name;
                 List<OperationItem> logs = await OperationLogger.getOpLogger().ParseOperationItems(notebookId);
+                List<InkStroke> allstrokes = new List<InkStroke>();
+
+                for (int i = 0; i < pageIds.Count; i++) {
+                    InkCanvas tempCanvas = new InkCanvas();
+                    await FileManager.getSharedFileManager().LoadNotePageStroke(notebookId, i.ToString(), null, tempCanvas);
+                    var strokes = tempCanvas.InkPresenter.StrokeContainer.GetStrokes();
+                    allstrokes.AddRange(strokes.ToList());
+                }
+
+                foreach (InkStroke s in allstrokes)
+                    Debug.WriteLine(s.Id);
 
                 //TODO: separate operation items based on type, then order by timespan and rearrange
                 List<OperationItem> phenotypes = logs.Where(x => x.type == "Phenotype").ToList();
-                Debug.WriteLine(phenotypes.Count);
+                List<OperationItem> handwriting = logs.Where(x => x.type == "Strokes").ToList();
                 List<Phenotype> saved = new List<Phenotype>();
+
+                //process saved phenotypes
                 foreach (OperationItem op in phenotypes) {
                     if (saved.Contains(op.phenotype))
                         saved.Remove(op.phenotype);
                     saved.Add(op.phenotype);
                 }
+                //process handwritings
+                handwriting = handwriting.OrderBy(h => h.timestamp).ToList();
+                foreach (OperationItem op in handwriting) {
+                    DateTime start = op.timestamp;
+                    DateTime end = op.timeEnd;
+                    InkCanvas tempCanvas = new InkCanvas();
+                    var strokes = allstrokes.Where(x => (x.StrokeStartedTime >= start && x.StrokeStartedTime <= end));
+                    Debug.WriteLine($"all strokes added {strokes.Count()}.......");
+
+                    foreach (var s in strokes)
+                    {
+                        var s_clone = s.Clone();
+                        s_clone.Selected = true;
+                        tempCanvas.InkPresenter.StrokeContainer.AddStroke(s_clone);
+                    }
+                    Rect bound = tempCanvas.InkPresenter.StrokeContainer.BoundingRect;
+                    tempCanvas.InkPresenter.StrokeContainer.MoveSelected(new Point(-bound.Left, -bound.Top));
+                    tempCanvas.Height = bound.Height;
+                    tempCanvas.Width = bound.Width;
+
+                    strokesGrid.Children.Add(tempCanvas);
+                }
+
                 //sorts the phenotypes in ascending timeline order
                 saved = saved.OrderBy( p => p.time).ToList();
                 PhenoListView.ItemsSource = saved;

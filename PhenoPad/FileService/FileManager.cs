@@ -18,6 +18,7 @@ using System.Threading;
 using System.Xml;
 using PhenoPad.LogService;
 using PhenoPad.SpeechService;
+using Windows.UI.Input.Inking;
 
 namespace PhenoPad.FileService
 {
@@ -949,7 +950,7 @@ namespace PhenoPad.FileService
         /// <summary>
         /// Loads all ink strokes from local file and returns boolean result.
         /// </summary>
-        public async Task<bool> LoadNotePageStroke(string notebookId, string pageId, NotePageControl notePage)
+        public async Task<bool> LoadNotePageStroke(string notebookId, string pageId, NotePageControl notePage,InkCanvas canvas = null)
         {
             bool isSuccessful = true;
             try
@@ -959,11 +960,17 @@ namespace PhenoPad.FileService
                 if (s != null)
                 {
                     var strokesFile = await ROOT_FOLDER.GetFileAsync(strokePath);
+                    //is canvas not null, loading strokes for view mode
+                    if (canvas != null)
+                        isSuccessful = await loadStrokes(strokesFile, canvas);
                     //loads the stroked based on whether the current note page is an EHR document
-                    if (notePage.ehrPage == null)
-                        isSuccessful = await loadStrokes(strokesFile, notePage.inkCan);
                     else
-                        isSuccessful = await loadStrokes(strokesFile, notePage.ehrPage.annotations);
+                    {
+                        if (notePage.ehrPage == null)
+                            isSuccessful = await loadStrokes(strokesFile, notePage.inkCan);
+                        else
+                            isSuccessful = await loadStrokes(strokesFile, notePage.ehrPage.annotations);
+                    }
 
                 }
                 else

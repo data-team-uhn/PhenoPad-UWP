@@ -17,9 +17,9 @@
         </Grid.RowDefinitions>
 
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="80"/>
-            <ColumnDefinition Width="2*"/>
-            <ColumnDefinition Width="8*"/>
+            <ColumnDefinition Width="Auto"/>
+            <ColumnDefinition Width="5*"/>
+            <ColumnDefinition Width="5*"/>
         </Grid.ColumnDefinitions>
         <Grid Name="TopMenuRelativePanel" Grid.Row="0" Grid.ColumnSpan="3" 
               Height="45"
@@ -44,7 +44,7 @@
             </StackPanel>
         </Grid>
         <!--Timeline/category bar-->
-        <Grid Grid.Column="1" Grid.Row="1" >
+        <Grid Grid.Column="0" Grid.Row="1" >
             <ListView ScrollViewer.VerticalScrollBarVisibility="Hidden" x:Name="TimeListView" Padding="3 0" 
                       >
                 <ListView.Header>
@@ -74,7 +74,7 @@
 
         </Grid>
         <!--Phenotypes section-->
-        <Grid Grid.Column="2" Grid.Row="1">
+        <Grid Grid.Column="1" Grid.Row="1">
             <ListView ScrollViewer.VerticalScrollBarVisibility="Hidden" x:Name="PhenoListView" Padding="3 0" 
                       >
                 <ListView.Header>
@@ -105,7 +105,10 @@
 
         </Grid>
         <!--Strokes Section-->
-        <Grid Grid.Column="3" Grid.Row="1"/>
+        <Grid Grid.Column="2" Grid.Row="1" Background="LightGray" >
+            <StackPanel x:Name="strokesGrid" Orientation="Vertical" Spacing="10"/>
+
+        </Grid>
 
     </Grid>
 </Page>

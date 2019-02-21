@@ -604,7 +604,7 @@ namespace PhenoPad.CustomControl
                         curStroke = s;
                         //here we need instant call to analyze ink for the specified line input
                         await analyzeInk(s);
-                        OperationLogger.getOpLogger().Log(OperationType.Stroke, s.Id.ToString());
+                        OperationLogger.getOpLogger().Log(OperationType.Stroke, s.Id.ToString(),s.StrokeStartedTime.ToString(),s.StrokeDuration.ToString());
                     }
                 }
 
