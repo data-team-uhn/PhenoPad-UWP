@@ -18,8 +18,11 @@ namespace PhenoPad.WebSocketService
         MainPage rootPage = MainPage.Current;
 
         // !!WARNING !! server address changes every time
-        private string serverAddress = "phenopad.ccm.sickkids.ca";
-        private string serverPort = "8888";
+        //private string serverAddress = "phenopad.ccm.sickkids.ca";
+        //private string serverPort = "8888";
+        public string serverAddress = "137.135.117.253";
+        public string serverPort = "8080";
+
         private uint ERROR_INTERNET_OPERATION_CANCELLED = 0x80072EF1;
         NetworkAdapter networkAdapter;
         public StreamWebSocket streamSocket;

@@ -817,7 +817,7 @@ namespace PhenoPad.PhenotypeService
         public async Task<Row> getDetailById(string id)
         {
             //Create an HTTP client object
-            Windows.Web.Http.HttpClient httpClient = new Windows.Web.Http.HttpClient();
+            HttpClient httpClient = new HttpClient();
 
             //Add a user-agent header to the GET request. 
             var headers = httpClient.DefaultRequestHeaders;

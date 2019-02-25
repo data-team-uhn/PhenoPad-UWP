@@ -1,18 +1,23 @@
-﻿using PhenoPad.CustomControl;
+﻿using NAudio.Wave;
+using PhenoPad.CustomControl;
 using PhenoPad.FileService;
 using PhenoPad.LogService;
 using PhenoPad.PhenotypeService;
+using PhenoPad.SpeechService;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices.WindowsRuntime;
+using System.Threading;
 using System.Threading.Tasks;
 using Windows.Foundation;
 using Windows.Foundation.Collections;
 using Windows.Media.Core;
+using Windows.Media.MediaProperties;
 using Windows.Media.Playback;
+using Windows.Media.Streaming.Adaptive;
 using Windows.Networking.Sockets;
 using Windows.Storage;
 using Windows.Storage.Streams;
@@ -39,11 +44,34 @@ namespace PhenoPad
         private Notebook notebookObject;
         public static string SERVER_ADDR = "137.135.117.253";
         public static string SERVER_PORT = "8080";
+        public SpeechManager speechmana;
+        private bool isReading; //flag for reading audio stream
+        private DispatcherTimer readTimer;
+        private StreamWebSocket streamSocket;
+        private CancellationTokenSource cancelSource;
+        private CancellationToken token;
+        private List<byte> audioBuffer;
+
 
         public NoteViewPage()
         {
             this.InitializeComponent();
+            isReading = false;
+            readTimer = new DispatcherTimer();
+            readTimer.Interval = TimeSpan.FromSeconds(5);
+            readTimer.Tick += EndAudioStream;
+            cancelSource = new CancellationTokenSource();
+            token = cancelSource.Token;
+
         }
+
+        private void EndAudioStream(object sender, object e)
+        {
+            isReading = false;
+            cancelSource.Cancel();
+            Debug.WriteLine("Timer tick, will stop reading");
+        }
+
         /// <summary>
         /// Initializes the Notebook when user navigated to MainPage.
         /// </summary>
@@ -61,46 +89,62 @@ namespace PhenoPad
                 Debug.WriteLine("loading");
                 this.notebookId = nid;
                 FileManager.getSharedFileManager().currentNoteboookId = nid;
-                await Dispatcher.RunAsync(CoreDispatcherPriority.High, LoadNotebook);
+                //await Dispatcher.RunAsync(CoreDispatcherPriority.High, LoadNotebook);
             }
             await Task.Delay(TimeSpan.FromSeconds(3));
-            StreamWebSocket streamSocket = new StreamWebSocket();
+            PlayMedia();
+            return;
+        }
+
+        private async void PlayMedia()
+        {
+            streamSocket = new StreamWebSocket();
             try
             {
                 Uri serverUri = new Uri("ws://" + SERVER_ADDR + ":" + SERVER_PORT + "/client/ws/file_request" +
                                            "?content-type=audio%2Fx-raw%2C+layout%3D%28string%29interleaved%2C+rate%3D%28int%2916000%2C+format%3D%28string%29S16LE%2C+channels%3D%28int%291&manager_id=666");
-                //Task connectTask = streamSocket.ConnectAsync(serverUri).AsTask();
-                //await connectTask;
-                //if (connectTask.Exception != null)
-                //    MetroLogger.getSharedLogger().Error("connectTask.Exception:" + connectTask.Exception.Message);
-                //Debug.WriteLine("connected");
-                //MediaPlayer player = new MediaPlayer();
-                //while (true) {
-                //    await Task.Delay(TimeSpan.FromSeconds(0.1));
-
-                //    uint length = 1000;     // Leave a large buffer
-                //    var readBuf = new Windows.Storage.Streams.Buffer((uint)length);
-                //    var readOp = await streamSocket.InputStream.ReadAsync(readBuf, (uint)length, InputStreamOptions.Partial);
-
-                //    DataReader readPacket = DataReader.FromBuffer(readBuf);
-                //    uint buffLen = readPacket.UnconsumedBufferLength;
-                //    if (buffLen != length)
-                //    {
-                //        Debug.WriteLine(buffLen);
-                //        // Construct the sound player
-                //        player.SetStreamSource(readPacket.ReadBuffer(buffLen).AsStream().AsRandomAccessStream());
-                //        player.Play();
-                //    }
-                //}
+                Task connectTask = streamSocket.ConnectAsync(serverUri).AsTask();
+                await connectTask;
+                if (connectTask.Exception != null)
+                    MetroLogger.getSharedLogger().Error("connectTask.Exception:" + connectTask.Exception.Message);
+                Debug.WriteLine("connected, will begin receiving data");
+                //StorageFolder storageFolder = ApplicationData.Current.LocalFolder;
+                //StorageFile storageFile = await storageFolder.CreateFileAsync(
+                //  "audio.wav", CreationCollisionOption.GenerateUniqueName);
+                //=============================
+                uint length = 1000000;     // Leave a large buffer
+                audioBuffer = new List<Byte>();
+                isReading = true;
+                cancelSource = new CancellationTokenSource();
+                token = cancelSource.Token;
+                while (isReading)
+                {
+                    readTimer.Start();
+                    IBuffer op = await streamSocket.InputStream.ReadAsync(new Windows.Storage.Streams.Buffer(length), length, InputStreamOptions.Partial).AsTask(token);
+                    if (op.Length > 0)
+                        audioBuffer.AddRange(op.ToArray());
+                    Debug.WriteLine("------------------" + audioBuffer.Count + "----------------");
+                    readTimer.Stop();
+                }
+            }
+            catch (TaskCanceledException) {
+                //Plays the audio received from server
+                readTimer.Stop();
+                Debug.WriteLine("done receiving +++++++++++++++++++++++++");
+                MemoryStream mem = new MemoryStream(audioBuffer.ToArray());
+                MediaPlayer player = new MediaPlayer();
+                player.SetStreamSource(mem.AsRandomAccessStream());
+                player.Play();
+                Debug.WriteLine("done");
             }
             catch (Exception ex)
             {
-                LogService.MetroLogger.getSharedLogger().Error("file result:"+ex+ex.Message);
+                LogService.MetroLogger.getSharedLogger().Error("file result:" + ex + ex.Message);
                 streamSocket.Dispose();
                 streamSocket = null;
             }
 
-            return;
+
         }
 
         /// <summary>
@@ -191,5 +235,59 @@ namespace PhenoPad
             Frame.Navigate(typeof(PageOverview));
         }
 
+        async private void InitializeAdaptiveMediaSource(IInputStream stream,Uri uri)
+        {
+            try
+            {
+                AdaptiveMediaSourceCreationResult result = await AdaptiveMediaSource.CreateFromStreamAsync(stream, uri, "HLS");
+
+                if (result.Status == AdaptiveMediaSourceCreationStatus.Success)
+                {
+                    AdaptiveMediaSource ams = result.MediaSource;
+                    MediaPlayer player = new MediaPlayer();
+                    player.Source = MediaSource.CreateFromAdaptiveMediaSource(ams);
+                    player.Play();
+
+                    ams.InitialBitrate = ams.AvailableBitrates.Max<uint>();
+
+                    //Register for download requests
+                    ams.DownloadRequested += DownloadRequested;
+
+                    //Register for download failure and completion events
+                    ams.DownloadCompleted += DownloadCompleted;
+                    ams.DownloadFailed += DownloadFailed;
+
+                    //Register for bitrate change events
+                    //ams.DownloadBitrateChanged += DownloadBitrateChanged;
+                    //ams.PlaybackBitrateChanged += PlaybackBitrateChanged;
+
+                    //Register for diagnostic event
+                    //ams.Diagnostics.DiagnosticAvailable += DiagnosticAvailable;
+                }
+                else
+                {
+                    // Handle failure to create the adaptive media source
+                    MetroLogger.getSharedLogger().Error($"Adaptive source creation failed: {uri} - {result.ExtendedError}");
+                }
+            }
+            catch (Exception e) {
+                MetroLogger.getSharedLogger().Error($"Adaptive source creation exception: {e} - {e.Message}");
+            }
+        }
+
+        private void DownloadFailed(AdaptiveMediaSource sender, AdaptiveMediaSourceDownloadFailedEventArgs args)
+        {
+            throw new NotImplementedException();
+        }
+
+        private void DownloadCompleted(AdaptiveMediaSource sender, AdaptiveMediaSourceDownloadCompletedEventArgs args)
+        {
+            throw new NotImplementedException();
+        }
+
+        private void DownloadRequested(AdaptiveMediaSource sender, AdaptiveMediaSourceDownloadRequestedEventArgs args)
+        {
+            throw new NotImplementedException();
+        }
     }
 }
