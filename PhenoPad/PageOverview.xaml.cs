@@ -45,7 +45,7 @@ namespace PhenoPad
         {
 
             this.InitializeComponent();
-            Windows.ApplicationModel.Core.CoreApplication.GetCurrentView().TitleBar.ExtendViewIntoTitleBar = false;
+            CoreApplication.GetCurrentView().TitleBar.ExtendViewIntoTitleBar = false;
 
             LoadAllNotes();
 

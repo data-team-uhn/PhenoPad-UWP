@@ -588,7 +588,7 @@ namespace PhenoPad.PhenotypeService
             Uri requestUri = new Uri("https://playground.phenotips.org/rest/vocabularies/hpo/suggest?input="+str);
 
             //Send the GET request asynchronously and retrieve the response as a string.
-            Windows.Web.Http.HttpResponseMessage httpResponse = new Windows.Web.Http.HttpResponseMessage();
+            HttpResponseMessage httpResponse = new HttpResponseMessage();
             string httpResponseBody = "";
 
             try
@@ -597,6 +597,7 @@ namespace PhenoPad.PhenotypeService
                 httpResponse = await httpClient.GetAsync(requestUri);
                 httpResponse.EnsureSuccessStatusCode();
                 httpResponseBody = await httpResponse.Content.ReadAsStringAsync();
+                httpResponseBody = httpResponseBody.Replace("_", "-");
                 var result = JsonConvert.DeserializeObject<RootObject>(httpResponseBody);
                 List<Phenotype> phenotypes = new List<Phenotype>();
                 foreach (var row in result.rows)
@@ -615,7 +616,7 @@ namespace PhenoPad.PhenotypeService
             {
                 httpResponseBody = "Error: " + ex.HResult.ToString("X") + " Message: " + ex.Message;
                 MainPage.Current.NotifyUser("Error: failed to parse results from PhenoTips", NotifyType.ErrorMessage, 2);
-                LogService.MetroLogger.getSharedLogger().Error("Failed to search phenotypes by PhenoTips, " + httpResponseBody);
+                MetroLogger.getSharedLogger().Error("Failed to search phenotypes by PhenoTips, " + httpResponseBody);
             }
             return null;
         }

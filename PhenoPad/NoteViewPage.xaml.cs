@@ -1,5 +1,4 @@
-﻿using NAudio.Wave;
-using PhenoPad.CustomControl;
+﻿using PhenoPad.CustomControl;
 using PhenoPad.FileService;
 using PhenoPad.LogService;
 using PhenoPad.PhenotypeService;

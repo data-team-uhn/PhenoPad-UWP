@@ -314,9 +314,8 @@ namespace PhenoPad.WebSocketService
                 {
                     uint length = 1000;     // Leave a large buffer
 
-                    var readBuf = new Windows.Storage.Streams.Buffer((uint)length);
+                    var readBuf = new Windows.Storage.Streams.Buffer(length);
                     var readOp = await streamSocket.InputStream.ReadAsync(readBuf, (uint)length, InputStreamOptions.Partial);
-
                     DataReader readPacket = DataReader.FromBuffer(readBuf);
                     uint buffLen = readPacket.UnconsumedBufferLength;
                     returnMessage = readPacket.ReadString(buffLen);
