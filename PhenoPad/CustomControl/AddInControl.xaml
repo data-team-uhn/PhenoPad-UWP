@@ -105,7 +105,11 @@
                         <Viewbox Name="canvasViewBox">
                             <InkCanvas Visibility="Collapsed" x:Name="inkCanvas" Canvas.ZIndex="5"/>
                         </Viewbox>
-                    </Grid>
+                    <RichEditBox Style="{StaticResource MyRichEditBoxStyle}" Background="Transparent" x:Name="commentTextBlock" x:FieldModifier="public" 
+                                 FontSize="22" Height="auto" TextWrapping="Wrap"
+                                 HorizontalAlignment="Stretch"
+                                 Visibility="Collapsed" IsEnabled="False"/>
+                </Grid>
                 </ScrollViewer>
             </Grid>
             

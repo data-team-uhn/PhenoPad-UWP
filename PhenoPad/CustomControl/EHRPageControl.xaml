@@ -62,10 +62,13 @@
             <!--Text Box for imported EHR file-->
         
             <RichEditBox Style="{StaticResource MyRichEditBoxStyle}"                         
-                         Background="Transparent" x:Name="EHRTextBox" 
+                         Background="LightGray" x:Name="EHRTextBox" 
+                         x:FieldModifier="public"
                          TextWrapping="Wrap"
                          Opacity="0.8"
                          IsSpellCheckEnabled="False"
+                         AcceptsReturn="True"
+                         
                          Padding="10 50 10 0"
                          IsEnabled="False"
                          BorderThickness="0" />
@@ -100,7 +103,7 @@
                         BorderThickness="1" CornerRadius="10" x:Name="inputRootGrid">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="60"/>
-                        <RowDefinition x:Name="inputCanvasRow" Height="200"/>
+                        <RowDefinition x:Name="inputCanvasRow" Height="500"/>
                     </Grid.RowDefinitions>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*"/>
@@ -119,6 +122,7 @@
                             Height="60" Width="40"
                             Style="{StaticResource ButtonStyle1}" HorizontalAlignment="Left"
                             Click="ClearInput"
+                              
                             RelativePanel.AlignLeftWithPanel="True">
                             <SymbolIcon Symbol="Clear"/>
                         </Button>
@@ -153,7 +157,7 @@
                             Height="60" Width="40"
                             x:Name="TypeToggleBtn"
                             Style="{StaticResource MyToggleButtonStyle}" HorizontalAlignment="Right"
-                            Click="ToggleInsertMode"
+                            Click="ToggleTypeMode"
                             RelativePanel.AlignRightWithPanel="True">
                             <SymbolIcon Symbol="Keyboard" Margin="-10 -10 0 0">
                                 <SymbolIcon.RenderTransform>
@@ -165,7 +169,7 @@
                             Height="60" Width="40"
                             x:Name="HWToggleBtn"
                             Style="{StaticResource MyToggleButtonStyle}" HorizontalAlignment="Right"
-                            Click="ToggleInsertMode"
+                            Click="ToggleHandwritingMode"
                             RelativePanel.AlignRightWithPanel="True">
                             <SymbolIcon Symbol="Edit" Margin="-10 -10 0 0">
                                 <SymbolIcon.RenderTransform>
@@ -184,9 +188,9 @@
 
                     </Grid>
 
-                    <RichEditBox Grid.Row="1" BorderThickness="0" x:Name="inputTypeBox" FontSize="28" Visibility="Collapsed"/>
-                    <Canvas Grid.Row="1" Height="200" Background="White" x:Name="inputCanvasbg" />
-                    <InkCanvas Grid.Row="1" x:Name="inputInkCanvas" />
+                    <RichEditBox Grid.Row="1" BorderThickness="0" x:Name="inputTypeBox" FontSize="28" KeyDown="InputTypeBox_KeyDown" Visibility="Visible"/>
+                    <Canvas Grid.Row="1" Background="White" x:Name="inputCanvasbg" Visibility="Collapsed" />
+                    <InkCanvas Grid.Row="1" x:Name="inputInkCanvas" Visibility="Collapsed" />
                 </Grid>
                     
             </RelativePanel>

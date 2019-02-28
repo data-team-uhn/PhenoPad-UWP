@@ -919,7 +919,7 @@ namespace PhenoPad.CustomControl
                                                                  addin.widthOrigin, addin.heightOrigin,
                                                                  addin.Width, addin.Height, addin.inDock,
                                                                  addin.commentID, addin.commentslideX, addin.commentslideY,
-                                                                 addin.inkRatio, addin.anno_type);
+                                                                 addin.inkRatio, addin.anno_type, addin.commentText);
                 olist.Add(temp);
             }
 
@@ -1003,9 +1003,15 @@ namespace PhenoPad.CustomControl
                 addinCanvasEHR.Children.Add(canvasAddIn);
                 if (canvasAddIn.commentID != -1)
                 {
+                    if (canvasAddIn.anno_type == AnnotationType.TextComment || canvasAddIn.anno_type == AnnotationType.TextInsert)
+                    {
+                        canvasAddIn.inkCan.Visibility = Visibility.Collapsed;
+                        canvasAddIn.commentTextBlock.Visibility = Visibility.Visible;
+                        canvasAddIn.commentText = ia.commentText;
+                        canvasAddIn.commentTextBlock.Document.SetText(TextSetOptions.None, ia.commentText);
+                    }
                     canvasAddIn.inDock = false;
                     canvasAddIn.Visibility = Visibility.Visible;
-
                     ehrPage.comments.Add(canvasAddIn);
                     canvasAddIn.SlideToRight();
                 }

@@ -62,14 +62,17 @@ namespace PhenoPad.Gestures
                 //to prevent error spikes at the beginning/end of a stroke, only focus on mid-60% of the points
                 int sections = (int)(pts.Count * 0.2); 
                 InkPoint pre_point = pts[sections];
+                pts = new ArraySegment<InkPoint> ( pts.ToArray(), sections, pts.Count - sections).ToList(); 
                 int spike_count = 0;
-                int direction = 1;
-                for (int i = sections; i < (pts.Count - sections); i += 2)
+                int direction = pts[0].Position.X < pts[5].Position.X ? 1 : -1;
+                 
+                
+                for (int i = 0; i < pts.Count; i += 2)
                 {
                     if (direction == 1 && pts[i].Position.X < pre_point.Position.X)
                     {
                         spike_count++;
-                        direction = -1;
+                        direction = -1 ;
                     }
                     else if (direction == -1 && pts[i].Position.X > pre_point.Position.X)
                     {
@@ -124,6 +127,7 @@ namespace PhenoPad.Gestures
                     case ("hline"):
                         return StrokeType.HorizontalLine;
                     case ("zigzag"):
+
                         return StrokeType.Zigzag;
                     case ("dot"):
                         return StrokeType.Dot;

@@ -33,6 +33,7 @@ namespace PhenoPad.FileService
         public double slideY { get; set; }
         public int commentID { get; set; }
         public AnnotationType anno_type { get; set; }
+        public string commentText;
         public double inkRatio { get; set; }
 
 
@@ -51,7 +52,7 @@ namespace PhenoPad.FileService
                                     double transX, double transY, ScaleTransform zoomFactor,
                                     double widthOrigin, double heightOrigin,
                                     double width, double height, bool inDock,
-                                    int commentID, double slideX, double slideY, double inkRatio, AnnotationType type)
+                                    int commentID, double slideX, double slideY, double inkRatio, AnnotationType type, string commentText)
         {
             this.name = name;
             this.notebookId = notebookId;
@@ -72,6 +73,7 @@ namespace PhenoPad.FileService
             this.slideY = slideY;
             this.inkRatio = inkRatio;
             this.anno_type = type;
+            this.commentText = commentText;
             date = DateTime.Now.ToString("MM/dd/yyyy HH:mm:ss");
         }
 

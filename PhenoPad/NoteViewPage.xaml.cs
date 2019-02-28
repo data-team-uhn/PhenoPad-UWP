@@ -92,6 +92,7 @@ namespace PhenoPad
             }
             await Task.Delay(TimeSpan.FromSeconds(3));
             PlayMedia();
+            LoadNotebook();
             return;
         }
 
@@ -152,6 +153,10 @@ namespace PhenoPad
         protected async override void OnNavigatingFrom(NavigatingCancelEventArgs e)
         {
             //TODO
+            streamSocket.Close(0,"end");
+            streamSocket.Dispose();
+            streamSocket = null;
+            readTimer.Stop();
         }
 
         private async void LoadNotebook() {
@@ -234,59 +239,5 @@ namespace PhenoPad
             Frame.Navigate(typeof(PageOverview));
         }
 
-        async private void InitializeAdaptiveMediaSource(IInputStream stream,Uri uri)
-        {
-            try
-            {
-                AdaptiveMediaSourceCreationResult result = await AdaptiveMediaSource.CreateFromStreamAsync(stream, uri, "HLS");
-
-                if (result.Status == AdaptiveMediaSourceCreationStatus.Success)
-                {
-                    AdaptiveMediaSource ams = result.MediaSource;
-                    MediaPlayer player = new MediaPlayer();
-                    player.Source = MediaSource.CreateFromAdaptiveMediaSource(ams);
-                    player.Play();
-
-                    ams.InitialBitrate = ams.AvailableBitrates.Max<uint>();
-
-                    //Register for download requests
-                    ams.DownloadRequested += DownloadRequested;
-
-                    //Register for download failure and completion events
-                    ams.DownloadCompleted += DownloadCompleted;
-                    ams.DownloadFailed += DownloadFailed;
-
-                    //Register for bitrate change events
-                    //ams.DownloadBitrateChanged += DownloadBitrateChanged;
-                    //ams.PlaybackBitrateChanged += PlaybackBitrateChanged;
-
-                    //Register for diagnostic event
-                    //ams.Diagnostics.DiagnosticAvailable += DiagnosticAvailable;
-                }
-                else
-                {
-                    // Handle failure to create the adaptive media source
-                    MetroLogger.getSharedLogger().Error($"Adaptive source creation failed: {uri} - {result.ExtendedError}");
-                }
-            }
-            catch (Exception e) {
-                MetroLogger.getSharedLogger().Error($"Adaptive source creation exception: {e} - {e.Message}");
-            }
-        }
-
-        private void DownloadFailed(AdaptiveMediaSource sender, AdaptiveMediaSourceDownloadFailedEventArgs args)
-        {
-            throw new NotImplementedException();
-        }
-
-        private void DownloadCompleted(AdaptiveMediaSource sender, AdaptiveMediaSourceDownloadCompletedEventArgs args)
-        {
-            throw new NotImplementedException();
-        }
-
-        private void DownloadRequested(AdaptiveMediaSource sender, AdaptiveMediaSourceDownloadRequestedEventArgs args)
-        {
-            throw new NotImplementedException();
-        }
     }
 }

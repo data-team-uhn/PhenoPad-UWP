@@ -31,8 +31,10 @@ namespace PhenoPad.CustomControl
 {
     public enum AnnotationType
     {
-        Comment,
-        RawInsert
+        RawComment,
+        RawInsert,
+        TextComment,
+        TextInsert
     }
     //Partial class for EHR mode annotations only
     public sealed partial class AddInControl : UserControl
@@ -44,6 +46,7 @@ namespace PhenoPad.CustomControl
         public double COMMENT_WIDTH = 400;
         public Color BORDER_ACTIVE;
         public Color BORDER_INACTIVE;
+        public string commentText;
 
         public double commentslideX;
         public double commentslideY;
@@ -87,7 +90,7 @@ namespace PhenoPad.CustomControl
                 addinSlide.Y = 0;
             }
 
-            if (type == AnnotationType.Comment)
+            if (type == AnnotationType.TextComment || type == AnnotationType.RawComment)
             {
                 commentbg.Background = new SolidColorBrush(Colors.LightYellow);
                 BORDER_ACTIVE = Colors.Orange;
@@ -150,6 +153,8 @@ namespace PhenoPad.CustomControl
             Debug.WriteLine($"indock = {inDock}");
             if (! inDock)
             {
+                Visibility = Visibility.Visible;
+
                 if (this.Height >= DEFAULT_COMMENT_HEIGHT && this.Width >= DEFAULT_COMMENT_WIDTH)
                     await Dispatcher.RunAsync(Windows.UI.Core.CoreDispatcherPriority.Normal, CompressComment);
                 Canvas.SetZIndex(this,90);
@@ -159,6 +164,8 @@ namespace PhenoPad.CustomControl
                 HideMenu();
 
                 inkCan.InkPresenter.IsInputEnabled = false;//does not allow further edit once slides
+                commentTextBlock.IsEnabled = false;
+
                 DoubleAnimation dx = (DoubleAnimation)EHRCommentSlidingAnimation.Children.ElementAt(0);
                 dx.By = commentslideX;
                 DoubleAnimation dy = (DoubleAnimation)EHRCommentSlidingAnimation.Children.ElementAt(1);
@@ -172,10 +179,14 @@ namespace PhenoPad.CustomControl
         {//Slides comment back and re-enables edit mode
             if (inDock)
             {
+
                 //if there's a comment currently at edit mode, slide it back to avoid position shifting errors
                 AddInControl lastActiveComment = ehr.comments.Where(x => x.commentID == ehr.lastAddedCommentID).FirstOrDefault();
                 if (lastActiveComment != null)
+                {                   
                     lastActiveComment.SlideToRight();
+                }
+
                 ehr.HideCommentLine();
                 ehr.lastAddedCommentID = this.commentID;
                 DoubleAnimation dx = (DoubleAnimation)EHRCommentSlidingAnimation.Children.ElementAt(0);
@@ -202,6 +213,11 @@ namespace PhenoPad.CustomControl
                 Canvas.SetZIndex(this, 99);
                 inkCan.InkPresenter.IsInputEnabled = true;
                 inDock = false;
+                if (commentTextBlock.Visibility == Visibility.Visible) {
+                    Debug.WriteLine("re editing a text comment!");
+                    ehr.ReEditTextAnnotation(this);
+                    this.Visibility = Visibility.Collapsed;
+                }
             }
 
         }
@@ -253,74 +269,107 @@ namespace PhenoPad.CustomControl
         { //Shrinks the strokes in inkCan and readjusts the control frame size
             if (!hasImage)
             {
+                if (anno_type == AnnotationType.RawComment || anno_type == AnnotationType.RawInsert) {
+                    inkAnalyzer = new InkAnalyzer();
+                    inkAnalyzer.AddDataForStrokes(inkCan.InkPresenter.StrokeContainer.GetStrokes());
+                    await inkAnalyzer.AnalyzeAsync();
+                    var inknodes = inkAnalyzer.AnalysisRoot.FindNodes(InkAnalysisNodeKind.Line);
+                    foreach (InkStroke s in inkCan.InkPresenter.StrokeContainer.GetStrokes())
+                        s.Selected = true;
+
+                    Rect bound = inkCan.InkPresenter.StrokeContainer.BoundingRect;
+                    Debug.WriteLine($"Number of lines detected = {inknodes.Count},height ratio = {bound.Height / DEFAULT_COMMENT_HEIGHT}");
+                    inkRatio = bound.Width / COMMENT_WIDTH;
+
+                    //Detected less/equal one line of strokes and the bound is less than a line height,
+                    //In this case treat it as a single line of annotation
+                    if (inknodes.Count <= 1 && bound.Height <= COMMENT_HEIGHT * 1.5)
+                    {
+                        inkRatio = Math.Min(COMMENT_HEIGHT / (bound.Height + 10), bound.Height / (COMMENT_HEIGHT + 10));
+                        Debug.WriteLine($"single, ratio = {inkRatio}");
+                        this.Height = COMMENT_HEIGHT;
+                    }
+                    else
+                    {
+                        int line;
+                        //use InkAnalyzer's line count if available, o.w. estimate line using bound height
+                        line = inknodes.Count >= 1 ? inknodes.Count : (int)(Math.Ceiling((bound.Height) / COMMENT_HEIGHT));
+                        inkRatio = Math.Min((bound.Height) / (line * COMMENT_HEIGHT + 10), (line * COMMENT_HEIGHT) / (bound.Height + 10));
+                        Debug.WriteLine($"multiple, #lines = {line}, ratio = {inkRatio}");
+                        //recalculate number of lines relative to compressed strokes
+                        if (inknodes.Count < 1)
+                            line = (int)(Math.Ceiling((bound.Height * inkRatio + 2) / COMMENT_HEIGHT));
+                        Debug.WriteLine($"recalculated, #lines = {line}");
+                        this.Height = (line) * COMMENT_HEIGHT;
+                    }
+                    //further compresses the strokes if calculated ratio is over 60%
+                    if (inkRatio > 0.6)
+                        inkRatio = 0.6;
+                    foreach (InkStroke s in inkCan.InkPresenter.StrokeContainer.GetStrokes())
+                        s.PointTransform = Matrix3x2.CreateScale((float)inkRatio, (float)inkRatio);
+
+                    bound = inkCan.InkPresenter.StrokeContainer.BoundingRect;
+                    inkCanvas.InkPresenter.StrokeContainer.MoveSelected(new Point(-1 * bound.X + 1, -1 * bound.Y));
+                    this.Width = bound.Width < COMMENT_WIDTH ? COMMENT_WIDTH : bound.Width + 5;
+                    inkAnalyzer.ClearDataForAllStrokes();
+                }
+                else if (anno_type == AnnotationType.TextComment || anno_type == AnnotationType.TextInsert)
+                {
+                    this.Height = Math.Ceiling(getTextBound().Height / COMMENT_HEIGHT) * COMMENT_HEIGHT ;
+                    this.Width = DEFAULT_COMMENT_WIDTH;
+                }
+
+
                 Debug.WriteLine(Environment.NewLine);
                 ehr.HideCommentLine();
-                inkAnalyzer.AddDataForStrokes(inkCan.InkPresenter.StrokeContainer.GetStrokes());
-                await inkAnalyzer.AnalyzeAsync();
-                var inknodes = inkAnalyzer.AnalysisRoot.FindNodes(InkAnalysisNodeKind.Line);
-                foreach (InkStroke s in inkCan.InkPresenter.StrokeContainer.GetStrokes())
-                    s.Selected = true;
-
-                Rect bound = inkCan.InkPresenter.StrokeContainer.BoundingRect;
-                Debug.WriteLine($"Number of lines detected = {inknodes.Count},height ratio = {bound.Height / DEFAULT_COMMENT_HEIGHT}");
-                inkRatio = bound.Width / COMMENT_WIDTH;
-
-                //Detected less/equal one line of strokes and the bound is less than a line height,
-                //In this case treat it as a single line of annotation
-                if (inknodes.Count <= 1 && bound.Height <= COMMENT_HEIGHT * 1.5)
-                {
-                    inkRatio = Math.Min( COMMENT_HEIGHT / (bound.Height + 10) , bound.Height / (COMMENT_HEIGHT + 10));
-                    Debug.WriteLine($"single, ratio = {inkRatio}");
-                    this.Height = COMMENT_HEIGHT;
-                }
-                else
-                {
-                    int line;
-                    //use InkAnalyzer's line count if available, o.w. estimate line using bound height
-                    line = inknodes.Count >= 1 ? inknodes.Count : (int)(Math.Ceiling((bound.Height) / COMMENT_HEIGHT));
-                    inkRatio = Math.Min((bound.Height) / (line * COMMENT_HEIGHT + 10), (line * COMMENT_HEIGHT) / (bound.Height + 10));
-                    Debug.WriteLine($"multiple, #lines = {line}, ratio = {inkRatio}");
-                    //recalculate number of lines relative to compressed strokes
-                    if (inknodes.Count < 1)
-                        line = (int)(Math.Ceiling((bound.Height * inkRatio + 2) / COMMENT_HEIGHT));
-                    Debug.WriteLine($"recalculated, #lines = {line}");
-                    this.Height = (line) * COMMENT_HEIGHT;
-                }
-                //further compresses the strokes if calculated ratio is over 60%
-                if (inkRatio > 0.6)
-                    inkRatio = 0.6;
-                foreach (InkStroke s in inkCan.InkPresenter.StrokeContainer.GetStrokes())
-                    s.PointTransform = Matrix3x2.CreateScale((float)inkRatio, (float)inkRatio);
-
-                bound = inkCan.InkPresenter.StrokeContainer.BoundingRect;
-                inkCanvas.InkPresenter.StrokeContainer.MoveSelected(new Point(-1 * bound.X + 1, -1 * bound.Y));
-                this.Width = bound.Width < COMMENT_WIDTH? COMMENT_WIDTH : bound.Width + 5;
-                inkAnalyzer.ClearDataForAllStrokes();
                 Debug.WriteLine(Environment.NewLine);
             }
         }
 
+        public Rect getTextBound() {
+            string text;
+            commentTextBlock.Document.GetText(Windows.UI.Text.TextGetOptions.None, out text);
+            var range = commentTextBlock.Document.GetRange(0, text.Count());
+            Rect bound;
+            int hit;
+            range.GetRect(Windows.UI.Text.PointOptions.ClientCoordinates, out bound, out hit);
+            return bound;
+
+        }
+
+
         public async Task<double> GetCommentHeight()
         {//Gets the compressed comment height without actually compressing the comment
+            if (anno_type == AnnotationType.RawComment || anno_type == AnnotationType.RawInsert)
+            {
+                inkAnalyzer = new InkAnalyzer();
+                inkAnalyzer.AddDataForStrokes(inkCan.InkPresenter.StrokeContainer.GetStrokes());
+                await inkAnalyzer.AnalyzeAsync();
+                var inknodes = inkAnalyzer.AnalysisRoot.FindNodes(InkAnalysisNodeKind.Line);
+                Rect bound = inkCan.InkPresenter.StrokeContainer.BoundingRect;
 
-            inkAnalyzer.AddDataForStrokes(inkCan.InkPresenter.StrokeContainer.GetStrokes());
-            await inkAnalyzer.AnalyzeAsync();
-            var inknodes = inkAnalyzer.AnalysisRoot.FindNodes(InkAnalysisNodeKind.Line);
-            Rect bound = inkCan.InkPresenter.StrokeContainer.BoundingRect;
+                //estimated single line
+                if (inknodes.Count <= 1 && bound.Height <= COMMENT_HEIGHT * 1.5)
+                    return COMMENT_HEIGHT;
+                //estimated multiple line
+                else
+                {
+                    int line;
+                    line = inknodes.Count >= 1 ? inknodes.Count : (int)(Math.Ceiling((bound.Height) / COMMENT_HEIGHT));
+                    inkRatio = Math.Min((bound.Height) / (line * COMMENT_HEIGHT + 10), (line * COMMENT_HEIGHT) / (bound.Height + 10));
+                    //recalculate number of lines relative to compressed strokes
+                    if (inknodes.Count < 1)
+                        line = (int)(Math.Ceiling((bound.Height * inkRatio + 2) / COMMENT_HEIGHT));
+                    return (line) * COMMENT_HEIGHT;
 
-            //estimated single line
-            if (inknodes.Count <= 1 && bound.Height <= COMMENT_HEIGHT * 1.5)
-                return COMMENT_HEIGHT;
-            //estimated multiple line
-            else {
-                int line;
-                line = inknodes.Count >= 1 ? inknodes.Count: (int)(Math.Ceiling((bound.Height) / COMMENT_HEIGHT));
-                inkRatio = Math.Min((bound.Height) / (line * COMMENT_HEIGHT + 10), (line * COMMENT_HEIGHT) / (bound.Height + 10));
-                //recalculate number of lines relative to compressed strokes
-                if (inknodes.Count < 1)
-                    line = (int)(Math.Ceiling((bound.Height * inkRatio + 2) / COMMENT_HEIGHT));
-                return (line) * COMMENT_HEIGHT;
+                }
             }
+            else if (anno_type == AnnotationType.TextComment || anno_type == AnnotationType.TextInsert)
+            {
+                return Math.Ceiling(getTextBound().Height / COMMENT_HEIGHT) * COMMENT_HEIGHT;
+            }
+            else
+                return 0;
         }
         private void inkCanvas_StrokesCollected(InkPresenter sender, InkStrokesCollectedEventArgs args)
         {
