@@ -153,7 +153,7 @@ namespace PhenoPad.CustomControl
             annotations.InkPresenter.StrokeInput.StrokeEnded += annotations_StokeEnded;
 
             inputInkCanvas.InkPresenter.StrokesCollected += inputInkCanvas_StrokesCollected;
-            inputInkCanvas.DoubleTapped += InsertToEHR;
+            //inputInkCanvas.DoubleTapped += InsertToEHR;
 
             EHRTextBox.Paste += RemovePasteFormat;
             EHRTextBox.Document.ApplyDisplayUpdates();
@@ -303,6 +303,18 @@ namespace PhenoPad.CustomControl
                 inputTypeBox.Focus(FocusState.Pointer);
         }
 
+        private void HideAndClearInputPanel() {
+
+            this.insertType = InsertType.None;
+            inputMarkup.Visibility = Visibility.Collapsed;
+            inputTypeBox.Document.SetText(TextSetOptions.None, "");
+            inputInkCanvas.InkPresenter.StrokeContainer.Clear();
+            curLineWordsStackPanel.Children.Clear();
+            inputgrid.Visibility = Visibility.Collapsed;
+            RefreshTextStyle();
+
+        }
+
         private void ShowCPMenu(object sender, DoubleTappedRoutedEventArgs e)
         {//Shows the menu UI with text copy/paste options
             Canvas.SetLeft(cpMenu, e.GetPosition(backgroundCanvas).X - cpMenu.ActualWidth - 10);
@@ -402,9 +414,13 @@ namespace PhenoPad.CustomControl
             await FileManager.getSharedFileManager().DeleteAddInFile(notebookid, pageid, comment.name);
         }
 
-        public bool CheckIfEditingComment() {
+        public bool IsEditingComment() {
             var editing = this.comments.Where(x => x.inDock == false);
             return editing.Count() > 0 ? true : false;
+        }
+
+        public bool InputHasContent() {
+            return this.inputgrid.Visibility == Visibility.Visible && inputgrid.Opacity == 1 && (getText(inputTypeBox).Trim().Length > 0 || inputInkCanvas.InkPresenter.StrokeContainer.GetStrokes().Count > 0);
         }
 
         internal void ShowCommentLine(AddInControl comment)
@@ -484,7 +500,6 @@ namespace PhenoPad.CustomControl
         }
 
         private void InputTypeBox_KeyDown(object obj, KeyRoutedEventArgs ke) {
-            //Debug.WriteLine(ke.Key.ToString());
             if (ke.Key.Equals(VirtualKey.Tab))
                 InsertToEHRClick();
         }
@@ -509,15 +524,18 @@ namespace PhenoPad.CustomControl
             inputTypeBox.Focus(FocusState.Pointer);
         }
 
-        private void CheckExtendPage(object sender, SizeChangedEventArgs e)
+        private async void CheckExtendPage(object sender, SizeChangedEventArgs e)
         {//checks if EHR text height has exceeded the page size and extend if needed
-            Debug.WriteLine($"size changed ! new height = {e.NewSize.Height}");
-            if (e.NewSize.Height + 500 > EHR_HEIGHT)
-            {
-                EHRRootGrid.Height = e.NewSize.Height + 500;
-            }
-            this.DrawBackgroundLines();
-            this.UpdateLayout();
+            //Debug.WriteLine($"size changed ! new height = {e.NewSize.Height}");
+            await Dispatcher.RunAsync(CoreDispatcherPriority.Normal,()=> {
+                Rect bound = GetHERTextBound();
+                if (bound.Y + bound.Height + 500 > EHRRootGrid.Height)
+                {
+                    EHRRootGrid.Height += 500;
+                }
+                this.DrawBackgroundLines();
+                this.UpdateLayout();
+            });
         }
 
         private void AnalyzePhenotypeOnLine(object sender, RoutedEventArgs e) {
@@ -535,15 +553,13 @@ namespace PhenoPad.CustomControl
         {/// Dismiss all pop-ups when tapping on canvas
             await Dispatcher.RunAsync(CoreDispatcherPriority.High, () =>
             {
-                bool hascontent = getText(inputTypeBox).Length > 0 && inputInkCanvas.InkPresenter.StrokeContainer.GetStrokes().Count > 0;
-                if (inputgrid.Visibility == Visibility.Visible && inputgrid.Opacity == 1 && hascontent)
-                    InsertToEHR();
+                if (InputHasContent())
+                    InsertToEHRClick();
                 else
                     SlideCommentsToSide();
             });
-                
-            inputgrid.Visibility = Visibility.Collapsed;
-            inputMarkup.Visibility = Visibility.Collapsed;
+
+            HideAndClearInputPanel();
             cpMenu.Visibility = Visibility.Collapsed;
             SelectionMenu.Visibility = Visibility.Collapsed;
             ClearOperationStrokes();
@@ -556,10 +572,7 @@ namespace PhenoPad.CustomControl
             cur_delete = (-1, -1);
             current_index = -1;
             RefreshTextStyle();
-            insertType = InsertType.None;
-
-            //parentControl.ClearBriefPhenotypeEHR();
-            
+            insertType = InsertType.None;            
         }
 
         private async void TriggerAutoSave(object sender = null, object e = null)
@@ -604,7 +617,7 @@ namespace PhenoPad.CustomControl
         private void RefreshTextStyle()
         {/// Reapplies updated text styles
 
-            string text = getText(EHRTextBox);
+            string text = getText(EHRTextBox).TrimEnd() + " ";
             EHRTextBox.Document.SetText(TextSetOptions.None, text);
 
             foreach (List<int> r in inserts)
@@ -866,22 +879,6 @@ namespace PhenoPad.CustomControl
 
         }
 
-        public void InsertToEHR(object sender = null, DoubleTappedRoutedEventArgs e = null)
-        {
-            switch (insertType)
-            {
-                case (InsertType.Insert):
-                    AddInsert();
-                    break;
-                case (InsertType.Annotation):
-                    AddAnnotation();
-                    break;
-                case (InsertType.ReEdit):
-                    ReplaceAnnotation();
-                    break;
-
-            }
-        }
         internal void ReEditTextAnnotation(AddInControl anno)
         {
             ((FontIcon)inputMarkup.Children[0]).Foreground = ANNOTATION;
@@ -900,6 +897,13 @@ namespace PhenoPad.CustomControl
 
         private void InsertToEHRClick(object sender = null, RoutedEventArgs e = null)
         {//Invoked by clicking "+" in insert panel, inserts all recognized text into EHR text and refresh format and records
+            if (!InputHasContent())
+            {
+                //If user added newlines at end of file but didn't have any inputs, cancel the newlines
+                EHRTextBox.Document.SetText(TextSetOptions.None, getText(EHRTextBox).TrimEnd() + " ");
+                HideAndClearInputPanel();
+                return;
+            }
 
             switch (insertType) {
                 case (InsertType.Insert):
@@ -911,10 +915,8 @@ namespace PhenoPad.CustomControl
                 case (InsertType.ReEdit):
                     ReplaceAnnotation();
                     break;
-
             }
         }
-
 
         private async void AddCommentAndReArrange(AddInControl comment) {
             this.comments = comments.OrderBy(x => x.commentID).ToList();
@@ -933,10 +935,7 @@ namespace PhenoPad.CustomControl
             {
                 this.comments.Add(comment);
                 lastAddedCommentID = comment.commentID;
-                inputgrid.Visibility = Visibility.Collapsed;
-                inputMarkup.Visibility = Visibility.Collapsed;
-                inputInkCanvas.InkPresenter.StrokeContainer.Clear();
-                curLineWordsStackPanel.Children.Clear();
+                HideAndClearInputPanel();
                 SlideCommentsToSide();
                 RefreshTextStyle();
             }
@@ -970,15 +969,18 @@ namespace PhenoPad.CustomControl
                 comment.inkCan.InkPresenter.StrokeContainer.PasteFromClipboard(new Point(1, 1));
                 AddCommentAndReArrange(comment);
             }
+
             else if (insertMode == InsertMode.typing)
             {
                 string typeText = getText(inputTypeBox).TrimEnd();
                 string[] phrase = typeText.Split(Environment.NewLine.ToCharArray());
+                int newlineOffset = phrase.Length;
                 Debug.WriteLine($"phrase count = {phrase.Length}+ \n \n \n");
                 if (phrase.Count() == 1)
                 {
                     text = phrase[0].Trim() + " ";
-                    UpdateRecordListInsert(current_index + 1, text.Length);
+                    newlineOffset = 0;
+                    //UpdateRecordListInsert(current_index + 1, text.Length);
                 }
                 else {
                     for (int i = 0; i < phrase.Length; i++)
@@ -997,22 +999,32 @@ namespace PhenoPad.CustomControl
                         else
                             text += p + " " + Environment.NewLine;
                     }
-                    UpdateRecordListInsert(current_index + 1, text.Length - phrase.Count());
                 }
                 if (text[0] == ' ')
                     text = text.Substring(1);//for some reason there's a white space at index 0 that won't be trimmed
-                inputTypeBox.Document.SetText(TextSetOptions.None, "");
-                string all_text = getText(EHRTextBox).TrimEnd() + " ";
+                string all_text = getText(EHRTextBox);
 
                 if (current_index >= all_text.Length)
                 { //inserting at end of text
-                    all_text = all_text.TrimEnd() + " ";
+                    all_text = all_text.Substring(0, all_text.Length - 1);
                     EHRTextBox.Document.SetText(TextSetOptions.None, all_text + text + " ");
+                    UpdateRecordListInsert(current_index + 1, text.Length - newlineOffset);
+
+                }
+                else if (CheckInsertingAfterNewLine(current_index)) {
+                    string result;
+                    if (all_text[current_index] == ':')
+                        result = all_text.Substring(0, current_index) + text + all_text.Substring(current_index + 1);
+                    else
+                        result = all_text.Insert(current_index,text);
+                    EHRTextBox.Document.SetText(TextSetOptions.None, result);
+                    UpdateRecordListInsert(current_index, text.Length - newlineOffset );
                 }
                 else
                 {
                     string result = all_text.Insert(current_index + 1, text);
                     EHRTextBox.Document.SetText(TextSetOptions.None, result);
+                    UpdateRecordListInsert(current_index + 1, text.Length - newlineOffset);
                 }
 
                 //Analyzes the new inserted text for Phenotypes
@@ -1020,12 +1032,20 @@ namespace PhenoPad.CustomControl
 
                 //when adding insert with newline have to include the newline's character count
                 UpdateRecordMerge();
-                inputgrid.Visibility = Visibility.Collapsed;
-                inputMarkup.Visibility = Visibility.Collapsed;
-                inputInkCanvas.InkPresenter.StrokeContainer.Clear();
-                curLineWordsStackPanel.Children.Clear();
+                HideAndClearInputPanel();
                 ClearOperationStrokes();
             }
+
+        }
+
+        private bool CheckInsertingAfterNewLine(int index) {
+            
+            string text = getText(EHRTextBox);
+            if (index - 1 < 0)
+                return false;
+            text = text.Substring(index - 1, 2);
+            string[] phrase = text.Split(Environment.NewLine.ToCharArray());
+            return phrase.Length > 1;
 
         }
 
@@ -1055,6 +1075,7 @@ namespace PhenoPad.CustomControl
                 comment.inkCan.InkPresenter.StrokeContainer.PasteFromClipboard(new Point(5, 5));
                 inputInkCanvas.InkPresenter.StrokeContainer.Clear();
             }
+
             else if (insertMode == InsertMode.typing) {
                 comment = parentControl.NewEHRCommentControl(pos.X + 10, newY + 110, cur_selected.Item1, AnnotationType.TextComment);
                 comment.commentslideX = EHR_TEXTBOX_WIDTH.Value - pos.X + 10;
@@ -1456,11 +1477,10 @@ namespace PhenoPad.CustomControl
 
         private void inkCanvas_InkPresenter_StrokesCollectedAsync(InkPresenter sender, InkStrokesCollectedEventArgs args)
         {
-            bool inputGridOpen = (inputgrid.Opacity == 1 || inputgrid.Visibility == Visibility.Visible) && inputInkCanvas.InkPresenter.StrokeContainer.GetStrokes().Count > 0;
-            bool editingComment = CheckIfEditingComment();
-            //if user is inserting an annotation, treat gestture like a tap and auto adds annotation
-            if (inputGridOpen || editingComment)
+            //if user is still editing and a new stroke is tapped, 
+            if (InputHasContent() || IsEditingComment())
             {
+                Debug.WriteLine("Stroke collected but still editing\n");
                 OnElementTapped();
             }
 
@@ -1471,9 +1491,9 @@ namespace PhenoPad.CustomControl
                     //Process strokes that is valid within textbox bound
                     Rect bounding = s.BoundingRect;
                     Rect EHRBounding = GetHERTextBound();
-                    if (s.BoundingRect.Y < (EHRBounding.Y + EHRBounding.Height))
+                    Debug.WriteLine($"strokeY = {s.BoundingRect.Y}, EHRY = {EHRBounding.Y + EHRBounding.Height}");
+                    if (s.BoundingRect.Y <= (EHRBounding.Height + LINE_HEIGHT))
                     {
-                        Debug.WriteLine("IN BOUND");
                         StrokeType gesture = GestureManager.GetSharedGestureManager().GetGestureFromStroke(s);
 
                         if (gesture == StrokeType.Zigzag)
@@ -1524,7 +1544,6 @@ namespace PhenoPad.CustomControl
                                                         PointOptions.ClientCoordinates, out pos);
                                         insertType = InsertType.Insert;
                                         ((FontIcon)inputMarkup.Children[0]).Foreground = INSERT;
-
                                         ShowInputPanel(pos);
                                     }
                                     else
@@ -1559,28 +1578,30 @@ namespace PhenoPad.CustomControl
                         StrokeType gesture = GestureManager.GetSharedGestureManager().GetGestureFromStroke(s);
                         if (gesture == StrokeType.Dot)
                         {
-                            //inserting at end of paragraph with newline
-                            Debug.WriteLine("is dot");
+                            //inserting at end of paragraph with calculated newline number
                             var pos = new Point(bounding.X + bounding.Width / 2 - 10, bounding.Y - LINE_HEIGHT);
-                            //var range = EHRTextBox.Document.GetRangeFromPoint(pos, PointOptions.ClientCoordinates);
-                            string text = getText(EHRTextBox).TrimEnd() + " ";
                             double lineNum = Math.Ceiling((s.BoundingRect.Y - (EHRBounding.Y+EHRBounding.Height)) / LINE_HEIGHT);
                             Debug.WriteLine("extra line number = " + lineNum);
-                            for (int i = 0; i < lineNum; i++) { text += Environment.NewLine + " "; }
-                            text = text.Substring(0,text.Length - 1)+"END:: ";
+                            string text = getText(EHRTextBox).TrimEnd()+" ";
+                            for (int i = 0; i < lineNum; i++) {
+                                if (i == lineNum - 1)
+                                    text += ":";
+                                else
+                                    text += Environment.NewLine;
+                            }
                             EHRTextBox.Document.SetText(TextSetOptions.None, text);
 
+                            //show insert panel at end of paragraph
                             var range = EHRTextBox.Document.GetRange(text.Length, text.Length);
-                            range.GetPoint(HorizontalCharacterAlignment.Center,VerticalCharacterAlignment.Bottom,PointOptions.ClientCoordinates,out pos);
+                            range.GetPoint(HorizontalCharacterAlignment.Center, VerticalCharacterAlignment.Bottom, PointOptions.ClientCoordinates, out pos);
                             pos.Y -= LINE_HEIGHT;
 
                             ((FontIcon)inputMarkup.Children[0]).Foreground = INSERT;
                             insertType = InsertType.Insert;
-                            current_index = text.Length - 1 - (int)lineNum; //taking account of newly added newlines
+                            current_index = text.Length - (int)lineNum; //taking account of newly added newlines
 
                             ShowInputPanel(pos);
-                            RefreshTextStyle();
-                            
+                            RefreshTextStyle();                            
                         }
                     }
                 }
@@ -1787,7 +1808,6 @@ namespace PhenoPad.CustomControl
                 }
             }
         }
-
 
         private async Task<bool> analyzeInk(InkStroke lastStroke = null, bool serverFlag = false)
         {/// <summary> Analyze ink strokes contained in inkAnalyzer and add phenotype candidates from fetching API</summary>

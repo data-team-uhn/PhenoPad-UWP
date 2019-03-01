@@ -62,7 +62,7 @@
             <!--Text Box for imported EHR file-->
         
             <RichEditBox Style="{StaticResource MyRichEditBoxStyle}"                         
-                         Background="LightGray" x:Name="EHRTextBox" 
+                         Background="Yellow" x:Name="EHRTextBox" 
                          x:FieldModifier="public"
                          TextWrapping="Wrap"
                          Opacity="0.8"
