@@ -371,6 +371,10 @@ namespace PhenoPad.CustomControl
             else
                 return 0;
         }
+        public double GetSlideOffsetY() {
+            DoubleAnimation dy = (DoubleAnimation)EHRCommentSlidingAnimation.Children.ElementAt(1);
+            return (double)dy.By;
+        }
         private void inkCanvas_StrokesCollected(InkPresenter sender, InkStrokesCollectedEventArgs args)
         {
             //detects if user input has reached maximum height and extend if necessary

@@ -599,15 +599,6 @@ namespace PhenoPad.CustomControl
             //todo
         }
 
-        private Rect GetHERTextBound() {
-            string text;
-            EHRTextBox.Document.GetText(Windows.UI.Text.TextGetOptions.None, out text);
-            var range = EHRTextBox.Document.GetRange(0, text.Length);
-            Rect bound;
-            int hit;
-            range.GetRect(Windows.UI.Text.PointOptions.ClientCoordinates, out bound, out hit);
-            return bound;
-        }
 
 
         #endregion
@@ -773,6 +764,17 @@ namespace PhenoPad.CustomControl
 
         }
 
+        private Rect GetHERTextBound()
+        {
+            string text;
+            EHRTextBox.Document.GetText(TextGetOptions.None, out text);
+            var range = EHRTextBox.Document.GetRange(0, text.Length);
+            Rect bound;
+            int hit;
+            range.GetRect(PointOptions.ClientCoordinates, out bound, out hit);
+            return bound;
+        }
+
         public void ReturnToEdit()
         {/// Updates UI back to EHR edit mode
             EHRTextBox.Visibility = Visibility.Visible;
@@ -865,6 +867,7 @@ namespace PhenoPad.CustomControl
                     //Debug.WriteLine($"after insert, Yoffset = {yOffset}");
                     if (yOffset != 0) {
                         comment.Slide(y: yOffset);
+                        Debug.WriteLine($"get={comment.GetSlideOffsetY()},actual={comment.commentslideY}");
                         comment.commentslideY += yOffset - LINE_HEIGHT;
                         comment.canvasTop = newY;
                         Canvas.SetTop(comment, comment.canvasTop);
@@ -873,6 +876,7 @@ namespace PhenoPad.CustomControl
                     comment.commentslideX -= xOffset;
                     comment.canvasLeft = pos.X + 10;
                     Canvas.SetLeft(comment, comment.canvasLeft);
+                    UpdateLayout();
                 }
 
             }
@@ -916,6 +920,15 @@ namespace PhenoPad.CustomControl
                     ReplaceAnnotation();
                     break;
             }
+        }
+
+        private string AddSpaceAfterPunctuation(string text) {
+            //var newString = Regex.Replace(text, @"(?<!^)(\b)\w\S(?!$)", "$& $1");
+            text = Regex.Replace(text, @"\w\W\s*", "$& ");
+            var newString = Regex.Replace(text, @"(\s)+", " ");
+            //Debug.WriteLine($"OLD STRING={text}");
+            //Debug.WriteLine($"NEW STRING={newString}");
+            return newString;
         }
 
         private async void AddCommentAndReArrange(AddInControl comment) {
@@ -975,24 +988,24 @@ namespace PhenoPad.CustomControl
                 string typeText = getText(inputTypeBox).TrimEnd();
                 string[] phrase = typeText.Split(Environment.NewLine.ToCharArray());
                 int newlineOffset = phrase.Length;
-                Debug.WriteLine($"phrase count = {phrase.Length}+ \n \n \n");
+                Debug.WriteLine($"phrase count = {phrase.Length}+ \n");
                 if (phrase.Count() == 1)
                 {
-                    text = phrase[0].Trim() + " ";
+                    text = AddSpaceAfterPunctuation(phrase[0]).Trim() + " ";
                     newlineOffset = 0;
                     //UpdateRecordListInsert(current_index + 1, text.Length);
                 }
                 else {
                     for (int i = 0; i < phrase.Length; i++)
                     {
-                        string p = phrase[i];
+                        string p = AddSpaceAfterPunctuation(phrase[i]).Trim();
                         Debug.WriteLine($"p = {p}, length of p = {p.Length}");
-                        if (p.EndsWith(" "))
-                        {
-                            Debug.WriteLine("end with space");
-                            text += p + Environment.NewLine;
-                        }
-                        else if (p.Length == 0) //this is an element line with no words but a newline
+                        //if (p.EndsWith(" "))
+                        //{
+                        //    Debug.WriteLine("end with space");
+                        //    text += p + Environment.NewLine;
+                        //}
+                        if (p.Length == 0) //this is an element line with no words but a newline
                         {
                             text += " " + Environment.NewLine;
                         }
@@ -1484,6 +1497,10 @@ namespace PhenoPad.CustomControl
                 OnElementTapped();
             }
 
+            else if (inputgrid.Visibility == Visibility.Visible)
+                HideAndClearInputPanel();
+
+
             else
             {
                 foreach (var s in args.Strokes)
@@ -1580,12 +1597,13 @@ namespace PhenoPad.CustomControl
                         {
                             //inserting at end of paragraph with calculated newline number
                             var pos = new Point(bounding.X + bounding.Width / 2 - 10, bounding.Y - LINE_HEIGHT);
-                            double lineNum = Math.Ceiling((s.BoundingRect.Y - (EHRBounding.Y+EHRBounding.Height)) / LINE_HEIGHT);
+                            double lineNum = Math.Ceiling((s.BoundingRect.Y - (EHRBounding.Y + EHRBounding.Height)) / LINE_HEIGHT);
                             Debug.WriteLine("extra line number = " + lineNum);
-                            string text = getText(EHRTextBox).TrimEnd()+" ";
-                            for (int i = 0; i < lineNum; i++) {
+                            string text = getText(EHRTextBox).TrimEnd() + " ";
+                            for (int i = 0; i < lineNum; i++)
+                            {
                                 if (i == lineNum - 1)
-                                    text += ":";
+                                    text += ".";
                                 else
                                     text += Environment.NewLine;
                             }
@@ -1601,7 +1619,7 @@ namespace PhenoPad.CustomControl
                             current_index = text.Length - (int)lineNum; //taking account of newly added newlines
 
                             ShowInputPanel(pos);
-                            RefreshTextStyle();                            
+                            RefreshTextStyle();
                         }
                     }
                 }
