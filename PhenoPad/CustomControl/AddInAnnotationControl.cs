@@ -371,9 +371,9 @@ namespace PhenoPad.CustomControl
             else
                 return 0;
         }
-        public double GetSlideOffsetY() {
-            DoubleAnimation dy = (DoubleAnimation)EHRCommentSlidingAnimation.Children.ElementAt(1);
-            return (double)dy.By;
+
+        public double GetSlideOffsetY() {           
+            return addinSlide.Y;
         }
         private void inkCanvas_StrokesCollected(InkPresenter sender, InkStrokesCollectedEventArgs args)
         {

@@ -212,6 +212,7 @@ namespace PhenoPad.CustomControl
                 //manually reformatting text by adding a space at the end of paragraphs
                 foreach (string p in paragraphs)
                 {
+
                     if (!p.EndsWith(" "))
                         text += p + " " + Environment.NewLine;
                     else
@@ -311,6 +312,10 @@ namespace PhenoPad.CustomControl
             inputInkCanvas.InkPresenter.StrokeContainer.Clear();
             curLineWordsStackPanel.Children.Clear();
             inputgrid.Visibility = Visibility.Collapsed;
+            //in case user wanted to insert at arbitary line at end of text but then canceled, need to removed the trailing anchor char
+            string text = getText(EHRTextBox).TrimEnd();
+            text = text.Substring(0, text.Length - 1) + " ";
+            EHRTextBox.Document.SetText(TextSetOptions.None, text);
             RefreshTextStyle();
 
         }
@@ -322,39 +327,15 @@ namespace PhenoPad.CustomControl
             cpMenu.Visibility = Visibility.Visible;
         }
 
-        private void AddComment(object sender, RoutedEventArgs e)
+        private void AddAnnotation(object sender, RoutedEventArgs e)
         { //adds a new addin control in parent NotePageControl as a comment type
-
             SelectionMenu.Visibility = Visibility.Collapsed;
             var range = EHRTextBox.Document.GetRange(cur_selected.Item1, cur_selected.Item1 + 1);
             Point pos;
-
             range.GetPoint(HorizontalCharacterAlignment.Left, VerticalCharacterAlignment.Bottom, PointOptions.ClientCoordinates, out pos);
+            ((FontIcon)inputMarkup.Children[0]).Foreground = ANNOTATION;
             insertType = InsertType.Annotation;
             ShowInputPanel(new Point(pos.X - 20, pos.Y - LINE_HEIGHT));
-
-            //double newY = (Math.Ceiling(pos.Y / LINE_HEIGHT) + 1) * LINE_HEIGHT;
-            //pos.X -= 10;
-            //AddInControl comment = parentControl.NewEHRCommentControl(pos.X, newY + 110, cur_selected.Item1, AnnotationType.Comment);
-            //comment.Visibility = Visibility.Collapsed;
-            //comment.commentslideX = EHR_TEXTBOX_WIDTH.Value - pos.X + 20;
-            //comment.commentslideY = -LINE_HEIGHT;
-            //annotated.Add(new List<int>() { cur_selected.Item1, cur_selected.Item2 });
-
-            //this.comments = comments.OrderBy(x => x.commentID).ToList();
-            //foreach (AddInControl c in comments)
-            //{
-            //    //if the new comment collides with previously saved comments, shift this comment down
-            //    bool collides = await Collides(comment, c);
-            //    if (comment.commentID > c.commentID && collides) {
-            //        Debug.WriteLine("collides");
-            //        double overlap_offset = (c.canvasTop + c.commentslideY + c.Height + 10) - (comment.canvasTop + comment.commentslideY) + 10;
-            //        comment.commentslideY += overlap_offset;
-            //    }
-            //}               
-            //this.comments.Add(comment);
-            //lastAddedCommentID = comment.commentID;
-            //RefreshTextStyle();
         }
 
         private async Task<bool> Collides(AddInControl c1, AddInControl c2)
@@ -476,7 +457,7 @@ namespace PhenoPad.CustomControl
                     bool collides = await Collides(lastAdded, comment);
                     if (comment.commentID <= lastAdded.commentID)
                     {
-                        Debug.WriteLine("first if statement triggered");
+                        Debug.WriteLine("slide comments to side - first if statement triggered");
                         comment.SlideToRight();
                     }
                     else if (shift)
@@ -487,7 +468,7 @@ namespace PhenoPad.CustomControl
                     else if (comment.commentID > lastAddedCommentID && collides)
                     {
                         double commentHeight = await lastAdded.GetCommentHeight();
-                        overlap_offset = (lastAdded.canvasTop + lastAdded.commentslideY + lastAdded.Height + 10) - (comment.canvasTop + comment.commentslideY) + 10;
+                        overlap_offset = (lastAdded.canvasTop + lastAdded.commentslideY + commentHeight + 10) - (comment.canvasTop + comment.commentslideY) + 10;
                         Debug.WriteLine($"overlap offset = {overlap_offset}");
                         comment.commentslideY += overlap_offset;
                         comment.Slide(y: overlap_offset);
@@ -862,15 +843,18 @@ namespace PhenoPad.CustomControl
                     Point pos;
                     range.GetPoint(HorizontalCharacterAlignment.Left, VerticalCharacterAlignment.Bottom, PointOptions.ClientCoordinates, out pos);
                     double newY = (Math.Ceiling(pos.Y / LINE_HEIGHT) + 1) * LINE_HEIGHT + 110;
+                    comment.canvasTop = newY;
+                    Canvas.SetTop(comment, comment.canvasTop);
+
                     double xOffset = (pos.X + 10) - comment.canvasLeft;
-                    double yOffset = newY - comment.canvasTop ;
+                    double yOffset = newY - comment.canvasTop;
                     //Debug.WriteLine($"after insert, Yoffset = {yOffset}");
-                    if (yOffset != 0) {
+                    if (yOffset >= 0) {
+
+                        comment.commentslideY += yOffset ;
+
                         comment.Slide(y: yOffset);
                         Debug.WriteLine($"get={comment.GetSlideOffsetY()},actual={comment.commentslideY}");
-                        comment.commentslideY += yOffset - LINE_HEIGHT;
-                        comment.canvasTop = newY;
-                        Canvas.SetTop(comment, comment.canvasTop);
                     }
                     comment.Slide(x: -xOffset);
                     comment.commentslideX -= xOffset;
@@ -917,7 +901,8 @@ namespace PhenoPad.CustomControl
                     AddAnnotation();
                     break;
                 case (InsertType.ReEdit):
-                    ReplaceAnnotation();
+                    if(IsEditingComment())
+                        ReplaceAnnotation();
                     break;
             }
         }
@@ -940,7 +925,7 @@ namespace PhenoPad.CustomControl
                 if (comment.commentID > c.commentID && collides)
                 {
                     //Debug.WriteLine("collides");
-                    double overlap_offset = (c.canvasTop + c.commentslideY + c.Height + 10) - (comment.canvasTop + comment.commentslideY) + 10;
+                    double overlap_offset = (c.canvasTop + c.commentslideY + c.ActualHeight + 10) - (comment.canvasTop + comment.commentslideY) + 10;
                     comment.commentslideY += overlap_offset;
                 }
             }
@@ -987,52 +972,55 @@ namespace PhenoPad.CustomControl
             {
                 string typeText = getText(inputTypeBox).TrimEnd();
                 string[] phrase = typeText.Split(Environment.NewLine.ToCharArray());
-                int newlineOffset = phrase.Length;
+                //number of newline character count to be subtracted later for index offset
+                int newlineOffset = phrase.Length - 1;
                 Debug.WriteLine($"phrase count = {phrase.Length}+ \n");
                 if (phrase.Count() == 1)
-                {
+                {//no newline in insert text, simply parse and set offset to 0
                     text = AddSpaceAfterPunctuation(phrase[0]).Trim() + " ";
                     newlineOffset = 0;
-                    //UpdateRecordListInsert(current_index + 1, text.Length);
                 }
-                else {
+                else
+                {//if there are new lines, need to manually add a space before each newline
                     for (int i = 0; i < phrase.Length; i++)
                     {
                         string p = AddSpaceAfterPunctuation(phrase[i]).Trim();
                         Debug.WriteLine($"p = {p}, length of p = {p.Length}");
-                        //if (p.EndsWith(" "))
-                        //{
-                        //    Debug.WriteLine("end with space");
-                        //    text += p + Environment.NewLine;
-                        //}
                         if (p.Length == 0) //this is an element line with no words but a newline
                         {
-                            text += " " + Environment.NewLine;
+                            //if (text.Trim().Length == 0)
+                                text += Environment.NewLine;
+                            //else
+                            //    text += " " + Environment.NewLine;
                         }
                         else
                             text += p + " " + Environment.NewLine;
                     }
+                    text = text.TrimEnd() + " ";
                 }
-                if (text[0] == ' ')
-                    text = text.Substring(1);//for some reason there's a white space at index 0 that won't be trimmed
+
                 string all_text = getText(EHRTextBox);
 
-                if (current_index >= all_text.Length)
-                { //inserting at end of text
-                    all_text = all_text.Substring(0, all_text.Length - 1);
-                    EHRTextBox.Document.SetText(TextSetOptions.None, all_text + text + " ");
-                    UpdateRecordListInsert(current_index + 1, text.Length - newlineOffset);
+                if (CheckInsertingAfterNewLine(current_index)) {
+                    Debug.WriteLine("inserting after newline");
 
-                }
-                else if (CheckInsertingAfterNewLine(current_index)) {
                     string result;
-                    if (all_text[current_index] == ':')
+                    if (all_text[current_index] == '.')
                         result = all_text.Substring(0, current_index) + text + all_text.Substring(current_index + 1);
                     else
                         result = all_text.Insert(current_index,text);
                     EHRTextBox.Document.SetText(TextSetOptions.None, result);
                     UpdateRecordListInsert(current_index, text.Length - newlineOffset );
                 }
+                else if (current_index >= all_text.Length)
+                { //inserting at end of text
+                    Debug.WriteLine("inserting at end of text");
+                    all_text = all_text.Substring(0, all_text.Length - 1);
+                    EHRTextBox.Document.SetText(TextSetOptions.None, all_text + text + " ");
+                    UpdateRecordListInsert(current_index + 1, text.Length - newlineOffset);
+
+                }
+
                 else
                 {
                     string result = all_text.Insert(current_index + 1, text);
@@ -1096,7 +1084,7 @@ namespace PhenoPad.CustomControl
                 comment.inkCan.Visibility = Visibility.Collapsed;
                 comment.commentTextBlock.Visibility = Visibility.Visible;
                 comment.commentTextBlock.Document.SetText(TextSetOptions.None, getText(inputTypeBox));
-                comment.commentText = getText(inputTypeBox);
+                comment.commentText = getText(inputTypeBox).Trim();
                 inputTypeBox.Document.SetText(TextSetOptions.None, "");
             }
             if (comment != null) {
@@ -1451,26 +1439,6 @@ namespace PhenoPad.CustomControl
             string body;
             textbox.Document.GetText(TextGetOptions.None, out body);
             return body;
-            string[] phrase = body.TrimEnd().Split(Environment.NewLine.ToCharArray());
-            if (phrase.Count() > 1) {
-                Debug.WriteLine("EHR newline count = " + phrase.Count());
-                string newtext = "";
-                foreach (string p in phrase)
-                {
-                    if (p.EndsWith(" "))
-                    {
-                        newtext += p + Environment.NewLine;
-                    }
-                    else
-                    {
-                        newtext += p + " " + Environment.NewLine;
-                    }
-                }
-                return newtext;
-            }
-            else{
-                return body.TrimEnd(Environment.NewLine.ToCharArray());
-            }
         }
 
 
@@ -1508,7 +1476,7 @@ namespace PhenoPad.CustomControl
                     //Process strokes that is valid within textbox bound
                     Rect bounding = s.BoundingRect;
                     Rect EHRBounding = GetHERTextBound();
-                    Debug.WriteLine($"strokeY = {s.BoundingRect.Y}, EHRY = {EHRBounding.Y + EHRBounding.Height}");
+                    //Debug.WriteLine($"strokeY = {s.BoundingRect.Y}, EHRY = {EHRBounding.Y + EHRBounding.Height}");
                     if (s.BoundingRect.Y <= (EHRBounding.Height + LINE_HEIGHT))
                     {
                         StrokeType gesture = GestureManager.GetSharedGestureManager().GetGestureFromStroke(s);
@@ -1608,7 +1576,6 @@ namespace PhenoPad.CustomControl
                                     text += Environment.NewLine;
                             }
                             EHRTextBox.Document.SetText(TextSetOptions.None, text);
-
                             //show insert panel at end of paragraph
                             var range = EHRTextBox.Document.GetRange(text.Length, text.Length);
                             range.GetPoint(HorizontalCharacterAlignment.Center, VerticalCharacterAlignment.Bottom, PointOptions.ClientCoordinates, out pos);
@@ -1617,9 +1584,12 @@ namespace PhenoPad.CustomControl
                             ((FontIcon)inputMarkup.Children[0]).Foreground = INSERT;
                             insertType = InsertType.Insert;
                             current_index = text.Length - (int)lineNum; //taking account of newly added newlines
-
                             ShowInputPanel(pos);
                             RefreshTextStyle();
+                            //Manually set the last anchor period to white so users can't see it
+                            var range2 = EHRTextBox.Document.GetRange(current_index - 1, text.Length);
+                            range2.CharacterFormat.ForegroundColor = Colors.White;
+                            UpdateLayout();
                         }
                     }
                 }

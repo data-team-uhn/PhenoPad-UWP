@@ -215,7 +215,7 @@
 
                 <Grid CornerRadius="10" BorderBrush="Gray" BorderThickness="1" Background="WhiteSmoke">
                     <Button Style="{StaticResource ButtonStyle1}" Width="200" Padding="20 10 20 10" Background="WhiteSmoke"
-                        Click="AddComment"
+                        Click="AddAnnotation"
                             HorizontalContentAlignment="Center" VerticalContentAlignment="Center">
                         <TextBlock Text="Annotate" FontWeight="SemiBold" FontSize="18" />
                     </Button>
