@@ -51,7 +51,8 @@ namespace PhenoPad.CustomControl
             None,
             Annotation,
             ReEdit,
-            Insert
+            Insert,
+            InsertNewLine
         }
         #region Class Attributes
 
@@ -137,7 +138,7 @@ namespace PhenoPad.CustomControl
             inkCanvas.InkPresenter.InputDeviceTypes = CoreInputDeviceTypes.Pen | CoreInputDeviceTypes.Mouse;
 
             inkCanvas.Tapped += OnElementTapped;
-            inkCanvas.DoubleTapped += ShowCPMenu;
+            //inkCanvas.DoubleTapped += OnElementTapped;
 
             inkCanvas.InkPresenter.StrokeInput.StrokeStarted += inkCanvas_StrokeInput_StrokeStarted;
             inkCanvas.InkPresenter.StrokesCollected += inkCanvas_InkPresenter_StrokesCollectedAsync;
@@ -148,6 +149,7 @@ namespace PhenoPad.CustomControl
             inkCanvas.InkPresenter.UnprocessedInput.PointerReleased += UnprocessedInput_PointerReleased;
 
             annotations.Tapped += OnElementTapped;
+            //annotations.DoubleTapped += OnElementTapped;
             annotations.InkPresenter.StrokesCollected += annotations_StrokesCollected;
             annotations.InkPresenter.StrokeInput.StrokeStarted += annotations_StokeStarted;
             annotations.InkPresenter.StrokeInput.StrokeEnded += annotations_StokeEnded;
@@ -212,11 +214,10 @@ namespace PhenoPad.CustomControl
                 //manually reformatting text by adding a space at the end of paragraphs
                 foreach (string p in paragraphs)
                 {
-
-                    if (!p.EndsWith(" "))
-                        text += p + " " + Environment.NewLine;
+                    if (p.Length == 0) //this is an element line with no words but a newline
+                        text += Environment.NewLine;
                     else
-                        text += p + Environment.NewLine;
+                        text += p + " " + Environment.NewLine;                
                 }
                 text = text.TrimEnd() + " ";
                 EHRTextBox.Document.SetText(TextSetOptions.None, text);
@@ -273,6 +274,7 @@ namespace PhenoPad.CustomControl
                 backgroundCanvas.Children.Add(line);
                 inputCanvasbg.Children.Add(line2);
             }
+            this.UpdateLayout();
         }
 
         private void Page_Loaded(object sender, RoutedEventArgs e)
@@ -304,7 +306,8 @@ namespace PhenoPad.CustomControl
                 inputTypeBox.Focus(FocusState.Pointer);
         }
 
-        private void HideAndClearInputPanel() {
+        private void HideAndClearInputPanel()
+        {//clears all input in current input panel and hides it from page
 
             this.insertType = InsertType.None;
             inputMarkup.Visibility = Visibility.Collapsed;
@@ -312,12 +315,9 @@ namespace PhenoPad.CustomControl
             inputInkCanvas.InkPresenter.StrokeContainer.Clear();
             curLineWordsStackPanel.Children.Clear();
             inputgrid.Visibility = Visibility.Collapsed;
-            //in case user wanted to insert at arbitary line at end of text but then canceled, need to removed the trailing anchor char
-            string text = getText(EHRTextBox).TrimEnd();
-            text = text.Substring(0, text.Length - 1) + " ";
-            EHRTextBox.Document.SetText(TextSetOptions.None, text);
-            RefreshTextStyle();
 
+            //lastAddedCommentID = -1;
+            RefreshTextStyle();
         }
 
         private void ShowCPMenu(object sender, DoubleTappedRoutedEventArgs e)
@@ -395,14 +395,6 @@ namespace PhenoPad.CustomControl
             await FileManager.getSharedFileManager().DeleteAddInFile(notebookid, pageid, comment.name);
         }
 
-        public bool IsEditingComment() {
-            var editing = this.comments.Where(x => x.inDock == false);
-            return editing.Count() > 0 ? true : false;
-        }
-
-        public bool InputHasContent() {
-            return this.inputgrid.Visibility == Visibility.Visible && inputgrid.Opacity == 1 && (getText(inputTypeBox).Trim().Length > 0 || inputInkCanvas.InkPresenter.StrokeContainer.GetStrokes().Count > 0);
-        }
 
         internal void ShowCommentLine(AddInControl comment)
         {//shows the comment card direction line UI
@@ -457,7 +449,6 @@ namespace PhenoPad.CustomControl
                     bool collides = await Collides(lastAdded, comment);
                     if (comment.commentID <= lastAdded.commentID)
                     {
-                        Debug.WriteLine("slide comments to side - first if statement triggered");
                         comment.SlideToRight();
                     }
                     else if (shift)
@@ -530,15 +521,15 @@ namespace PhenoPad.CustomControl
 
         #region Gesture Operations
 
-        private async void OnElementTapped(object sender = null, TappedRoutedEventArgs e = null)
+        private void OnElementTapped(object sender = null, TappedRoutedEventArgs e = null)
         {/// Dismiss all pop-ups when tapping on canvas
-            await Dispatcher.RunAsync(CoreDispatcherPriority.High, () =>
-            {
+            //await Dispatcher.RunAsync(CoreDispatcherPriority.High, () =>
+            //{
                 if (InputHasContent())
                     InsertToEHRClick();
                 else
                     SlideCommentsToSide();
-            });
+            //});
 
             HideAndClearInputPanel();
             cpMenu.Visibility = Visibility.Collapsed;
@@ -581,6 +572,375 @@ namespace PhenoPad.CustomControl
         }
 
 
+
+        #endregion
+
+        #region Inserts/Annotations/Redits
+
+        private void InsertToEHRClick(object sender = null, RoutedEventArgs e = null)
+        {//Invoked by clicking "+" in insert panel, inserts all recognized text into EHR text and refresh format and records
+            if (!InputHasContent())
+            {
+                //If user added newlines at end of file but didn't have any inputs, cancel the newlines
+                EHRTextBox.Document.SetText(TextSetOptions.None, getText(EHRTextBox).TrimEnd() + " ");
+                HideAndClearInputPanel();
+                return;
+            }
+
+            switch (insertType)
+            {
+                case (InsertType.Insert):
+                    AddInsert();
+                    break;
+                case (InsertType.InsertNewLine):
+                    AddInsert();
+                    break;
+                case (InsertType.Annotation):
+                    AddAnnotation();
+                    break;
+                case (InsertType.ReEdit):
+                    if (IsEditingComment())
+                        ReplaceAnnotation();
+                    break;
+            }
+        }
+
+        private void UpdateRecordListInsert(int start = -1, int length = 0)
+        {/// Updates and shifts saved record indexes and positions accordingly
+
+            //Checking for insert range bound collision and add to inserts record
+            bool add = true;
+            for (int i = 0; i < inserts.Count; i++)
+            {
+                int list_start = inserts[i][0];
+                int list_end = inserts[i][0] + inserts[i][1];
+
+                //Debug.WriteLine($"current insert record starting: {list_start}");
+
+                //Case1:New insert index is before previously inserted words
+                if (start < list_start && length > 0 && start > -1)
+                {
+                    //Debug.WriteLine("insert is strcitly before inserted");
+                    inserts[i][0] += length;
+                }
+                //Case2: Inserting range collides with inserted range
+                else if (start >= list_start && start < list_end)
+                {
+                    //Debug.WriteLine("---insert collides with inserted");
+                    inserts[i][1] += length;
+                    add = false;
+                }
+            }
+            if (add)
+                inserts.Add(new List<int>() { start, length });
+
+            //extend highlighting range according to inserted
+            for (int i = 0; i < highlights.Count; i++)
+            {
+                //Case 1: insert index in middle of highlight section
+                if (highlights[i][0] < start && start + length < highlights[i][0] + highlights[i][1])
+                {
+                    highlights[i][1] += length;
+                }
+
+                //Case 2: insert index in front of highlight section
+                else if (highlights[i][0] >= start && length > 0)
+                {
+                    highlights[i][0] += length; //just extends this phrase by new word length + space char
+                }
+            }
+
+            //extend deleting range according to inserted
+            for (int i = 0; i < deletes.Count; i++)
+            {
+                //Case 1: insert index in middle of highlight section
+                if (deletes[i][0] < start && start + length < deletes[i][0] + deletes[i][1])
+                {
+                    deletes[i][1] += length;
+                }
+
+                //Case 2: insert index in front of highlight section
+                else if (deletes[i][0] >= start && length > 0)
+                {
+                    deletes[i][0] += length; //just extends this phrase by new word length + space char
+                }
+            }
+            double yShiftOffset = 0;
+            //entend annotated range according to inserted
+            for (int i = 0; i < annotated.Count; i++)
+            {
+                //Case 1: insert index in middle of highlight section
+                if (annotated[i][0] < start && start + length < annotated[i][1])
+                {
+                    annotated[i][1] += length;
+                }
+                //Case 2: insert index in front of highlight section
+                else if (annotated[i][0] >= start && length > 0)
+                {//Need to update the indexes for annotations/comments
+                    AddInControl comment = comments.Where(c => c.commentID == annotated[i][0]).FirstOrDefault();
+                    comment.commentID += length;
+                    annotated[i][0] += length;
+                    annotated[i][1] += length;
+
+                    if (yShiftOffset == 0)
+                    {
+                        //shift the comment panel's left-top position according to new starting index;
+                        var range = EHRTextBox.Document.GetRange(comment.commentID, comment.commentID + 1);
+                        Point pos;
+                        range.GetPoint(HorizontalCharacterAlignment.Left, VerticalCharacterAlignment.Bottom, PointOptions.ClientCoordinates, out pos);
+
+                        //updating X coordinate and slides comment to left
+                        double newX = EHRTextBox.ActualWidth - pos.X + 10;
+                        double xOffset = newX - comment.canvasLeft;
+                        comment.canvasLeft = newX;
+                        Canvas.SetLeft(comment, comment.canvasLeft);
+                        comment.commentslideX -= xOffset;
+                        comment.Slide(x: -xOffset);
+
+                        //updating Y coordinate
+                        double newY = (Math.Ceiling(pos.Y / LINE_HEIGHT)) * LINE_HEIGHT + 110;
+                        double yOffset = newY - (comment.canvasTop + comment.commentslideY);
+
+                        Debug.WriteLine($"updaterecordlistinsert : yoffset = {yOffset}");
+                        if (yOffset > 0)
+                        {
+                            comment.canvasTop += yOffset;
+                            Canvas.SetTop(comment, comment.canvasTop);
+                            yShiftOffset = yOffset;
+                            //comment.commentslideY -= yOffset;
+                            //comment.Slide(y: yOffset);
+                        }
+                        //yShiftOffset = -1;
+                    }
+                    else
+                    {
+                        comment.canvasTop += yShiftOffset;
+                        Canvas.SetTop(comment, comment.canvasTop);
+                    }
+                }
+
+            }
+
+        }
+
+        private string AddSpaceAfterPunctuation(string text)
+        {//manually parse necessary space at the end of each non-alphaberical character
+            text = Regex.Replace(text, @"\w\W\s*", "$& ");
+            var newString = Regex.Replace(text, @"(\s)+", " ");
+            //Debug.WriteLine($"OLD STRING={text}");
+            //Debug.WriteLine($"NEW STRING={newString}");
+            return newString;
+        }
+
+        private async void AddCommentAndReArrange(AddInControl comment)
+        {//Adds a comment to the current comment collection and modifies shifting offsets if necessary
+            comments = comments.OrderBy(x => x.commentID).ToList();
+            if (comment != null)
+            {
+                foreach (AddInControl c in comments)
+                {
+                    //if the new comment collides with previously saved comments, shift this comment down
+                    bool collides = await Collides(comment, c);
+                    if (comment.commentID > c.commentID && collides)
+                    {
+                        double overlap_offset = (c.canvasTop + c.commentslideY + c.ActualHeight + 10) - (comment.canvasTop + comment.commentslideY) + 10;
+                        comment.commentslideY += overlap_offset;
+                    }
+                }
+
+                this.comments.Add(comment);
+                lastAddedCommentID = comment.commentID;
+                HideAndClearInputPanel();
+                SlideCommentsToSide();
+                RefreshTextStyle();
+            }
+        }
+
+        private void AddInsert()
+        {//Adds either a raw stroke insert or typed text insert to EHR Text
+
+            if (insertMode == InsertMode.Handwriting)
+            {
+                var range = EHRTextBox.Document.GetRange(cur_selected.Item1, cur_selected.Item1 + 1);
+                Point pos;
+                range.GetPoint(HorizontalCharacterAlignment.Left, VerticalCharacterAlignment.Bottom, PointOptions.ClientCoordinates, out pos);
+                double newY = (Math.Ceiling(pos.Y / LINE_HEIGHT) + 1) * LINE_HEIGHT;
+
+                var strokes = inputInkCanvas.InkPresenter.StrokeContainer.GetStrokes();
+                //double ratio = inputInkCanvas.InkPresenter.StrokeContainer.BoundingRect.Width / inputInkCanvas.ActualWidth;
+                //ratio *= AddInControl.DEFAULT_COMMENT_WIDTH / inputInkCanvas.ActualWidth;
+                //Debug.WriteLine($"storke ratio = {ratio}");
+                foreach (InkStroke s in strokes)
+                {
+                    s.Selected = true;
+                    //s.PointTransform = Matrix3x2.CreateScale((float)ratio, (float)ratio);
+                }
+                inputInkCanvas.InkPresenter.StrokeContainer.CopySelectedToClipboard();
+                AddInControl comment = parentControl.NewEHRCommentControl(pos.X + 10, newY + 110, current_index, AnnotationType.RawInsert);
+                comment.commentslideX = EHR_TEXTBOX_WIDTH.Value - pos.X + 10;
+                comment.commentslideY = -LINE_HEIGHT;
+                annotated.Add(new List<int>() { current_index, current_index + 1 });
+
+                comment.inkCan.InkPresenter.StrokeContainer.PasteFromClipboard(new Point(1, 1));
+                AddCommentAndReArrange(comment);
+            }
+
+            else if (insertMode == InsertMode.typing)
+            {
+                string text = "";
+                string typeText = getText(inputTypeBox).TrimEnd();
+                string[] phrase = typeText.Split(Environment.NewLine.ToCharArray());
+                //number of newline character count to be subtracted later for index offset
+                int newlineOffset = phrase.Length - 1;
+                Debug.WriteLine($"phrase count = {phrase.Length}+ \n");
+                if (phrase.Count() == 1)
+                {//no newline in insert text, simply parse and set offset to 0
+                    text = AddSpaceAfterPunctuation(phrase[0]).Trim() + " ";
+                    newlineOffset = 0;
+                }
+                else
+                {//if there are new lines, need to manually add a space before each newline
+                    for (int i = 0; i < phrase.Length; i++)
+                    {
+                        string p = AddSpaceAfterPunctuation(phrase[i]).Trim();
+                        Debug.WriteLine($"p = {p}, length of p = {p.Length}");
+                        if (p.Length == 0) //this is an element line with no words but a newline
+                        {
+                            text += Environment.NewLine;
+                        }
+                        else
+                            text += p + " " + Environment.NewLine;
+                    }
+                    text = text.TrimEnd() + " ";
+                }
+
+                string all_text = getText(EHRTextBox);
+
+                if (CheckInsertingAfterNewLine(current_index))
+                {
+                    Debug.WriteLine("inserting after newline");
+                    //Because we used a period as the end anchor of the text, need to replace that period with newly added text
+                    string result;
+                    if (all_text[current_index] == '.')
+                        result = all_text.Substring(0, current_index) + text + all_text.Substring(current_index + 1);
+                    else
+                        result = all_text.Insert(current_index, text);
+                    EHRTextBox.Document.SetText(TextSetOptions.None, result);
+                    UpdateRecordListInsert(current_index, text.Length - newlineOffset);
+                }
+
+                else if (current_index >= all_text.Length)
+                { //inserting at end of text
+
+                    Debug.WriteLine("inserting at end of text");
+                    all_text = all_text.Substring(0, all_text.Length - 1);
+                    EHRTextBox.Document.SetText(TextSetOptions.None, all_text + text + " ");
+                    UpdateRecordListInsert(current_index + 1, text.Length - newlineOffset);
+
+                }
+
+                else
+                {// inserting between text
+                    string result = all_text.Insert(current_index + 1, text);
+                    EHRTextBox.Document.SetText(TextSetOptions.None, result);
+                    UpdateRecordListInsert(current_index + 1, text.Length - newlineOffset);
+                }
+
+                //UI backend updates
+                AnalyzePhenotype(text);
+                UpdateRecordMerge();
+                HideAndClearInputPanel();
+                ClearOperationStrokes();
+            }
+
+        }
+
+        private void AddAnnotation()
+        {
+            var range = EHRTextBox.Document.GetRange(cur_selected.Item1, cur_selected.Item1 + 1);
+            Point pos;
+            range.GetPoint(HorizontalCharacterAlignment.Left, VerticalCharacterAlignment.Bottom, PointOptions.ClientCoordinates, out pos);
+            double newY = (Math.Ceiling(pos.Y / LINE_HEIGHT) + 1) * LINE_HEIGHT;
+            AddInControl comment = null;
+            if (insertMode == InsertMode.Handwriting)
+            {
+                comment = parentControl.NewEHRCommentControl(pos.X + 10, newY + 110, cur_selected.Item1, AnnotationType.RawComment);
+                comment.commentslideX = EHR_TEXTBOX_WIDTH.Value - pos.X + 10;
+                comment.commentslideY = -LINE_HEIGHT;
+
+                var strokes = inputInkCanvas.InkPresenter.StrokeContainer.GetStrokes();
+                Rect bound = inputInkCanvas.InkPresenter.StrokeContainer.BoundingRect;
+
+                //double ratio = inputInkCanvas.InkPresenter.StrokeContainer.BoundingRect.Width / inputInkCanvas.ActualWidth;
+                //ratio *= AddInControl.DEFAULT_COMMENT_WIDTH / inputInkCanvas.ActualWidth;
+                //Debug.WriteLine($"storke ratio = {ratio}");
+                foreach (InkStroke s in strokes)
+                {
+                    //s.PointTransform = Matrix3x2.CreateTranslation((float)(-1 * bound.X), (float)(-1 * bound.Y));
+                    comment.inkCan.InkPresenter.StrokeContainer.AddStroke(s.Clone());
+                    //s.Selected = true;
+                   
+                }
+                //comment.inkCan.InkPresenter.StrokeContainer.MoveSelected(new Point(-1 * bound.X + 1, -1 * bound.Y));
+                //inputInkCanvas.InkPresenter.StrokeContainer.CopySelectedToClipboard();
+                //comment.inkCan.InkPresenter.StrokeContainer.PasteFromClipboard(new Point(0, 0));
+                inputInkCanvas.InkPresenter.StrokeContainer.Clear();
+            }
+
+            else if (insertMode == InsertMode.typing)
+            {
+                comment = parentControl.NewEHRCommentControl(pos.X + 10, newY + 110, cur_selected.Item1, AnnotationType.TextComment);
+                comment.commentslideX = EHR_TEXTBOX_WIDTH.Value - pos.X + 10;
+                comment.commentslideY = -LINE_HEIGHT;
+                comment.inkCan.Visibility = Visibility.Collapsed;
+                comment.commentTextBlock.Visibility = Visibility.Visible;
+                comment.commentTextBlock.Document.SetText(TextSetOptions.None, getText(inputTypeBox));
+                comment.commentText = getText(inputTypeBox).Trim();
+                inputTypeBox.Document.SetText(TextSetOptions.None, "");
+            }
+            if (comment != null)
+            {
+                HideAndClearInputPanel();
+                Debug.WriteLine($"inserted annotation, comment ID = {comment.commentID} ............");
+                annotated.Add(new List<int>() { cur_selected.Item1, cur_selected.Item2 });
+                AddCommentAndReArrange(comment);
+            }
+
+        }
+
+        private void ReplaceAnnotation()
+        {
+
+            AddInControl comment = comments.Where(x => (x.commentID == lastAddedCommentID)).FirstOrDefault();
+            if (comment != null)
+            {
+                comment.commentTextBlock.Document.SetText(TextSetOptions.None, getText(inputTypeBox).Trim());
+                comment.commentText = getText(inputTypeBox).Trim();
+                comment.Visibility = Visibility.Visible;
+                SlideCommentsToSide();
+                inputTypeBox.Document.SetText(TextSetOptions.None, "");
+                inputgrid.Visibility = Visibility.Collapsed;
+                inputMarkup.Visibility = Visibility.Collapsed;
+                HWToggleBtn.IsEnabled = true;
+            }
+
+        }
+
+        internal void ReEditTextAnnotation(AddInControl anno)
+        {
+            ((FontIcon)inputMarkup.Children[0]).Foreground = ANNOTATION;
+
+            lastAddedCommentID = anno.commentID;
+            var range = EHRTextBox.Document.GetRange(anno.commentID, anno.commentID + 1);
+            Point pos;
+            range.GetPoint(HorizontalCharacterAlignment.Center, VerticalCharacterAlignment.Bottom, PointOptions.ClientCoordinates, out pos);
+            insertType = InsertType.ReEdit;
+            insertMode = InsertMode.typing;
+            inputTypeBox.Document.SetText(TextSetOptions.None, anno.commentText);
+            //because we are re editing a text annotation, switching to raw comment is temp diabled
+            HWToggleBtn.IsEnabled = false;
+            ShowInputPanel(new Point(pos.X - 20, pos.Y - LINE_HEIGHT));
+        }
 
         #endregion
 
@@ -745,371 +1105,12 @@ namespace PhenoPad.CustomControl
 
         }
 
-        private Rect GetHERTextBound()
-        {
-            string text;
-            EHRTextBox.Document.GetText(TextGetOptions.None, out text);
-            var range = EHRTextBox.Document.GetRange(0, text.Length);
-            Rect bound;
-            int hit;
-            range.GetRect(PointOptions.ClientCoordinates, out bound, out hit);
-            return bound;
-        }
-
         public void ReturnToEdit()
         {/// Updates UI back to EHR edit mode
             EHRTextBox.Visibility = Visibility.Visible;
             EHRPreview.Visibility = Visibility.Collapsed;
         }
 
-        private void UpdateRecordListInsert(int start = -1, int length = 0)
-        {/// Updates and shifts saved record indexes and positions accordingly
-
-            //Checking for insert range bound collision and add to inserts record
-            bool add = true;
-            for (int i = 0; i < inserts.Count; i++)
-            {
-                int list_start = inserts[i][0];
-                int list_end = inserts[i][0] + inserts[i][1];
-
-                //Debug.WriteLine($"current insert record starting: {list_start}");
-
-                //Case1:New insert index is before previously inserted words
-                if (start < list_start && length > 0 && start > -1)
-                {
-                    //Debug.WriteLine("insert is strcitly before inserted");
-                    inserts[i][0] += length;
-                }
-                //Case2: Inserting range collides with inserted range
-                else if (start >= list_start && start < list_end)
-                {
-                    //Debug.WriteLine("---insert collides with inserted");
-                    inserts[i][1] += length;
-                    add = false;
-                }
-            }
-            if (add)
-                inserts.Add(new List<int>() { start, length });
-
-            //extend highlighting range according to inserted
-            for (int i = 0; i < highlights.Count; i++)
-            {
-                //Case 1: insert index in middle of highlight section
-                if (highlights[i][0] < start && start + length < highlights[i][0] + highlights[i][1])
-                {
-                    highlights[i][1] += length;
-                }
-
-                //Case 2: insert index in front of highlight section
-                else if (highlights[i][0] >= start && length > 0)
-                {
-                    highlights[i][0] += length; //just extends this phrase by new word length + space char
-                }
-            }
-
-            //extend deleting range according to inserted
-            for (int i = 0; i < deletes.Count; i++)
-            {
-                //Case 1: insert index in middle of highlight section
-                if (deletes[i][0] < start && start + length < deletes[i][0] + deletes[i][1])
-                {
-                    deletes[i][1] += length;
-                }
-
-                //Case 2: insert index in front of highlight section
-                else if (deletes[i][0] >= start && length > 0)
-                {
-                    deletes[i][0] += length; //just extends this phrase by new word length + space char
-                }
-            }
-
-            //entend annotated range according to inserted
-            for (int i = 0; i < annotated.Count; i++)
-            {
-                //Case 1: insert index in middle of highlight section
-                if (annotated[i][0] < start && start + length < annotated[i][1])
-                {
-                    annotated[i][1] += length;
-                }
-                //Case 2: insert index in front of highlight section
-                else if (annotated[i][0] >= start && length > 0)
-                {
-                    AddInControl comment = comments.Where(c => c.commentID == annotated[i][0]).FirstOrDefault();
-                    comment.commentID += length;
-                    annotated[i][0] += length;
-                    annotated[i][1] += length;
-                    //shift the comment panel's left-top position according to new starting index;
-                    var range = EHRTextBox.Document.GetRange(comment.commentID, comment.commentID + 1);
-                    Point pos;
-                    range.GetPoint(HorizontalCharacterAlignment.Left, VerticalCharacterAlignment.Bottom, PointOptions.ClientCoordinates, out pos);
-                    double newY = (Math.Ceiling(pos.Y / LINE_HEIGHT) + 1) * LINE_HEIGHT + 110;
-                    comment.canvasTop = newY;
-                    Canvas.SetTop(comment, comment.canvasTop);
-
-                    double xOffset = (pos.X + 10) - comment.canvasLeft;
-                    double yOffset = newY - comment.canvasTop;
-                    //Debug.WriteLine($"after insert, Yoffset = {yOffset}");
-                    if (yOffset >= 0) {
-
-                        comment.commentslideY += yOffset ;
-
-                        comment.Slide(y: yOffset);
-                        Debug.WriteLine($"get={comment.GetSlideOffsetY()},actual={comment.commentslideY}");
-                    }
-                    comment.Slide(x: -xOffset);
-                    comment.commentslideX -= xOffset;
-                    comment.canvasLeft = pos.X + 10;
-                    Canvas.SetLeft(comment, comment.canvasLeft);
-                    UpdateLayout();
-                }
-
-            }
-
-        }
-
-        internal void ReEditTextAnnotation(AddInControl anno)
-        {
-            ((FontIcon)inputMarkup.Children[0]).Foreground = ANNOTATION;
-
-            lastAddedCommentID = anno.commentID;
-            var range = EHRTextBox.Document.GetRange(anno.commentID, anno.commentID + 1);
-            Point pos;
-            range.GetPoint(HorizontalCharacterAlignment.Center, VerticalCharacterAlignment.Bottom, PointOptions.ClientCoordinates, out pos);
-            insertType = InsertType.ReEdit;
-            insertMode = InsertMode.typing;
-            inputTypeBox.Document.SetText(TextSetOptions.None, anno.commentText);
-            //because we are re editing a text annotation, switching to raw comment is temp diabled
-            HWToggleBtn.IsEnabled = false;
-            ShowInputPanel(new Point(pos.X - 20, pos.Y - LINE_HEIGHT));
-        }
-
-        private void InsertToEHRClick(object sender = null, RoutedEventArgs e = null)
-        {//Invoked by clicking "+" in insert panel, inserts all recognized text into EHR text and refresh format and records
-            if (!InputHasContent())
-            {
-                //If user added newlines at end of file but didn't have any inputs, cancel the newlines
-                EHRTextBox.Document.SetText(TextSetOptions.None, getText(EHRTextBox).TrimEnd() + " ");
-                HideAndClearInputPanel();
-                return;
-            }
-
-            switch (insertType) {
-                case (InsertType.Insert):
-                    AddInsert();
-                    break;
-                case (InsertType.Annotation):
-                    AddAnnotation();
-                    break;
-                case (InsertType.ReEdit):
-                    if(IsEditingComment())
-                        ReplaceAnnotation();
-                    break;
-            }
-        }
-
-        private string AddSpaceAfterPunctuation(string text) {
-            //var newString = Regex.Replace(text, @"(?<!^)(\b)\w\S(?!$)", "$& $1");
-            text = Regex.Replace(text, @"\w\W\s*", "$& ");
-            var newString = Regex.Replace(text, @"(\s)+", " ");
-            //Debug.WriteLine($"OLD STRING={text}");
-            //Debug.WriteLine($"NEW STRING={newString}");
-            return newString;
-        }
-
-        private async void AddCommentAndReArrange(AddInControl comment) {
-            this.comments = comments.OrderBy(x => x.commentID).ToList();
-            foreach (AddInControl c in comments)
-            {
-                //if the new comment collides with previously saved comments, shift this comment down
-                bool collides = await Collides(comment, c);
-                if (comment.commentID > c.commentID && collides)
-                {
-                    //Debug.WriteLine("collides");
-                    double overlap_offset = (c.canvasTop + c.commentslideY + c.ActualHeight + 10) - (comment.canvasTop + comment.commentslideY) + 10;
-                    comment.commentslideY += overlap_offset;
-                }
-            }
-            if (comment != null)
-            {
-                this.comments.Add(comment);
-                lastAddedCommentID = comment.commentID;
-                HideAndClearInputPanel();
-                SlideCommentsToSide();
-                RefreshTextStyle();
-            }
-        }
-
-        private void AddInsert() {
-            ((FontIcon)inputMarkup.Children[0]).Foreground = INSERT;
-            string text = "";
-            if (insertMode == InsertMode.Handwriting)
-            {
-                var range = EHRTextBox.Document.GetRange(cur_selected.Item1, cur_selected.Item1 + 1);
-                Point pos;
-                range.GetPoint(HorizontalCharacterAlignment.Left, VerticalCharacterAlignment.Bottom, PointOptions.ClientCoordinates, out pos);
-                double newY = (Math.Ceiling(pos.Y / LINE_HEIGHT) + 1) * LINE_HEIGHT;
-
-                var strokes = inputInkCanvas.InkPresenter.StrokeContainer.GetStrokes();
-                //double ratio = inputInkCanvas.InkPresenter.StrokeContainer.BoundingRect.Width / inputInkCanvas.ActualWidth;
-                //ratio *= AddInControl.DEFAULT_COMMENT_WIDTH / inputInkCanvas.ActualWidth;
-                //Debug.WriteLine($"storke ratio = {ratio}");
-                foreach (InkStroke s in strokes)
-                {
-                    s.Selected = true;
-                    //s.PointTransform = Matrix3x2.CreateScale((float)ratio, (float)ratio);
-                }
-                inputInkCanvas.InkPresenter.StrokeContainer.CopySelectedToClipboard();
-                AddInControl comment = parentControl.NewEHRCommentControl(pos.X + 10, newY + 110, current_index, AnnotationType.RawInsert);
-                comment.commentslideX = EHR_TEXTBOX_WIDTH.Value - pos.X + 10;
-                comment.commentslideY = -LINE_HEIGHT;
-                annotated.Add(new List<int>() { current_index, current_index + 1 });
-
-                comment.inkCan.InkPresenter.StrokeContainer.PasteFromClipboard(new Point(1, 1));
-                AddCommentAndReArrange(comment);
-            }
-
-            else if (insertMode == InsertMode.typing)
-            {
-                string typeText = getText(inputTypeBox).TrimEnd();
-                string[] phrase = typeText.Split(Environment.NewLine.ToCharArray());
-                //number of newline character count to be subtracted later for index offset
-                int newlineOffset = phrase.Length - 1;
-                Debug.WriteLine($"phrase count = {phrase.Length}+ \n");
-                if (phrase.Count() == 1)
-                {//no newline in insert text, simply parse and set offset to 0
-                    text = AddSpaceAfterPunctuation(phrase[0]).Trim() + " ";
-                    newlineOffset = 0;
-                }
-                else
-                {//if there are new lines, need to manually add a space before each newline
-                    for (int i = 0; i < phrase.Length; i++)
-                    {
-                        string p = AddSpaceAfterPunctuation(phrase[i]).Trim();
-                        Debug.WriteLine($"p = {p}, length of p = {p.Length}");
-                        if (p.Length == 0) //this is an element line with no words but a newline
-                        {
-                            //if (text.Trim().Length == 0)
-                                text += Environment.NewLine;
-                            //else
-                            //    text += " " + Environment.NewLine;
-                        }
-                        else
-                            text += p + " " + Environment.NewLine;
-                    }
-                    text = text.TrimEnd() + " ";
-                }
-
-                string all_text = getText(EHRTextBox);
-
-                if (CheckInsertingAfterNewLine(current_index)) {
-                    Debug.WriteLine("inserting after newline");
-
-                    string result;
-                    if (all_text[current_index] == '.')
-                        result = all_text.Substring(0, current_index) + text + all_text.Substring(current_index + 1);
-                    else
-                        result = all_text.Insert(current_index,text);
-                    EHRTextBox.Document.SetText(TextSetOptions.None, result);
-                    UpdateRecordListInsert(current_index, text.Length - newlineOffset );
-                }
-                else if (current_index >= all_text.Length)
-                { //inserting at end of text
-                    Debug.WriteLine("inserting at end of text");
-                    all_text = all_text.Substring(0, all_text.Length - 1);
-                    EHRTextBox.Document.SetText(TextSetOptions.None, all_text + text + " ");
-                    UpdateRecordListInsert(current_index + 1, text.Length - newlineOffset);
-
-                }
-
-                else
-                {
-                    string result = all_text.Insert(current_index + 1, text);
-                    EHRTextBox.Document.SetText(TextSetOptions.None, result);
-                    UpdateRecordListInsert(current_index + 1, text.Length - newlineOffset);
-                }
-
-                //Analyzes the new inserted text for Phenotypes
-                AnalyzePhenotype(text);
-
-                //when adding insert with newline have to include the newline's character count
-                UpdateRecordMerge();
-                HideAndClearInputPanel();
-                ClearOperationStrokes();
-            }
-
-        }
-
-        private bool CheckInsertingAfterNewLine(int index) {
-            
-            string text = getText(EHRTextBox);
-            if (index - 1 < 0)
-                return false;
-            text = text.Substring(index - 1, 2);
-            string[] phrase = text.Split(Environment.NewLine.ToCharArray());
-            return phrase.Length > 1;
-
-        }
-
-        private void AddAnnotation() {
-            ((FontIcon)inputMarkup.Children[0]).Foreground = ANNOTATION;
-
-            var range = EHRTextBox.Document.GetRange(cur_selected.Item1, cur_selected.Item1 + 1);
-            Point pos;
-            range.GetPoint(HorizontalCharacterAlignment.Left, VerticalCharacterAlignment.Bottom, PointOptions.ClientCoordinates, out pos);
-            double newY = (Math.Ceiling(pos.Y / LINE_HEIGHT) + 1) * LINE_HEIGHT;
-            AddInControl comment = null;
-            if (insertMode == InsertMode.Handwriting)
-            {
-                var strokes = inputInkCanvas.InkPresenter.StrokeContainer.GetStrokes();
-                //double ratio = inputInkCanvas.InkPresenter.StrokeContainer.BoundingRect.Width / inputInkCanvas.ActualWidth;
-                //ratio *= AddInControl.DEFAULT_COMMENT_WIDTH / inputInkCanvas.ActualWidth;
-                //Debug.WriteLine($"storke ratio = {ratio}");
-                foreach (InkStroke s in strokes)
-                {
-                    s.Selected = true;
-                    //s.PointTransform = Matrix3x2.CreateScale((float)ratio, (float)ratio);
-                }
-                inputInkCanvas.InkPresenter.StrokeContainer.CopySelectedToClipboard();
-                comment = parentControl.NewEHRCommentControl(pos.X + 10, newY + 110, cur_selected.Item1, AnnotationType.RawComment);
-                comment.commentslideX = EHR_TEXTBOX_WIDTH.Value - pos.X + 10;
-                comment.commentslideY = -LINE_HEIGHT;
-                comment.inkCan.InkPresenter.StrokeContainer.PasteFromClipboard(new Point(5, 5));
-                inputInkCanvas.InkPresenter.StrokeContainer.Clear();
-            }
-
-            else if (insertMode == InsertMode.typing) {
-                comment = parentControl.NewEHRCommentControl(pos.X + 10, newY + 110, cur_selected.Item1, AnnotationType.TextComment);
-                comment.commentslideX = EHR_TEXTBOX_WIDTH.Value - pos.X + 10;
-                comment.commentslideY = -LINE_HEIGHT;
-                comment.inkCan.Visibility = Visibility.Collapsed;
-                comment.commentTextBlock.Visibility = Visibility.Visible;
-                comment.commentTextBlock.Document.SetText(TextSetOptions.None, getText(inputTypeBox));
-                comment.commentText = getText(inputTypeBox).Trim();
-                inputTypeBox.Document.SetText(TextSetOptions.None, "");
-            }
-            if (comment != null) {
-                Debug.WriteLine($"inserted annotation, comment ID = {comment.commentID} ............");
-                annotated.Add(new List<int>() { cur_selected.Item1, cur_selected.Item2 });
-                AddCommentAndReArrange(comment);
-            }
-
-        }
-
-        private void ReplaceAnnotation() {
-
-            AddInControl comment = comments.Where(x => (x.commentID == lastAddedCommentID)).FirstOrDefault();
-            if (comment != null) {
-                comment.commentTextBlock.Document.SetText(TextSetOptions.None, getText(inputTypeBox));
-                comment.commentText = getText(inputTypeBox);
-                comment.Visibility = Visibility.Visible;
-                SlideCommentsToSide();
-                inputTypeBox.Document.SetText(TextSetOptions.None, "");
-                inputgrid.Visibility = Visibility.Collapsed;
-                inputMarkup.Visibility = Visibility.Collapsed;
-                HWToggleBtn.IsEnabled = true;
-            }
-
-        }
 
         private void ClearInput(object sender, RoutedEventArgs e)
         {//Clears all recognized input and strokes in the inputcanvas panel
@@ -1294,10 +1295,100 @@ namespace PhenoPad.CustomControl
             SelectionMenu.Visibility = Visibility.Visible;
         }
 
+        private void CopyTextToClipboard(object sender, RoutedEventArgs e)
+        {/// Trims the extra newlines in current EHR text and copies it to windows clipboard
+
+            DataPackage dataPackage = new DataPackage();
+            // copy 
+            dataPackage.RequestedOperation = DataPackageOperation.Copy;
+            dataPackage.SetText(ParseFinalEHR());
+            Clipboard.SetContent(dataPackage);
+            MainPage.Current.NotifyUser("Copied EHR Text to Clipboard", NotifyType.StatusMessage, 1);
+            cpMenu.Visibility = Visibility.Collapsed;
+        }
+
+        private async void PasteTextToEHR(object sender, RoutedEventArgs e)
+        {//paste text as append from clipboard to end of current ehr text
+            DataPackageView dataPackageView = Clipboard.GetContent();
+            if (dataPackageView.Contains(StandardDataFormats.Text))
+            {
+                string text = await dataPackageView.GetTextAsync();
+                string[] paragraphs = text.Split(Environment.NewLine);
+                text = "";
+                foreach (string p in paragraphs) {
+                    if (p.EndsWith(" "))
+                        text += p + Environment.NewLine;
+                    else
+                        text += p + " " + Environment.NewLine;
+                }
+                string ehr_text = getText(EHRTextBox);
+                if (! ehr_text.EndsWith(" "))
+                    EHRTextBox.Document.SetText(TextSetOptions.None, ehr_text+" "+ Environment.NewLine + text);
+                else
+                    EHRTextBox.Document.SetText(TextSetOptions.None, ehr_text + Environment.NewLine + text);
+            }
+            MainPage.Current.NotifyUser("Pasted EHR to note", NotifyType.StatusMessage, 1);
+            cpMenu.Visibility = Visibility.Collapsed;
+            RefreshTextStyle();
+            //inserts.Clear();
+            //highlights.Clear();
+            //deletes.Clear();
+        }
+
+        private void ClearAllFormats(object sender, RoutedEventArgs e) {
+            Button btn = (Button)sender;
+            TextBlock text = (TextBlock)btn.Content;
+            if (text.Text == "Clear Deletes") {
+                this.deletes.Clear();
+            }
+            else if (text.Text == "Clear Highlights") {
+                this.highlights.Clear();
+            }
+            RefreshTextStyle();
+            cpMenu.Visibility = Visibility.Collapsed;
+            autosaveDispatcherTimer.Start();
+        }
+
+        public string getText(RichEditBox textbox)
+        {/// Returns the current non-formatted text in EHR text box as string
+
+            string body;
+            textbox.Document.GetText(TextGetOptions.None, out body);
+            return body;
+        }
+
+        private Rect GetHERTextBound()
+        {//gets the rectangular bound of text in the EHR Text box
+            string text;
+            EHRTextBox.Document.GetText(TextGetOptions.None, out text);
+            var range = EHRTextBox.Document.GetRange(0, text.Length);
+            Rect bound;
+            int hit;
+            range.GetRect(PointOptions.ClientCoordinates, out bound, out hit);
+            return bound;
+        }
+
+        #endregion
+
+        #region EHR Text Status Checks
+
+        private bool CheckInsertingAfterNewLine(int index)
+        {
+
+            string text = getText(EHRTextBox);
+            if (index - 1 < 0)
+                return false;
+            text = text.Substring(index - 1, 2);
+            string[] phrase = text.Split(Environment.NewLine.ToCharArray());
+            return phrase.Length > 1;
+
+        }
+
         private string CheckIsHighlighted(int start, int end)
         {// checks if given range of text is within the hightlighted record
             highlights = highlights.OrderBy(lst => lst[0]).ToList();
-            foreach (List<int> range in highlights) {
+            foreach (List<int> range in highlights)
+            {
                 int list_start = range[0];
                 int list_end = range[0] + range[1];
 
@@ -1339,7 +1430,8 @@ namespace PhenoPad.CustomControl
             }
 
             bool showMenu = false;
-            foreach (List<int> h in highlights) {
+            foreach (List<int> h in highlights)
+            {
                 if (start >= h[0] && end <= h[0] + h[1])
                 {
                     highlightText.Text = "Cancel Highlight";
@@ -1347,9 +1439,10 @@ namespace PhenoPad.CustomControl
                     cur_selected = (h[0], h[0] + h[1]);
                     showMenu = true;
                     break;
-                }                
+                }
             }
-            foreach (List<int> d in deletes) {
+            foreach (List<int> d in deletes)
+            {
                 if (start >= d[0] && end <= d[0] + d[1])
                 {
                     deleteText.Text = "Cancel Delete";
@@ -1359,7 +1452,8 @@ namespace PhenoPad.CustomControl
                 }
             }
 
-            if (showMenu) {
+            if (showMenu)
+            {
                 Canvas.SetLeft(SelectionMenu, p.X - 10);
                 Canvas.SetTop(SelectionMenu, (Math.Ceiling(p.Y / LINE_HEIGHT) + 1) * LINE_HEIGHT);
                 SelectionMenu.Visibility = Visibility.Visible;
@@ -1367,78 +1461,15 @@ namespace PhenoPad.CustomControl
             return showMenu;
         }
 
-        private void CopyTextToClipboard(object sender, RoutedEventArgs e)
-        {/// Trims the extra newlines in current EHR text and copies it to windows clipboard
-
-            DataPackage dataPackage = new DataPackage();
-            // copy 
-            dataPackage.RequestedOperation = DataPackageOperation.Copy;
-            dataPackage.SetText(ParseFinalEHR());
-            Clipboard.SetContent(dataPackage);
-            MainPage.Current.NotifyUser("Copied EHR Text to Clipboard", NotifyType.StatusMessage, 1);
-            cpMenu.Visibility = Visibility.Collapsed;
+        public bool IsEditingComment()
+        {
+            var editing = this.comments.Where(x => x.inDock == false);
+            return editing.Count() > 0 ? true : false;
         }
 
-        private async void PasteTextToEHR(object sender, RoutedEventArgs e)
-        {//paste text as append from clipboard to end of current ehr text
-            DataPackageView dataPackageView = Clipboard.GetContent();
-            if (dataPackageView.Contains(StandardDataFormats.Text))
-            {
-                string text = await dataPackageView.GetTextAsync();
-                string[] paragraphs = text.Split(Environment.NewLine);
-                text = "";
-                foreach (string p in paragraphs) {
-                    if (p.EndsWith(" "))
-                        text += p + Environment.NewLine;
-                    else
-                        text += p + " " + Environment.NewLine;
-                }
-                string ehr_text = getText(EHRTextBox);
-                if (! ehr_text.EndsWith(" "))
-                    EHRTextBox.Document.SetText(TextSetOptions.None, ehr_text+" "+ Environment.NewLine + text);
-                else
-                    EHRTextBox.Document.SetText(TextSetOptions.None, ehr_text + Environment.NewLine + text);
-            }
-            MainPage.Current.NotifyUser("Pasted EHR to note", NotifyType.StatusMessage, 1);
-            cpMenu.Visibility = Visibility.Collapsed;
-            RefreshTextStyle();
-            //inserts.Clear();
-            //highlights.Clear();
-            //deletes.Clear();
-        }
-
-        private void ClearOperationStrokes()
-        {/// Deletes all processed operation strokes from annotation inkcanvas
-            foreach (uint sid in lastOperationStrokeIDs)
-            {
-                InkStroke s = annotations.InkPresenter.StrokeContainer.GetStrokeById(sid);
-                if ( s != null)
-                    s.Selected = true;
-            }
-            annotations.InkPresenter.StrokeContainer.DeleteSelected();
-            lastOperationStrokeIDs.Clear();
-        }
-
-        private void ClearAllFormats(object sender, RoutedEventArgs e) {
-            Button btn = (Button)sender;
-            TextBlock text = (TextBlock)btn.Content;
-            if (text.Text == "Clear Deletes") {
-                this.deletes.Clear();
-            }
-            else if (text.Text == "Clear Highlights") {
-                this.highlights.Clear();
-            }
-            RefreshTextStyle();
-            cpMenu.Visibility = Visibility.Collapsed;
-            autosaveDispatcherTimer.Start();
-        }
-
-        public string getText(RichEditBox textbox)
-        {/// Returns the current non-formatted text in EHR text box as string
-
-            string body;
-            textbox.Document.GetText(TextGetOptions.None, out body);
-            return body;
+        public bool InputHasContent()
+        {
+            return this.inputgrid.Visibility == Visibility.Visible && inputgrid.Opacity == 1 && (getText(inputTypeBox).Trim().Length > 0 || inputInkCanvas.InkPresenter.StrokeContainer.GetStrokes().Count > 0);
         }
 
 
@@ -1466,7 +1497,16 @@ namespace PhenoPad.CustomControl
             }
 
             else if (inputgrid.Visibility == Visibility.Visible)
-                HideAndClearInputPanel();
+            {
+                if (insertType == InsertType.InsertNewLine && !InputHasContent()) {
+                    //in case user wanted to insert at arbitary line at end of text but then canceled, need to removed the trailing anchor char
+                    string text = getText(EHRTextBox).TrimEnd();
+                    text = text.Substring(0, text.Length - 1) + " ";
+                    EHRTextBox.Document.SetText(TextSetOptions.None, text);
+                    EHRTextBox.UpdateLayout();
+                }
+                HideAndClearInputPanel();               
+            }
 
 
             else
@@ -1582,7 +1622,7 @@ namespace PhenoPad.CustomControl
                             pos.Y -= LINE_HEIGHT;
 
                             ((FontIcon)inputMarkup.Children[0]).Foreground = INSERT;
-                            insertType = InsertType.Insert;
+                            insertType = InsertType.InsertNewLine;
                             current_index = text.Length - (int)lineNum; //taking account of newly added newlines
                             ShowInputPanel(pos);
                             RefreshTextStyle();
@@ -1629,6 +1669,18 @@ namespace PhenoPad.CustomControl
             }
         }
 
+        private void ClearOperationStrokes()
+        {/// Deletes all processed operation strokes from annotation inkcanvas
+            foreach (uint sid in lastOperationStrokeIDs)
+            {
+                InkStroke s = annotations.InkPresenter.StrokeContainer.GetStrokeById(sid);
+                if (s != null)
+                    s.Selected = true;
+            }
+            annotations.InkPresenter.StrokeContainer.DeleteSelected();
+            lastOperationStrokeIDs.Clear();
+        }
+
         private async void inputInkCanvas_StrokesCollected(InkPresenter sender, InkStrokesCollectedEventArgs args)
         {
             Rect bound = inputInkCanvas.InkPresenter.StrokeContainer.BoundingRect;
@@ -1651,8 +1703,6 @@ namespace PhenoPad.CustomControl
         private void UnprocessedInput_PointerPressed(InkUnprocessedInput sender, PointerEventArgs args)
         {// select strokes by "marking" handling: pointer pressed
 
-            Debug.WriteLine("eraser detected");
-
             //Side button is pressed on pen
             if (args.CurrentPoint.PointerDevice.PointerDeviceType == PointerDeviceType.Pen && args.CurrentPoint.IsInContact)
             {
@@ -1672,7 +1722,6 @@ namespace PhenoPad.CustomControl
         
         private void UnprocessedInput_PointerMoved(InkUnprocessedInput sender, PointerEventArgs args)
         {// select strokes by "marking" handling: pointer moved
-            Debug.WriteLine("eraser detected");
 
             if (isHighlighting)
             {
@@ -1704,6 +1753,8 @@ namespace PhenoPad.CustomControl
             Debug.WriteLine($"highlighting at: start = {sel_start}, end = {sel_end}");
             HighlightTextInRange(sel_start, sel_end);
         }
+
+
 
         #endregion
 

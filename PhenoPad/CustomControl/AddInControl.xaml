@@ -14,6 +14,7 @@
     d:DesignWidth="400"
     Loaded="UserControl_Loaded"
     >
+    
     <UserControl.Resources>
         <ResourceDictionary>
             <x:Double x:Key="categoryButtonHeight">60</x:Double>
@@ -105,11 +106,14 @@
                         <Viewbox Name="canvasViewBox">
                             <InkCanvas Visibility="Collapsed" x:Name="inkCanvas" Canvas.ZIndex="5"/>
                         </Viewbox>
-                    <RichEditBox Style="{StaticResource MyRichEditBoxStyle}" Background="Transparent" x:Name="commentTextBlock" x:FieldModifier="public" 
+                        <RichEditBox Style="{StaticResource MyRichEditBoxStyle}" Background="Transparent" 
+                                 x:Name="commentTextBlock" x:FieldModifier="public" 
                                  FontSize="22" Height="auto" TextWrapping="Wrap"
-                                 HorizontalAlignment="Stretch"
-                                 Visibility="Collapsed" IsEnabled="False"/>
-                </Grid>
+                                 HorizontalAlignment="Left"
+                                 Visibility="Collapsed" 
+                                 Width="{x:Bind COMMENT_WIDTH}"
+                                 IsEnabled="False"/>
+                    </Grid>
                 </ScrollViewer>
             </Grid>
             

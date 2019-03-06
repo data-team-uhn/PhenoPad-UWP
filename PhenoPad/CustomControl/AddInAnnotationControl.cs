@@ -146,15 +146,16 @@ namespace PhenoPad.CustomControl
             OutlineGrid.BorderThickness = new Thickness(2);
             categoryGrid.Visibility = Visibility.Collapsed;
             DrawingButton_Click(null, null);
+            Visibility = Visibility.Collapsed;
+
         }
 
         public async void SlideToRight()
         {
-            Debug.WriteLine($"indock = {inDock}");
+            //Debug.WriteLine($"indock = {inDock}");
             if (! inDock)
             {
                 Visibility = Visibility.Visible;
-
                 if (this.Height >= DEFAULT_COMMENT_HEIGHT && this.Width >= DEFAULT_COMMENT_WIDTH)
                     await Dispatcher.RunAsync(Windows.UI.Core.CoreDispatcherPriority.Normal, CompressComment);
                 Canvas.SetZIndex(this,90);
@@ -204,10 +205,11 @@ namespace PhenoPad.CustomControl
                     s.Selected = true;
                 }
                 Rect bound = inkCan.InkPresenter.StrokeContainer.BoundingRect;
-                inkCanvas.InkPresenter.StrokeContainer.MoveSelected(new Point(-1 * bound.X + 1, -1 * bound.Y + 1));
+                //inkCanvas.InkPresenter.StrokeContainer.MoveSelected(new Point(-1 * bound.X + 1, -1 * bound.Y + 1));
                 this.widthOrigin = bound.Width < DEFAULT_COMMENT_WIDTH? DEFAULT_COMMENT_WIDTH : bound.Width + 5;
                 this.Width = this.widthOrigin;
-                this.Height = this.heightOrigin;
+                //this.Height = this.heightOrigin;
+                this.Height = Math.Max(this.heightOrigin, bound.Y + bound.Height + 10);
                 inkCan.Height = this.Height;
                 inkCan.Width = this.Width;
                 Canvas.SetZIndex(this, 99);
@@ -216,7 +218,7 @@ namespace PhenoPad.CustomControl
                 if (commentTextBlock.Visibility == Visibility.Visible) {
                     Debug.WriteLine("re editing a text comment!");
                     ehr.ReEditTextAnnotation(this);
-                    this.Visibility = Visibility.Collapsed;
+                    Visibility = Visibility.Collapsed;
                 }
             }
 
@@ -270,9 +272,9 @@ namespace PhenoPad.CustomControl
             if (!hasImage)
             {
                 if (anno_type == AnnotationType.RawComment || anno_type == AnnotationType.RawInsert) {
-                    inkAnalyzer = new InkAnalyzer();
-                    inkAnalyzer.AddDataForStrokes(inkCan.InkPresenter.StrokeContainer.GetStrokes());
-                    await inkAnalyzer.AnalyzeAsync();
+                    //inkAnalyzer = new InkAnalyzer();
+                    //inkAnalyzer.AddDataForStrokes(inkCan.InkPresenter.StrokeContainer.GetStrokes());
+                    //await inkAnalyzer.AnalyzeAsync();
                     var inknodes = inkAnalyzer.AnalysisRoot.FindNodes(InkAnalysisNodeKind.Line);
                     foreach (InkStroke s in inkCan.InkPresenter.StrokeContainer.GetStrokes())
                         s.Selected = true;
@@ -316,13 +318,9 @@ namespace PhenoPad.CustomControl
                 else if (anno_type == AnnotationType.TextComment || anno_type == AnnotationType.TextInsert)
                 {
                     this.Height = Math.Ceiling(getTextBound().Height / COMMENT_HEIGHT) * COMMENT_HEIGHT ;
-                    this.Width = DEFAULT_COMMENT_WIDTH;
+                    this.Width = DEFAULT_COMMENT_WIDTH ;
                 }
-
-
-                Debug.WriteLine(Environment.NewLine);
                 ehr.HideCommentLine();
-                Debug.WriteLine(Environment.NewLine);
             }
         }
 
@@ -342,9 +340,6 @@ namespace PhenoPad.CustomControl
         {//Gets the compressed comment height without actually compressing the comment
             if (anno_type == AnnotationType.RawComment || anno_type == AnnotationType.RawInsert)
             {
-                inkAnalyzer = new InkAnalyzer();
-                inkAnalyzer.AddDataForStrokes(inkCan.InkPresenter.StrokeContainer.GetStrokes());
-                await inkAnalyzer.AnalyzeAsync();
                 var inknodes = inkAnalyzer.AnalysisRoot.FindNodes(InkAnalysisNodeKind.Line);
                 Rect bound = inkCan.InkPresenter.StrokeContainer.BoundingRect;
 
@@ -375,8 +370,17 @@ namespace PhenoPad.CustomControl
         public double GetSlideOffsetY() {           
             return addinSlide.Y;
         }
-        private void inkCanvas_StrokesCollected(InkPresenter sender, InkStrokesCollectedEventArgs args)
+
+        public void SetXSlide(double x) {
+            addinSlide.X = 0;
+        }
+
+        private async void inkCanvas_StrokesCollected(InkPresenter sender, InkStrokesCollectedEventArgs args)
         {
+            //inkAnalyzer = new InkAnalyzer();
+            inkAnalyzer.AddDataForStrokes(inkCan.InkPresenter.StrokeContainer.GetStrokes());
+            await inkAnalyzer.AnalyzeAsync();
+
             //detects if user input has reached maximum height and extend if necessary
             Rect bound = inkCan.InkPresenter.StrokeContainer.BoundingRect;
             if (bound.Top + bound.Height > 0.8 * this.Height) {
