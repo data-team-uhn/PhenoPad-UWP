@@ -82,7 +82,7 @@ namespace PhenoPad.Gestures
                     pre_point = pts[i];
                 }
                 Debug.WriteLine($"Recognizer's spike count = {spike_count}");
-                if (spike_count > 0)
+                if (spike_count > 1)
                     return "zigzag";
                 else
                     return "hline";

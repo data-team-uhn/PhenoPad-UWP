@@ -59,7 +59,7 @@ namespace PhenoPad.CustomControl
                 return inkCanvas;
             }
         }
-        InkAnalyzer inkAnalyzer = new InkAnalyzer();
+        public InkAnalyzer inkAnalyzer = new InkAnalyzer();
 
         public DispatcherTimer autosaveDispatcherTimer = new DispatcherTimer();
 
