@@ -225,6 +225,7 @@ namespace PhenoPad.CustomControl
             operationDispathcerTimer = new DispatcherTimer();
             textNoteDispatcherTimer = new DispatcherTimer();
             autosaveDispatcherTimer = new DispatcherTimer();
+            RawStrokeTimer = new DispatcherTimer();
             recognizeTimer = new DispatcherTimer();
 
             dispatcherTimer.Tick += InkAnalysisDispatcherTimer_Tick;  // Ink Analysis time tick
@@ -232,6 +233,7 @@ namespace PhenoPad.CustomControl
             operationDispathcerTimer.Tick += OperationDispatcherTimer_Tick;
             textNoteDispatcherTimer.Tick += TextNoteDispatcherTimer_Tick;
             recognizeTimer.Tick += TriggerRecogServer;
+            //RawStrokeTimer.Tick += RawStrokeTimer_Tick;
 
             unprocessedDispatcherTimer = new DispatcherTimer();
             unprocessedDispatcherTimer.Tick += UnprocessedDispathcerTimer_Tick;
@@ -245,6 +247,7 @@ namespace PhenoPad.CustomControl
             unprocessedDispatcherTimer.Interval = TimeSpan.FromMilliseconds(100);
             recognizeTimer.Interval = TimeSpan.FromSeconds(0.25);// recognize through server side every 3 seconds
             autosaveDispatcherTimer.Interval = TimeSpan.FromSeconds(1); //setting stroke auto save interval to be 1 sec
+            RawStrokeTimer.Interval = TimeSpan.FromSeconds(1);
 
             linesToUpdate = new Queue<int>();
             lineAnalysisDispatcherTimer = new DispatcherTimer();
@@ -263,6 +266,8 @@ namespace PhenoPad.CustomControl
             phenotypesOfLines = new Dictionary<int, List<Phenotype>>();
             deleteSemaphoreSlim = new SemaphoreSlim(1);
             selectAndRecognizeSemaphoreSlim = new SemaphoreSlim(1);
+            RawStrokes = new List<InkStroke>();
+            RecognizedNotes = new List<HWRRecognizedText>();
             
             recognizedTextCanvas.Visibility = Visibility.Collapsed;
 
@@ -540,84 +545,6 @@ namespace PhenoPad.CustomControl
         #region Hand writting mode 
         // ==================================== Handwriting mode ===================================================/
 
-        private void InkPresenter_StrokesErased(InkPresenter sender, InkStrokesErasedEventArgs args)
-        {
-            ClearSelectionAsync();
-
-            curLineResultPanel.Visibility = Visibility.Collapsed;
-            curLineWordsStackPanel.Children.Clear();
-            //operationDispathcerTimer.Stop();
-            foreach (var stroke in args.Strokes)
-            {
-                inkAnalyzer.RemoveDataForStroke(stroke.Id);
-            }
-            //operationDispathcerTimer.Start();
-            //dispatcherTimer.Start();
-            autosaveDispatcherTimer.Start();
-        }
-
-        private void StrokeInput_StrokeStarted(InkStrokeInput sender, PointerEventArgs args)
-        {
-            if (!leftLasso)
-            {
-                //ClearSelection();
-                // dispatcherTimer.Stop();
-                //operationDispathcerTimer.Stop();
-                inkOperationAnalyzer.ClearDataForAllStrokes();
-            }
-            autosaveDispatcherTimer.Stop();
-            recognizeTimer.Stop();
-        }
-
-        private void StrokeInput_StrokeEnded(InkStrokeInput sender, PointerEventArgs args)
-        {
-            autosaveDispatcherTimer.Start();
-            recognizeTimer.Start();
-        }
-    
-        private async void InkPresenter_StrokesCollectedAsync(InkPresenter sender, InkStrokesCollectedEventArgs args)
-        {          
-            if (!leftLasso)
-            {//processing strokes inputs
-                //dispatcherTimer.Stop();
-                //operationDispathcerTimer.Stop();            
-                foreach (var s in args.Strokes)
-                {                   
-                    //Process strokes that excess maximum height for recognition
-                    if (s.BoundingRect.Height > MAX_WRITING)
-                    {
-                        inkOperationAnalyzer.AddDataForStroke(s);
-                        try
-                        {
-                            await RecognizeInkOperation();
-                        }
-                        catch (Exception e) {
-                            MetroLogger.getSharedLogger().Error($"InkPresenter_StrokesCollectedAsync in NotePageControl:{e}|{e.Message}");
-                        }
-                    }
-                    //Instantly analyze ink inputs
-                    else
-                    {
-                        inkAnalyzer.AddDataForStroke(s);
-                        inkAnalyzer.SetStrokeDataKind(s.Id, InkAnalysisStrokeKind.Writing);
-                        //marking the current stroke for later server recognition
-                        curStroke = s;
-                        //here we need instant call to analyze ink for the specified line input
-                        await analyzeInk(s);
-                        OperationLogger.getOpLogger().Log(OperationType.Stroke, s.Id.ToString(),s.StrokeStartedTime.ToString(),s.StrokeDuration.ToString());
-                    }
-                }
-
-            }
-            else
-            {//processing strokes selected with left mouse lasso strokes
-                leftLossoStroke = args.Strokes;
-                foreach (var s in args.Strokes)
-                {
-                    //TODO: 
-                }
-            }
-        }
 
         // stroke input handling: mouse pointer pressed
         private void StrokeInput_PointerPressed(InkStrokeInput sender, PointerEventArgs args)
@@ -1817,11 +1744,6 @@ namespace PhenoPad.CustomControl
             var alterFlyout = (Flyout)this.Resources["ChangeAlternativeFlyout"];
             alterFlyout.ShowAt(tb);
             alternativeListView.ItemsSource = textBlockToAlternatives[tb];
-        }
-
-        private void recognizedResultTextBlock_Tapped(object sender, TappedRoutedEventArgs e)
-        {
-            
         }
 
         private void recognizedResultTextBlock_GotFocus(object sender, RoutedEventArgs e)

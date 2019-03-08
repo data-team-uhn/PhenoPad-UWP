@@ -248,6 +248,9 @@
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*"/>
                         </Grid.ColumnDefinitions>
+                        
+                        <StackPanel x:Name="RecognizedNoteStackPanel" Orientation="Horizontal" Spacing="10"/>
+
                         <RichEditBox Style="{StaticResource MyRichEditBoxStyle}" Background="Transparent" 
                                      x:Name="textNoteEditBox" TextChanged="TextNoteEdit_TextChanged" 
                                      IsEnabled="False"
@@ -257,8 +260,6 @@
 
                     <!-- Note taking ink canvas -->
                     <InkCanvas  x:Name="inkCanvas"/>
-
-
 
                     <!-- pop up after selection-->
                     <Canvas x:Name="selectionCanvas">
