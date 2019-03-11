@@ -267,7 +267,8 @@ namespace PhenoPad.CustomControl
             deleteSemaphoreSlim = new SemaphoreSlim(1);
             selectAndRecognizeSemaphoreSlim = new SemaphoreSlim(1);
             RawStrokes = new List<InkStroke>();
-            RecognizedNotes = new List<HWRRecognizedText>();
+            RecognizedNotes = new List<WordBlockControl>();
+            currentIndex = 0;
             
             recognizedTextCanvas.Visibility = Visibility.Collapsed;
 
@@ -284,7 +285,9 @@ namespace PhenoPad.CustomControl
             //selectionRectangle.ManipulationMode = ManipulationModes.TranslateX | ManipulationModes.TranslateY;
             //selectionRectangle.ManipulationStarted += SelectionRectangle_ManipulationStarted;
             //selectionRectangle.ManipulationDelta += SelectionRectangle_ManipulationDelta;
-            //selectionRectangle.ManipulationCompleted += SelectionRectangle_ManipulationCompleted;      
+            //selectionRectangle.ManipulationCompleted += SelectionRectangle_ManipulationCompleted;   
+
+            lastStrokePoint = new Point(0,0);
 
         }
 

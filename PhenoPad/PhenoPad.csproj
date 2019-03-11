@@ -143,6 +143,9 @@
     <Compile Include="CustomControl\PhenotypeDetail.xaml.cs">
       <DependentUpon>PhenotypeDetail.xaml</DependentUpon>
     </Compile>
+    <Compile Include="CustomControl\WordBlockControl.xaml.cs">
+      <DependentUpon>WordBlockControl.xaml</DependentUpon>
+    </Compile>
     <Compile Include="FileService\EHRFormats.cs" />
     <Compile Include="FileService\FileManager.cs" />
     <Compile Include="FileService\FileServerClient.cs" />
@@ -282,6 +285,10 @@
       <SubType>Designer</SubType>
     </Page>
     <Page Include="CustomControl\PhenotypeDetail.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="CustomControl\WordBlockControl.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>

@@ -241,6 +241,10 @@
                     <!-- Inking area -->
 
                     <Canvas x:Name="backgroundCanvas" />
+
+                    <!-- Note taking ink canvas -->
+                    <InkCanvas  x:Name="inkCanvas" />
+
                     <Grid x:Name="textEditGrid" Visibility="Visible">
                         <Grid.RowDefinitions>
                             <RowDefinition Height="*"/>
@@ -248,8 +252,8 @@
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*"/>
                         </Grid.ColumnDefinitions>
-                        
-                        <StackPanel x:Name="RecognizedNoteStackPanel" Orientation="Horizontal" Spacing="10"/>
+
+                        <StackPanel x:Name="RecognizedNoteStackPanel" Orientation="Horizontal" Spacing="10" Margin="0 10 0 0" Canvas.ZIndex="999"/>
 
                         <RichEditBox Style="{StaticResource MyRichEditBoxStyle}" Background="Transparent" 
                                      x:Name="textNoteEditBox" TextChanged="TextNoteEdit_TextChanged" 
@@ -258,8 +262,6 @@
                         </RichEditBox>
                     </Grid>
 
-                    <!-- Note taking ink canvas -->
-                    <InkCanvas  x:Name="inkCanvas"/>
 
                     <!-- pop up after selection-->
                     <Canvas x:Name="selectionCanvas">

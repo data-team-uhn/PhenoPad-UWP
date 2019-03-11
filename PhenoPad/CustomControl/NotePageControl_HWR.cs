@@ -58,8 +58,12 @@ namespace PhenoPad.CustomControl
     {
         DispatcherTimer RawStrokeTimer;
         List<InkStroke> RawStrokes;
-        List<HWRRecognizedText> RecognizedNotes;
-        double lastStrokeX = -1;
+        List<WordBlockControl> RecognizedNotes;
+        int currentIndex;
+
+
+
+        Point lastStrokePoint;
         bool recognizing;
 
         private async void RawStrokeTimer_Tick(object sender = null, object e = null) {
@@ -70,27 +74,14 @@ namespace PhenoPad.CustomControl
             temp.InkPresenter.StrokeContainer.AddStrokes(RawStrokes);
             List<HWRRecognizedText> recognitionResults =await HWRManager.getSharedHWRManager().OnRecognizeAsync(temp.InkPresenter.StrokeContainer, InkRecognitionTarget.All, false);
             if (recognitionResults != null) {
-                RecognizedNotes.AddRange(recognitionResults);
                 foreach (HWRRecognizedText recog in recognitionResults)
                 {
-                    TextBlock block = new TextBlock();
-                    block.FontSize = 22;
-                    block.Text = recog.selectedCandidate;
-                    RecognizedNoteStackPanel.Children.Add(block);
-
-                    foreach (string candidate in recog.candidateList) {
-                        Debug.WriteLine(candidate + "\n");
-                        Button tb = new Button();
-                        tb.FontSize = 16;
-                        tb.Content = candidate;
-                        curLineWordsStackPanel.Children.Add(tb);
-                    }
-
-                    Canvas.SetTop(curLineResultPanel, 200);
-                    curLineWordsStackPanel.Visibility = Visibility.Visible;
-                    curLineResultPanel.Visibility = Visibility.Visible;
-                    UpdateLayout();
-
+                    WordBlockControl wb = new WordBlockControl(recog.selectedCandidate, recog.candidateList, currentIndex);
+                    RecognizedNoteStackPanel.Children.Add(wb);
+                    foreach (Button alternative in wb.GetCurWordCandidates())
+                        curLineWordsStackPanel.Children.Add(alternative);
+                    ShowAlternativeCanvas();
+                    currentIndex++;
                 }
                 RawStrokes.Clear();
             }
@@ -105,7 +96,6 @@ namespace PhenoPad.CustomControl
         private void InkPresenter_StrokesErased(InkPresenter sender, InkStrokesErasedEventArgs args)
         {
             ClearSelectionAsync();
-            lastStrokeX = -1;
             curLineResultPanel.Visibility = Visibility.Collapsed;
             curLineWordsStackPanel.Children.Clear();
             RawStrokes.Clear();
@@ -117,6 +107,7 @@ namespace PhenoPad.CustomControl
             //operationDispathcerTimer.Start();
             //dispatcherTimer.Start();
             autosaveDispatcherTimer.Start();
+            lastStrokePoint = new Point(0,0);
         }
 
         private void StrokeInput_StrokeStarted(InkStrokeInput sender, PointerEventArgs args)
@@ -128,12 +119,12 @@ namespace PhenoPad.CustomControl
                 //operationDispathcerTimer.Stop();
                 //RawStrokeTimer.Stop();
                 inkOperationAnalyzer.ClearDataForAllStrokes();
-                if (lastStrokeX != -1)
+                if (! lastStrokePoint.Equals(new Point(0,0)))
                 {
                     
-                    double dist = Math.Abs(lastStrokeX - (args.CurrentPoint.Position.X));
+                    double dist = GetDistance(lastStrokePoint, args.CurrentPoint.Position);
                     Debug.WriteLine($"Stroke dist = {dist}");
-                    if (dist > 30 && !recognizing)
+                    if (dist > 50 && !recognizing)
                     {
                         RawStrokeTimer_Tick();
                     }
@@ -145,63 +136,29 @@ namespace PhenoPad.CustomControl
             //recognizeTimer.Stop();
         }
 
+        private void ShowAlternativeCanvas() {
+            double y = (Math.Floor(lastStrokePoint.Y / LINE_HEIGHT) - 1) * LINE_HEIGHT;
+            Canvas.SetTop(curLineResultPanel, y);
+            Canvas.SetLeft(curLineResultPanel, lastStrokePoint.X);
+            curLineWordsStackPanel.Visibility = Visibility.Visible;
+            curLineResultPanel.Visibility = Visibility.Visible;
+            UpdateLayout();
+
+
+        }
 
         private void StrokeInput_StrokeEnded(InkStrokeInput sender, PointerEventArgs args)
         {
             autosaveDispatcherTimer.Start();
             //RawStrokeTimer.Start();
             //recognizeTimer.Start();
-            lastStrokeX = args.CurrentPoint.Position.X;
+            Rect bound = sender.InkPresenter.StrokeContainer.BoundingRect;
+            lastStrokePoint = new Point(bound.X + bound.Width, bound.Y + (bound.Height/2));
+
 
         }
 
-        //private async void InkPresenter_StrokesCollectedAsync(InkPresenter sender, InkStrokesCollectedEventArgs args)
-        //{
-        //    if (!leftLasso)
-        //    {//processing strokes inputs
-        //        //dispatcherTimer.Stop();
-        //        //operationDispathcerTimer.Stop();            
-        //        foreach (var s in args.Strokes)
-        //        {
-        //            //Process strokes that excess maximum height for recognition
-        //            if (s.BoundingRect.Height > MAX_WRITING)
-        //            {
-        //                inkOperationAnalyzer.AddDataForStroke(s);
-        //                try
-        //                {
-        //                    await RecognizeInkOperation();
-        //                }
-        //                catch (Exception e)
-        //                {
-        //                    MetroLogger.getSharedLogger().Error($"InkPresenter_StrokesCollectedAsync in NotePageControl:{e}|{e.Message}");
-        //                }
-        //            }
-        //            //Instantly analyze ink inputs
-        //            else
-        //            {
-        //                RawStrokeTimer.Start();
-        //                RawStrokes.Add(s.Clone());
 
-        //                inkAnalyzer.AddDataForStroke(s);
-        //                inkAnalyzer.SetStrokeDataKind(s.Id, InkAnalysisStrokeKind.Writing);
-        //                //marking the current stroke for later server recognition
-        //                curStroke = s;
-        //                //here we need instant call to analyze ink for the specified line input
-        //                await analyzeInk(s);
-        //                OperationLogger.getOpLogger().Log(OperationType.Stroke, s.Id.ToString(), s.StrokeStartedTime.ToString(), s.StrokeDuration.ToString());
-        //            }
-        //        }
-
-        //    }
-        //    else
-        //    {//processing strokes selected with left mouse lasso strokes
-        //        leftLossoStroke = args.Strokes;
-        //        foreach (var s in args.Strokes)
-        //        {
-        //            //TODO: 
-        //        }
-        //    }
-        //}
 
         private async void InkPresenter_StrokesCollectedAsync(InkPresenter sender, InkStrokesCollectedEventArgs args)
         {
@@ -209,10 +166,12 @@ namespace PhenoPad.CustomControl
             {//processing strokes inputs
              //dispatcherTimer.Stop();
              //operationDispathcerTimer.Stop(); 
-                //RawStrokeTimer.Stop();
+             //RawStrokeTimer.Stop();
+
 
                 foreach (var s in args.Strokes)
                 {
+
                     //Process strokes that excess maximum height for recognition
                     if (s.BoundingRect.Height > MAX_WRITING)
                     {
@@ -229,6 +188,7 @@ namespace PhenoPad.CustomControl
                     //Instantly analyze ink inputs
                     else
                     {
+
                         //if(lastStrokeX != -1) {
                         //    double dist = Math.Abs(lastStrokeX - (s.BoundingRect.X));
                         //    Debug.WriteLine($"Stroke dist = {dist}");
@@ -254,6 +214,22 @@ namespace PhenoPad.CustomControl
             }
         }
 
+        private double GetDistance(Point p1, Point p2) {
+            //last stroke not yet recorded
+            if (p1.Equals(new Point(0,0))) {
+                return 0;
+            }
+
+            //Returns the eucliedean distance between 2 points
+            double absoluteX_dist = Math.Abs(p1.X - p2.X);
+            double euclidean_dist = Math.Sqrt((p1.X - p2.X) * (p1.X - p2.X) + (p1.Y - p2.Y) * (p1.Y - p2.Y));
+            return Math.Min(absoluteX_dist, euclidean_dist);
+        }
+
+        private void ShowWordCandidate(object sender, RoutedEventArgs args) {
+            TextBlock block = (TextBlock)sender;
+            Debug.Write(block.Text);
+        }
 
 
     }
