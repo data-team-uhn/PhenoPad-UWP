@@ -137,6 +137,9 @@
     <Compile Include="CustomControl\NotePageControl_HWR.cs" />
     <Compile Include="CustomControl\NotePageControl_InkAnalysis.cs" />
     <Compile Include="CustomControl\NotePageControl_Notetext.cs" />
+    <Compile Include="CustomControl\NotePhraseControl.xaml.cs">
+      <DependentUpon>NotePhraseControl.xaml</DependentUpon>
+    </Compile>
     <Compile Include="CustomControl\PhenotypeBriefControl.xaml.cs">
       <DependentUpon>PhenotypeBriefControl.xaml</DependentUpon>
     </Compile>
@@ -277,6 +280,10 @@
       <Generator>MSBuild:Compile</Generator>
     </Page>
     <Page Include="CustomControl\NotePageControl.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="CustomControl\NotePhraseControl.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>

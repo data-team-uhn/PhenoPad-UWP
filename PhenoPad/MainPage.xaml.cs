@@ -277,6 +277,7 @@ namespace PhenoPad
             if (!ifViewMode && curPage != null)
             {
                 curPage.hideRecognizedTextCanvas();
+      
                 modeTextBlock.Text = currentMode;
             }
         }

@@ -233,7 +233,7 @@ namespace PhenoPad.CustomControl
             operationDispathcerTimer.Tick += OperationDispatcherTimer_Tick;
             textNoteDispatcherTimer.Tick += TextNoteDispatcherTimer_Tick;
             recognizeTimer.Tick += TriggerRecogServer;
-            //RawStrokeTimer.Tick += RawStrokeTimer_Tick;
+            RawStrokeTimer.Tick += RawStrokeTimer_Tick;
 
             unprocessedDispatcherTimer = new DispatcherTimer();
             unprocessedDispatcherTimer.Tick += UnprocessedDispathcerTimer_Tick;
@@ -247,7 +247,7 @@ namespace PhenoPad.CustomControl
             unprocessedDispatcherTimer.Interval = TimeSpan.FromMilliseconds(100);
             recognizeTimer.Interval = TimeSpan.FromSeconds(0.25);// recognize through server side every 3 seconds
             autosaveDispatcherTimer.Interval = TimeSpan.FromSeconds(1); //setting stroke auto save interval to be 1 sec
-            RawStrokeTimer.Interval = TimeSpan.FromSeconds(1);
+            RawStrokeTimer.Interval = TimeSpan.FromSeconds(0.3);
 
             linesToUpdate = new Queue<int>();
             lineAnalysisDispatcherTimer = new DispatcherTimer();
@@ -267,8 +267,9 @@ namespace PhenoPad.CustomControl
             deleteSemaphoreSlim = new SemaphoreSlim(1);
             selectAndRecognizeSemaphoreSlim = new SemaphoreSlim(1);
             RawStrokes = new List<InkStroke>();
-            RecognizedNotes = new List<WordBlockControl>();
+            NotePhrases = new List<NotePhraseControl>();
             currentIndex = 0;
+            strokeAnalyzer = new InkAnalyzer();
             
             recognizedTextCanvas.Visibility = Visibility.Collapsed;
 
@@ -482,7 +483,11 @@ namespace PhenoPad.CustomControl
             if (ehrPage == null)
             {
                 recognizedTextCanvas.Visibility = Visibility.Visible;
+                textNoteEditBox.Document.SetText(TextSetOptions.None, ParseNoteText());
+                textNoteEditBox.Visibility = Visibility.Visible;
                 inkCanvas.Visibility = Visibility.Collapsed;
+                PhraseControlCanvas.Visibility = Visibility.Collapsed;
+
                 backgroundCanvas.Background = new SolidColorBrush(Colors.WhiteSmoke);
             }
             else 
@@ -492,9 +497,12 @@ namespace PhenoPad.CustomControl
         public void hideRecognizedTextCanvas()
         {
             if (ehrPage == null)
-            {
+            {//shows the stroke editing
                 recognizedTextCanvas.Visibility = Visibility.Collapsed;
+                textNoteEditBox.Visibility = Visibility.Collapsed;
                 inkCanvas.Visibility = Visibility.Visible;
+                PhraseControlCanvas.Visibility = Visibility.Visible;
+                RecognizedText.Text = "";
                 backgroundCanvas.Background = new SolidColorBrush(Colors.White);
             }
             else

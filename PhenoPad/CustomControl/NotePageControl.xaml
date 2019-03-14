@@ -253,7 +253,9 @@
                             <ColumnDefinition Width="*"/>
                         </Grid.ColumnDefinitions>
 
-                        <StackPanel x:Name="RecognizedNoteStackPanel" Orientation="Horizontal" Spacing="10" Margin="0 10 0 0" Canvas.ZIndex="999"/>
+                        <StackPanel x:Name="RecognizedNoteStackPanel" Orientation="Horizontal" Spacing="10" Margin="0 10 0 0" Canvas.ZIndex="999">
+                            <TextBlock x:Name="RecognizedText"/>
+                        </StackPanel>
 
                         <RichEditBox Style="{StaticResource MyRichEditBoxStyle}" Background="Transparent" 
                                      x:Name="textNoteEditBox" TextChanged="TextNoteEdit_TextChanged" 
@@ -261,6 +263,8 @@
                                      BorderThickness="0">
                         </RichEditBox>
                     </Grid>
+
+                    <Canvas x:Name ="PhraseControlCanvas"/>
 
 
                     <!-- pop up after selection-->

@@ -41,13 +41,37 @@ namespace PhenoPad.CustomControl
         }
 
         private void ShowWordCandidate(object sender, RoutedEventArgs args) {
-            candidateList.ItemsSource = candidates;
+            AlternativeList.ItemsSource = candidates;
             Flyout f = (Flyout)this.Resources["AlternativeFlyout"];
             f.ShowAt(WordBlock);
         }
 
+        private void ReplaceAlternative(object sender, RoutedEventArgs args) {
+            string text = AlternativeInput.Text;
+            if (text.Length > 0) {
+                current = text;
+                selected_index = -1;
+                WordBlock.Text = current;
+            }
+        }
+
         private void CandidateList_Click(object sender, RoutedEventArgs args) {
-            Debug.WriteLine(sender.GetType().ToString());
+            int ind = candidates.IndexOf((string)((Button)sender).Content);
+            selected_index = ind;
+            current = candidates[ind];
+            WordBlock.Text = current;
+            Debug.WriteLine($"candidate word has been changed to={current}");
+            MainPage.Current.curPage.HideCurLineStackPanel();
+            UpdateLayout();
+        }
+
+        private void AlternativeList_Click(object sender, ItemClickEventArgs e) {
+            int ind = AlternativeList.Items.IndexOf((string)e.ClickedItem);
+            selected_index = ind;
+            current = candidates[ind];
+            WordBlock.Text = current;
+            Debug.WriteLine($"alternative word has been changed to={current}");
+            UpdateLayout();
         }
 
         public List<Button> GetCurWordCandidates() {

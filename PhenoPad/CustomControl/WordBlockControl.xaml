@@ -12,23 +12,24 @@
     <UserControl.Resources>
         <Flyout x:Key="AlternativeFlyout" Placement="Top">
             <StackPanel Padding="0" Margin="3" Width="auto">
-                <ListView x:Name="candidateList" IsItemClickEnabled="True"
-                              ItemClick="CandidateList_Click" Width="auto">
+                <ListView x:Name="AlternativeList" IsItemClickEnabled="True"
+                              ItemClick="AlternativeList_Click" Width="auto">
                     <ListView.ItemContainerStyle>
                         <Style TargetType="ListViewItem">
                             <Setter Property="HorizontalContentAlignment" Value="Stretch" />
                             <Setter Property="VerticalContentAlignment" Value="Center" />
                             <Setter Property="Margin" Value="0,1,0,1" />
                             <Setter Property="Padding" Value="0,0,0,0" />
-                            <Setter Property="MinHeight" Value="20" />
+                            <Setter Property="MinHeight" Value="40" />
                         </Style>
                     </ListView.ItemContainerStyle>
                 </ListView>
+                <TextBox x:Name="AlternativeInput" MinHeight="40" LostFocus="ReplaceAlternative" />
             </StackPanel>
         </Flyout>
     </UserControl.Resources>
 
     <Grid>
-        <TextBlock x:Name="WordBlock" x:FieldModifier="public" FontSize="22" Tapped="ShowWordCandidate" />
+        <TextBlock x:Name="WordBlock" Text="{x:Bind current}" x:FieldModifier="public" FontSize="26" Tapped="ShowWordCandidate" />
     </Grid>
 </UserControl>
