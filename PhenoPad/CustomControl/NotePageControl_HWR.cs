@@ -239,59 +239,54 @@ namespace PhenoPad.CustomControl
                             strokeAnalyzer.ClearDataForAllStrokes();
                             strokeAnalyzer.AddDataForStrokes(strokeRecords[lineNum]);
                             var result = await strokeAnalyzer.AnalyzeAsync();
+                            var wordNodes = strokeAnalyzer.AnalysisRoot.FindNodes(InkAnalysisNodeKind.InkWord);
 
-                            if (result.Status == InkAnalysisStatus.Updated) {
-                                var wordNodes = strokeAnalyzer.AnalysisRoot.FindNodes(InkAnalysisNodeKind.InkWord);
+                            if (result.Status == InkAnalysisStatus.Updated && wordNodes.Count != lastWordCount) {
                                 Debug.WriteLine( $"line = {lineNum}, number of words = {wordNodes.Count}");
-                                if (wordNodes.Count == 3) {
-                                    var ids = wordNodes[0].GetStrokeIds();
-                                    //strokeAnalyzer.RemoveDataForStrokes(ids);
+                                if (wordNodes.Count > 1 && wordNodes.Count > lastWordCount) {
 
-                                    foreach (var id in ids)
-                                    {
-                                        var recordStroke = strokeRecords[lineNum].Where(x => x.Id == id).FirstOrDefault();
-                                        strokeRecords[lineNum].Remove(recordStroke);
+                                    Point p1 = new Point(wordNodes[wordNodes.Count - 2].BoundingRect.X + wordNodes[0].BoundingRect.Width, wordNodes[0].BoundingRect.Y);
+                                    Point p2 = new Point(wordNodes[wordNodes.Count - 1].BoundingRect.X , wordNodes[1].BoundingRect.Y);
+                                    double dist = GetDistance(p1, p2);
+                                    Debug.WriteLine(dist+"---");
+                                    if (dist > 20) {
+                                        var ids = wordNodes[wordNodes.Count -2 ].GetStrokeIds();
+                                        foreach (var id in ids)
+                                        {
+                                            var st = inkCan.InkPresenter.StrokeContainer.GetStrokeById(id);
+                                            if (st != null)
+                                                st.Selected = true;
+
+                                            //var rst = strokeRecords[lineNum].Where(x => x.StrokeStartedTime == st.StrokeStartedTime).FirstOrDefault();
+                                            //if (rst != null)
+                                            //    strokeRecords[lineNum].Remove(rst);
+
+                                        }
+                                        inkCan.InkPresenter.StrokeContainer.MoveSelected(new Point(9999, 9999));
                                     }
                                 }
+                                
+                                //if (wordNodes.Count == 3) {
+                                //    var ids = wordNodes[0].GetStrokeIds().ToList();
+                                //    ids.AddRange(wordNodes[1].GetStrokeIds().ToList());
+                                    
+                                //    foreach (var id in ids)
+                                //    {
+                                //        var st = inkCan.InkPresenter.StrokeContainer.GetStrokeById(id);
+                                //        if (st != null)
+                                //            st.Selected = true;
 
-                                else if (wordNodes.Count != 0 && wordNodes.Count < lastWordCount)
-                                {
-                                    mergedWord = true;
-                                    var ids = wordNodes[0].GetStrokeIds();
-                                    //strokeAnalyzer.RemoveDataForStrokes(ids);
+                                //    }
+                                //    inkCan.InkPresenter.StrokeContainer.MoveSelected(new Point(9999, 9999));
+                                //}
 
-                                    foreach (var id in ids)
-                                    {
-                                        var recordStroke = strokeRecords[lineNum].Where(x => x.Id == id).FirstOrDefault();
-                                        strokeRecords[lineNum].Remove(recordStroke);
-                                        var canvasStroke = inkCan.InkPresenter.StrokeContainer.GetStrokes().Where(x => x.StrokeStartedTime == recordStroke.StrokeStartedTime).FirstOrDefault();
-                                        if (canvasStroke != null)
-                                            canvasStroke.Selected = true;
-                                    }
-                                    inkCan.InkPresenter.StrokeContainer.DeleteSelected();
-
-                                }
-                                else if (wordNodes.Count > 1) {
-
-                                    var ids = wordNodes[wordNodes.Count - 2].GetStrokeIds();
-                                    foreach (var id in ids)
-                                    {
-                                        var recordStroke = strokeRecords[lineNum].Where(x => x.Id == id).FirstOrDefault();
-                                        var canvasStroke = inkCan.InkPresenter.StrokeContainer.GetStrokes().Where(x => x.StrokeStartedTime == recordStroke.StrokeStartedTime).FirstOrDefault();
-                                        if (canvasStroke != null)
-                                            canvasStroke.Selected = true;
-                                    }
-                                    if (mergedWord) {
-                                        inkCan.InkPresenter.StrokeContainer.DeleteSelected();
-                                        mergedWord = false;
-                                    }
-                                }
                                 lastWordCount = wordNodes.Count;
+
                             }
 
                         }
 
-                        RawStrokeTimer.Start();
+                        //RawStrokeTimer.Start();
 
 
                         //strokeAnalyzer.AddDataForStroke(s);
