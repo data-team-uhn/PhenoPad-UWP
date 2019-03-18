@@ -198,7 +198,12 @@ namespace PhenoPad.CustomControl
 
             if (file == null)
             {//if no file found, setup an empty text file
-                EHRTextBox.Document.SetText(TextSetOptions.None, "");
+                EHRTextBox.Document.SetText(TextSetOptions.None, ".");
+                current_index = 0;
+                var range2 = EHRTextBox.Document.GetRange(0, 1);
+                range2.CharacterFormat.ForegroundColor = Colors.White;
+                UpdateLayout();
+
                 await FileManager.getSharedFileManager().SaveEHRText(notebookid, pageid, this);
                 await FileManager.getSharedFileManager().SaveEHRFormats(notebookid, pageid, this);
                 return;
