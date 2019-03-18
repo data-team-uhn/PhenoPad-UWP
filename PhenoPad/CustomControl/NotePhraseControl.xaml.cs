@@ -61,11 +61,12 @@ namespace PhenoPad.CustomControl
             canvasTop = top;
         }
 
-        public void AddStrokes(List<InkStroke> strokes) {
+        public void AddStrokes(List<InkStroke> strokes, double boundWidth) {
             foreach (var s in strokes) {
                 RawStrokes.InkPresenter.StrokeContainer.AddStroke(s.Clone());
-                this.width += Math.Abs((s.BoundingRect.X + s.BoundingRect.Width) - (canvasLeft + width));
+                //this.width += Math.Abs((s.BoundingRect.X + s.BoundingRect.Width) - (canvasLeft + width));                
             }
+            width += boundWidth;
         }
 
         public void AddWords(List<WordBlockControl> words) {

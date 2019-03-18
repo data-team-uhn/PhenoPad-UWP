@@ -103,9 +103,10 @@ namespace PhenoPad.HWRService
         {
             try
             {
+
                 var recognitionResults = await inkRecognizerContainer.RecognizeAsync(container, target);
                 //if there are avilable recognition results, add to recognized text list    
-                if (recognitionResults.Count > 0)
+                if ( recognitionResults != null && recognitionResults.Count > 0)
                 {
                     List<HWRRecognizedText> recogResults = new List<HWRRecognizedText>();
                     sentence = new List<string>();
@@ -131,14 +132,17 @@ namespace PhenoPad.HWRService
                     //triggers server side abbreviation detection
                     if (server && MainPage.Current.abbreviation_enabled)
                     {
+                        Debug.WriteLine("HWR server triggered");
                         string fullsentence = listToString(sentence);
                         HTTPRequest unprocessed = new HTTPRequest(fullsentence, this.alternatives, this.newRequest.ToString());
                         List<HWRRecognizedText> processed = await UpdateResultFromServer(unprocessed);
                         recogResults = processed == null ? recogResults : processed;
                         lastServerRecog = recogResults;
                     }
-
+                    Debug.WriteLine("before server");
                     recogResults = CompareAndUpdateWithServer(recogResults);
+                    Debug.WriteLine("after server");
+
                     lastServerRecog = recogResults;
 
 
@@ -152,7 +156,7 @@ namespace PhenoPad.HWRService
             {
                 //MessageDialog dialog = new MessageDialog("No storke selected.");
                 //var cmd = await dialog.ShowAsync();
-                LogService.MetroLogger.getSharedLogger().Error("HWR error: " + e.Message);
+                LogService.MetroLogger.getSharedLogger().Error("HWR error: " + e + e.Message);
                 return null;
             }
         }

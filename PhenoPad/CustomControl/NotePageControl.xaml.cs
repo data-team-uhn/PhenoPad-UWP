@@ -290,6 +290,9 @@ namespace PhenoPad.CustomControl
 
             lastStrokePoint = new Point(0,0);
 
+            strokeRecords = new Dictionary<int, List<InkStroke>>();
+            lastWordCount = 0;
+
         }
 
 
