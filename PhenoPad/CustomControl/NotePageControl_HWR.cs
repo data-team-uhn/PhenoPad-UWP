@@ -254,7 +254,7 @@ namespace PhenoPad.CustomControl
                                     }
                                 }
 
-                                else if (wordNodes.Count < lastWordCount)
+                                else if (wordNodes.Count != 0 && wordNodes.Count < lastWordCount)
                                 {
                                     mergedWord = true;
                                     var ids = wordNodes[0].GetStrokeIds();
@@ -271,7 +271,7 @@ namespace PhenoPad.CustomControl
                                     inkCan.InkPresenter.StrokeContainer.DeleteSelected();
 
                                 }
-                                else if (wordNodes.Count > 1 && mergedWord) {
+                                else if (wordNodes.Count > 1) {
 
                                     var ids = wordNodes[wordNodes.Count - 2].GetStrokeIds();
                                     foreach (var id in ids)
@@ -281,7 +281,10 @@ namespace PhenoPad.CustomControl
                                         if (canvasStroke != null)
                                             canvasStroke.Selected = true;
                                     }
-                                    mergedWord
+                                    if (mergedWord) {
+                                        inkCan.InkPresenter.StrokeContainer.DeleteSelected();
+                                        mergedWord = false;
+                                    }
                                 }
                                 lastWordCount = wordNodes.Count;
                             }
