@@ -775,7 +775,7 @@ namespace PhenoPad.PhenotypeService
             {
                 throw new Exception("Invalid header value: " + header);
             }
-
+            //Mar19,2019: API may not be working properlly b/c it's returning empty content upon request
             var urlstr = "https://playground.phenotips.org/get/PhenoTips/DiseasePredictService2?format=json&limit=15";
             /**
             foreach (var p in savedPhenotypes)
@@ -785,7 +785,7 @@ namespace PhenoPad.PhenotypeService
             Uri requestUri = new Uri(urlstr);
 
             //Send the GET request asynchronously and retrieve the response as a string.
-            Windows.Web.Http.HttpResponseMessage httpResponse = new Windows.Web.Http.HttpResponseMessage();
+            HttpResponseMessage httpResponse = new HttpResponseMessage();
             string httpResponseBody = "";
 
             try
@@ -802,7 +802,7 @@ namespace PhenoPad.PhenotypeService
                 httpResponse = await httpClient.PostAsync(requestUri, formContent);
                 httpResponse.EnsureSuccessStatusCode();
                 httpResponseBody = await httpResponse.Content.ReadAsStringAsync();
-
+                Debug.WriteLine("differential diagnosis:" + httpResponse.Content);
                 var result = JsonConvert.DeserializeObject<List<Disease>>(httpResponseBody);
 
                 return result;
@@ -810,7 +810,7 @@ namespace PhenoPad.PhenotypeService
             catch (Exception ex)
             {
                 httpResponseBody = "Error: " + ex.HResult.ToString("X") + " Message: " + ex.Message;
-                LogService.MetroLogger.getSharedLogger().Error("Failed to give differential diagnosis, " + httpResponseBody);
+                MetroLogger.getSharedLogger().Error("Failed to give differential diagnosis, " + httpResponseBody);
             }
             return null;
         }
@@ -840,7 +840,7 @@ namespace PhenoPad.PhenotypeService
             Uri requestUri = new Uri("https://playground.phenotips.org/rest/vocabularies/hpo/" + id);
 
             //Send the GET request asynchronously and retrieve the response as a string.
-            Windows.Web.Http.HttpResponseMessage httpResponse = new Windows.Web.Http.HttpResponseMessage();
+            HttpResponseMessage httpResponse = new HttpResponseMessage();
             string httpResponseBody = "";
 
             try
