@@ -776,7 +776,7 @@ namespace PhenoPad.PhenotypeService
                 throw new Exception("Invalid header value: " + header);
             }
             //Mar19,2019: API may not be working properlly b/c it's returning empty content upon request
-            var urlstr = "https://playground.phenotips.org/get/PhenoTips/DiseasePredictService2?format=json&limit=15";
+            var urlstr = "https://playground.phenotips.org/get/PhenoTips/DiseasePredictService?format=json&limit=15";
             /**
             foreach (var p in savedPhenotypes)
             {
@@ -802,15 +802,15 @@ namespace PhenoPad.PhenotypeService
                 httpResponse = await httpClient.PostAsync(requestUri, formContent);
                 httpResponse.EnsureSuccessStatusCode();
                 httpResponseBody = await httpResponse.Content.ReadAsStringAsync();
-                Debug.WriteLine("differential diagnosis:" + httpResponse.Content);
+                Debug.WriteLine($"differential diagnosis: code={httpResponse.StatusCode}, Body = {httpResponseBody}" );
                 var result = JsonConvert.DeserializeObject<List<Disease>>(httpResponseBody);
 
                 return result;
             }
             catch (Exception ex)
             {
-                httpResponseBody = "Error: " + ex.HResult.ToString("X") + " Message: " + ex.Message;
-                MetroLogger.getSharedLogger().Error("Failed to give differential diagnosis, " + httpResponseBody);
+                string errormsg = " Message: " + ex.Message + " Body: " + httpResponseBody;
+                MetroLogger.getSharedLogger().Error("Failed to give differential diagnosis, " + errormsg);
             }
             return null;
         }
