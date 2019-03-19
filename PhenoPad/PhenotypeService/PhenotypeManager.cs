@@ -776,7 +776,7 @@ namespace PhenoPad.PhenotypeService
                 throw new Exception("Invalid header value: " + header);
             }
 
-            var urlstr = "https://playground.phenotips.org/get/PhenoTips/DiseasePredictService2?format=json&limit=15";
+            var urlstr = "https://playground.phenotips.org/get/PhenoTips/DiseasePredictService?format=json&limit=15";
             /**
             foreach (var p in savedPhenotypes)
             {
