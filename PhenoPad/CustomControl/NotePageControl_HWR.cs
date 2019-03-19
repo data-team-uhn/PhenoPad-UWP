@@ -259,7 +259,7 @@ namespace PhenoPad.CustomControl
                             var result = await strokeAnalyzer.AnalyzeAsync();
                             var wordNodes = strokeAnalyzer.AnalysisRoot.FindNodes(InkAnalysisNodeKind.InkWord);
 
-                            if (result.Status == InkAnalysisStatus.Updated && wordNodes.Count != lastWordCount)
+                            if (result.Status == InkAnalysisStatus.Updated)
                             {
                                 Debug.WriteLine($"line = {lineNum}, number of words = {wordNodes.Count}");
 
@@ -283,7 +283,7 @@ namespace PhenoPad.CustomControl
                                         UpdateRecognizedWordStyle(lineNum, ids);
                                         UpdateLayout();
                                     }
-                                    lastWordCount--;
+                                    
                                 }
 
                                 //if (wordNodes.Count > 1 && wordNodes.Count > lastWordCount) {
