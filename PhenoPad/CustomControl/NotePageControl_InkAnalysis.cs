@@ -50,6 +50,87 @@ namespace PhenoPad.CustomControl
     {
         DispatcherTimer recognizeTimer;
         List<HWRRecognizedText> cur_result;
+
+        private void InkPresenter_StrokesErased(InkPresenter sender, InkStrokesErasedEventArgs args)
+        {
+            ClearSelectionAsync();
+
+            curLineResultPanel.Visibility = Visibility.Collapsed;
+            curLineWordsStackPanel.Children.Clear();
+            //operationDispathcerTimer.Stop();
+            foreach (var stroke in args.Strokes)
+            {
+                inkAnalyzer.RemoveDataForStroke(stroke.Id);
+            }
+            //operationDispathcerTimer.Start();
+            //dispatcherTimer.Start();
+            autosaveDispatcherTimer.Start();
+        }
+
+        private void StrokeInput_StrokeStarted(InkStrokeInput sender, PointerEventArgs args)
+        {
+            if (!leftLasso)
+            {
+                //ClearSelection();
+                // dispatcherTimer.Stop();
+                //operationDispathcerTimer.Stop();
+                inkOperationAnalyzer.ClearDataForAllStrokes();
+            }
+            autosaveDispatcherTimer.Stop();
+            recognizeTimer.Stop();
+        }
+
+        private void StrokeInput_StrokeEnded(InkStrokeInput sender, PointerEventArgs args)
+        {
+            autosaveDispatcherTimer.Start();
+            recognizeTimer.Start();
+        }
+
+        private async void InkPresenter_StrokesCollectedAsync(InkPresenter sender, InkStrokesCollectedEventArgs args)
+        {
+            if (!leftLasso)
+            {//processing strokes inputs
+                //dispatcherTimer.Stop();
+                //operationDispathcerTimer.Stop();            
+                foreach (var s in args.Strokes)
+                {
+                    //Process strokes that excess maximum height for recognition
+                    if (s.BoundingRect.Height > MAX_WRITING)
+                    {
+                        inkOperationAnalyzer.AddDataForStroke(s);
+                        try
+                        {
+                            await RecognizeInkOperation();
+                        }
+                        catch (Exception e)
+                        {
+                            MetroLogger.getSharedLogger().Error($"InkPresenter_StrokesCollectedAsync in NotePageControl:{e}|{e.Message}");
+                        }
+                    }
+                    //Instantly analyze ink inputs
+                    else
+                    {
+                        inkAnalyzer.AddDataForStroke(s);
+                        inkAnalyzer.SetStrokeDataKind(s.Id, InkAnalysisStrokeKind.Writing);
+                        //marking the current stroke for later server recognition
+                        curStroke = s;
+                        //here we need instant call to analyze ink for the specified line input
+                        await analyzeInk(s);
+                        OperationLogger.getOpLogger().Log(OperationType.Stroke, s.Id.ToString(), s.StrokeStartedTime.ToString(), s.StrokeDuration.ToString());
+                    }
+                }
+
+            }
+            else
+            {//processing strokes selected with left mouse lasso strokes
+                leftLossoStroke = args.Strokes;
+                foreach (var s in args.Strokes)
+                {
+                    //TODO: 
+                }
+            }
+        }
+
         // ================================= INK RECOGNITION ==============================================                      
         /// <summary>
         /// PS:10/9/2018 this method is currently not used as the timer tick is commented out
@@ -497,8 +578,6 @@ namespace PhenoPad.CustomControl
             }
         }
 
-
-
         /// <summary>
         /// Recognize a set of strokes as whether a shape or just drawing and handles each case
         /// accordingly.
@@ -510,7 +589,6 @@ namespace PhenoPad.CustomControl
             if (result.Status == InkAnalysisStatus.Updated)
             {
                 //first need to clear all previous selections to filter out strokes that don't want to be deleted
-                //ClearSelectionAsync();
                 foreach (var s in inkCanvas.InkPresenter.StrokeContainer.GetStrokes())
                     s.Selected = false;
                 //Gets all strokes from inkoperationanalyzer
@@ -532,25 +610,20 @@ namespace PhenoPad.CustomControl
                         }
                         //dispose the strokes as don't need them anymore
                         inkOperationAnalyzer.RemoveDataForStrokes(drawNode.GetStrokeIds());
-                        inkCanvas.InkPresenter.StrokeContainer.DeleteSelected();
-                    }
-                    else
-                    {
-                        //you need this else statement for debugging reasons...
-                        //Debug.WriteLine(drawNode.DrawingKind);
+                        //inkCanvas.InkPresenter.StrokeContainer.DeleteSelected();
                     }
                 }
+
                 // delete all strokes that are too large, like drawings
                 foreach (var sid in inkOperationAnalyzer.AnalysisRoot.GetStrokeIds())
                 {
-                    //ShowToastNotification("Write smallers", "Write smaller please");
-                    //rootPage.NotifyUser("Write smaller", NotifyType.ErrorMessage, 2);
-                    //inkCanvas.InkPresenter.StrokeContainer.GetStrokeById(sid).Selected = true;
                     inkOperationAnalyzer.RemoveDataForStroke(sid);
+                    inkCan.InkPresenter.StrokeContainer.GetStrokeById(sid).Selected = true;
                 }
-                //inkCanvas.InkPresenter.StrokeContainer.DeleteSelected();
+                inkCanvas.InkPresenter.StrokeContainer.DeleteSelected();
                 return 1;
             }
+            //inkoperation has no update, does nothing
             return -1;
         }
 
@@ -620,8 +693,6 @@ namespace PhenoPad.CustomControl
         {
             return ((x2 - x1) * (p.Y - y1) - (y2 - y1) * (p.X - x1)) > 0;
         }
-
-
 
 
         // Draw a polygon on the recognitionCanvas.

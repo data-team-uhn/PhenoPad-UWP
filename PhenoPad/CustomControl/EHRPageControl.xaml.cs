@@ -34,6 +34,8 @@ using PhenoPad.PhenotypeService;
 using System.Collections.ObjectModel;
 using System.Numerics;
 using Windows.System;
+using Windows.Storage.Streams;
+using System.Text;
 
 //using System.Drawing;
 
@@ -211,7 +213,12 @@ namespace PhenoPad.CustomControl
 
             try
             {
-                string text = await FileIO.ReadTextAsync(file);
+                IBuffer buffer = await FileIO.ReadBufferAsync(file);
+                DataReader reader = DataReader.FromBuffer(buffer);
+                byte[] fileContent = new byte[reader.UnconsumedBufferLength];
+                reader.ReadBytes(fileContent);
+                string text = Encoding.UTF7.GetString(fileContent, 0, fileContent.Length);
+
                 string[] paragraphs = text.Split(Environment.NewLine);
                 text = "";
                 //manually reformatting text by adding a space at the end of paragraphs
@@ -247,7 +254,6 @@ namespace PhenoPad.CustomControl
                 LogService.MetroLogger.getSharedLogger().Error(ex.Message);
             }
         }
-
 
         public void DrawBackgroundLines()
         {/// Draws background dashed lines to background canvas 
@@ -1329,9 +1335,11 @@ namespace PhenoPad.CustomControl
 
         private async void PasteTextToEHR(object sender, RoutedEventArgs e)
         {//paste text as append from clipboard to end of current ehr text
+
             DataPackageView dataPackageView = Clipboard.GetContent();
             if (dataPackageView.Contains(StandardDataFormats.Text))
             {
+
                 string text = await dataPackageView.GetTextAsync();
                 string[] paragraphs = text.Split(Environment.NewLine);
                 text = "";
@@ -1341,18 +1349,24 @@ namespace PhenoPad.CustomControl
                     else
                         text += p + " " + Environment.NewLine;
                 }
+
                 string ehr_text = getText(EHRTextBox);
-                if (! ehr_text.EndsWith(" "))
-                    EHRTextBox.Document.SetText(TextSetOptions.None, ehr_text+" "+ Environment.NewLine + text);
+                if (ehr_text.Trim().Equals("."))
+                {// pasting to an empty file
+                    EHRTextBox.Document.SetText(TextSetOptions.None, text);
+                    var range = EHRTextBox.Document.GetRange(0, text.Length);
+                    range.CharacterFormat.ForegroundColor = Colors.Black;
+                    EHRTextBox.UpdateLayout();                
+                }
+                else if (!ehr_text.EndsWith(" "))
+                    EHRTextBox.Document.SetText(TextSetOptions.None, ehr_text + " " + Environment.NewLine + text);
                 else
                     EHRTextBox.Document.SetText(TextSetOptions.None, ehr_text + Environment.NewLine + text);
             }
             MainPage.Current.NotifyUser("Pasted EHR to note", NotifyType.StatusMessage, 1);
             cpMenu.Visibility = Visibility.Collapsed;
             RefreshTextStyle();
-            //inserts.Clear();
-            //highlights.Clear();
-            //deletes.Clear();
+
         }
 
         private void ClearAllFormats(object sender, RoutedEventArgs e) {
@@ -1497,6 +1511,7 @@ namespace PhenoPad.CustomControl
 
         #region Stroke Event Handlers
 
+        //Stroke event handlers for editing canvas on EHR Page
         private void inkCanvas_StrokeInput_StrokeStarted(InkStrokeInput sender, PointerEventArgs args)
         {
             RefreshTextStyle();      
@@ -1504,160 +1519,166 @@ namespace PhenoPad.CustomControl
 
         private void inkCanvas_InkPresenter_StrokesCollectedAsync(InkPresenter sender, InkStrokesCollectedEventArgs args)
         {
-            //if user is still editing and a new stroke is tapped, 
-            if (SelectionMenu.Visibility == Visibility.Visible || InputHasContent() || IsEditingComment())
+            try
             {
-                Debug.WriteLine("Stroke collected but still editing\n");
-                OnElementTapped();
-            }
-
-            else if (inputgrid.Visibility == Visibility.Visible)
-            {
-                if (insertType == InsertType.InsertNewLine && !InputHasContent()) {
-                    //in case user wanted to insert at arbitary line at end of text but then canceled, need to removed the trailing anchor char
-                    string text = getText(EHRTextBox).TrimEnd();
-                    text = text.Substring(0, text.Length - 1) + " ";
-                    EHRTextBox.Document.SetText(TextSetOptions.None, text);
-                    EHRTextBox.UpdateLayout();
-                }
-                HideAndClearInputPanel();
-            }
-
-
-            else
-            {
-                foreach (var s in args.Strokes)
+                //if user is still editing and a new stroke is tapped, 
+                if (SelectionMenu.Visibility == Visibility.Visible || InputHasContent() || IsEditingComment())
                 {
-                    //Process strokes that is valid within textbox bound
-                    Rect bounding = s.BoundingRect;
-                    Rect EHRBounding = GetHERTextBound();
-                    //Debug.WriteLine($"strokeY = {s.BoundingRect.Y}, EHRY = {EHRBounding.Y + EHRBounding.Height}");
-                    if (s.BoundingRect.Y <= (EHRBounding.Height + LINE_HEIGHT))
+                    Debug.WriteLine("Stroke collected but still editing\n");
+                    OnElementTapped();
+                }
+                //handles the special case when inserting at end of file
+                else if (inputgrid.Visibility == Visibility.Visible)
+                {
+                    if (insertType == InsertType.InsertNewLine && !InputHasContent())
                     {
-                        StrokeType gesture = GestureManager.GetSharedGestureManager().GetGestureFromStroke(s);
+                        //in case user wanted to insert at arbitary line at end of text but then canceled, need to removed the trailing anchor char
+                        string text = getText(EHRTextBox).TrimEnd();
+                        text = text.Substring(0, text.Length - 1) + " ";
+                        EHRTextBox.Document.SetText(TextSetOptions.None, text);
+                        EHRTextBox.UpdateLayout();
+                    }
+                    HideAndClearInputPanel();
+                }
+                else
+                {
+                    foreach (var s in args.Strokes)
+                    {
+                        //Process strokes that is valid within textbox bound
+                        Rect bounding = s.BoundingRect;
+                        Rect EHRBounding = GetHERTextBound();
+                        //Debug.WriteLine($"strokeY = {s.BoundingRect.Y}, EHRY = {EHRBounding.Y + EHRBounding.Height}");
+                        if (s.BoundingRect.Y <= (EHRBounding.Height + LINE_HEIGHT))
+                        {
+                            StrokeType gesture = GestureManager.GetSharedGestureManager().GetGestureFromStroke(s);
 
-                        if (gesture == StrokeType.Zigzag)
-                        {//Zigzag for deleting
-                            Point start = new Point(bounding.X + 10, bounding.Y + (bounding.Height / 2.0) - LINE_HEIGHT);
-                            Point end = new Point(bounding.X + bounding.Width - 20, bounding.Y + (bounding.Height / 2.0) - LINE_HEIGHT);
-                            var range1 = EHRTextBox.Document.GetRangeFromPoint(start, PointOptions.ClientCoordinates);
-                            var range2 = EHRTextBox.Document.GetRangeFromPoint(end, PointOptions.ClientCoordinates);
+                            if (gesture == StrokeType.Zigzag)
+                            {//Zigzag for deleting
+                                Point start = new Point(bounding.X + 10, bounding.Y + (bounding.Height / 2.0) - LINE_HEIGHT);
+                                Point end = new Point(bounding.X + bounding.Width - 20, bounding.Y + (bounding.Height / 2.0) - LINE_HEIGHT);
+                                var range1 = EHRTextBox.Document.GetRangeFromPoint(start, PointOptions.ClientCoordinates);
+                                var range2 = EHRTextBox.Document.GetRangeFromPoint(end, PointOptions.ClientCoordinates);
 
-                            string sub_text1 = getText(EHRTextBox).Substring(0, range1.StartPosition);
-                            string sub_text2 = getText(EHRTextBox).Substring(range2.StartPosition);
+                                string sub_text1 = getText(EHRTextBox).Substring(0, range1.StartPosition);
+                                string sub_text2 = getText(EHRTextBox).Substring(range2.StartPosition);
 
-                            //Guarantees that the range if of format "some word followed by space "
-                            int del_start = sub_text1.LastIndexOf(" ") + 1;
-                            int del_end = sub_text2.IndexOf(" ") + range2.StartPosition + 1;
-                            var new_index = UpdateIndexForNewLine(del_start, del_end);
-                            del_start = new_index.Item1;
-                            del_end = new_index.Item2;
+                                //Guarantees that the range if of format "some word followed by space "
+                                int del_start = sub_text1.LastIndexOf(" ") + 1;
+                                int del_end = sub_text2.IndexOf(" ") + range2.StartPosition + 1;
+                                var new_index = UpdateIndexForNewLine(del_start, del_end);
+                                del_start = new_index.Item1;
+                                del_end = new_index.Item2;
 
-                            Debug.WriteLine($"Attempt to delete text:-{getText(EHRTextBox).Substring(del_start, del_end - del_start)}-");
-                            DeleteTextInRange(del_start, del_end);
-                        }
-
-                        else if (gesture == StrokeType.Dot)
-                        {//Dot for inserting
-                            var pos = new Point(bounding.X + bounding.Width / 2 - 10, bounding.Y - LINE_HEIGHT);
-                            var range = EHRTextBox.Document.GetRangeFromPoint(pos, PointOptions.ClientCoordinates);
-                            string text = getText(EHRTextBox);
-
-                            if (range.StartPosition == text.Length)
-                            {
-                                range = EHRTextBox.Document.GetRange(range.StartPosition, range.StartPosition);
-                                range.GetPoint(HorizontalCharacterAlignment.Left, VerticalCharacterAlignment.Baseline,
-                                                        PointOptions.ClientCoordinates, out pos);
-                                current_index = text.Length;
-                                insertType = InsertType.Insert;
-                                ((FontIcon)inputMarkup.Children[0]).Foreground = INSERT;
-                                ShowInputPanel(pos);
+                                Debug.WriteLine($"Attempt to delete text:-{getText(EHRTextBox).Substring(del_start, del_end - del_start)}-");
+                                DeleteTextInRange(del_start, del_end);
                             }
-                            else
-                            {
-                                Debug.WriteLine($"detected fir letter: -{text.Substring(range.StartPosition, 1)}-");
-                                bool isFormatted = CheckForFormat(range.StartPosition, range.StartPosition + 1, pos);
-                                if (!isFormatted)
+
+                            else if (gesture == StrokeType.Dot)
+                            {//Dot for inserting
+                                var pos = new Point(bounding.X + bounding.Width / 2 - 10, bounding.Y - LINE_HEIGHT);
+                                var range = EHRTextBox.Document.GetRangeFromPoint(pos, PointOptions.ClientCoordinates);
+                                string text = getText(EHRTextBox);
+
+                                if (range.StartPosition == text.Length)
                                 {
-                                    current_index = GetNearestSpaceIndex(range.StartPosition);
-                                    AddInControl inserted = comments.Where(x => x.commentID == current_index).FirstOrDefault();
-                                    if (inserted == null)
-                                    {// available for new insert, show input grid
-                                        range = EHRTextBox.Document.GetRange(current_index - 1, current_index);
-                                        range.GetPoint(HorizontalCharacterAlignment.Left, VerticalCharacterAlignment.Baseline,
-                                                        PointOptions.ClientCoordinates, out pos);
-                                        insertType = InsertType.Insert;
-                                        ((FontIcon)inputMarkup.Children[0]).Foreground = INSERT;
-                                        ShowInputPanel(pos);
-                                    }
-                                    else
+                                    range = EHRTextBox.Document.GetRange(range.StartPosition, range.StartPosition);
+                                    range.GetPoint(HorizontalCharacterAlignment.Left, VerticalCharacterAlignment.Baseline,
+                                                            PointOptions.ClientCoordinates, out pos);
+                                    current_index = text.Length;
+                                    insertType = InsertType.Insert;
+                                    ((FontIcon)inputMarkup.Children[0]).Foreground = INSERT;
+                                    ShowInputPanel(pos);
+                                }
+                                else
+                                {
+                                    Debug.WriteLine($"detected fir letter: -{text.Substring(range.StartPosition, 1)}-");
+                                    bool isFormatted = CheckForFormat(range.StartPosition, range.StartPosition + 1, pos);
+                                    if (!isFormatted)
                                     {
-                                        if (inserted.anno_type == AnnotationType.RawInsert && inserted.canvasLeft + inserted.addinSlide.X > EHR_TEXTBOX_WIDTH.Value)
+                                        current_index = GetNearestSpaceIndex(range.StartPosition);
+                                        AddInControl inserted = comments.Where(x => x.commentID == current_index).FirstOrDefault();
+                                        if (inserted == null)
+                                        {// available for new insert, show input grid
+                                            range = EHRTextBox.Document.GetRange(current_index - 1, current_index);
+                                            range.GetPoint(HorizontalCharacterAlignment.Left, VerticalCharacterAlignment.Baseline,
+                                                            PointOptions.ClientCoordinates, out pos);
+                                            insertType = InsertType.Insert;
+                                            ((FontIcon)inputMarkup.Children[0]).Foreground = INSERT;
+                                            ShowInputPanel(pos);
+                                        }
+                                        else
                                         {
-                                            //insertType = InsertType.ReEdit;
-                                            inserted.ReEdit();
+                                            if (inserted.anno_type == AnnotationType.RawInsert && inserted.canvasLeft + inserted.addinSlide.X > EHR_TEXTBOX_WIDTH.Value)
+                                            {
+                                                //insertType = InsertType.ReEdit;
+                                                inserted.ReEdit();
+                                            }
                                         }
                                     }
                                 }
-                            }
 
-                        }
-                        else if (gesture == StrokeType.HorizontalLine)
-                            SelectTextInBound(bounding);
-                        else if (gesture == StrokeType.VerticalLine)
-                        {
-                            Point pos = new Point(bounding.X + bounding.Width / 2 - 10, bounding.Y + bounding.Height / 2 - LINE_HEIGHT);
-                            var range = EHRTextBox.Document.GetRangeFromPoint(pos, PointOptions.ClientCoordinates);
-                            // the scribble does not collide with any text, just ignore
-                            string text;
-                            EHRTextBox.Document.GetText(TextGetOptions.None, out text);
-                            Debug.WriteLine("vertical line");
-                            Debug.WriteLine($"detected fir letter: -{text.Substring(range.StartPosition, 1)}-");
-                            current_index = range.StartPosition;
-                        }
-                    }
-                    else
-                    {
-                        Debug.WriteLine("OUT OF BOUND");
-                        StrokeType gesture = GestureManager.GetSharedGestureManager().GetGestureFromStroke(s);
-                        if (gesture == StrokeType.Dot)
-                        {
-                            //inserting at end of paragraph with calculated newline number
-                            var pos = new Point(bounding.X + bounding.Width / 2 - 10, bounding.Y - LINE_HEIGHT);
-                            double lineNum = Math.Ceiling((s.BoundingRect.Y - (EHRBounding.Y + EHRBounding.Height)) / LINE_HEIGHT);
-                            Debug.WriteLine("extra line number = " + lineNum);
-                            string text = getText(EHRTextBox).TrimEnd() + " ";
-                            for (int i = 0; i < lineNum; i++)
+                            }
+                            else if (gesture == StrokeType.HorizontalLine)
+                                SelectTextInBound(bounding);
+                            else if (gesture == StrokeType.VerticalLine)
                             {
-                                if (i == lineNum - 1)
-                                    text += ".";
-                                else
-                                    text += Environment.NewLine;
+                                Point pos = new Point(bounding.X + bounding.Width / 2 - 10, bounding.Y + bounding.Height / 2 - LINE_HEIGHT);
+                                var range = EHRTextBox.Document.GetRangeFromPoint(pos, PointOptions.ClientCoordinates);
+                                // the scribble does not collide with any text, just ignore
+                                string text;
+                                EHRTextBox.Document.GetText(TextGetOptions.None, out text);
+                                Debug.WriteLine("vertical line");
+                                Debug.WriteLine($"detected fir letter: -{text.Substring(range.StartPosition, 1)}-");
+                                current_index = range.StartPosition;
                             }
-                            EHRTextBox.Document.SetText(TextSetOptions.None, text);
-                            //show insert panel at end of paragraph
-                            var range = EHRTextBox.Document.GetRange(text.Length, text.Length);
-                            range.GetPoint(HorizontalCharacterAlignment.Center, VerticalCharacterAlignment.Bottom, PointOptions.ClientCoordinates, out pos);
-                            pos.Y -= LINE_HEIGHT;
+                        }
+                        else
+                        {
+                            Debug.WriteLine("OUT OF BOUND");
+                            StrokeType gesture = GestureManager.GetSharedGestureManager().GetGestureFromStroke(s);
+                            if (gesture == StrokeType.Dot)
+                            {
+                                //inserting at end of paragraph with calculated newline number
+                                var pos = new Point(bounding.X + bounding.Width / 2 - 10, bounding.Y - LINE_HEIGHT);
+                                double lineNum = Math.Ceiling((s.BoundingRect.Y - (EHRBounding.Y + EHRBounding.Height)) / LINE_HEIGHT);
+                                Debug.WriteLine("extra line number = " + lineNum);
+                                string text = getText(EHRTextBox).TrimEnd() + " ";
+                                for (int i = 0; i < lineNum; i++)
+                                {
+                                    if (i == lineNum - 1)
+                                        text += ".";
+                                    else
+                                        text += Environment.NewLine;
+                                }
+                                EHRTextBox.Document.SetText(TextSetOptions.None, text);
+                                //show insert panel at end of paragraph
+                                var range = EHRTextBox.Document.GetRange(text.Length, text.Length);
+                                range.GetPoint(HorizontalCharacterAlignment.Center, VerticalCharacterAlignment.Bottom, PointOptions.ClientCoordinates, out pos);
+                                pos.Y -= LINE_HEIGHT;
 
-                            ((FontIcon)inputMarkup.Children[0]).Foreground = INSERT;
-                            insertType = InsertType.InsertNewLine;
-                            current_index = text.Length - (int)lineNum; //taking account of newly added newlines
-                            ShowInputPanel(pos);
-                            RefreshTextStyle();
-                            //Manually set the last anchor period to white so users can't see it
-                            var range2 = EHRTextBox.Document.GetRange(current_index - 1, text.Length);
-                            range2.CharacterFormat.ForegroundColor = Colors.White;
-                            UpdateLayout();
+                                ((FontIcon)inputMarkup.Children[0]).Foreground = INSERT;
+                                insertType = InsertType.InsertNewLine;
+                                current_index = text.Length - (int)lineNum; //taking account of newly added newlines
+                                ShowInputPanel(pos);
+                                RefreshTextStyle();
+                                //Manually set the last anchor period to white so users can't see it
+                                var range2 = EHRTextBox.Document.GetRange(current_index - 1, text.Length);
+                                range2.CharacterFormat.ForegroundColor = Colors.White;
+                                UpdateLayout();
+                            }
                         }
                     }
-                }
 
+                }
+                //clears all strokes because they are only gesture strokes
+                inkCanvas.InkPresenter.StrokeContainer.Clear();
             }
-            //clears all strokes because they are only gesture strokes
-            inkCanvas.InkPresenter.StrokeContainer.Clear();
+            catch (Exception e) {
+                LogService.MetroLogger.getSharedLogger().Error("inkCanvas_InkPresenter_StrokesCollectedAsync"+e.Message);
+            }
         }
 
+        //Stroke event handlers for annotation canvas on EHR Page
         private void annotations_StokeStarted(InkStrokeInput sender, PointerEventArgs args)
         {
             autosaveDispatcherTimer.Stop();
@@ -1669,23 +1690,38 @@ namespace PhenoPad.CustomControl
             autosaveDispatcherTimer.Start();
         }
 
-        private void annotations_StrokesCollected(InkPresenter sender, InkStrokesCollectedEventArgs args)
+        private async void annotations_StrokesCollected(InkPresenter sender, InkStrokesCollectedEventArgs args)
         {
-            foreach (InkStroke s in args.Strokes)
+            try
             {
-                if (s.BoundingRect.Height > 3 * LINE_HEIGHT) {
-                    StrokeType gesture = GestureManager.GetSharedGestureManager().GetGestureFromStroke(s);
-                    if (gesture == StrokeType.Rectangle) {
-                        lastOperationStrokeIDs.Add(s.Id);
-                        var stroke = inkCanvas.InkPresenter.StrokeContainer.GetStrokeById(s.Id);
-                        //adds a new add-in control 
-                        string name = FileManager.getSharedFileManager().CreateUniqueName();
-                        //adding extra 100 pixel to bounding Y to cope the padding
-                        MainPage.Current.curPage.NewAddinControl(name, false, left: s.BoundingRect.X + EHR_TEXTBOX_WIDTH.Value, top: s.BoundingRect.Y + 100, widthOrigin: s.BoundingRect.Width, heightOrigin: s.BoundingRect.Height, ehr: this);
-                        ClearOperationStrokes();
+                InkStroke s = args.Strokes.FirstOrDefault();
+                if (s.BoundingRect.Height > 3 * LINE_HEIGHT)
+                {
+                    InkAnalyzer gestureAnalyzer = new InkAnalyzer();
+                    gestureAnalyzer.AddDataForStroke(s);
+                    var result = await gestureAnalyzer.AnalyzeAsync();
+                    var nodes = gestureAnalyzer.AnalysisRoot.FindNodes(InkAnalysisNodeKind.InkDrawing);
+                    foreach (InkAnalysisInkDrawing node in nodes)
+                    {
+                        if (node.DrawingKind == InkAnalysisDrawingKind.Rectangle || node.DrawingKind == InkAnalysisDrawingKind.Square)
+                            CreateAddInForStroke(s);
                     }
                 }
             }
+            catch (Exception  e) {
+                LogService.MetroLogger.getSharedLogger().Error("annotations_StrokesCollected:" + e.Message);
+            }
+        
+        }
+
+        private void CreateAddInForStroke(InkStroke s)
+        {//Creates an AddIn control on the annotation canvas of EHR page
+            lastOperationStrokeIDs.Add(s.Id);
+            //adds a new add-in control 
+            string name = FileManager.getSharedFileManager().CreateUniqueName();
+            //adding extra 100 pixel to bounding Y to cope the padding
+            MainPage.Current.curPage.NewAddinControl(name, false, left: s.BoundingRect.X + EHR_TEXTBOX_WIDTH.Value, top: s.BoundingRect.Y + 100, widthOrigin: s.BoundingRect.Width, heightOrigin: s.BoundingRect.Height, ehr: this);
+            ClearOperationStrokes();
         }
 
         private void ClearOperationStrokes()

@@ -25,7 +25,9 @@ namespace PhenoPad.PhenotypeService
         public ObservableCollection<Phenotype> suggestedPhenotypes;
         public ObservableCollection<Disease> predictedDiseases;
         public ObservableCollection<Phenotype> phenotypesInNote;
-        
+        public static string PHENOTYPEINFO_ADDR = "https://playground.phenotips.org/rest/vocabularies/hpo/";
+        public static string DIFFERENTIAL_ADDR = "https://services.phenotips.org/get/PhenoTips/DiseasePredictService2?format=json&limit=15";
+        public static string SUGGESTION_ADDR = "https://playground.phenotips.org/get/PhenoTips/DiffDiagnosisService?format=json&limit=15";
         public ObservableCollection<Phenotype> phenotypesInSpeech;
         public ObservableCollection<Phenotype> phenotypesSpeechCandidates;
 
@@ -702,7 +704,7 @@ namespace PhenoPad.PhenotypeService
                 throw new Exception("Invalid header value: " + header);
             }
 
-            var urlstr = "https://playground.phenotips.org/get/PhenoTips/DiffDiagnosisService?format=json&limit=15";
+            var urlstr = SUGGESTION_ADDR;
             /**
             foreach (var p in savedPhenotypes)
             {
@@ -776,7 +778,8 @@ namespace PhenoPad.PhenotypeService
                 throw new Exception("Invalid header value: " + header);
             }
             //Mar19,2019: API may not be working properlly b/c it's returning empty content upon request
-            var urlstr = "https://playground.phenotips.org/get/PhenoTips/DiseasePredictService?format=json&limit=15";
+            //var urlstr = "https://playground.phenotips.org/get/PhenoTips/DiseasePredictService?format=json&limit=15";
+            var urlstr = DIFFERENTIAL_ADDR;
             /**
             foreach (var p in savedPhenotypes)
             {
@@ -802,7 +805,7 @@ namespace PhenoPad.PhenotypeService
                 httpResponse = await httpClient.PostAsync(requestUri, formContent);
                 httpResponse.EnsureSuccessStatusCode();
                 httpResponseBody = await httpResponse.Content.ReadAsStringAsync();
-                Debug.WriteLine($"differential diagnosis: code={httpResponse.StatusCode}, Body = {httpResponseBody}" );
+                //Debug.WriteLine($"differential diagnosis: code={httpResponse.StatusCode}, Body = {httpResponseBody}" );
                 var result = JsonConvert.DeserializeObject<List<Disease>>(httpResponseBody);
 
                 return result;
@@ -837,7 +840,7 @@ namespace PhenoPad.PhenotypeService
                 throw new Exception("Invalid header value: " + header);
             }
 
-            Uri requestUri = new Uri("https://playground.phenotips.org/rest/vocabularies/hpo/" + id);
+            Uri requestUri = new Uri(PHENOTYPEINFO_ADDR + id);
 
             //Send the GET request asynchronously and retrieve the response as a string.
             HttpResponseMessage httpResponse = new HttpResponseMessage();

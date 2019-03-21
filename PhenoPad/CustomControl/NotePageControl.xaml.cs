@@ -169,6 +169,7 @@ namespace PhenoPad.CustomControl
         Dictionary<string, List<Phenotype>> oldAnnotations = new Dictionary<string, List<Phenotype>>();
         Dictionary<TextBox, List<string>> textBlockToAlternatives = new Dictionary<TextBox, List<string>>();
 
+
         //====================================================================================
         //                              END OF CLASS PROPERTIES
         //====================================================================================
@@ -192,7 +193,8 @@ namespace PhenoPad.CustomControl
             this.notebookId = notebookid;
             this.pageId = pageid;
             this.ehrPage = null;
-            
+
+
             UNPROCESSED_COLOR = new SolidColorBrush(UNPROCESSED_COLOR.Color);
             UNPROCESSED_COLOR.Opacity = UNPROCESSED_OPACITY;
 
@@ -282,8 +284,6 @@ namespace PhenoPad.CustomControl
             //selectionRectangle.ManipulationCompleted += SelectionRectangle_ManipulationCompleted;      
 
         }
-
-
 
         #region UI Display
         // ============================== UI DISPLAYS HANDLER ==============================================//
@@ -540,84 +540,6 @@ namespace PhenoPad.CustomControl
         #region Hand writting mode 
         // ==================================== Handwriting mode ===================================================/
 
-        private void InkPresenter_StrokesErased(InkPresenter sender, InkStrokesErasedEventArgs args)
-        {
-            ClearSelectionAsync();
-
-            curLineResultPanel.Visibility = Visibility.Collapsed;
-            curLineWordsStackPanel.Children.Clear();
-            //operationDispathcerTimer.Stop();
-            foreach (var stroke in args.Strokes)
-            {
-                inkAnalyzer.RemoveDataForStroke(stroke.Id);
-            }
-            //operationDispathcerTimer.Start();
-            //dispatcherTimer.Start();
-            autosaveDispatcherTimer.Start();
-        }
-
-        private void StrokeInput_StrokeStarted(InkStrokeInput sender, PointerEventArgs args)
-        {
-            if (!leftLasso)
-            {
-                //ClearSelection();
-                // dispatcherTimer.Stop();
-                //operationDispathcerTimer.Stop();
-                inkOperationAnalyzer.ClearDataForAllStrokes();
-            }
-            autosaveDispatcherTimer.Stop();
-            recognizeTimer.Stop();
-        }
-
-        private void StrokeInput_StrokeEnded(InkStrokeInput sender, PointerEventArgs args)
-        {
-            autosaveDispatcherTimer.Start();
-            recognizeTimer.Start();
-        }
-    
-        private async void InkPresenter_StrokesCollectedAsync(InkPresenter sender, InkStrokesCollectedEventArgs args)
-        {          
-            if (!leftLasso)
-            {//processing strokes inputs
-                //dispatcherTimer.Stop();
-                //operationDispathcerTimer.Stop();            
-                foreach (var s in args.Strokes)
-                {                   
-                    //Process strokes that excess maximum height for recognition
-                    if (s.BoundingRect.Height > MAX_WRITING)
-                    {
-                        inkOperationAnalyzer.AddDataForStroke(s);
-                        try
-                        {
-                            await RecognizeInkOperation();
-                        }
-                        catch (Exception e) {
-                            MetroLogger.getSharedLogger().Error($"InkPresenter_StrokesCollectedAsync in NotePageControl:{e}|{e.Message}");
-                        }
-                    }
-                    //Instantly analyze ink inputs
-                    else
-                    {
-                        inkAnalyzer.AddDataForStroke(s);
-                        inkAnalyzer.SetStrokeDataKind(s.Id, InkAnalysisStrokeKind.Writing);
-                        //marking the current stroke for later server recognition
-                        curStroke = s;
-                        //here we need instant call to analyze ink for the specified line input
-                        await analyzeInk(s);
-                        OperationLogger.getOpLogger().Log(OperationType.Stroke, s.Id.ToString(),s.StrokeStartedTime.ToString(),s.StrokeDuration.ToString());
-                    }
-                }
-
-            }
-            else
-            {//processing strokes selected with left mouse lasso strokes
-                leftLossoStroke = args.Strokes;
-                foreach (var s in args.Strokes)
-                {
-                    //TODO: 
-                }
-            }
-        }
 
         // stroke input handling: mouse pointer pressed
         private void StrokeInput_PointerPressed(InkStrokeInput sender, PointerEventArgs args)
@@ -630,7 +552,6 @@ namespace PhenoPad.CustomControl
         {
             UnprocessedInput_PointerMoved(null, args);
         }
-
         // stroke input handling: mouse pointer released
         private void StrokeInput_PointerReleased(InkStrokeInput sender, PointerEventArgs args)
         {
