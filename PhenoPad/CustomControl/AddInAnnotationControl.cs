@@ -1,5 +1,6 @@
 ﻿using Microsoft.Toolkit.Uwp.UI.Animations;
 using PhenoPad.FileService;
+using PhenoPad.HWRService;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -193,6 +194,7 @@ namespace PhenoPad.CustomControl
                 Grid.SetColumn(contentGrid, 0);
                 Grid.SetColumnSpan(contentGrid, 1);
                 ehr.ShowCommentLine(this);
+                ehr.ShowConvertButton(this);
                 OutlineGrid.BorderBrush = new SolidColorBrush(BORDER_ACTIVE);
                 OutlineGrid.CornerRadius = new CornerRadius(5);
                 OutlineGrid.BorderThickness = new Thickness(2);
@@ -213,6 +215,24 @@ namespace PhenoPad.CustomControl
                 Canvas.SetZIndex(this, 90);
             }
             DeleteComment.Visibility = Visibility.Collapsed;
+        }
+
+        public async void ConvertStrokeToText(object sender, RoutedEventArgs e) {
+            List<HWRRecognizedText> recognitionResults = await HWRManager.getSharedHWRManager().OnRecognizeAsync(inkCanvas.InkPresenter.StrokeContainer,InkRecognitionTarget.All, server:false);
+
+            if (recognitionResults != null) {
+                string text = "";
+
+                foreach (var res in recognitionResults)
+                {
+                    text += res.selectedCandidate + " ";
+                }
+                commentTextBlock.Document.SetText(Windows.UI.Text.TextSetOptions.None, text);
+                commentTextBlock.Visibility = Visibility.Visible;
+                inkCan.Visibility = Visibility.Collapsed;
+
+            }
+
         }
 
         private void RemoveComment(object sender, RoutedEventArgs e) {

@@ -181,10 +181,12 @@ namespace PhenoPad.CustomControl
             inputRecogResult = new List<HWRRecognizedText>();
             lastOperationStrokeIDs = new List<uint>();
 
-            this.insertMode = InsertMode.typing;
-            insertType = InsertType.None;
-            TypeToggleBtn.IsChecked = true;
-            HWToggleBtn.IsChecked = false;
+            //this.insertMode = InsertMode.typing;
+            //insertType = InsertType.None;
+            //TypeToggleBtn.IsChecked = true;
+            //HWToggleBtn.IsChecked = false;
+
+            ToggleHandwritingMode();
 
             this.SetUpEHRFile(file);
             this.DrawBackgroundLines();
@@ -337,6 +339,15 @@ namespace PhenoPad.CustomControl
         }
 
 
+        internal void ShowConvertButton(AddInControl comment) {
+
+            ConvertButton.Visibility = Visibility.Visible;
+            ConvertButton.Click += comment.ConvertStrokeToText;
+            Canvas.SetLeft(ConvertButton, comment.canvasLeft + comment.commentslideX);
+            Canvas.SetTop(ConvertButton, comment.canvasTop + comment.commentslideY);
+
+
+        }
 
         internal void ShowCommentLine(AddInControl comment)
         {//shows the comment card direction line UI
@@ -418,7 +429,7 @@ namespace PhenoPad.CustomControl
                 InsertToEHRClick();
         }
 
-        private void ToggleHandwritingMode(object sender, RoutedEventArgs e) {
+        private void ToggleHandwritingMode(object sender = null, RoutedEventArgs e = null) {
             inputCanvasbg.Visibility = Visibility.Visible;
             inputInkCanvas.Visibility = Visibility.Visible;
             inputTypeBox.Visibility = Visibility.Collapsed;
@@ -708,7 +719,7 @@ namespace PhenoPad.CustomControl
 
             if (insertMode == InsertMode.Handwriting)
             {
-                var range = EHRTextBox.Document.GetRange(cur_selected.Item1, cur_selected.Item1 + 1);
+                var range = EHRTextBox.Document.GetRange(current_index, current_index + 1);
                 Point pos;
                 range.GetPoint(HorizontalCharacterAlignment.Left, VerticalCharacterAlignment.Bottom, PointOptions.ClientCoordinates, out pos);
                 double newY = (Math.Ceiling(pos.Y / LINE_HEIGHT) + 1) * LINE_HEIGHT;

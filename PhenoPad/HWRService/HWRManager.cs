@@ -152,7 +152,7 @@ namespace PhenoPad.HWRService
             {
                 //MessageDialog dialog = new MessageDialog("No storke selected.");
                 //var cmd = await dialog.ShowAsync();
-                LogService.MetroLogger.getSharedLogger().Error("HWR error: " + e.Message);
+                LogService.MetroLogger.getSharedLogger().Error("HWR error: " + e + e.Message);
                 return null;
             }
         }

@@ -113,7 +113,10 @@
                                  Visibility="Collapsed" 
                                  Width="{x:Bind COMMENT_WIDTH}"
                                  IsEnabled="False"/>
-                    </Grid>
+                    <StackPanel x:Name="ConvertPanel" Orientation="Horizontal" Visibility="Collapsed"
+                                Width="{x:Bind COMMENT_WIDTH}" HorizontalAlignment="Left" 
+                                x:FieldModifier="public"/>
+                </Grid>
                 </ScrollViewer>
             </Grid>
             

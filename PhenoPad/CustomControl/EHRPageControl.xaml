@@ -92,12 +92,12 @@
         <!--insert text pop up-->
         <Canvas x:Name="popupCanvas" x:FieldModifier="public" Grid.ColumnSpan="2">
 
-            <!--<Button Style="{StaticResource ButtonStyle1}" x:Name="DeleteComment" Visibility="Collapsed" 
-                    Click="RemoveComment" Background="WhiteSmoke">
-                <SymbolIcon Foreground="PaleVioletRed" Symbol="Clear"/>
-            </Button>-->
+            <Button Style="{StaticResource ButtonStyle1}" x:Name="ConvertButton" Visibility="Collapsed" 
+                    Background="WhiteSmoke" Content="Convert"/>
 
-            <RelativePanel x:Name="inputgrid" Canvas.ZIndex="999" Visibility="Visible" Opacity="0">
+
+
+            <RelativePanel x:Name="inputgrid" Canvas.ZIndex="999" Visibility="Collapsed" Opacity="0">
 
                 <Grid Grid.Row="1" Background="WhiteSmoke" BorderBrush="DarkGray"
                         BorderThickness="1" CornerRadius="10" x:Name="inputRootGrid">
