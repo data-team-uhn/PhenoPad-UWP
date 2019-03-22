@@ -219,10 +219,10 @@ namespace PhenoPad.CustomControl
                 DataReader reader = DataReader.FromBuffer(buffer);
                 byte[] fileContent = new byte[reader.UnconsumedBufferLength];
                 reader.ReadBytes(fileContent);
-                string text = Encoding.UTF7.GetString(fileContent, 0, fileContent.Length);
-
+                string text = Encoding.UTF8.GetString(fileContent, 0, fileContent.Length);
                 string[] paragraphs = text.Split(Environment.NewLine);
                 text = "";
+
                 //manually reformatting text by adding a space at the end of paragraphs
                 foreach (string p in paragraphs)
                 {
@@ -338,17 +338,6 @@ namespace PhenoPad.CustomControl
             cpMenu.Visibility = Visibility.Visible;
         }
 
-
-        internal void ShowConvertButton(AddInControl comment) {
-
-            ConvertButton.Visibility = Visibility.Visible;
-            ConvertButton.Click += comment.ConvertStrokeToText;
-            Canvas.SetLeft(ConvertButton, comment.canvasLeft + comment.commentslideX);
-            Canvas.SetTop(ConvertButton, comment.canvasTop + comment.commentslideY);
-
-
-        }
-
         internal void ShowCommentLine(AddInControl comment)
         {//shows the comment card direction line UI
             List<int> annoRange = this.annotated.Where(x => x[0] == comment.commentID).FirstOrDefault();
@@ -381,7 +370,7 @@ namespace PhenoPad.CustomControl
         {//hides the comment card direction line UI
             var line = popupCanvas.Children.Where(x => x.GetType() == typeof(Polyline)).ToList();
             foreach(Polyline l in line)
-                popupCanvas.Children.Remove(l);          
+                popupCanvas.Children.Remove(l);
         }
 
         public void SlideCommentsToSide()
@@ -714,10 +703,10 @@ namespace PhenoPad.CustomControl
             }
         }
 
-        private void AddInsert()
+        public void AddInsert(AddInControl insertFromComment = null, int index = -1)
         {//Adds either a raw stroke insert or typed text insert to EHR Text
 
-            if (insertMode == InsertMode.Handwriting)
+            if (insertMode == InsertMode.Handwriting && insertFromComment == null)
             {
                 var range = EHRTextBox.Document.GetRange(current_index, current_index + 1);
                 Point pos;
@@ -743,10 +732,18 @@ namespace PhenoPad.CustomControl
                 AddCommentAndReArrange(comment);
             }
 
-            else if (insertMode == InsertMode.typing)
+            else if (insertMode == InsertMode.typing || insertFromComment != null)
             {
+                if (index != -1)
+                    current_index = index;
+
                 string text = "";
-                string typeText = getText(inputTypeBox).TrimEnd();
+                string typeText;
+                if (insertFromComment == null)
+                    typeText = getText(inputTypeBox).TrimEnd();
+                else
+                    typeText = getText(insertFromComment.commentTextBlock).TrimEnd();
+                Debug.WriteLine(typeText);
                 string[] phrase = typeText.Split(Environment.NewLine.ToCharArray());
                 //number of newline character count to be subtracted later for index offset
                 int newlineOffset = phrase.Length - 1;
@@ -803,6 +800,9 @@ namespace PhenoPad.CustomControl
                     EHRTextBox.Document.SetText(TextSetOptions.None, result);
                     UpdateRecordListInsert(current_index + 1, text.Length - newlineOffset);
                 }
+
+                if (insertFromComment != null)
+                    RemoveAnnotation(insertFromComment);
 
                 //UI backend updates
                 AnalyzePhenotype(text);

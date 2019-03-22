@@ -653,7 +653,8 @@ namespace PhenoPad.CustomControl
                 inkCan.Height = this.Height;
                 inkCan.Width = this.Width;
                 TitleRelativePanel.Visibility = Visibility.Collapsed;
-
+                if (anno_type == AnnotationType.TextComment || anno_type == AnnotationType.TextInsert)
+                    inkCan.Visibility = Visibility.Collapsed;
             }
             else {
                 if (!onlyView)

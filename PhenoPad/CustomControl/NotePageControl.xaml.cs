@@ -882,6 +882,7 @@ namespace PhenoPad.CustomControl
             else {
                 if (ia.commentID != -1)
                 {
+                    Debug.WriteLine(ia.anno_type + " 000");
                     canvasAddIn = new AddInControl(ia.name, ehrPage, ia.commentID, ia.anno_type);// need to update this commengID when impleting saving
                 }
                 else
@@ -889,21 +890,21 @@ namespace PhenoPad.CustomControl
             }
 
             //await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () => {
-                //Manually setting pre-saved configuration of the add-in control
-                canvasAddIn.Height = ia.height;
-                canvasAddIn.Width = ia.width;
-                canvasAddIn.widthOrigin = ia.widthOrigin;
-                canvasAddIn.heightOrigin = ia.heightOrigin;
-                canvasAddIn.inkCan.Height = ia.heightOrigin - 48;
-                canvasAddIn.inkCan.Width = ia.widthOrigin;
-                canvasAddIn.canvasLeft = ia.canvasLeft;
-                canvasAddIn.canvasTop = ia.canvasTop;
-                canvasAddIn.dragTransform.X = ia.transX;
-                canvasAddIn.dragTransform.Y = ia.transY;
-                canvasAddIn.commentID = ia.commentID;
-                canvasAddIn.commentslideX = ia.slideX;
-                canvasAddIn.commentslideY = ia.slideY;
-                canvasAddIn.inkRatio = ia.inkRatio;
+            //Manually setting pre-saved configuration of the add-in control
+            canvasAddIn.Height = ia.height;
+            canvasAddIn.Width = ia.width;
+            canvasAddIn.widthOrigin = ia.widthOrigin;
+            canvasAddIn.heightOrigin = ia.heightOrigin;
+            canvasAddIn.inkCan.Height = ia.heightOrigin - 48;
+            canvasAddIn.inkCan.Width = ia.widthOrigin;
+            canvasAddIn.canvasLeft = ia.canvasLeft;
+            canvasAddIn.canvasTop = ia.canvasTop;
+            canvasAddIn.dragTransform.X = ia.transX;
+            canvasAddIn.dragTransform.Y = ia.transY;
+            canvasAddIn.commentID = ia.commentID;
+            canvasAddIn.commentslideX = ia.slideX;
+            canvasAddIn.commentslideY = ia.slideY;
+            canvasAddIn.inkRatio = ia.inkRatio;
                 Canvas.SetTop(canvasAddIn, ia.canvasTop);
 
                 canvasAddIn.inDock = ia.inDock;
@@ -922,6 +923,7 @@ namespace PhenoPad.CustomControl
             else
             {
                 addinCanvasEHR.Children.Add(canvasAddIn);
+                Debug.WriteLine(canvasAddIn.anno_type);
                 if (canvasAddIn.commentID != -1)
                 {
                     if (canvasAddIn.anno_type == AnnotationType.TextComment || canvasAddIn.anno_type == AnnotationType.TextInsert)
@@ -930,6 +932,9 @@ namespace PhenoPad.CustomControl
                         canvasAddIn.commentTextBlock.Visibility = Visibility.Visible;
                         canvasAddIn.commentText = ia.commentText;
                         canvasAddIn.commentTextBlock.Document.SetText(TextSetOptions.None, ia.commentText);
+                    }
+                    else {
+                        Debug.WriteLine("loaded addin is raw stroke");
                     }
                     canvasAddIn.inDock = false;
                     canvasAddIn.Visibility = Visibility.Visible;

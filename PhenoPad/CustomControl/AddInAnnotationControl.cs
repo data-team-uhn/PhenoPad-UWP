@@ -187,26 +187,43 @@ namespace PhenoPad.CustomControl
             await EHRCommentSlidingAnimation.BeginAsync();
         }
 
+        private void InsertConverted(object sender, RoutedEventArgs e) {
+            Debug.WriteLine(this.commentID);
+            ehr.AddInsert(insertFromComment: this, index: commentID);
+            
+        }
+
         private void ShowMenu(object sender, RoutedEventArgs e)
         {
             if (addinSlide.X > 0)
             {
                 Grid.SetColumn(contentGrid, 0);
-                Grid.SetColumnSpan(contentGrid, 1);
+                Grid.SetColumnSpan(contentGrid, 2);
                 ehr.ShowCommentLine(this);
-                ehr.ShowConvertButton(this);
                 OutlineGrid.BorderBrush = new SolidColorBrush(BORDER_ACTIVE);
                 OutlineGrid.CornerRadius = new CornerRadius(5);
                 OutlineGrid.BorderThickness = new Thickness(2);
                 Canvas.SetZIndex(this, 99);
                 DeleteComment.Visibility = Visibility.Visible;
+
+                bool isRawStroke = anno_type == AnnotationType.RawInsert || anno_type == AnnotationType.RawComment;
+                if (isRawStroke && commentText == null) {
+                    ConvertComment.Visibility = Visibility.Visible;
+                    Grid.SetColumnSpan(contentGrid, 1);
+                }
+                else if (anno_type == AnnotationType.RawInsert && commentText.Length != 0)
+                {
+                    InsertComment.Visibility = Visibility.Visible;
+                    Grid.SetColumnSpan(contentGrid, 1);
+                }
+                UpdateLayout();
             }
         }
         
         private void HideMenu(object sender = null, RoutedEventArgs e = null)
         {
             Grid.SetColumn(contentGrid, 0);
-            Grid.SetColumnSpan(contentGrid, 2);
+            Grid.SetColumnSpan(contentGrid, 3);
             ehr.HideCommentLine();
             if (addinSlide.X > 0) {
                 OutlineGrid.BorderBrush = new SolidColorBrush(BORDER_INACTIVE);
@@ -215,6 +232,8 @@ namespace PhenoPad.CustomControl
                 Canvas.SetZIndex(this, 90);
             }
             DeleteComment.Visibility = Visibility.Collapsed;
+            ConvertComment.Visibility = Visibility.Collapsed;
+            InsertComment.Visibility = Visibility.Collapsed;
         }
 
         public async void ConvertStrokeToText(object sender, RoutedEventArgs e) {
@@ -230,6 +249,13 @@ namespace PhenoPad.CustomControl
                 commentTextBlock.Document.SetText(Windows.UI.Text.TextSetOptions.None, text);
                 commentTextBlock.Visibility = Visibility.Visible;
                 inkCan.Visibility = Visibility.Collapsed;
+                commentText = text;
+                if (anno_type == AnnotationType.RawComment)
+                {
+                    Debug.WriteLine("------------------fjsilefs");
+                    anno_type = AnnotationType.TextComment;
+
+                }
 
             }
 
@@ -286,7 +312,7 @@ namespace PhenoPad.CustomControl
                 Canvas.SetZIndex(this, 99);
                 inkCan.InkPresenter.IsInputEnabled = true;
                 inDock = false;
-                if (commentTextBlock.Visibility == Visibility.Visible)
+                if (commentTextBlock.Visibility == Visibility.Visible && commentText != null)
                 {
                     Debug.WriteLine("re editing a text comment!");
                     ehr.ReEditTextAnnotation(this);

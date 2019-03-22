@@ -724,7 +724,8 @@ namespace PhenoPad.FileService
                 var pageFolder = await notebookFolder.GetFolderAsync(pageId);
                 var ehrFile = await pageFolder.CreateFileAsync(this.EHR_FILE_NAME, CreationCollisionOption.OpenIfExists);
                 //saves text to local .txt file
-                await FileIO.WriteTextAsync(ehrFile, ehr.getText(ehr.EHRTextBox));
+                var buffer = Windows.Security.Cryptography.CryptographicBuffer.ConvertStringToBinary(ehr.getText(ehr.EHRTextBox), Windows.Security.Cryptography.BinaryStringEncoding.Utf8);
+                await FileIO.WriteBufferAsync(ehrFile, buffer);
             }
             catch (Exception e)
             {

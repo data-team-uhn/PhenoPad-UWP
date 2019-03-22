@@ -87,6 +87,7 @@
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="*"></ColumnDefinition>
             <ColumnDefinition Width="40"></ColumnDefinition>
+            <ColumnDefinition Width="40"></ColumnDefinition>
         </Grid.ColumnDefinitions>
 
 
@@ -94,10 +95,10 @@
                 <TranslateTransform x:Name="addinSlide" x:FieldModifier="public"/>
             </Grid.RenderTransform>
 
-        <Grid Name="contentGrid" Grid.Row="1" Grid.ColumnSpan="2">
+        <Grid Name="contentGrid" Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="3">
                 <!--<local:AddInImageControl Canvas.ZIndex="1" Visibility="Collapsed" x:Name="imageControl"/>-->
                 <ScrollViewer Canvas.ZIndex="2" Grid.Row="1" x:Name="scrollViewer" Visibility="Collapsed" ZoomMode="Enabled" 
-                              MinZoomFactor="1" VerticalScrollMode="Enabled" 
+                              MinZoomFactor="1" VerticalScrollMode="Enabled" Grid.ColumnSpan="3"
                               VerticalScrollBarVisibility="Hidden" 
                               HorizontalScrollMode="Enabled" 
                               HorizontalScrollBarVisibility="Hidden">
@@ -119,16 +120,30 @@
                 </Grid>
                 </ScrollViewer>
             </Grid>
-            
+
         <Button Style="{StaticResource ButtonStyle2}" Width="40" Height="500" 
-                x:Name="DeleteComment" HorizontalAlignment="Right" Grid.Column="1" Grid.Row="0" Grid.RowSpan="2"
-                Canvas.ZIndex="999" Visibility="Collapsed"
+                x:Name="ConvertComment" HorizontalAlignment="Right" Grid.Column="1" Grid.Row="0" Grid.RowSpan="2"
+                Canvas.ZIndex="999" Visibility="Collapsed" ToolTipService.ToolTip="Convert Text"
+                Click="ConvertStrokeToText" Background="Transparent">
+            <SymbolIcon Foreground="PaleVioletRed" Symbol="Font"/>
+        </Button>
+
+        <Button Style="{StaticResource ButtonStyle2}" Width="40" Height="500" 
+                x:Name="InsertComment" HorizontalAlignment="Right" Grid.Column="1" Grid.Row="0" Grid.RowSpan="2"
+                Canvas.ZIndex="999" Visibility="Collapsed" ToolTipService.ToolTip="Insert Text"
+                Click="InsertConverted" Background="Transparent">
+            <SymbolIcon Foreground="PaleVioletRed" Symbol="Accept"/>
+        </Button>
+
+        <Button Style="{StaticResource ButtonStyle2}" Width="40" Height="500" 
+                x:Name="DeleteComment" HorizontalAlignment="Right" Grid.Column="2" Grid.Row="0" Grid.RowSpan="2"
+                Canvas.ZIndex="999" Visibility="Collapsed" ToolTipService.ToolTip="Delete Comment"
                 Click="RemoveComment" Background="Transparent">
             <SymbolIcon Foreground="PaleVioletRed" Symbol="Clear"/>
         </Button>
 
 
-        <Grid Name="categoryGrid" Grid.ColumnSpan="2" Grid.Row="1">
+        <Grid Name="categoryGrid" Grid.ColumnSpan="3" Grid.Row="1">
 
                 <StackPanel Name="SelectionStackPanel"  Width="200"  HorizontalAlignment="Center" VerticalAlignment="Center">
                     <Button Background="Transparent" Style="{StaticResource MyButtonStyle}" HorizontalAlignment="Stretch" Click="DrawingButton_Click"  Name="DrawingButton" Height="{StaticResource categoryButtonHeight}">
@@ -145,7 +160,7 @@
 
 
 
-        <RelativePanel Grid.ColumnSpan="2" Grid.Row="0" Name="TitleRelativePanel" Visibility="Visible" Background="WhiteSmoke">
+        <RelativePanel Grid.ColumnSpan="3" Grid.Row="0" Name="TitleRelativePanel" Visibility="Visible" Background="WhiteSmoke">
                 <Button Style="{StaticResource MyButtonStyle}" Background="Transparent" Foreground="Gray" 
                     Height="48" VerticalAlignment="Top" Width="48" Padding="0" Name="deleteButton" Click="Delete_Click" Margin="0">
                     <SymbolIcon Symbol="Clear" Height="35" Width="35" Margin="-1,-1,-3,-3" HorizontalAlignment="Left"></SymbolIcon>
@@ -178,12 +193,12 @@
                 </Button>
             </RelativePanel>
 
-        <InkToolbar x:Name="inkToolbar" Background="LightGray"   Grid.Row="0" Grid.ColumnSpan="2"
+        <InkToolbar x:Name="inkToolbar" Background="LightGray"   Grid.Row="0" Grid.ColumnSpan="3"
         VerticalAlignment="Center" Margin="0 0 48 0" Visibility="Collapsed"
         HorizontalAlignment="Right" 
         Orientation="Horizontal"   />
 
-        <Button Height="48" Width="48" Name="PhotoButton" Style="{StaticResource MyButtonStyle}" Grid.ColumnSpan="2"
+        <Button Height="48" Width="48" Name="PhotoButton" Style="{StaticResource MyButtonStyle}" Grid.ColumnSpan="3"
                 Click="PhotoButton_Click" Foreground="Black" Background="WhiteSmoke" 
                 Grid.Row="0"  HorizontalAlignment="Right" Visibility="Collapsed" 
                 Margin="0 0 48 0">
@@ -191,13 +206,13 @@
             </Button>
 
             <!-- Photo service -->
-        <Grid Background="WhiteSmoke" Grid.Row="1" Grid.ColumnSpan="2"
+        <Grid Background="WhiteSmoke" Grid.Row="1" Grid.ColumnSpan="3"
               Name="CameraCanvas"
               RelativePanel.AlignRightWithPanel="True" Visibility="Collapsed">
                 <photovideoservice:PhotoVideoCaptureControl x:Name="captureControl"></photovideoservice:PhotoVideoCaptureControl>
             </Grid>
 
-        <Grid Grid.Row="0" Grid.RowSpan="2" Background="White" Opacity="0.9"  Grid.ColumnSpan="2"
+        <Grid Grid.Row="0" Grid.RowSpan="2" Background="White" Opacity="0.9"  Grid.ColumnSpan="3"
               Name="MovingGrid"  Visibility="Collapsed"
               Tapped="noImageManipulation_Tapped"
               ManipulationMode="TranslateX,TranslateY"
