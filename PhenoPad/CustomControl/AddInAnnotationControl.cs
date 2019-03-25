@@ -351,7 +351,7 @@ namespace PhenoPad.CustomControl
                         Debug.WriteLine($"multiple, #lines = {line}, ratio = {inkRatio}");
                         //recalculate number of lines relative to compressed strokes
                         if (inknodes.Count < 1)
-                            line = (int)(Math.Ceiling((bound.Height * inkRatio + 2) / COMMENT_HEIGHT));
+                            line = (int)(Math.Ceiling((bound.Height * inkRatio + 1) / COMMENT_HEIGHT));
                         Debug.WriteLine($"recalculated, #lines = {line}");
                         this.Height = (line) * COMMENT_HEIGHT;
                     }
@@ -412,7 +412,7 @@ namespace PhenoPad.CustomControl
                     inkRatio = Math.Min((bound.Height) / (line * COMMENT_HEIGHT + 10), (line * COMMENT_HEIGHT) / (bound.Height + 10));
                     //recalculate number of lines relative to compressed strokes
                     if (inknodes.Count < 1)
-                        line = (int)(Math.Ceiling((bound.Height * inkRatio + 2) / COMMENT_HEIGHT));
+                        line = (int)(Math.Ceiling((bound.Height * inkRatio + 1) / COMMENT_HEIGHT));
                     return (line) * COMMENT_HEIGHT;
 
                 }

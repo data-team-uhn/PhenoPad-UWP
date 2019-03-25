@@ -882,14 +882,12 @@ namespace PhenoPad.CustomControl
             else {
                 if (ia.commentID != -1)
                 {
-                    Debug.WriteLine(ia.anno_type + " 000");
                     canvasAddIn = new AddInControl(ia.name, ehrPage, ia.commentID, ia.anno_type);// need to update this commengID when impleting saving
                 }
                 else
                     canvasAddIn = new AddInControl(ia.name, notebookId, pageId, ia.widthOrigin, ia.heightOrigin);
             }
 
-            //await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () => {
             //Manually setting pre-saved configuration of the add-in control
             canvasAddIn.Height = ia.height;
             canvasAddIn.Width = ia.width;
@@ -914,7 +912,6 @@ namespace PhenoPad.CustomControl
                 canvasAddIn.viewFactor.ScaleX = ia.zoomFactorX;
                 canvasAddIn.viewFactor.ScaleY = ia.zoomFactorY;
 
-            //});
             if (ehrPage == null)
             {
                 userControlCanvas.Children.Add(canvasAddIn);
@@ -932,9 +929,6 @@ namespace PhenoPad.CustomControl
                         canvasAddIn.commentTextBlock.Visibility = Visibility.Visible;
                         canvasAddIn.commentText = ia.commentText;
                         canvasAddIn.commentTextBlock.Document.SetText(TextSetOptions.None, ia.commentText);
-                    }
-                    else {
-                        Debug.WriteLine("loaded addin is raw stroke");
                     }
                     canvasAddIn.inDock = false;
                     canvasAddIn.Visibility = Visibility.Visible;

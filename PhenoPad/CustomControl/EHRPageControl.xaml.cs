@@ -304,6 +304,10 @@ namespace PhenoPad.CustomControl
                 newX = EHR_TEXTBOX_WIDTH.Value - inputgrid.ActualWidth;
             else if (p.X > 600)
                 newX -= 400;
+            var offset = parentControl.EHRScrollViewer.VerticalOffset;
+            var zoomfactor = parentControl.EHRScrollViewer.ZoomFactor;
+            Debug.WriteLine($"current scroll V offset = {offset}, zoom={zoomfactor},new V = {zoomfactor*(newY - (0.3*MainPage.Current.ActualHeight))}");
+            parentControl.EHRScrollViewer.ChangeView(0, (newY - 0.3*MainPage.Current.ActualHeight)*zoomfactor , zoomfactor);
 
             Canvas.SetLeft(inputgrid, newX);
             Canvas.SetTop(inputgrid, newY + LINE_HEIGHT);
@@ -465,14 +469,10 @@ namespace PhenoPad.CustomControl
 
         private void OnElementTapped(object sender = null, TappedRoutedEventArgs e = null)
         {/// Dismiss all pop-ups when tapping on canvas
-            //await Dispatcher.RunAsync(CoreDispatcherPriority.High, () =>
-            //{
                 if (InputHasContent())
                     InsertToEHRClick();
                 else
                     SlideCommentsToSide();
-            //});
-
             HideAndClearInputPanel();
             cpMenu.Visibility = Visibility.Collapsed;
             SelectionMenu.Visibility = Visibility.Collapsed;
@@ -481,13 +481,13 @@ namespace PhenoPad.CustomControl
             if (popupCanvas.Children.Contains(lasso))
                 popupCanvas.Children.Remove(lasso);
             HideCommentLine();
-            //DeleteComment.Visibility = Visibility.Collapsed;
             cur_selected = (-1, -1);
             cur_highlight = (-1, -1);
             cur_delete = (-1, -1);
             current_index = -1;
             RefreshTextStyle();
-            insertType = InsertType.None;            
+            ToggleHandwritingMode();
+            //insertType = InsertType.None;            
         }
 
         private async void TriggerAutoSave(object sender = null, object e = null)
@@ -621,6 +621,10 @@ namespace PhenoPad.CustomControl
                 else if (annotated[i][0] >= start && length > 0)
                 {//Need to update the indexes for annotations/comments
                     AddInControl comment = comments.Where(c => c.commentID == annotated[i][0]).FirstOrDefault();
+                    //comment may be null if it has been deleted before updating annotated range
+                    if (comment == null)
+                        continue;
+
                     comment.commentID += length;
                     annotated[i][0] += length;
                     annotated[i][1] += length;
@@ -734,8 +738,10 @@ namespace PhenoPad.CustomControl
 
             else if (insertMode == InsertMode.typing || insertFromComment != null)
             {
-                if (index != -1)
+                if (index != -1 && insertFromComment != null) {
                     current_index = index;
+                    RemoveAnnotation(insertFromComment);
+                }
 
                 string text = "";
                 string typeText;
@@ -801,8 +807,6 @@ namespace PhenoPad.CustomControl
                     UpdateRecordListInsert(current_index + 1, text.Length - newlineOffset);
                 }
 
-                if (insertFromComment != null)
-                    RemoveAnnotation(insertFromComment);
 
                 //UI backend updates
                 AnalyzePhenotype(text);
@@ -956,8 +960,8 @@ namespace PhenoPad.CustomControl
             var range = EHRTextBox.Document.GetRange(anno.commentID, anno.commentID + 1);
             Point pos;
             range.GetPoint(HorizontalCharacterAlignment.Center, VerticalCharacterAlignment.Bottom, PointOptions.ClientCoordinates, out pos);
+            ToggleTypeMode();
             insertType = InsertType.ReEdit;
-            insertMode = InsertMode.typing;
             inputTypeBox.Document.SetText(TextSetOptions.None, anno.commentText);
             //because we are re editing a text annotation, switching to raw comment is temp diabled
             HWToggleBtn.IsEnabled = false;
