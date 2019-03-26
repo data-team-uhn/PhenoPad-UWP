@@ -155,6 +155,9 @@ namespace PhenoPad
             string serverPath = SpeechManager.getSharedSpeechManager().getServerAddress() + ":" +
                                 SpeechManager.getSharedSpeechManager().getServerPort();
             ASRAddrInput.Text = serverPath;
+            PhenoSuggestionAddr.Text = PhenotypeManager.SUGGESTION_ADDR;
+            DiffDiagnosisAddr.Text = PhenotypeManager.DIFFERENTIAL_ADDR;
+            PhenoDetailAddr.Text = PhenotypeManager.PHENOTYPEINFO_ADDR;
 
             AbbreviationON_Checked(null, null);
 
@@ -246,6 +249,8 @@ namespace PhenoPad
             
 
         }
+
+
 
         /// <summary>
         /// Clears all page index records in the StackPanel.
@@ -900,6 +905,25 @@ namespace PhenoPad
             AppConfigurations.saveSetting("serverPort", portResult);
             NotifyUser("ASR Server address has been changed", NotifyType.StatusMessage, 1);
         }
+
+        private void PhenoSuggestionAddr_Click(object sender, RoutedEventArgs e)
+        {
+            PhenotypeManager.SUGGESTION_ADDR = PhenoSuggestionAddr.Text;
+            NotifyUser("Phenotype suggestion server address has been changed.",NotifyType.StatusMessage,1);
+        }
+
+        private void DiffDiagnosisAddr_Click(object sender, RoutedEventArgs e)
+        {
+            PhenotypeManager.DIFFERENTIAL_ADDR = DiffDiagnosisAddr.Text;
+            NotifyUser("Differential diagnosis server address has been changed.", NotifyType.StatusMessage, 1);
+        }
+
+        private void PhenoDetailAddr_Click(object sender, RoutedEventArgs e)
+        {
+            PhenotypeManager.PHENOTYPEINFO_ADDR = PhenoDetailAddr.Text;
+            NotifyUser("Phenotype detail server address has been changed.", NotifyType.StatusMessage, 1);
+        }
+
 
         private void SettingsClose_Click(object sender, RoutedEventArgs e) {
             AppSetting.Visibility = Visibility.Collapsed;

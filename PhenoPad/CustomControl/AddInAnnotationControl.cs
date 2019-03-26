@@ -195,7 +195,7 @@ namespace PhenoPad.CustomControl
 
         private void ShowMenu(object sender, RoutedEventArgs e)
         {
-            if (addinSlide.X > 0)
+            if (addinSlide.X == commentslideX)
             {
                 Grid.SetColumn(contentGrid, 0);
                 Grid.SetColumnSpan(contentGrid, 2);
@@ -225,44 +225,50 @@ namespace PhenoPad.CustomControl
             Grid.SetColumn(contentGrid, 0);
             Grid.SetColumnSpan(contentGrid, 3);
             ehr.HideCommentLine();
-            if (addinSlide.X > 0) {
+
+            if (addinSlide.X == commentslideX) {
                 OutlineGrid.BorderBrush = new SolidColorBrush(BORDER_INACTIVE);
                 OutlineGrid.CornerRadius = new CornerRadius(5);
                 OutlineGrid.BorderThickness = new Thickness(1);
                 Canvas.SetZIndex(this, 90);
             }
+
             DeleteComment.Visibility = Visibility.Collapsed;
             ConvertComment.Visibility = Visibility.Collapsed;
             InsertComment.Visibility = Visibility.Collapsed;
         }
 
         public async void ConvertStrokeToText(object sender, RoutedEventArgs e) {
-            List<HWRRecognizedText> recognitionResults = await HWRManager.getSharedHWRManager().OnRecognizeAsync(inkCanvas.InkPresenter.StrokeContainer,InkRecognitionTarget.All, server:false);
+            if (addinSlide.X == commentslideX) {
 
-            if (recognitionResults != null) {
+                List<HWRRecognizedText> recognitionResults = await HWRManager.getSharedHWRManager().OnRecognizeAsync(inkCanvas.InkPresenter.StrokeContainer, InkRecognitionTarget.All, server: true);
+
+                //continue analyzing until we have a result
+                while (recognitionResults == null) {
+                    await Task.Delay(TimeSpan.FromSeconds(0.5));
+                    recognitionResults = await HWRManager.getSharedHWRManager().OnRecognizeAsync(inkCanvas.InkPresenter.StrokeContainer, InkRecognitionTarget.All, server: true);
+                }
+
                 string text = "";
 
                 foreach (var res in recognitionResults)
                 {
                     text += res.selectedCandidate + " ";
                 }
-                commentTextBlock.Document.SetText(Windows.UI.Text.TextSetOptions.None, text);
+                commentTextBlock.Document.SetText(Windows.UI.Text.TextSetOptions.None, text.Trim());
                 commentTextBlock.Visibility = Visibility.Visible;
                 inkCan.Visibility = Visibility.Collapsed;
                 commentText = text;
                 if (anno_type == AnnotationType.RawComment)
                 {
-                    Debug.WriteLine("------------------fjsilefs");
                     anno_type = AnnotationType.TextComment;
-
                 }
-
             }
 
         }
 
         private void RemoveComment(object sender, RoutedEventArgs e) {
-            if (addinSlide.X > 0) 
+            if (addinSlide.X == commentslideX) 
                 ehr.RemoveAnnotation(this);
         }
 
@@ -347,19 +353,20 @@ namespace PhenoPad.CustomControl
                         int line;
                         //use InkAnalyzer's line count if available, o.w. estimate line using bound height
                         line = inknodes.Count >= 1 ? inknodes.Count : (int)(Math.Ceiling((bound.Height) / COMMENT_HEIGHT));
+
                         inkRatio = Math.Min((bound.Height) / (line * COMMENT_HEIGHT + 10), (line * COMMENT_HEIGHT) / (bound.Height + 10));
+
                         Debug.WriteLine($"multiple, #lines = {line}, ratio = {inkRatio}");
                         //recalculate number of lines relative to compressed strokes
                         if (inknodes.Count < 1)
                             line = (int)(Math.Ceiling((bound.Height * inkRatio + 1) / COMMENT_HEIGHT));
+
                         Debug.WriteLine($"recalculated, #lines = {line}");
                         this.Height = (line) * COMMENT_HEIGHT;
                     }
                     //further compresses the strokes if calculated ratio is over 60%
                     if (inkRatio > 0.6)
                         inkRatio = 0.6;
-
-                    Debug.WriteLine($"number of storkes in canvas = {inkCan.InkPresenter.StrokeContainer.GetStrokes().Count}");
 
                     foreach (InkStroke s in inkCan.InkPresenter.StrokeContainer.GetStrokes())
                     {
@@ -373,11 +380,13 @@ namespace PhenoPad.CustomControl
                     this.Width = bound.Width < COMMENT_WIDTH ? COMMENT_WIDTH : bound.Width + 5;
                     inkAnalyzer.ClearDataForAllStrokes();
                 }
+
                 else if (anno_type == AnnotationType.TextComment || anno_type == AnnotationType.TextInsert)
                 {
                     this.Height = Math.Ceiling(getTextBound().Height / COMMENT_HEIGHT) * COMMENT_HEIGHT ;
                     this.Width = DEFAULT_COMMENT_WIDTH ;
                 }
+
                 ehr.HideCommentLine();
             }
         }
@@ -392,7 +401,6 @@ namespace PhenoPad.CustomControl
             return bound;
 
         }
-
 
         public double GetCommentHeight()
         {//Gets the compressed comment height without actually compressing the comment
@@ -417,13 +425,9 @@ namespace PhenoPad.CustomControl
 
                 }
             }
-            else if (anno_type == AnnotationType.TextComment || anno_type == AnnotationType.TextInsert)
+            else
             {
                 return Math.Ceiling(getTextBound().Height / COMMENT_HEIGHT) * COMMENT_HEIGHT;
-            }
-            else {
-                return COMMENT_HEIGHT;
-                //throw new Exception("get comment height: invalid statement reached");
             }
                 
         }

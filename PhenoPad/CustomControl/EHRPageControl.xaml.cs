@@ -718,15 +718,12 @@ namespace PhenoPad.CustomControl
                 double newY = (Math.Ceiling(pos.Y / LINE_HEIGHT) + 1) * LINE_HEIGHT;
 
                 var strokes = inputInkCanvas.InkPresenter.StrokeContainer.GetStrokes();
-                //double ratio = inputInkCanvas.InkPresenter.StrokeContainer.BoundingRect.Width / inputInkCanvas.ActualWidth;
-                //ratio *= AddInControl.DEFAULT_COMMENT_WIDTH / inputInkCanvas.ActualWidth;
-                //Debug.WriteLine($"storke ratio = {ratio}");
                 foreach (InkStroke s in strokes)
                 {
                     s.Selected = true;
-                    //s.PointTransform = Matrix3x2.CreateScale((float)ratio, (float)ratio);
                 }
                 inputInkCanvas.InkPresenter.StrokeContainer.CopySelectedToClipboard();
+
                 AddInControl comment = parentControl.NewEHRCommentControl(pos.X + 10, newY + 110, current_index, AnnotationType.RawInsert);
                 comment.commentslideX = EHR_TEXTBOX_WIDTH.Value - pos.X + 10;
                 comment.commentslideY = -LINE_HEIGHT;
@@ -776,8 +773,12 @@ namespace PhenoPad.CustomControl
                 }
 
                 string all_text = getText(EHRTextBox);
-
-                if (CheckInsertingAfterNewLine(current_index))
+                if (all_text.Trim() == ".") {
+                    //inserting at an empty EHR 
+                    EHRTextBox.Document.SetText(TextSetOptions.None, text);
+                    UpdateRecordListInsert(0, text.Length - newlineOffset);
+                }
+                else if (CheckInsertingAfterNewLine(current_index))
                 {
                     Debug.WriteLine("inserting after newline");
                     //Because we used a period as the end anchor of the text, need to replace that period with newly added text

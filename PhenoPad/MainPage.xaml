@@ -843,7 +843,7 @@
         <!--APP SETTINGS POP UP GRID-->
         <Grid x:Name="AppSetting" Background="{StaticResource TITLE_BAR_WHITE}"
                         Visibility="Collapsed" Grid.Row="1" 
-                        Padding="10" Width="600" Height="300" RelativePanel.AlignBottomWithPanel="True">
+                        Padding="10" Width="600" Height="500" RelativePanel.AlignBottomWithPanel="True">
 
             <Grid>
                 <Grid.RowDefinitions>
@@ -853,6 +853,10 @@
                     <RowDefinition Height="Auto"/>
                     <RowDefinition Height="Auto"/>
                     <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+
 
                 </Grid.RowDefinitions>
                 <Grid.ColumnDefinitions>
@@ -897,6 +901,27 @@
                     <RadioButton Content="ON" Tag="Turn On Abbreviation Detection" Name="AbbrONBtn" GroupName="AbbrSwitcher"  Checked="AbbreviationON_Checked"/>
                     <RadioButton Content="OFF" Tag="Turn OFF Abbreviation Detection" Name="AbbrOFFBtn" GroupName="AbbrSwitcher" Checked="AbbreviationOFF_Checked"/>
                 </StackPanel>
+
+                <TextBlock Text="Suggestion:" Grid.Row="6" Grid.Column="0" Grid.ColumnSpan="1"
+                           VerticalAlignment="Center" HorizontalAlignment="Right"/>
+                <StackPanel Orientation="Horizontal" Grid.Row="6" Grid.Column="1" Grid.ColumnSpan="2" Spacing="10" HorizontalAlignment="Center">
+                    <TextBox x:Name="PhenoSuggestionAddr" PlaceholderText="Server Address" Width="300" Margin="5" />
+                    <Button Content="Change Address" Click="PhenoSuggestionAddr_Click"/>
+                </StackPanel>
+                <TextBlock Text="Differential:" Grid.Row="7" Grid.Column="0" Grid.ColumnSpan="1"
+                           VerticalAlignment="Center" HorizontalAlignment="Right"/>
+                <StackPanel Orientation="Horizontal" Grid.Row="7" Grid.Column="1" Grid.ColumnSpan="2" Spacing="10" HorizontalAlignment="Center">
+                    <TextBox x:Name="DiffDiagnosisAddr" PlaceholderText="Server Address" Width="300" Margin="5" />
+                    <Button Content="Change Address" Click="DiffDiagnosisAddr_Click"/>
+                </StackPanel>
+                <TextBlock Text="PhenoDetail:" Grid.Row="8" Grid.Column="0" Grid.ColumnSpan="1"
+                           VerticalAlignment="Center" HorizontalAlignment="Right"/>
+                <StackPanel Orientation="Horizontal" Grid.Row="8" Grid.Column="1" Grid.ColumnSpan="2" Spacing="10" HorizontalAlignment="Center">
+                    <TextBox x:Name="PhenoDetailAddr" PlaceholderText="Server Address" Width="300" Margin="5" />
+                    <Button Content="Change Address" Click="PhenoDetailAddr_Click"/>
+                </StackPanel>
+
+
 
 
             </Grid>
