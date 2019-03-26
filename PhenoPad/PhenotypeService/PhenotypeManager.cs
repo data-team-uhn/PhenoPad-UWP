@@ -777,9 +777,8 @@ namespace PhenoPad.PhenotypeService
             {
                 throw new Exception("Invalid header value: " + header);
             }
-            //Mar19,2019: API may not be working properlly b/c it's returning empty content upon request
-            //var urlstr = "https://playground.phenotips.org/get/PhenoTips/DiseasePredictService?format=json&limit=15";
-            var urlstr = DIFFERENTIAL_ADDR;
+
+            var urlstr = "https://playground.phenotips.org/get/PhenoTips/DiseasePredictService2?format=json&limit=15";
             /**
             foreach (var p in savedPhenotypes)
             {
