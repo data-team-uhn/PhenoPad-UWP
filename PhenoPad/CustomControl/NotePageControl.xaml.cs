@@ -227,6 +227,7 @@ namespace PhenoPad.CustomControl
             operationDispathcerTimer = new DispatcherTimer();
             textNoteDispatcherTimer = new DispatcherTimer();
             autosaveDispatcherTimer = new DispatcherTimer();
+            RawStrokeTimer = new DispatcherTimer();
             recognizeTimer = new DispatcherTimer();
 
             dispatcherTimer.Tick += InkAnalysisDispatcherTimer_Tick;  // Ink Analysis time tick
@@ -234,6 +235,7 @@ namespace PhenoPad.CustomControl
             operationDispathcerTimer.Tick += OperationDispatcherTimer_Tick;
             textNoteDispatcherTimer.Tick += TextNoteDispatcherTimer_Tick;
             recognizeTimer.Tick += TriggerRecogServer;
+            RawStrokeTimer.Tick += RawStrokeTimer_Tick;
 
             unprocessedDispatcherTimer = new DispatcherTimer();
             unprocessedDispatcherTimer.Tick += UnprocessedDispathcerTimer_Tick;
@@ -247,6 +249,7 @@ namespace PhenoPad.CustomControl
             unprocessedDispatcherTimer.Interval = TimeSpan.FromMilliseconds(100);
             recognizeTimer.Interval = TimeSpan.FromSeconds(0.25);// recognize through server side every 3 seconds
             autosaveDispatcherTimer.Interval = TimeSpan.FromSeconds(1); //setting stroke auto save interval to be 1 sec
+            RawStrokeTimer.Interval = TimeSpan.FromSeconds(1);
 
             linesToUpdate = new Queue<int>();
             lineAnalysisDispatcherTimer = new DispatcherTimer();
@@ -265,6 +268,10 @@ namespace PhenoPad.CustomControl
             phenotypesOfLines = new Dictionary<int, List<Phenotype>>();
             deleteSemaphoreSlim = new SemaphoreSlim(1);
             selectAndRecognizeSemaphoreSlim = new SemaphoreSlim(1);
+            RawStrokes = new List<InkStroke>();
+            NotePhrases = new List<NotePhraseControl>();
+            currentIndex = 0;
+            strokeAnalyzer = new InkAnalyzer();
             
             recognizedTextCanvas.Visibility = Visibility.Collapsed;
 
@@ -281,7 +288,12 @@ namespace PhenoPad.CustomControl
             //selectionRectangle.ManipulationMode = ManipulationModes.TranslateX | ManipulationModes.TranslateY;
             //selectionRectangle.ManipulationStarted += SelectionRectangle_ManipulationStarted;
             //selectionRectangle.ManipulationDelta += SelectionRectangle_ManipulationDelta;
-            //selectionRectangle.ManipulationCompleted += SelectionRectangle_ManipulationCompleted;      
+            //selectionRectangle.ManipulationCompleted += SelectionRectangle_ManipulationCompleted;   
+
+            lastStrokePoint = new Point(0,0);
+
+            strokeRecords = new Dictionary<int, List<InkStroke>>();
+            lastWordCount = 0;
 
         }
 
@@ -474,7 +486,11 @@ namespace PhenoPad.CustomControl
             if (ehrPage == null)
             {
                 recognizedTextCanvas.Visibility = Visibility.Visible;
+                textNoteEditBox.Document.SetText(TextSetOptions.None, ParseNoteText());
+                textNoteEditBox.Visibility = Visibility.Visible;
                 inkCanvas.Visibility = Visibility.Collapsed;
+                PhraseControlCanvas.Visibility = Visibility.Collapsed;
+
                 backgroundCanvas.Background = new SolidColorBrush(Colors.WhiteSmoke);
             }
             else 
@@ -484,9 +500,12 @@ namespace PhenoPad.CustomControl
         public void hideRecognizedTextCanvas()
         {
             if (ehrPage == null)
-            {
+            {//shows the stroke editing
                 recognizedTextCanvas.Visibility = Visibility.Collapsed;
+                textNoteEditBox.Visibility = Visibility.Collapsed;
                 inkCanvas.Visibility = Visibility.Visible;
+                PhraseControlCanvas.Visibility = Visibility.Visible;
+                RecognizedText.Text = "";
                 backgroundCanvas.Background = new SolidColorBrush(Colors.White);
             }
             else
@@ -1737,11 +1756,6 @@ namespace PhenoPad.CustomControl
             var alterFlyout = (Flyout)this.Resources["ChangeAlternativeFlyout"];
             alterFlyout.ShowAt(tb);
             alternativeListView.ItemsSource = textBlockToAlternatives[tb];
-        }
-
-        private void recognizedResultTextBlock_Tapped(object sender, TappedRoutedEventArgs e)
-        {
-            
         }
 
         private void recognizedResultTextBlock_GotFocus(object sender, RoutedEventArgs e)

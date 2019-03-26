@@ -134,13 +134,20 @@
     <Compile Include="CustomControl\NotePageControl.xaml.cs">
       <DependentUpon>NotePageControl.xaml</DependentUpon>
     </Compile>
+    <Compile Include="CustomControl\NotePageControl_HWR.cs" />
     <Compile Include="CustomControl\NotePageControl_InkAnalysis.cs" />
     <Compile Include="CustomControl\NotePageControl_Notetext.cs" />
+    <Compile Include="CustomControl\NotePhraseControl.xaml.cs">
+      <DependentUpon>NotePhraseControl.xaml</DependentUpon>
+    </Compile>
     <Compile Include="CustomControl\PhenotypeBriefControl.xaml.cs">
       <DependentUpon>PhenotypeBriefControl.xaml</DependentUpon>
     </Compile>
     <Compile Include="CustomControl\PhenotypeDetail.xaml.cs">
       <DependentUpon>PhenotypeDetail.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="CustomControl\WordBlockControl.xaml.cs">
+      <DependentUpon>WordBlockControl.xaml</DependentUpon>
     </Compile>
     <Compile Include="FileService\EHRFormats.cs" />
     <Compile Include="FileService\FileManager.cs" />
@@ -276,11 +283,19 @@
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
+    <Page Include="CustomControl\NotePhraseControl.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
     <Page Include="CustomControl\PhenotypeBriefControl.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>
     <Page Include="CustomControl\PhenotypeDetail.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="CustomControl\WordBlockControl.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
