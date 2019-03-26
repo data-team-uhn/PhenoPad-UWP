@@ -114,9 +114,7 @@
                                  Visibility="Collapsed" 
                                  Width="{x:Bind COMMENT_WIDTH}"
                                  IsEnabled="False"/>
-                    <StackPanel x:Name="ConvertPanel" Orientation="Horizontal" Visibility="Collapsed"
-                                Width="{x:Bind COMMENT_WIDTH}" HorizontalAlignment="Left" 
-                                x:FieldModifier="public"/>
+                        <MediaPlayerElement x:Name="mediaPlayerElement" Visibility="Collapsed" AreTransportControlsEnabled="True"/>
                 </Grid>
                 </ScrollViewer>
             </Grid>
@@ -197,6 +195,19 @@
         VerticalAlignment="Center" Margin="0 0 48 0" Visibility="Collapsed"
         HorizontalAlignment="Right" 
         Orientation="Horizontal"   />
+            
+        <Button Height="48" Width="48" Name="VideoButton" Style="{StaticResource MyButtonStyle}" Grid.ColumnSpan="3"
+                Click="VideoButton_Click" Foreground="Black" Background="WhiteSmoke" 
+                Grid.Row="0"  HorizontalAlignment="Right" Visibility="Collapsed" 
+                Margin="0 0 96 0">
+            <SymbolIcon Symbol="Video" />
+        </Button>
+        <Button Height="48" Width="48" Name="VideoStopButton" Style="{StaticResource MyButtonStyle}" Grid.ColumnSpan="3"
+                Click="VideoStopButton_Click" Foreground="Black" Background="WhiteSmoke" 
+                Grid.Row="0"  HorizontalAlignment="Right" Visibility="Collapsed" 
+                Margin="0 0 96 0">
+            <SymbolIcon Symbol="Stop" />
+        </Button>
 
         <Button Height="48" Width="48" Name="PhotoButton" Style="{StaticResource MyButtonStyle}" Grid.ColumnSpan="3"
                 Click="PhotoButton_Click" Foreground="Black" Background="WhiteSmoke" 
@@ -205,7 +216,8 @@
                 <SymbolIcon Symbol="Camera" />
             </Button>
 
-            <!-- Photo service -->
+
+        <!-- Photo service -->
         <Grid Background="WhiteSmoke" Grid.Row="1" Grid.ColumnSpan="3"
               Name="CameraCanvas"
               RelativePanel.AlignRightWithPanel="True" Visibility="Collapsed">

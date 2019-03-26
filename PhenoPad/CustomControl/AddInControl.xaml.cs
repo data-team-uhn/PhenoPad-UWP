@@ -12,6 +12,8 @@ using System.Threading.Tasks;
 using Windows.Foundation;
 using Windows.Foundation.Collections;
 using Windows.Graphics.Imaging;
+using Windows.Media.Core;
+using Windows.Storage;
 using Windows.Storage.Streams;
 using Windows.UI;
 using Windows.UI.Input.Inking;
@@ -32,17 +34,28 @@ using Windows.UI.Xaml.Shapes;
 
 namespace PhenoPad.CustomControl
 {
-    enum Direction {
+    public enum Direction {
         TOPLEFT,
         TOPRIGHT,
         BOTTOMLEFT,
         BOTTOMRIGHT
     }
+    public enum AddinType
+    {
+        DRAWING,
+        IMAGE,
+        PHOTO,
+        VIDEO,
+        VIEWONLY,
+        EHR // EHR also has 4 types of enum, see AddInAnnotationControl.cs
+    }
+
     /// <summary>
     /// Control class for canvas add-ins after drawing a rectangle on note page, shows options of operations.
     /// </summary>
     public sealed partial class AddInControl : UserControl
     {
+
         #region attribute definition
 
         private double DEFAULT_WIDTH = 400;
@@ -77,7 +90,8 @@ namespace PhenoPad.CustomControl
 
         public ScaleTransform scaleTransform;
         public TranslateTransform dragTransform;
-        //public double scale;
+
+        public AddinType addinType;
 
         public bool hasImage;
 
@@ -130,6 +144,7 @@ namespace PhenoPad.CustomControl
         private bool _leftSide;
         private bool _rightSide;
         private double _curWidthRatio;
+        private StorageFile temp;
 
         public static readonly DependencyProperty nameProperty = DependencyProperty.Register(
          "name",
@@ -516,6 +531,7 @@ namespace PhenoPad.CustomControl
         private void DrawingButton_Click(object sender, RoutedEventArgs e)
         {
             type = "drawing";
+            addinType = AddinType.DRAWING;
             isInitialized = true;
             //this.ControlStackPanel.Visibility = Visibility.Visible;
             categoryGrid.Visibility = Visibility.Collapsed;
@@ -530,12 +546,37 @@ namespace PhenoPad.CustomControl
             captureControl.setUp();
             //this.imageControl.deleteAsHide();
             PhotoButton.Visibility = Visibility.Visible;
+            VideoButton.Visibility = Visibility.Visible;
         }
-        
+
+        private async void VideoButton_Click(object sender, RoutedEventArgs e) {
+            addinType = AddinType.VIDEO;
+            temp = await captureControl.StartRecordingAsync(notebookId,pageId, name);
+            PhotoButton.Visibility = Visibility.Collapsed;
+            VideoButton.Visibility = Visibility.Collapsed;
+            VideoStopButton.Visibility = Visibility.Visible;
+
+        }
+
+        private async void VideoStopButton_Click(object sender, RoutedEventArgs e) {
+            captureControl.OnTimeUpStopRecording();
+            mediaPlayerElement.Source = MediaSource.CreateFromStorageFile(temp);
+            mediaPlayerElement.Visibility = Visibility.Visible;
+            categoryGrid.Visibility = Visibility.Collapsed;
+            PhotoButton.Visibility = Visibility.Collapsed;
+            VideoButton.Visibility = Visibility.Collapsed;
+            VideoStopButton.Visibility = Visibility.Collapsed;
+            CameraCanvas.Visibility = Visibility.Collapsed;
+            captureControl.unSetUp();
+            hasImage = true;
+            InitiateInkCanvas();
+        }
+
         private async void PhotoButton_Click(object sender, RoutedEventArgs e)
         {/// <summary>invoked when user is in camera preview mode and clicks on the camera button</summary>
             try
             {
+                addinType = AddinType.PHOTO;
                 var imageSource = await captureControl.TakePhotoAsync(notebookId,
                    pageId, name);
                 if (imageSource != null)
@@ -551,22 +592,23 @@ namespace PhenoPad.CustomControl
                     var fileheight = properties.Height;
                     //Resizing the add-in frame according to the image ratio
                     imgratio = (double)filewidth / fileheight;
-                    this.Height = this.Width / imgratio + 48;
-                    this.widthOrigin = this.Width;
-                    this.heightOrigin = this.Height;
-                    this.inkCan.Height = this.Height - 48;
-                    this.inkCan.Width = this.Width;
+                    Height = Width / imgratio + 48;
+                    widthOrigin = Width;
+                    heightOrigin = Height;
+                    inkCan.Height = Height - 48;
+                    inkCan.Width =  Width;
 
                     imageControl.Source = rawphoto;
                     contentGrid.Children.Add(imageControl);
                     categoryGrid.Visibility = Visibility.Collapsed;
-                    this.PhotoButton.Visibility = Visibility.Collapsed;
-                    this.CameraCanvas.Visibility = Visibility.Collapsed;
+                    PhotoButton.Visibility = Visibility.Collapsed;
+                    VideoButton.Visibility = Visibility.Collapsed;
+                    CameraCanvas.Visibility = Visibility.Collapsed;
                     captureControl.unSetUp();
-                    this.hasImage = true;
+                    hasImage = true;
                     InitiateInkCanvas();
                 }
-                await rootPage.curPage.AutoSaveAddin(this.name);
+                await rootPage.curPage.AutoSaveAddin(name);
 
             }
             catch (Exception ex)
@@ -583,6 +625,7 @@ namespace PhenoPad.CustomControl
 
         private async void InsertPhotoButton_Click(object sender, RoutedEventArgs e)
         {
+            addinType = AddinType.IMAGE;
             type = "photo";
             isInitialized = true;
             //this.ControlStackPanel.Visibility = Visibility.Visible;

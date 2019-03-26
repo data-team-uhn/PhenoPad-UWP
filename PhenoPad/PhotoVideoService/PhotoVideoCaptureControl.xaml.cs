@@ -31,6 +31,7 @@ namespace PhenoPad.PhotoVideoService
 {
     public sealed partial class PhotoVideoCaptureControl : UserControl
     {
+        #region Class Attributes
         // Rotation metadata to apply to the preview stream and recorded videos (MF_MT_VIDEO_ROTATION)
         // Reference: http://msdn.microsoft.com/en-us/library/windows/apps/xaml/hh868174.aspx
         private static readonly Guid RotationKey = new Guid("C380465D-2271-428C-9B83-ECEA3B4A85C1");
@@ -62,11 +63,18 @@ namespace PhenoPad.PhotoVideoService
         // Rotation Helper to simplify handling rotation compensation for the camera streams
         private CameraRotationHelper _rotationHelper;
 
+        private DispatcherTimer VideoTimer;
+        #endregion
 
         public PhotoVideoCaptureControl()
         {
             this.InitializeComponent();
+            VideoTimer = new DispatcherTimer();
+            VideoTimer.Interval = TimeSpan.FromSeconds(30);//by default can record for 30 sec
+            VideoTimer.Tick += OnTimeUpStopRecording;
         }
+
+
 
         public async void setUp()
         {
@@ -95,11 +103,11 @@ namespace PhenoPad.PhotoVideoService
         {
             if (!_isRecording)
             {
-                await StartRecordingAsync();
+                //await StartRecordingAsync();
             }
             else
             {
-                await StopRecordingAsync();
+                //await StopRecordingAsync();
             }
 
             // After starting or stopping video recording, update the UI to reflect the MediaCapture state
@@ -348,16 +356,22 @@ namespace PhenoPad.PhotoVideoService
 
         }
 
+        public async void OnTimeUpStopRecording(object sender = null, object e = null)
+        {
+            VideoTimer.Stop();
+            await StopRecordingAsync();
+        }
+
         /// <summary>
         /// Records an MP4 video to a StorageFile and adds rotation metadata to it
         /// </summary>
         /// <returns></returns>
-        private async Task StartRecordingAsync()
+        public async Task<StorageFile> StartRecordingAsync(string notebookId, string pageId, string name)
         {
             try
             {
                 // Create storage file for the capture
-                var videoFile = await _captureFolder.CreateFileAsync("SimpleVideo.mp4", CreationCollisionOption.GenerateUniqueName);
+                var videoFile = await FileService.FileManager.getSharedFileManager().CreateImageFileForPage(notebookId, pageId, name);
 
                 var encodingProfile = MediaEncodingProfile.CreateMp4(VideoEncodingQuality.Auto);
 
@@ -369,14 +383,20 @@ namespace PhenoPad.PhotoVideoService
 
                 await _mediaCapture.StartRecordToStorageFileAsync(encodingProfile, videoFile);
                 _isRecording = true;
+                VideoButton.Visibility = Visibility.Collapsed;
+                PhotoButton.Visibility = Visibility.Collapsed;
 
+                VideoTimer.Start();
                 Debug.WriteLine("Started recording!");
+                return videoFile;
             }
             catch (Exception ex)
             {
                 // File I/O errors are reported as exceptions
                 Debug.WriteLine("Exception when starting video recording: " + ex.ToString());
+                return null;
             }
+            
         }
 
         /// <summary>
@@ -389,7 +409,6 @@ namespace PhenoPad.PhotoVideoService
 
             _isRecording = false;
             await _mediaCapture.StopRecordAsync();
-
             Debug.WriteLine("Stopped recording!");
         }
 

@@ -44,6 +44,7 @@
                     <Rectangle x:Name="StopRecordingIcon" Fill="White" Width="20" Height="20" Visibility="Collapsed"/>
                 </Grid>
             </Button>
+            
         </StackPanel>
     </Grid>
 </UserControl>

@@ -612,10 +612,32 @@ namespace PhenoPad.FileService
             }
             catch (Exception ex)
             {
+                MetroLogger.getSharedLogger().Error($"Failed to create image file, notebook:{notebookId}, " +
+                    $"page: {pageId}, name: {name}, details: {ex.Message} ");
+            }
+            return null;
+        }
+
+        public async Task<StorageFile> CreateVideoFileForPage(string notebookId, string pageId, string name) {
+            //StorageFolder localFolder = ApplicationData.Current.LocalFolder;
+            string foldername = String.Format("{0}\\{1}\\ImagesWithAnnotations", notebookId, pageId);
+            try
+            {
+                var imageFolder = await ROOT_FOLDER.GetFolderAsync(foldername);
+                if (imageFolder != null)
+                {
+                    return await imageFolder.CreateFileAsync(name + ".mp4");
+
+                }
+            }
+            catch (Exception ex)
+            {
                 LogService.MetroLogger.getSharedLogger().Error($"Failed to create image file, notebook:{notebookId}, " +
                     $"page: {pageId}, name: {name}, details: {ex.Message} ");
             }
             return null;
+
+
         }
 
         /// <summary>

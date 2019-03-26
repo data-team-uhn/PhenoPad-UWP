@@ -132,16 +132,13 @@ namespace PhenoPad.HWRService
                     //triggers server side abbreviation detection
                     if (server && MainPage.Current.abbreviation_enabled)
                     {
-                        Debug.WriteLine("HWR server triggered");
                         string fullsentence = listToString(sentence);
                         HTTPRequest unprocessed = new HTTPRequest(fullsentence, this.alternatives, this.newRequest.ToString());
                         List<HWRRecognizedText> processed = await UpdateResultFromServer(unprocessed);
                         recogResults = processed == null ? recogResults : processed;
                         lastServerRecog = recogResults;
                     }
-                    Debug.WriteLine("before server");
                     recogResults = CompareAndUpdateWithServer(recogResults);
-                    Debug.WriteLine("after server");
 
                     lastServerRecog = recogResults;
 
