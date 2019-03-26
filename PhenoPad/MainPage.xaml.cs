@@ -924,7 +924,6 @@ namespace PhenoPad
             NotifyUser("Phenotype detail server address has been changed.", NotifyType.StatusMessage, 1);
         }
 
-
         private void SettingsClose_Click(object sender, RoutedEventArgs e) {
             AppSetting.Visibility = Visibility.Collapsed;
         }
