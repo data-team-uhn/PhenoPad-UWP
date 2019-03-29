@@ -199,6 +199,10 @@ namespace PhenoPad
                         foreach (var ia in imageAndAnno)
                             aPage.loadAddInControl(ia);
                     }
+
+                    List<RecognizedPhrases> recogPhrases = await FileManager.getSharedFileManager().GetRecognizedPhraseFromXML(notebookId, pageIds[i]);
+                    aPage.loadRecognizedPhrases(recogPhrases);
+
                 }
                 curPage = notePages[0];
                 curPageIndex = 0;

@@ -39,7 +39,8 @@ namespace PhenoPad.FileService
         EHR,
         EHRFormat,
         OperationLog,
-        NoteText
+        NoteText,
+        RecognizedPhraseMeta
     };
 
     /// <summary>
@@ -192,6 +193,25 @@ namespace PhenoPad.FileService
             }
             
         }
+        public async Task<List<RecognizedPhrases>> GetRecognizedPhraseFromXML(string notebookId, string pageId)
+        {
+            try
+            {
+                var metafile = await GetNoteFile(notebookId, pageId, NoteFileType.RecognizedPhraseMeta);
+                object obj = await LoadObjectFromSerilization(metafile, typeof(List<RecognizedPhrases>));
+                if (obj != null)
+                    return obj as List<RecognizedPhrases>;
+                else
+                    return null;
+            }
+            catch (Exception e)
+            {
+                MetroLogger.getSharedLogger().Error($"Get recognized phrase from file: {notebookId}-{pageId}:{e}:{e.Message}");
+                return null;
+            }
+
+        }
+
 
         /// <summary>
         /// Returns all saved phenotypes object from XML meta file by Notebook ID. Returns null if failed.
@@ -303,16 +323,16 @@ namespace PhenoPad.FileService
         {
             try
             {
-                StorageFile notefile = null;
                 string filepath = GetNoteFilePath(notebookId, notePageId, fileType, name);
                 var item = await ROOT_FOLDER.TryGetItemAsync(filepath);
-                if (item != null)
-                    notefile = await ROOT_FOLDER.GetFileAsync(filepath);
-                return notefile;
+                if (item == null)
+                    return null;
+                //notefile = await ROOT_FOLDER.GetFileAsync(filepath);
+                return (StorageFile)item;
             }
             catch (Exception e)
             {
-                LogService.MetroLogger.getSharedLogger().Error($"Failed to get file:{e}+{e.Message}");
+                MetroLogger.getSharedLogger().Error($"Failed to get file:{e}+{e.Message}");
                 return null;
             }
         }
@@ -337,6 +357,9 @@ namespace PhenoPad.FileService
                 case NoteFileType.ImageAnnotationMeta:
                     foldername += @"ImagesWithAnnotations\";
                     break;
+                case NoteFileType.RecognizedPhraseMeta:
+                    foldername += @"RecognizedPhrases\";
+                    break;
                 case NoteFileType.Strokes:
                     foldername += @"Strokes\";
                     break;
@@ -348,6 +371,9 @@ namespace PhenoPad.FileService
                     break;
                 case NoteFileType.Transcriptions:
                     foldername += @"Transcripts\";
+                    break;
+                case NoteFileType.Video:
+                    foldername += @"Videos\";
                     break;
             }
 
@@ -364,6 +390,9 @@ namespace PhenoPad.FileService
                     filename = name + ".jpg";
                     break;
                 case NoteFileType.ImageAnnotationMeta:
+                    filename = NOTE_META_FILE;
+                    break;
+                case NoteFileType.RecognizedPhraseMeta:
                     filename = NOTE_META_FILE;
                     break;
                 case NoteFileType.Strokes:
@@ -389,6 +418,9 @@ namespace PhenoPad.FileService
                     break;
                 case NoteFileType.NoteText:
                     filename = NOTE_TEXT_FILE;
+                    break;
+                case NoteFileType.Video:
+                    filename = name + ".mp4";
                     break;
             }
 
@@ -566,7 +598,7 @@ namespace PhenoPad.FileService
                 await pageFolder.CreateFolderAsync("Strokes", CreationCollisionOption.OpenIfExists);
                 await pageFolder.CreateFolderAsync("ImagesWithAnnotations", CreationCollisionOption.OpenIfExists);
                 await pageFolder.CreateFolderAsync("Phenotypes", CreationCollisionOption.OpenIfExists);
-                await pageFolder.CreateFolderAsync("Video", CreationCollisionOption.OpenIfExists);
+                await pageFolder.CreateFolderAsync("Videos", CreationCollisionOption.OpenIfExists);
                 await pageFolder.CreateFolderAsync("Audio", CreationCollisionOption.OpenIfExists);
 
 
@@ -620,7 +652,7 @@ namespace PhenoPad.FileService
 
         public async Task<StorageFile> CreateVideoFileForPage(string notebookId, string pageId, string name) {
             //StorageFolder localFolder = ApplicationData.Current.LocalFolder;
-            string foldername = String.Format("{0}\\{1}\\ImagesWithAnnotations", notebookId, pageId);
+            string foldername = String.Format("{0}\\{1}\\Videos", notebookId, pageId);
             try
             {
                 var imageFolder = await ROOT_FOLDER.GetFolderAsync(foldername);
@@ -632,7 +664,7 @@ namespace PhenoPad.FileService
             }
             catch (Exception ex)
             {
-                LogService.MetroLogger.getSharedLogger().Error($"Failed to create image file, notebook:{notebookId}, " +
+                LogService.MetroLogger.getSharedLogger().Error($"Failed to create video file, notebook:{notebookId}, " +
                     $"page: {pageId}, name: {name}, details: {ex.Message} ");
             }
             return null;

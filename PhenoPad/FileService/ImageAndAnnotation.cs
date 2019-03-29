@@ -33,6 +33,7 @@ namespace PhenoPad.FileService
         public double slideY { get; set; }
         public int commentID { get; set; }
         public AnnotationType anno_type { get; set; }
+        public AddinType addinType { get; set; }
         public string commentText;
         public double inkRatio { get; set; }
 
@@ -47,7 +48,7 @@ namespace PhenoPad.FileService
         /// <summary>
         /// Creates and initializes a new Image and Annotation instance with given parameters.
         /// </summary>
-        public ImageAndAnnotation(string name, string notebookId, string pageId,
+        public ImageAndAnnotation(  AddinType addinType, string name, string notebookId, string pageId,
                                     double canvasLeft, double canvasTop,
                                     double transX, double transY, ScaleTransform zoomFactor,
                                     double widthOrigin, double heightOrigin,
@@ -73,6 +74,7 @@ namespace PhenoPad.FileService
             this.slideY = slideY;
             this.inkRatio = inkRatio;
             this.anno_type = type;
+            this.addinType = addinType;
             this.commentText = commentText;
             date = DateTime.Now.ToString("MM/dd/yyyy HH:mm:ss");
         }

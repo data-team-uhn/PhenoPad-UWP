@@ -57,87 +57,76 @@ namespace PhenoPad.CustomControl
 
     public sealed partial class NotePageControl : UserControl
     {
-        DispatcherTimer RawStrokeTimer;
-        List<InkStroke> RawStrokes;
-        InkAnalyzer strokeAnalyzer;
-        List<NotePhraseControl> NotePhrases;
-        Dictionary<int, List<InkStroke>> strokeRecords;
-        int currentIndex;
-        int lastWordCount;
-        bool mergedWord = false;
-        Point lastStrokePoint;
-        Rect lastStrokeBound;
-        bool recognizing;
 
-        private async void RawStrokeTimer_Tick(object sender = null, object e = null) {
+        //private async void RawStrokeTimer_Tick(object sender = null, object e = null) {
 
-            RawStrokeTimer.Stop();
+        //    RawStrokeTimer.Stop();
 
-            var result = await strokeAnalyzer.AnalyzeAsync();
-            if (result.Status == InkAnalysisStatus.Updated)
-            {
-                var wordNodes = strokeAnalyzer.AnalysisRoot.FindNodes(InkAnalysisNodeKind.InkWord);
-                Debug.WriteLine(wordNodes.Count + "***");
-                foreach (var node in wordNodes)
-                {
-                    var ids = node.GetStrokeIds();
-                    int lineNum = (int)Math.Floor(node.BoundingRect.Y / LINE_HEIGHT);
-                    UpdateRecognizedWordStyle(lineNum, ids.ToList());
-                    lastStrokeBound = node.BoundingRect;
-                    strokeAnalyzer.ClearDataForAllStrokes();
-                }
-                    //    //List<WordBlockControl> words = new List<WordBlockControl>();
-                    //    //InkCanvas temp = new InkCanvas();
-                    //    //inkCan.InkPresenter.StrokeContainer.CopySelectedToClipboard();
-                    //    //temp.InkPresenter.StrokeContainer.PasteFromClipboard(new Point(0, 0));
+        //    var result = await strokeAnalyzer.AnalyzeAsync();
+        //    if (result.Status == InkAnalysisStatus.Updated)
+        //    {
+        //        var wordNodes = strokeAnalyzer.AnalysisRoot.FindNodes(InkAnalysisNodeKind.InkWord);
+        //        Debug.WriteLine(wordNodes.Count + "***");
+        //        foreach (var node in wordNodes)
+        //        {
+        //            var ids = node.GetStrokeIds();
+        //            int lineNum = (int)Math.Floor(node.BoundingRect.Y / LINE_HEIGHT);
+        //            UpdateRecognizedWordStyle(lineNum, ids.ToList());
+        //            lastStrokeBound = node.BoundingRect;
+        //            strokeAnalyzer.ClearDataForAllStrokes();
+        //        }
+        //            //    //List<WordBlockControl> words = new List<WordBlockControl>();
+        //            //    //InkCanvas temp = new InkCanvas();
+        //            //    //inkCan.InkPresenter.StrokeContainer.CopySelectedToClipboard();
+        //            //    //temp.InkPresenter.StrokeContainer.PasteFromClipboard(new Point(0, 0));
 
-                    //    //List<HWRRecognizedText> recognitionResults = await HWRManager.getSharedHWRManager().OnRecognizeAsync(inkCan.InkPresenter.StrokeContainer, InkRecognitionTarget.Selected, server: false);
+        //            //    //List<HWRRecognizedText> recognitionResults = await HWRManager.getSharedHWRManager().OnRecognizeAsync(inkCan.InkPresenter.StrokeContainer, InkRecognitionTarget.Selected, server: false);
 
-                    //    //if (recognitionResults == null)
-                    //    //    return;
+        //            //    //if (recognitionResults == null)
+        //            //    //    return;
 
-                    //    //foreach (HWRRecognizedText recog in recognitionResults)
-                    //    //{
-                    //    //    curLineWordsStackPanel.Children.Clear();
-                    //    //    WordBlockControl wb = new WordBlockControl(recog.selectedCandidate, recog.candidateList, currentIndex);
-                    //    //    words.Add(wb);
-                    //    //    foreach (Button alternative in wb.GetCurWordCandidates())
-                    //    //        curLineWordsStackPanel.Children.Add(alternative);
-                    //    //    ShowAlternativeCanvas(new Point(lastStrokeBound.X, lastStrokeBound.Y));
-                    //    //    currentIndex++;
-                    //    //}
-                    //    //int lineNum = (int)Math.Floor(lastStrokeBound.Y / LINE_HEIGHT);
+        //            //    //foreach (HWRRecognizedText recog in recognitionResults)
+        //            //    //{
+        //            //    //    curLineWordsStackPanel.Children.Clear();
+        //            //    //    WordBlockControl wb = new WordBlockControl(recog.selectedCandidate, recog.candidateList, currentIndex);
+        //            //    //    words.Add(wb);
+        //            //    //    foreach (Button alternative in wb.GetCurWordCandidates())
+        //            //    //        curLineWordsStackPanel.Children.Add(alternative);
+        //            //    //    ShowAlternativeCanvas(new Point(lastStrokeBound.X, lastStrokeBound.Y));
+        //            //    //    currentIndex++;
+        //            //    //}
+        //            //    //int lineNum = (int)Math.Floor(lastStrokeBound.Y / LINE_HEIGHT);
 
-                    //    //NotePhraseControl np = NotePhrases.Where(x => x.lineIndex == lineNum).FirstOrDefault();
-                    //    //Debug.WriteLine($"line does not match = {np == null}");
+        //            //    //NotePhraseControl np = NotePhrases.Where(x => x.lineIndex == lineNum).FirstOrDefault();
+        //            //    //Debug.WriteLine($"line does not match = {np == null}");
 
-                    //    //if (np == null)
-                    //    //{
-                    //    //    np = new NotePhraseControl();
-                    //    //    np.InitializePhrase(words, temp.InkPresenter.StrokeContainer.GetStrokes().ToList(), lineNum, lastStrokeBound.Width);
-                    //    //    double left = lastStrokeBound.X;
-                    //    //    np.ShowPhraseAt(left, (lineNum) * LINE_HEIGHT);
-                    //    //    PhraseControlCanvas.Children.Add(np);
-                    //    //    NotePhrases.Add(np);
+        //            //    //if (np == null)
+        //            //    //{
+        //            //    //    np = new NotePhraseControl();
+        //            //    //    np.InitializePhrase(words, temp.InkPresenter.StrokeContainer.GetStrokes().ToList(), lineNum, lastStrokeBound.Width);
+        //            //    //    double left = lastStrokeBound.X;
+        //            //    //    np.ShowPhraseAt(left, (lineNum) * LINE_HEIGHT);
+        //            //    //    PhraseControlCanvas.Children.Add(np);
+        //            //    //    NotePhrases.Add(np);
 
-                    //    //    Debug.WriteLine("added new phrase control");
-                    //    //}
-                    //    //else
-                    //    //{
-                    //    //    np = NotePhrases.Where(x => Math.Abs((lastStrokeBound.X) - (x.canvasLeft + x.width)) <= 300).FirstOrDefault();
-                    //    //    Debug.WriteLine($"X axis exceeding = {np == null}");
-                    //    //    if (np == null)
-                    //    //        return;
-                    //    //    np.AddWords(words);
-                    //    //    np.AddStrokes(temp.InkPresenter.StrokeContainer.GetStrokes().ToList(), lastStrokeBound.Width);
-                    //    //    Debug.WriteLine("extended to new phrase");
-                    //    //}
-                    //    //np.UpdateLayout();
-                    //    //lastStrokeBound = new Rect(0, 0, 5, 5);
-                    //}
-                    strokeAnalyzer.ClearDataForAllStrokes();
-            }
-        }
+        //            //    //    Debug.WriteLine("added new phrase control");
+        //            //    //}
+        //            //    //else
+        //            //    //{
+        //            //    //    np = NotePhrases.Where(x => Math.Abs((lastStrokeBound.X) - (x.canvasLeft + x.width)) <= 300).FirstOrDefault();
+        //            //    //    Debug.WriteLine($"X axis exceeding = {np == null}");
+        //            //    //    if (np == null)
+        //            //    //        return;
+        //            //    //    np.AddWords(words);
+        //            //    //    np.AddStrokes(temp.InkPresenter.StrokeContainer.GetStrokes().ToList(), lastStrokeBound.Width);
+        //            //    //    Debug.WriteLine("extended to new phrase");
+        //            //    //}
+        //            //    //np.UpdateLayout();
+        //            //    //lastStrokeBound = new Rect(0, 0, 5, 5);
+        //            //}
+        //            strokeAnalyzer.ClearDataForAllStrokes();
+        //    }
+        //}
 
         private void UpdateRecognizedWordStyle(int lineNum, List<uint> strokeIds)
         {//updates the color of recognized word on inkcanvas and removed data from inkanalyzer

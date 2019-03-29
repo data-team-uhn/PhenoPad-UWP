@@ -371,7 +371,7 @@ namespace PhenoPad.PhotoVideoService
             try
             {
                 // Create storage file for the capture
-                var videoFile = await FileService.FileManager.getSharedFileManager().CreateImageFileForPage(notebookId, pageId, name);
+                var videoFile = await FileService.FileManager.getSharedFileManager().CreateVideoFileForPage(notebookId, pageId, name);
 
                 var encodingProfile = MediaEncodingProfile.CreateMp4(VideoEncodingQuality.Auto);
 

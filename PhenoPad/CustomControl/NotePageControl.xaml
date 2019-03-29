@@ -245,17 +245,13 @@
                     <!-- Note taking ink canvas -->
                     <InkCanvas  x:Name="inkCanvas" />
 
-                    <Grid x:Name="textEditGrid" Visibility="Visible">
+                    <Grid x:Name="textEditGrid" Visibility="Collapsed">
                         <Grid.RowDefinitions>
                             <RowDefinition Height="*"/>
                         </Grid.RowDefinitions>
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*"/>
                         </Grid.ColumnDefinitions>
-
-                        <StackPanel x:Name="RecognizedNoteStackPanel" Orientation="Horizontal" Spacing="10" Margin="0 10 0 0" Canvas.ZIndex="999">
-                            <TextBlock x:Name="RecognizedText"/>
-                        </StackPanel>
 
                         <RichEditBox Style="{StaticResource MyRichEditBoxStyle}" Background="Transparent" 
                                      x:Name="textNoteEditBox" TextChanged="TextNoteEdit_TextChanged" 
@@ -264,8 +260,9 @@
                         </RichEditBox>
                     </Grid>
 
-                    <Canvas x:Name ="PhraseControlCanvas"/>
 
+
+                    <Canvas x:Name="recognizedCanvas" Visibility="Collapsed"/>
 
                     <!-- pop up after selection-->
                     <Canvas x:Name="selectionCanvas">
@@ -279,6 +276,7 @@
                             </Button>
                             -->
                         </RelativePanel>
+                        
                         <RelativePanel x:Name="recognizedPhenoBriefPanel" Height="200" Visibility="Collapsed"  Background="WhiteSmoke" BorderThickness="1" BorderBrush="Gray">
                             <ListView x:Name="recognizedPhenoBriefListView" Height="200" HorizontalAlignment="Stretch" Visibility="Collapsed">
                                 <ListView.ItemTemplate>
@@ -305,16 +303,11 @@
                     <!-- Add in control panel -->
                     <Canvas x:Name="userControlCanvas"/>
 
-
-                    <Canvas x:Name="recognizedTextCanvas"/>
-
                     <!-- Current line result -->
                     <Canvas >
-                        <Grid Name="curLineResultPanel" Visibility="Collapsed" Background="White" 
+                        <Grid Name="curLineResultPanel" Visibility="Collapsed" Background="White" HorizontalAlignment="Right"
                               BorderBrush="DarkGray" >
-                            <Grid.Resources>
 
-                            </Grid.Resources>
 
                             <Grid x:Name="curWordPhenoControlGrid" Height="40" HorizontalAlignment="Right" 
                                   Background="WhiteSmoke"  Padding="5" BorderBrush="LightGray" BorderThickness="0" 
@@ -391,11 +384,11 @@
                             </Grid>
 
                             <StackPanel Orientation="Horizontal" Background="WhiteSmoke" CornerRadius="10" 
-                                        BorderThickness="1" BorderBrush="DarkGray">
+                                        BorderThickness="1" BorderBrush="DarkGray" HorizontalAlignment="Stretch">
                                 <!-- recongtion result of current line -->
                                 <ProgressRing x:Name="loading" IsActive="True" Margin="10 0 10 0" Visibility="Collapsed"/>
-                                <StackPanel Name="curLineWordsStackPanel" Orientation="Horizontal" Spacing="5" HorizontalAlignment="Left"
-                                            Height="45" Padding="5 0 5 0" />
+                                <StackPanel Name="curLineWordsStackPanel" Orientation="Horizontal" Spacing="5" HorizontalAlignment="Right"
+                                            Height="45" Padding="10 0 10 0" />
 
                                 <ListView Visibility="Collapsed" Padding="5 0 0 0" Height="40"
                                   ScrollViewer.HorizontalScrollMode="Enabled"
@@ -426,14 +419,16 @@
                                         </Style>
                                     </ListView.ItemContainerStyle>
                                 </ListView>
-                                <Button Background="WhiteSmoke" Foreground="PaleVioletRed" Width="{x:Bind LINE_HEIGHT}" 
+                                <!--<Button Background="WhiteSmoke" Foreground="PaleVioletRed" Width="{x:Bind LINE_HEIGHT}" 
                                         Height="45" Click="curLineResultButtonClick" Style="{StaticResource ButtonStyle1}"
                                         RelativePanel.AlignRightWithPanel="True">
                                     <SymbolIcon Symbol="Clear"/>
-                                </Button>
+                                </Button>-->
                             </StackPanel>
                         </Grid>
                     </Canvas>
+                    <Canvas x:Name="recognizedTextCanvas"/>
+
                 </Grid>
             </ScrollViewer>
 
@@ -485,7 +480,7 @@
                                 <Viewbox Name="AddInIcon" Stretch="Uniform" CanDrag="False">
                                     <customcontrol:AddInControl name="{x:Bind name}" notebookId="{x:Bind notebookId}" 
                                                         viewOnly="True" CommentID="{x:Bind commentID}"
-                                                        pageId="{x:Bind pageId}" />
+                                                        pageId="{x:Bind pageId}"  />
                                 </Viewbox>
                             </Button>
                         </DataTemplate>

@@ -155,6 +155,7 @@
     <Compile Include="FileService\Notebook.cs" />
     <Compile Include="FileService\ImageAndAnnotation.cs" />
     <Compile Include="FileService\NotePage.cs" />
+    <Compile Include="FileService\RecognizedPhrases.cs" />
     <Compile Include="Gestures\Category.cs" />
     <Compile Include="Gestures\GestureManager.cs" />
     <Compile Include="Gestures\NBestList.cs" />

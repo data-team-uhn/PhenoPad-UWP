@@ -114,7 +114,7 @@
                                  Visibility="Collapsed" 
                                  Width="{x:Bind COMMENT_WIDTH}"
                                  IsEnabled="False"/>
-                        <MediaPlayerElement x:Name="mediaPlayerElement" Visibility="Collapsed" AreTransportControlsEnabled="True"/>
+                        <MediaPlayerElement x:Name="mediaPlayerElement" Visibility="Visible" AreTransportControlsEnabled="True"/>
                 </Grid>
                 </ScrollViewer>
             </Grid>

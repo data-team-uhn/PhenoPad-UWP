@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices.WindowsRuntime;
+using System.Xml.Serialization;
 using Windows.Foundation;
 using Windows.Foundation.Collections;
 using Windows.UI.Xaml;
@@ -19,25 +20,30 @@ using Windows.UI.Xaml.Navigation;
 
 namespace PhenoPad.CustomControl
 {
+    [Serializable]
     public sealed partial class WordBlockControl : UserControl
     {
         public string current;
         public List<string> candidates;
         public int word_index;
+        public int phrase_index;
+        public int line_index;
         public int selected_index;
 
         public WordBlockControl()
         {
-            this.InitializeComponent();
         }
 
-        public WordBlockControl(string current, List<string>candidates, int index) {
+        public WordBlockControl(int line_index, int phrase_index, int word_index, string current, List<string>candidates) {
             this.InitializeComponent();
+            this.line_index = line_index;
+            this.phrase_index = phrase_index;
+            this.word_index = word_index;
             this.current = current;
             this.candidates = candidates;
             selected_index = 0;
-            word_index = index;
             WordBlock.Text = current;
+            AlternativeList.ItemsSource = candidates;
         }
 
         private void ShowWordCandidate(object sender, RoutedEventArgs args) {

@@ -68,21 +68,22 @@ namespace PhenoPad.CustomControl
 
             //setting pre-saved configurations of the control
             {
-                this.anno_type = type;
-                this.widthOrigin = DEFAULT_COMMENT_WIDTH;
-                this.heightOrigin = DEFAULT_COMMENT_HEIGHT;
-                this.Width = this.widthOrigin;
-                this.Height = this.heightOrigin;
+                anno_type = type;
+                addinType = AddinType.EHR;
+                widthOrigin = DEFAULT_COMMENT_WIDTH;
+                heightOrigin = DEFAULT_COMMENT_HEIGHT;
+                Width = widthOrigin;
+                Height = heightOrigin;
 
-                inkCan.Width = this.Width;
-                inkCan.Height = this.Height;
+                inkCan.Width = Width;
+                inkCan.Height = Height;
 
-                this.inDock = false;
+                inDock = false;
                 this.name = name;
-                this.notebookId = ehr.notebookid;
-                this.pageId = ehr.pageid;
-                this._isResizing = false;
-                this.hasImage = false;
+                notebookId = ehr.notebookid;
+                pageId = ehr.pageid;
+                _isResizing = false;
+                hasImage = false;
                 this.ehr = ehr;
                 this.commentID = commentID;
                 commentslideX = 0;

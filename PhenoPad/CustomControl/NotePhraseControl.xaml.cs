@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices.WindowsRuntime;
+using System.Xml.Serialization;
+using PhenoPad.HWRService;
 using Windows.Foundation;
 using Windows.Foundation.Collections;
 using Windows.UI.Input.Inking;
@@ -25,26 +27,20 @@ namespace PhenoPad.CustomControl
         public double width;
         public int lineIndex;
         public float LINE_HEIGHT = 50;
-
-
         public List<WordBlockControl> words;
 
-        public NotePhraseControl()
+        public NotePhraseControl(int lineNum, List<WordBlockControl> words = null, double left = 0,double width = 0)
         {
-            this.InitializeComponent();
-            words = new List<WordBlockControl>();           
-        }
-
-        public void InitializePhrase(List<WordBlockControl> words,List<InkStroke> strokes,int lineNum, double width) {
-            this.words = words;
+            InitializeComponent();
             lineIndex = lineNum;
-            foreach(var word in words)
-                RecognizedPhrase.Children.Add(word);
             this.width = width;
-            foreach (var s in strokes) {
-                RawStrokes.InkPresenter.StrokeContainer.AddStroke(s.Clone());
+            this.words = new List<WordBlockControl>();
+            canvasLeft = left;
+            if (words != null)
+            {
+                foreach (WordBlockControl wb in words)
+                    AddWord(wb);
             }
-            
         }
 
         public string GetString() {
@@ -55,8 +51,6 @@ namespace PhenoPad.CustomControl
         }
 
         public void ShowPhraseAt(double left, double top) {
-            Canvas.SetLeft(this, left);
-            Canvas.SetTop(this, top);
             canvasLeft = left;
             canvasTop = top;
         }
@@ -69,10 +63,9 @@ namespace PhenoPad.CustomControl
             width += boundWidth;
         }
 
-        public void AddWords(List<WordBlockControl> words) {
-            this.words.AddRange(words);
-            foreach(var word in words)
-                RecognizedPhrase.Children.Add(word);
+        public void AddWord(WordBlockControl word) {
+            words.Add(word);
+            RecognizedPhrase.Children.Add(word);
         }
 
         public void ToggleTextView(object sender, DoubleTappedRoutedEventArgs args)
@@ -80,6 +73,18 @@ namespace PhenoPad.CustomControl
             RawStrokes.Visibility = Visibility.Collapsed;
             RecognizedPhrase.Visibility = Visibility.Visible;
 
+        }
+
+        internal void UpdateRecognition(List<HWRRecognizedText> updated)
+        {
+            RecognizedPhrase.Children.Clear();
+            words.Clear();
+            for (int i = 0; i < updated.Count; i++) {
+                HWRRecognizedText recognized = updated[i];
+                WordBlockControl wb = new WordBlockControl(lineIndex, 0, i, recognized.selectedCandidate, recognized.candidateList);
+                AddWord(wb);
+            }
+            UpdateLayout();
         }
 
         public void ToggleRawView(object sender, DoubleTappedRoutedEventArgs args)
