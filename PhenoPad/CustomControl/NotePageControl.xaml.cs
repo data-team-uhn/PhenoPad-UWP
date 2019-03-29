@@ -199,7 +199,7 @@ namespace PhenoPad.CustomControl
             UNPROCESSED_COLOR.Opacity = UNPROCESSED_OPACITY;
 
             // Initialize the InkCanvas
-            inkCanvas.InkPresenter.InputDeviceTypes = CoreInputDeviceTypes.Mouse | CoreInputDeviceTypes.Pen;
+            inkCanvas.InkPresenter.InputDeviceTypes = CoreInputDeviceTypes.Pen;
 
             // Handlers to clear the selection when inking or erasing is detected
             inkCanvas.InkPresenter.StrokeInput.StrokeStarted += StrokeInput_StrokeStarted;
@@ -251,7 +251,7 @@ namespace PhenoPad.CustomControl
             unprocessedDispatcherTimer.Interval = TimeSpan.FromMilliseconds(100);
             recognizeTimer.Interval = TimeSpan.FromSeconds(0.25);// recognize through server side every 3 seconds
             autosaveDispatcherTimer.Interval = TimeSpan.FromSeconds(1); //setting stroke auto save interval to be 1 sec
-            RawStrokeTimer.Interval = TimeSpan.FromSeconds(1);
+            RawStrokeTimer.Interval = TimeSpan.FromSeconds(3);
             EraseTimer.Interval = TimeSpan.FromSeconds(1);
 
             linesToUpdate = new Queue<int>();
@@ -496,6 +496,7 @@ namespace PhenoPad.CustomControl
                 //textNoteEditBox.Visibility = Visibility.Visible;
                 inkCanvas.Visibility = Visibility.Collapsed;
                 backgroundCanvas.Background = new SolidColorBrush(Colors.WhiteSmoke);
+                curLineResultPanel.Visibility = Visibility.Collapsed;
             }
             else 
                 ehrPage.PreviewEHR();

@@ -37,7 +37,8 @@ namespace PhenoPad.FileService
             phrase_index = phrase;
             word_index = index;
             current = selected;
-            candidates.Remove(selected);
+            if (candidates.Contains(selected))
+                candidates.Remove(selected);
             candidate2 = candidates[0];
             candidate3 = candidates[1];
             candidate4 = candidates[2];
