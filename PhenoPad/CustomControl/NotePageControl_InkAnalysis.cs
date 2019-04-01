@@ -62,7 +62,6 @@ namespace PhenoPad.CustomControl
         bool mergedWord = false;
         Point lastStrokePoint;
         Rect lastStrokeBound;
-        Point lastWordPoint;
         bool recognizing;
         List<int> linesErased = new List<int>();
 
@@ -583,7 +582,6 @@ namespace PhenoPad.CustomControl
                 int lineNum = getLineNumByRect(curStroke.BoundingRect);
                 Debug.WriteLine($"linenume = {lineNum}, before recognize, number of words = {lastWordCount}");
                 nl.HwrResult = await RecognizeLine(line.Id, serverRecog);
-                
                 if (nl.HwrResult.Count > lastWordCount)
                 {
                     Debug.WriteLine("a new word is added");
@@ -673,33 +671,17 @@ namespace PhenoPad.CustomControl
 
                 // select storkes of this line
                 var lines = inkAnalyzer.AnalysisRoot.FindNodes(InkAnalysisNodeKind.Line);
-                var words = inkAnalyzer.AnalysisRoot.FindNodes(InkAnalysisNodeKind.InkWord);
                 double lowerbound = lineid * LINE_HEIGHT;
                 double upperbound = (lineid + 1) * LINE_HEIGHT;
-
                 var thisline = lines.Where(x => x.Id == lineid || x.BoundingRect.Y+(x.BoundingRect.Height/2)>= lowerbound && x.BoundingRect.Y + (x.BoundingRect.Height / 2)<= upperbound).FirstOrDefault();
-                var wordsinline = words.Where(word => word.BoundingRect.Y + (word.BoundingRect.Height / 2) >= lowerbound && word.BoundingRect.Y + (word.BoundingRect.Height / 2) <= upperbound).ToList();
-
                 int selected_count = 0;
                 if (thisline != null)
                 {
-
                     foreach (var sid in thisline.GetStrokeIds())
                     {
                         inkCanvas.InkPresenter.StrokeContainer.GetStrokeById(sid).Selected = true;
                         selected_count++;
                     }
-                    //setting current line's last word x point for result display
-                    if (wordsinline != null) {
-                        var lastword = wordsinline.OrderByDescending(x => x.BoundingRect.X).FirstOrDefault();
-                        lastWordPoint = new Point(lastword.BoundingRect.X ,lineid * LINE_HEIGHT);
-                    }
-                    else
-                    {
-                        lastWordPoint = new Point(thisline.BoundingRect.X, lineid * LINE_HEIGHT);
-                    }
-
-
                 }
                 //return empty recognized result if there's no selected strokes
                 if (selected_count == 0)
@@ -1221,12 +1203,9 @@ namespace PhenoPad.CustomControl
             curLineResultPanel.Visibility = Visibility.Visible;
             double left = curStroke.BoundingRect.X + curStroke.BoundingRect.Width - curLineResultPanel.ActualWidth;
             left = left <= 0 ? lastStrokePoint.X : left;
-
             Canvas.SetLeft(curLineResultPanel, left);
-
             int lineNum = getLineNumByRect(line.BoundingRect);
             Canvas.SetTop(curLineResultPanel, (lineNum - 1) * LINE_HEIGHT);
-
             lastStrokePoint = new Point(left, (lineNum - 1) * LINE_HEIGHT);
 
         }
