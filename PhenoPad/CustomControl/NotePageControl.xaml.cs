@@ -251,7 +251,7 @@ namespace PhenoPad.CustomControl
             unprocessedDispatcherTimer.Interval = TimeSpan.FromMilliseconds(100);
             recognizeTimer.Interval = TimeSpan.FromSeconds(0.25);// recognize through server side every 3 seconds
             autosaveDispatcherTimer.Interval = TimeSpan.FromSeconds(1); //setting stroke auto save interval to be 1 sec
-            RawStrokeTimer.Interval = TimeSpan.FromSeconds(3);
+            RawStrokeTimer.Interval = TimeSpan.FromSeconds(1);
             EraseTimer.Interval = TimeSpan.FromSeconds(1);
 
             linesToUpdate = new Queue<int>();
@@ -293,7 +293,8 @@ namespace PhenoPad.CustomControl
             //selectionRectangle.ManipulationDelta += SelectionRectangle_ManipulationDelta;
             //selectionRectangle.ManipulationCompleted += SelectionRectangle_ManipulationCompleted;   
 
-            lastStrokePoint = new Point(0,0);
+            //lastStrokePoint = new Point(0,0);
+            lastWordPoint = new Point(0, 0);
 
             strokeRecords = new Dictionary<int, List<InkStroke>>();
             lastWordCount = 0;

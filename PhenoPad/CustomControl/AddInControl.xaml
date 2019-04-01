@@ -145,13 +145,13 @@
 
                 <StackPanel Name="SelectionStackPanel"  Width="200"  HorizontalAlignment="Center" VerticalAlignment="Center">
                     <Button Background="Transparent" Style="{StaticResource MyButtonStyle}" HorizontalAlignment="Stretch" Click="DrawingButton_Click"  Name="DrawingButton" Height="{StaticResource categoryButtonHeight}">
-                        <TextBlock FontSize="{StaticResource categoryButtonFontSize}" >Drawing</TextBlock>
+                        <TextBlock FontSize="{StaticResource categoryButtonFontSize}" >Create drawing</TextBlock>
                     </Button>
                     <Button Background="Transparent" Style="{StaticResource MyButtonStyle}" HorizontalAlignment="Stretch" Name="InsertPhotoButton" Click="InsertPhotoButton_Click" Height="{StaticResource categoryButtonHeight}">
-                        <TextBlock FontSize="{StaticResource categoryButtonFontSize}" >Insert a image</TextBlock>
+                        <TextBlock FontSize="{StaticResource categoryButtonFontSize}" >Insert image</TextBlock>
                     </Button>
                     <Button Background="Transparent" Style="{StaticResource MyButtonStyle}" HorizontalAlignment="Stretch" Name="TakePhotoButton" Click="TakePhotoButton_Click" Height="{StaticResource categoryButtonHeight}">
-                        <TextBlock FontSize="{StaticResource categoryButtonFontSize}" >Take a photo</TextBlock>
+                        <TextBlock FontSize="{StaticResource categoryButtonFontSize}" >Take photo/video</TextBlock>
                     </Button>
                 </StackPanel>
             </Grid>

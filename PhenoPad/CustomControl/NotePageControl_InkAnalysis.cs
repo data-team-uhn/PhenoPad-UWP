@@ -60,7 +60,8 @@ namespace PhenoPad.CustomControl
         int currentIndex;
         int lastWordCount;
         bool mergedWord = false;
-        Point lastStrokePoint;
+        //Point lastStrokePoint;
+        Point lastWordPoint;
         Rect lastStrokeBound;
         bool recognizing;
         List<int> linesErased = new List<int>();
@@ -119,8 +120,8 @@ namespace PhenoPad.CustomControl
                 // dispatcherTimer.Stop();
                 //operationDispathcerTimer.Stop();
                 inkOperationAnalyzer.ClearDataForAllStrokes();
-                if (lastStrokePoint.Equals(new Point(0, 0)))
-                    lastStrokePoint = args.CurrentPoint.Position;
+                //if (lastStrokePoint.Equals(new Point(0, 0)))
+                //    lastStrokePoint = args.CurrentPoint.Position;
 
             }
             RawStrokeTimer.Stop();
@@ -132,8 +133,7 @@ namespace PhenoPad.CustomControl
         {
             autosaveDispatcherTimer.Start();
             recognizeTimer.Start();
-            lastStrokePoint = new Point(args.CurrentPoint.Position.X, args.CurrentPoint.Position.Y);
-
+            //lastStrokePoint = new Point(args.CurrentPoint.Position.X, args.CurrentPoint.Position.Y);
         }
 
         private async void InkPresenter_StrokesCollectedAsync(InkPresenter sender, InkStrokesCollectedEventArgs args)
@@ -182,24 +182,27 @@ namespace PhenoPad.CustomControl
                 }
             }
         }
-        private void RawStrokeTimer_Tick(object sender = null, object e = null)
+
+        private async void RawStrokeTimer_Tick(object sender = null, object e = null)
         {
-            RawStrokeTimer.Stop();
-            //int line = linesToAnnotate.Dequeue();
-            IReadOnlyList<IInkAnalysisNode> lineNodes = inkAnalyzer.AnalysisRoot.FindNodes(InkAnalysisNodeKind.Line);
-            var lineWords = inkAnalyzer.AnalysisRoot.FindNodes(InkAnalysisNodeKind.InkWord);
-            Debug.WriteLine($"number of lineNode = {lineNodes.Count}\nnumber of lineWords={lineWords.Count}");
-            foreach (InkAnalysisLine line in lineNodes)
-            {
-                // current line
-                if (line.GetStrokeIds().Contains(curStroke.Id))
+            await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () => {
+                RawStrokeTimer.Stop();
+                //int line = linesToAnnotate.Dequeue();
+                IReadOnlyList<IInkAnalysisNode> lineNodes = inkAnalyzer.AnalysisRoot.FindNodes(InkAnalysisNodeKind.Line);
+                var lineWords = inkAnalyzer.AnalysisRoot.FindNodes(InkAnalysisNodeKind.InkWord);
+                Debug.WriteLine($"number of lineNode = {lineNodes.Count}\nnumber of lineWords={lineWords.Count}");
+                foreach (InkAnalysisLine line in lineNodes)
                 {
-                    // set up for current line
-                    recognizeAndSetUpUIForLine(line,timerFlag:true);
+                    // current line
+                    if (line.GetStrokeIds().Contains(curStroke.Id))
+                    {
+                        // set up for current line
+                        recognizeAndSetUpUIForLine(line, timerFlag: true);
+                    }
                 }
-            }
-            //inkAnalyzer.ClearDataForAllStrokes();
-            HideCurLineStackPanel();
+            });
+            
+            
         }
         // ================================= INK RECOGNITION ==============================================                      
         /// <summary>
@@ -602,15 +605,15 @@ namespace PhenoPad.CustomControl
             else
             {
                 Debug.WriteLine("Creating a new line");
+                lastWordCount = 0;
                 //new line
                 NoteLine nl = new NoteLine(line);
                 phenoCtrlSlide.Y = 0;
                 curLineWordsStackPanel.Children.Clear();
                 HWRManager.getSharedHWRManager().clearCache();
                 curLineCandidatePheno.Clear();
-                // hwr
                 nl.HwrResult = await RecognizeLine(line.Id, serverRecog);
-                Debug.WriteLine(nl.HwrResult.Count);
+                Debug.WriteLine("--------------------------------------"+nl.HwrResult[0].selectedCandidate);
                 idToNoteLine[line.Id] = nl;
             }
             //OperationLogger.getOpLogger().Log(OperationType.StrokeRecognition, line.RecognizedText);
@@ -621,7 +624,10 @@ namespace PhenoPad.CustomControl
             annotateCurrentLineAndUpdateUI(line);
             //logging recognized text to logger
             if (timerFlag)
+            {
                 curLineWordsStackPanel.Children.Clear();
+                curLineParentStack.Visibility = Visibility.Collapsed;
+            }
             if (indetails)
             {
                 string str = idToNoteLine[line.Id].Text;
@@ -668,15 +674,32 @@ namespace PhenoPad.CustomControl
                 {
                     stroke.Selected = false;
                 }
-
-                // select storkes of this line
-                var lines = inkAnalyzer.AnalysisRoot.FindNodes(InkAnalysisNodeKind.Line);
+                //first setting lower/uppbound in case argument lineid refers to UI line (called from erase.tick)
                 double lowerbound = lineid * LINE_HEIGHT;
                 double upperbound = (lineid + 1) * LINE_HEIGHT;
-                var thisline = lines.Where(x => x.Id == lineid || x.BoundingRect.Y+(x.BoundingRect.Height/2)>= lowerbound && x.BoundingRect.Y + (x.BoundingRect.Height / 2)<= upperbound).FirstOrDefault();
+                // select storkes of this line
+                var lines = inkAnalyzer.AnalysisRoot.FindNodes(InkAnalysisNodeKind.Line);
+                var thisline = lines.Where(x => x.Id == lineid || x.BoundingRect.Y + (x.BoundingRect.Height / 2) >= lowerbound && x.BoundingRect.Y + (x.BoundingRect.Height / 2) <= upperbound).FirstOrDefault();
+                //note that lind_id is only indexed based on order, we need the true line id w.r.t the UI lines
+                int line_index = getLineNumByRect(thisline.BoundingRect);
+                lowerbound = line_index * LINE_HEIGHT;
+                upperbound = (line_index + 1) * LINE_HEIGHT;
+
+
                 int selected_count = 0;
                 if (thisline != null)
                 {
+                    var words = inkAnalyzer.AnalysisRoot.FindNodes(InkAnalysisNodeKind.InkWord);
+                    words = words.Where(x => x.BoundingRect.Y + (x.BoundingRect.Height / 2) >= lowerbound && x.BoundingRect.Y + (x.BoundingRect.Height / 2) <= upperbound).ToList();
+                    if (words.Count > 0)
+                    {
+                        var lastword = words.OrderByDescending(x => x.BoundingRect.X).First();
+                        lastWordPoint = new Point(lastword.BoundingRect.X, getLineNumByRect(lastword.BoundingRect) * LINE_HEIGHT);
+                    }
+                    //if no words are recognized, by default sets X-pos to starting of line
+                    else
+                        lastWordPoint = new Point(thisline.BoundingRect.X, getLineNumByRect(thisline.BoundingRect) * LINE_HEIGHT);
+
                     foreach (var sid in thisline.GetStrokeIds())
                     {
                         inkCanvas.InkPresenter.StrokeContainer.GetStrokeById(sid).Selected = true;
@@ -1200,13 +1223,10 @@ namespace PhenoPad.CustomControl
 
             loading.Visibility = Visibility.Collapsed;
             curLineWordsStackPanel.Visibility = Visibility.Visible;
+            curLineParentStack.Visibility = Visibility.Visible;
             curLineResultPanel.Visibility = Visibility.Visible;
-            double left = curStroke.BoundingRect.X + curStroke.BoundingRect.Width - curLineResultPanel.ActualWidth;
-            left = left <= 0 ? lastStrokePoint.X : left;
-            Canvas.SetLeft(curLineResultPanel, left);
-            int lineNum = getLineNumByRect(line.BoundingRect);
-            Canvas.SetTop(curLineResultPanel, (lineNum - 1) * LINE_HEIGHT);
-            lastStrokePoint = new Point(left, (lineNum - 1) * LINE_HEIGHT);
+            Canvas.SetLeft(curLineResultPanel, lastWordPoint.X);
+            Canvas.SetTop(curLineResultPanel, lastWordPoint.Y - LINE_HEIGHT);
 
         }
 
@@ -1264,6 +1284,8 @@ namespace PhenoPad.CustomControl
 
             if (annoResult != null && annoResult.Count != 0)
             {
+                curWordPhenoControlGrid.Visibility = Visibility.Visible;
+
                 // update global annotations
                 foreach (var anno in annoResult.ToList())
                 {
@@ -1296,6 +1318,7 @@ namespace PhenoPad.CustomControl
                 {
                     //Debug.WriteLine($"current Y offset is at {phenoCtrlSlide.Y}, visibility is {curWordPhenoControlGrid.Visibility}");
                     phenoCtrlSlide.Y = 0;
+
                     ((DoubleAnimation)curWordPhenoAnimation.Children[0]).By = - 45;
                     curWordPhenoAnimation.Begin();
                 }
@@ -1347,6 +1370,7 @@ namespace PhenoPad.CustomControl
             }
             else
             {
+                curWordPhenoControlGrid.Visibility = Visibility.Collapsed;
                 //curWordPhenoControlGrid.Margin = new Thickness(0, 0, 0, 0);
                 // phenoCtrlSlide.Y = 0;
                 int lineNum = getLineNumByRect(line.BoundingRect);

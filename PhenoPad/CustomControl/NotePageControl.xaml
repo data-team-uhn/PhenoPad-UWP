@@ -305,11 +305,10 @@
 
                     <!-- Current line result -->
                     <Canvas >
-                        <Grid Name="curLineResultPanel" Visibility="Collapsed" Background="White" HorizontalAlignment="Right"
-                              BorderBrush="DarkGray" >
+                        <Grid Name="curLineResultPanel" Visibility="Collapsed" HorizontalAlignment="Right">
 
 
-                            <Grid x:Name="curWordPhenoControlGrid" Height="40" HorizontalAlignment="Right" 
+                            <Grid x:Name="curWordPhenoControlGrid" Height="40" HorizontalAlignment="Left" 
                                   Background="WhiteSmoke"  Padding="5" BorderBrush="LightGray" BorderThickness="0" 
                                   CornerRadius="10">
                                 <Grid.RenderTransform>
@@ -383,7 +382,7 @@
 
                             </Grid>
 
-                            <StackPanel Orientation="Horizontal" Background="WhiteSmoke" CornerRadius="10" 
+                            <StackPanel x:Name="curLineParentStack" Orientation="Horizontal" Background="WhiteSmoke" CornerRadius="10" 
                                         BorderThickness="1" BorderBrush="DarkGray" HorizontalAlignment="Stretch">
                                 <!-- recongtion result of current line -->
                                 <ProgressRing x:Name="loading" IsActive="True" Margin="10 0 10 0" Visibility="Collapsed"/>

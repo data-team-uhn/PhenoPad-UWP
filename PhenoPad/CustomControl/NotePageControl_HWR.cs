@@ -153,7 +153,9 @@ namespace PhenoPad.CustomControl
 
         public void HideCurLineStackPanel() {
             curLineWordsStackPanel.Children.Clear();
+            curLineParentStack.Visibility = Visibility.Collapsed;
             curLineResultPanel.Visibility = Visibility.Collapsed;
+            Debug.WriteLine("should be collapsed");
         }
 
         //private void InkPresenter_StrokesErased(InkPresenter sender, InkStrokesErasedEventArgs args)
