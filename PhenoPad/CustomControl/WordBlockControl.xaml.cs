@@ -29,6 +29,7 @@ namespace PhenoPad.CustomControl
         public int phrase_index;
         public int line_index;
         public int selected_index;
+        public bool corrected;
 
         public WordBlockControl()
         {
@@ -42,6 +43,12 @@ namespace PhenoPad.CustomControl
             this.current = current;
             this.candidates = candidates;
             selected_index = 0;
+            WordBlock.Text = current;
+            corrected = false;
+            AlternativeList.ItemsSource = candidates;
+        }
+
+        public void UpdateDisplay() {
             WordBlock.Text = current;
             AlternativeList.ItemsSource = candidates;
         }
@@ -58,6 +65,7 @@ namespace PhenoPad.CustomControl
                 current = text;
                 selected_index = -1;
                 WordBlock.Text = current;
+                corrected = true;
             }
         }
 
@@ -66,6 +74,7 @@ namespace PhenoPad.CustomControl
             selected_index = ind;
             current = candidates[ind];
             WordBlock.Text = current;
+            corrected = true;
             Debug.WriteLine($"candidate word has been changed to={current}");
             MainPage.Current.curPage.HideCurLineStackPanel();
             UpdateLayout();
@@ -76,6 +85,7 @@ namespace PhenoPad.CustomControl
             selected_index = ind;
             current = candidates[ind];
             WordBlock.Text = current;
+            corrected = true;
             Debug.WriteLine($"alternative word has been changed to={current}");
             UpdateLayout();
         }

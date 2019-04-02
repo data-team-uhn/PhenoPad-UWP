@@ -29,7 +29,7 @@
         </Flyout>
     </UserControl.Resources>
 
-    <Grid>
+    <Grid Background="Transparent">
         <TextBlock x:Name="WordBlock" Text="{x:Bind current}" x:FieldModifier="public" FontSize="26" Tapped="ShowWordCandidate" />
     </Grid>
 </UserControl>

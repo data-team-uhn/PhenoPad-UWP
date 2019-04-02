@@ -464,7 +464,7 @@ namespace PhenoPad.PhenotypeService
                     ind = phenotypesInNote.IndexOf(temp);
                     phenotypesInNote.Remove(temp);
                     phenotypesInNote.Insert(ind, pp);
-                    MainPage.Current.curPage.updatePhenotypeLine(pp, ind);
+                    //MainPage.Current.curPage.updatePhenotypeLine(pp, ind);
 
                 }
             }

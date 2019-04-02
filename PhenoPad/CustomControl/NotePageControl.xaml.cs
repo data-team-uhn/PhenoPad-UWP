@@ -492,7 +492,6 @@ namespace PhenoPad.CustomControl
             {
                 //recognizedTextCanvas.Visibility = Visibility.Visible;
                 recognizedCanvas.Visibility = Visibility.Visible;
-                Debug.WriteLine(recognizedCanvas.Children.Count);
                 //textNoteEditBox.Document.SetText(TextSetOptions.None, ParseNoteText());
                 //textNoteEditBox.Visibility = Visibility.Visible;
                 inkCanvas.Visibility = Visibility.Collapsed;

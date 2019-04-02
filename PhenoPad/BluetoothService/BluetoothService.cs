@@ -20,6 +20,7 @@ namespace PhenoPad.BluetoothService
         StreamSocket _socket = null;
         private DeviceWatcher deviceWatcher = null;
         private DataWriter dataWriter = null;
+        private DataReader dataReader = null;
         public string rpi_ipaddr = null;
         //private DataReader readPacket = null;
         private CancellationTokenSource cancellationSource;
@@ -130,7 +131,7 @@ namespace PhenoPad.BluetoothService
                             await _socket.ConnectAsync(blueService.ConnectionHostName, blueService.ConnectionServiceName);
                             //SetChatUI(attributeReader.ReadString(serviceNameLength), bluetoothDevice.Name);
                             dataWriter = new DataWriter(_socket.OutputStream);
-                            //readPacket = new DataReader(_socket.InputStream);
+                            //dataReader = new DataReader(_socket.InputStream);
                         }
                         catch (Exception ex) // ERROR_ELEMENT_NOT_FOUND
                         {
@@ -178,6 +179,7 @@ namespace PhenoPad.BluetoothService
                                     if (temp[0] == "ip")
                                         rpi_ipaddr = temp[1];
                                 }
+
 
                             }
                         }, cancellationToken);
@@ -368,6 +370,7 @@ namespace PhenoPad.BluetoothService
                 DataReader readPacket = DataReader.FromBuffer(readBuf);
                 uint buffLen = readPacket.UnconsumedBufferLength;
                 returnMessage = readPacket.ReadString(buffLen);
+                Debug.WriteLine("From Bluetooth: ==================================" + returnMessage);
             }
             catch (Exception exp)
             {

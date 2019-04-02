@@ -1324,8 +1324,9 @@ namespace PhenoPad
         private void InkToolbar_EraseAllClicked(InkToolbar sender, object args)
         {
             //calling auto-saving handler to save erased result
-            LogService.MetroLogger.getSharedLogger().Info("Cleared all ink strokes of this note page.");
+            //NotifyUser("");
             this.curPage.on_stroke_changed();
+            curPage.ClearAllParsedText();
             PhenotypeManager.getSharedPhenotypeManager().phenotypesCandidates.Clear();
             //more clearing caches
 
