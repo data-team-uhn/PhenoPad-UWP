@@ -128,26 +128,6 @@ namespace PhenoPad.CustomControl
         //    }
         //}
 
-        private void UpdateRecognizedWordStyle(int lineNum, List<uint> strokeIds)
-        {//updates the color of recognized word on inkcanvas and removed data from inkanalyzer
-            foreach (var id in strokeIds)
-            {
-                //finds the corresponding stroke object given the info in stroke record
-                var rst = strokeRecords[lineNum].Where(x => x.Id == id).FirstOrDefault();
-                var st = inkCan.InkPresenter.StrokeContainer.GetStrokes().Where(x => x.StrokeStartedTime == rst.StrokeStartedTime).FirstOrDefault();
-                if (st != null)
-                {
-                    st.Selected = true;
-                    InkDrawingAttributes drawingAttributes = new InkDrawingAttributes();
-                    drawingAttributes.Color = Color.FromArgb(255, 255, 255, 255);
-                    st.DrawingAttributes = drawingAttributes;
-                    //strokeRecords[lineNum].Remove(rst);
-                    //strokeAnalyzer.RemoveDataForStroke(id);
-                }
-            }
-            lastWordCount = 0;
-        }
-
         private void recognizedResultTextBlock_Tapped(object sender, TappedRoutedEventArgs e) {
         }
 
@@ -417,20 +397,6 @@ namespace PhenoPad.CustomControl
             Debug.Write(block.Text);
         }
 
-        public string ParseNoteText() {
-            string text = "";
-            int totalLine = (int)(inkCan.ActualHeight / LINE_HEIGHT);
-
-            for (int i = 0; i < totalLine; i++) {
-                var phrases = NotePhrases.Where(p => p.lineIndex == i).ToList();
-                phrases = phrases.OrderBy( p=> p.canvasLeft).ToList();
-                foreach (var p in phrases)
-                    text += p.GetString();
-                text += Environment.NewLine;
-
-            }
-            return text;
-        }
         private void ShowAlternativeCanvas(Point p)
         {
             double y = (Math.Floor(p.Y / LINE_HEIGHT) - 1) * LINE_HEIGHT;

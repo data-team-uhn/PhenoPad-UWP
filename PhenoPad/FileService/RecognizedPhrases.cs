@@ -21,7 +21,7 @@ namespace PhenoPad.FileService
         public string candidate5;
 
         public int word_index;
-        public int phrase_index;
+        public double left;
         public int line_index;
 
 
@@ -32,17 +32,18 @@ namespace PhenoPad.FileService
         {
         }
 
-        public RecognizedPhrases(int lineNum, int phrase, int index, string selected,List<string>candidates) {
+        public RecognizedPhrases(int lineNum, double left, int index, string selected,List<string>candidates) {
             line_index = lineNum;
-            phrase_index = phrase;
+            this.left = left;
             word_index = index;
+
             current = selected;
-            if (candidates.Contains(selected))
-                candidates.Remove(selected);
-            candidate2 = candidates[0];
-            candidate3 = candidates[1];
-            candidate4 = candidates[2];
-            candidate5 = candidates[3];
+            List<string> temp = new List<string>();
+            temp.AddRange(candidates);
+            candidate2 = temp[0];
+            candidate3 = temp[1];
+            candidate4 = temp[2];
+            candidate5 = temp[3];
         }
     }
 }

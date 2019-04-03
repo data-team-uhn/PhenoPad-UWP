@@ -181,19 +181,7 @@ namespace PhenoPad.CustomControl
             _alternatives = new List<List<string>>();
             annotations = new List<NCRPhenotype>();
             phenotypes = new List<Phenotype>();
-            /***
-            foreach (var word in line.Children)
-            {
-                if (word.Kind == InkAnalysisNodeKind.InkWord)
-                {
-                    var aword = (InkAnalysisInkWord)word;
-                    words.Add(new NoteWord(aword));
-                    wordStrings.Add(aword.RecognizedText.Trim());
-                }
-            }
-            **/
         }
-
 
         public void addAnnotations(List<NCRPhenotype> result)
         {

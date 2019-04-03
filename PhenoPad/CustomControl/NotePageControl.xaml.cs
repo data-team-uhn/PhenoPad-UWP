@@ -148,9 +148,8 @@ namespace PhenoPad.CustomControl
             }
         }
 
-        private Dictionary<int, List<TextBox>> recognizedTextBlocks = new Dictionary<int, List<TextBox>>();
         private Dictionary<uint, NoteLine> idToNoteLine = new Dictionary<uint, NoteLine>();
-        private uint showingResultOfLine;
+        private int showingResultOfLine;
         private InkAnalysisLine curLineObject;
 
         private int showAlterOfWord = -1;
@@ -272,8 +271,7 @@ namespace PhenoPad.CustomControl
             deleteSemaphoreSlim = new SemaphoreSlim(1);
             selectAndRecognizeSemaphoreSlim = new SemaphoreSlim(1);
             RawStrokes = new List<InkStroke>();
-            NotePhrases = new List<NotePhraseControl>();
-            currentIndex = 0;
+            //currentIndex = 0;
             strokeAnalyzer = new InkAnalyzer();
             
             recognizedTextCanvas.Visibility = Visibility.Collapsed;
@@ -295,8 +293,7 @@ namespace PhenoPad.CustomControl
 
             //lastStrokePoint = new Point(0,0);
             lastWordPoint = new Point(0, 0);
-
-            strokeRecords = new Dictionary<int, List<InkStroke>>();
+            phrases = new Dictionary<int, NotePhraseControl>();
             lastWordCount = 0;
 
         }
@@ -884,7 +881,7 @@ namespace PhenoPad.CustomControl
                         //temoporarily setting phrase index 0, will update later when implementing stroke-text place matching
                         for (int i = 0; i < npc.words.Count; i++) {
                             WordBlockControl wb = npc.words[i];
-                            RecognizedPhrases ph = new RecognizedPhrases(npc.lineIndex, 0, i, wb.current, wb.candidates);
+                            RecognizedPhrases ph = new RecognizedPhrases(npc.lineIndex, npc.canvasLeft, i, wb.current, wb.candidates);
                             phrases.Add(ph);
                         }
                     }
@@ -993,41 +990,38 @@ namespace PhenoPad.CustomControl
 
         internal void loadRecognizedPhrases(List<RecognizedPhrases> recogPhrases)
         {
-            recogPhrases = recogPhrases.OrderBy(x => x.line_index).ThenBy(y => y.phrase_index).ThenBy(z => z.word_index).ToList();
+            recogPhrases = recogPhrases.OrderBy(x => x.line_index).ThenBy(z => z.word_index).ToList();
             int last_line = recogPhrases[0].line_index;
             List<WordBlockControl> words = new List<WordBlockControl>();
 
             foreach (RecognizedPhrases ph in recogPhrases) {
                 if (ph.line_index > last_line) {
                     NotePhraseControl npc = new NotePhraseControl(last_line, words);
-                    NotePhrases.Add(npc);
-                    npc.ShowPhraseAt(0, npc.lineIndex * LINE_HEIGHT);
+                    phrases[ph.line_index] = npc;
+                    npc.SetPhrasePosition(ph.left, npc.lineIndex * LINE_HEIGHT);
                     recognizedCanvas.Children.Add(npc);
-                    Canvas.SetLeft(npc, 0);
+                    Canvas.SetLeft(npc, npc.canvasLeft);
                     Canvas.SetTop(npc, npc.lineIndex * LINE_HEIGHT);
                     npc.UpdateLayout();
                     words = new List<WordBlockControl>();
                     last_line = ph.line_index;
                 }
-                Debug.WriteLine(ph.current);
                 List<string> candidates = new List<string>();
                 candidates.Add(ph.current);
                 candidates.Add(ph.candidate2);
                 candidates.Add(ph.candidate3);
                 candidates.Add(ph.candidate4);
                 candidates.Add(ph.candidate5);
-                WordBlockControl wb = new WordBlockControl(ph.line_index, ph.phrase_index, ph.word_index, ph.current, candidates);
+                WordBlockControl wb = new WordBlockControl(ph.line_index, ph.left, ph.word_index, ph.current, candidates);
                 words.Add(wb);
-                Debug.WriteLine(words.Count);
             }
             //this handles the case when there's only one line of note on the page
             if (words.Count > 0) {
                 NotePhraseControl npc = new NotePhraseControl(last_line, words);
-                NotePhrases.Add(npc);
-                Debug.WriteLine(npc.words.Count);
-                npc.ShowPhraseAt(0, npc.lineIndex * LINE_HEIGHT);
+                phrases[npc.lineIndex] = npc;
+                npc.SetPhrasePosition(recogPhrases[0].left, npc.lineIndex * LINE_HEIGHT);
                 recognizedCanvas.Children.Add(npc);
-                Canvas.SetLeft(npc, 0);
+                Canvas.SetLeft(npc, npc.canvasLeft);
                 Canvas.SetTop(npc, npc.lineIndex * LINE_HEIGHT);
                 npc.UpdateLayout();
             }
@@ -2046,7 +2040,7 @@ namespace PhenoPad.CustomControl
             var citem = (string) e.ClickedItem;
             int ind = curLineWordsListView.Items.IndexOf(citem);
             var alterFlyout = (Flyout)this.Resources["ChangeAlternativeFlyout"];
-            alternativeListView.ItemsSource = idToNoteLine[showingResultOfLine].HwrResult[ind].candidateList;
+            alternativeListView.ItemsSource = idToNoteLine[(uint)showingResultOfLine].HwrResult[ind].candidateList;
             alterFlyout.ShowAt((FrameworkElement)sender);
         }
 
@@ -2064,10 +2058,10 @@ namespace PhenoPad.CustomControl
                 ind += rr.Text.Length;
                 wordInd++;
             }
-            if (wordInd < idToNoteLine[showingResultOfLine].HwrResult.Count)
+            if (wordInd < idToNoteLine[(uint)showingResultOfLine].HwrResult.Count)
             {
                 var alterFlyout = (Flyout)this.Resources["ChangeAlternativeFlyout"];
-                alternativeListView.ItemsSource = idToNoteLine[showingResultOfLine].HwrResult[wordInd].candidateList;
+                alternativeListView.ItemsSource = idToNoteLine[(uint)showingResultOfLine].HwrResult[wordInd].candidateList;
                 alterFlyout.ShowAt((FrameworkElement)sender);
             }
         }

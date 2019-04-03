@@ -43,14 +43,22 @@ namespace PhenoPad.CustomControl
             }
         }
 
-        public string GetString() {
-            string text = " ";
+        public List<string> GetStringAsList() {
+            List<string> str = new List<string>();
             foreach (WordBlockControl s in words)
+                str.Add(s.current);
+            return str;
+        }
+
+        public string GetString() {
+            string text = "";
+            foreach (WordBlockControl s in words) {
                 text += s.current + " ";
+            }
             return text;
         }
 
-        public void ShowPhraseAt(double left, double top) {
+        public void SetPhrasePosition(double left, double top) {
             canvasLeft = left;
             canvasTop = top;
         }
@@ -84,7 +92,7 @@ namespace PhenoPad.CustomControl
                 WordBlockControl wb = new WordBlockControl(lineIndex, 0, i, recognized.selectedCandidate, recognized.candidateList);
                 AddWord(wb);
             }
-            UpdateLayout();
+            
         }
 
         public void ToggleRawView(object sender, DoubleTappedRoutedEventArgs args)

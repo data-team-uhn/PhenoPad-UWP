@@ -26,7 +26,7 @@ namespace PhenoPad.CustomControl
         public string current;
         public List<string> candidates;
         public int word_index;
-        public int phrase_index;
+        public double phrase_index;
         public int line_index;
         public int selected_index;
         public bool corrected;
@@ -35,7 +35,7 @@ namespace PhenoPad.CustomControl
         {
         }
 
-        public WordBlockControl(int line_index, int phrase_index, int word_index, string current, List<string>candidates) {
+        public WordBlockControl(int line_index, double phrase_index, int word_index, string current, List<string>candidates) {
             this.InitializeComponent();
             this.line_index = line_index;
             this.phrase_index = phrase_index;

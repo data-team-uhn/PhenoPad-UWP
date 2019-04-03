@@ -9,8 +9,8 @@
     d:DesignHeight="300"
     d:DesignWidth="400">
 
-    <Grid Background="WhiteSmoke" Height="{x:Bind LINE_HEIGHT}">
+    <Grid Background="Transparent" Height="{x:Bind LINE_HEIGHT}">
         <InkCanvas x:Name="RawStrokes" DoubleTapped="ToggleTextView" Visibility="Collapsed"/>
-        <StackPanel x:Name="RecognizedPhrase" x:FieldModifier="public" Spacing="10" VerticalAlignment="Center" Orientation="Horizontal"/>
+        <StackPanel x:Name="RecognizedPhrase" x:FieldModifier="public" Spacing="15" VerticalAlignment="Center" Orientation="Horizontal"/>
     </Grid>
 </UserControl>
