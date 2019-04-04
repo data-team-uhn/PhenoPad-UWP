@@ -63,24 +63,9 @@ namespace PhenoPad.CustomControl
             canvasTop = top;
         }
 
-        public void AddStrokes(List<InkStroke> strokes, double boundWidth) {
-            foreach (var s in strokes) {
-                RawStrokes.InkPresenter.StrokeContainer.AddStroke(s.Clone());
-                //this.width += Math.Abs((s.BoundingRect.X + s.BoundingRect.Width) - (canvasLeft + width));                
-            }
-            width += boundWidth;
-        }
-
         public void AddWord(WordBlockControl word) {
             words.Add(word);
             RecognizedPhrase.Children.Add(word);
-        }
-
-        public void ToggleTextView(object sender, DoubleTappedRoutedEventArgs args)
-        {
-            RawStrokes.Visibility = Visibility.Collapsed;
-            RecognizedPhrase.Visibility = Visibility.Visible;
-
         }
 
         internal void UpdateRecognition(List<HWRRecognizedText> updated)
@@ -96,11 +81,6 @@ namespace PhenoPad.CustomControl
 
         }
 
-        public void ToggleRawView(object sender, DoubleTappedRoutedEventArgs args)
-        {
-            RawStrokes.Visibility = Visibility.Visible;
-            RecognizedPhrase.Visibility = Visibility.Collapsed;
-        }
 
     }
 }

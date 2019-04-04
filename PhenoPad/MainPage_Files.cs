@@ -224,7 +224,7 @@ namespace PhenoPad
                 }
                 OperationLogger.getOpLogger().SetCurrentNoteID(notebookId);
                 MainPageInkBar.TargetInkCanvas = inkCanvas;
-                await Task.Delay(TimeSpan.FromSeconds(3));
+                await Task.Delay(TimeSpan.FromSeconds(2));
                 LoadingPopup.IsOpen = false;
                 curPage.Visibility = Visibility.Visible;
             }

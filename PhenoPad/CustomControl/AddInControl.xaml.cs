@@ -73,6 +73,7 @@ namespace PhenoPad.CustomControl
             }
         }
         public InkAnalyzer inkAnalyzer = new InkAnalyzer();
+        public Visibility videoVisibility = Visibility.Collapsed;
 
         public DispatcherTimer autosaveDispatcherTimer = new DispatcherTimer();
 
@@ -262,6 +263,7 @@ namespace PhenoPad.CustomControl
                 commentID = -1;
                 //by default sets addinTypt to viewonly
                 addinType = AddinType.VIEWONLY;
+                videoVisibility = Visibility.Collapsed;
                 
             }
             catch (Exception e)
@@ -331,6 +333,8 @@ namespace PhenoPad.CustomControl
             Canvas.SetZIndex(this, 90);
             commentbg.Visibility = Visibility.Collapsed;
             addinType = AddinType.VIEWONLY;
+            videoVisibility = Visibility.Collapsed;
+
 
         }
 
@@ -574,6 +578,9 @@ namespace PhenoPad.CustomControl
             PhotoButton.Visibility = Visibility.Collapsed;
             VideoButton.Visibility = Visibility.Collapsed;
             VideoStopButton.Visibility = Visibility.Visible;
+            videoVisibility = Visibility.Visible;
+            UpdateLayout();
+
 
         }
 
@@ -630,6 +637,7 @@ namespace PhenoPad.CustomControl
                     PhotoButton.Visibility = Visibility.Collapsed;
                     VideoButton.Visibility = Visibility.Collapsed;
                     CameraCanvas.Visibility = Visibility.Collapsed;
+                    mediaPlayerElement.Visibility = Visibility.Collapsed;
                     captureControl.unSetUp();
                     hasImage = true;
                     InitiateInkCanvas();
@@ -728,6 +736,7 @@ namespace PhenoPad.CustomControl
             categoryGrid.Visibility = Visibility.Collapsed;
             try
             {
+                //need to fix here to use file without type ._.
                 var strokefile = await FileManager.getSharedFileManager().GetNoteFileNotCreate(notebookId, pageId,                                                                                             NoteFileType.ImageAnnotation, name);
                 if (strokefile != null)
                     await FileManager.getSharedFileManager().loadStrokes(strokefile, inkCanvas);
@@ -822,7 +831,7 @@ namespace PhenoPad.CustomControl
                         Height = (int)(Width / imgratio);
                         inkCan.Height = Height;
                         inkCan.Width = Width;
-                        mediaPlayerElement.Visibility = addinType == AddinType.VIDEO ? Visibility.Visible : Visibility.Collapsed;
+                        mediaPlayerElement.Visibility = Visibility.Collapsed;
                     }
                     else
                     {//adjust ink canvas size/position to display full stroke view
