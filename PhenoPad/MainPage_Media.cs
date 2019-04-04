@@ -97,7 +97,7 @@ namespace PhenoPad
         public BluetoothService.BluetoothService bluetoothService = null;
         public UIWebSocketClient uiClinet = null;
         private int doctor = 0;
-        bool speechEngineRunning = false;
+        public bool speechEngineRunning = false;
         public DispatcherTimer audioTimer = new DispatcherTimer();
 
 
@@ -356,6 +356,12 @@ namespace PhenoPad
                 changeSpeechEngineState();
         }
 
+        public async void RestartAudioOnException() {
+            AudioStreamButton_Clicked();
+            await Task.Delay(TimeSpan.FromSeconds(3));
+            AudioStreamButton_Clicked();
+        }
+
         /// <summary>
         /// Switch speech engine state for blue tooth devices
         /// </summary>
@@ -442,7 +448,7 @@ namespace PhenoPad
         /// Switch speech engine state for plug-in devices
         /// </summary>
         /// <param name="state">current state of speech engine</param>
-        private async void changeSpeechEngineState()
+        public async void changeSpeechEngineState()
         {
             try
             {

@@ -87,12 +87,13 @@ namespace PhenoPad.CustomControl
         {
             RecognizedPhrase.Children.Clear();
             words.Clear();
-            for (int i = 0; i < updated.Count; i++) {
+            for (int i = 0; i < updated.Count; i++)
+            {
                 HWRRecognizedText recognized = updated[i];
                 WordBlockControl wb = new WordBlockControl(lineIndex, 0, i, recognized.selectedCandidate, recognized.candidateList);
                 AddWord(wb);
             }
-            
+
         }
 
         public void ToggleRawView(object sender, DoubleTappedRoutedEventArgs args)

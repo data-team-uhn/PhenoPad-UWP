@@ -9,6 +9,7 @@ using Windows.Storage.Streams;
 using Windows.UI.Core;
 using System.Diagnostics;
 using System.Threading;
+using PhenoPad.SpeechService;
 
 namespace PhenoPad.BluetoothService
 {
@@ -26,6 +27,9 @@ namespace PhenoPad.BluetoothService
         private CancellationTokenSource cancellationSource;
         private RfcommDeviceService blueService = null;
         private BluetoothDevice bluetoothDevice = null;
+        private static string RESTART_AUDIO_FLAG = "AudioClientException";
+        private static string RESTART_BLUETOOTH_FLAG = "DeviceException";
+
 
         public bool initialized = false;
 
@@ -178,6 +182,8 @@ namespace PhenoPad.BluetoothService
                                     string[] temp = result.Split(' ');
                                     if (temp[0] == "ip")
                                         rpi_ipaddr = temp[1];
+                                    else
+                                        HandleAudioException(result);
                                 }
 
 
@@ -320,8 +326,24 @@ namespace PhenoPad.BluetoothService
                 });
 
             });
+            deviceWatcher.Stopped += new TypedEventHandler<DeviceWatcher, object>((watcher, deviceInfo) => {
+                MainPage.Current.NotifyUser("device watcher stopped", NotifyType.StatusMessage, 2);
+            });
+            deviceWatcher.Removed += new TypedEventHandler<DeviceWatcher, DeviceInformationUpdate>((watcher, deviceInfo) => {
+                MainPage.Current.NotifyUser("device watcher removed", NotifyType.StatusMessage, 2);
+            });
             deviceWatcher.Start();
             
+        }
+
+        private void HandleAudioException(string message) {
+            if (message.Equals(RESTART_AUDIO_FLAG))
+            {
+                MainPage.Current.RestartAudioOnException();
+            }
+            else if (message.Equals(RESTART_BLUETOOTH_FLAG)) {
+
+            }     
         }
 
         public string GetPiIP()
@@ -370,7 +392,6 @@ namespace PhenoPad.BluetoothService
                 DataReader readPacket = DataReader.FromBuffer(readBuf);
                 uint buffLen = readPacket.UnconsumedBufferLength;
                 returnMessage = readPacket.ReadString(buffLen);
-                Debug.WriteLine("From Bluetooth: ==================================" + returnMessage);
             }
             catch (Exception exp)
             {

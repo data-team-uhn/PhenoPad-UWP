@@ -250,7 +250,7 @@ namespace PhenoPad.CustomControl
             unprocessedDispatcherTimer.Interval = TimeSpan.FromMilliseconds(100);
             recognizeTimer.Interval = TimeSpan.FromSeconds(0.25);// recognize through server side every 3 seconds
             autosaveDispatcherTimer.Interval = TimeSpan.FromSeconds(1); //setting stroke auto save interval to be 1 sec
-            RawStrokeTimer.Interval = TimeSpan.FromSeconds(1);
+            RawStrokeTimer.Interval = TimeSpan.FromSeconds(5);
             EraseTimer.Interval = TimeSpan.FromSeconds(1);
 
             linesToUpdate = new Queue<int>();
@@ -787,6 +787,7 @@ namespace PhenoPad.CustomControl
                 SetDefaultStrokeStyle(stroke);
             }         
             ClearDrawnBoundingRect();
+            UpdateLayout();
         }
 
         private void ClearDrawnBoundingRect()
@@ -997,7 +998,7 @@ namespace PhenoPad.CustomControl
             foreach (RecognizedPhrases ph in recogPhrases) {
                 if (ph.line_index > last_line) {
                     NotePhraseControl npc = new NotePhraseControl(last_line, words);
-                    phrases[ph.line_index] = npc;
+                    phrases[last_line] = npc;
                     npc.SetPhrasePosition(ph.left, npc.lineIndex * LINE_HEIGHT);
                     recognizedCanvas.Children.Add(npc);
                     Canvas.SetLeft(npc, npc.canvasLeft);
@@ -1018,7 +1019,7 @@ namespace PhenoPad.CustomControl
             //this handles the case when there's only one line of note on the page
             if (words.Count > 0) {
                 NotePhraseControl npc = new NotePhraseControl(last_line, words);
-                phrases[npc.lineIndex] = npc;
+                phrases[last_line] = npc;
                 npc.SetPhrasePosition(recogPhrases[0].left, npc.lineIndex * LINE_HEIGHT);
                 recognizedCanvas.Children.Add(npc);
                 Canvas.SetLeft(npc, npc.canvasLeft);

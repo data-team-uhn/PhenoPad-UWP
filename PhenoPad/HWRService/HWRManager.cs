@@ -103,7 +103,6 @@ namespace PhenoPad.HWRService
         {
             try
             {
-
                 var recognitionResults = await inkRecognizerContainer.RecognizeAsync(container, target);
                 //if there are avilable recognition results, add to recognized text list    
                 if ( recognitionResults != null && recognitionResults.Count > 0)
