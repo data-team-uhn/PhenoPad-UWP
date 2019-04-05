@@ -64,6 +64,71 @@ namespace PhenoPad.CustomControl
 
         #region stroke event handlers
 
+
+        private void ShowAlterOnHover(Point pos) {
+
+            Rect pointerRec = new Rect(pos.X, pos.Y, 1, 1);
+            int lineNum = getLineNumByRect(pointerRec);
+            var words = inkAnalyzer.AnalysisRoot.FindNodes(InkAnalysisNodeKind.InkWord);
+            double lowerbound = lineNum * LINE_HEIGHT;
+            double upperbound = (lineNum + 1) * LINE_HEIGHT;
+            words = words.Where(x => x.BoundingRect.Y + x.BoundingRect.Height / 3 >= lowerbound && x.BoundingRect.Y + x.BoundingRect.Height / 3 <= upperbound).OrderBy(x => x.BoundingRect.X).ToList();
+            bool hovering = false;
+            for (int i = 0; i < words.Count; i++)
+            {
+                var w = words[i];
+                if (w.BoundingRect.Contains(pos))
+                {
+                    WordBlockControl wbc = phrases.Where(x => x.Key == lineNum).FirstOrDefault().Value.words.Where(x => x.word_index == i).FirstOrDefault();
+                    if (wbc != null)
+                    {
+                        hovering = true;
+                        curLineWordsStackPanel.Children.Clear();
+                        foreach (string alternative in wbc.candidates)
+                        {
+                            Button alter = new Button();
+                            alter.VerticalAlignment = VerticalAlignment.Center;
+                            alter.FontSize = 16;
+                            alter.Content = alternative;
+                            alter.Click += (object sender, RoutedEventArgs e) =>
+                            {
+                                int ind = wbc.candidates.IndexOf((string)((Button)sender).Content);
+                                wbc.selected_index = ind;
+                                wbc.current = wbc.candidates[ind];
+                                wbc.WordBlock.Text = wbc.current;
+                                wbc.corrected = true;
+                                MainPage.Current.curPage.HideCurLineStackPanel();
+                                //RawStrokeTimer.Stop();
+                                UpdateLayout();
+                            };
+                            curLineWordsStackPanel.Children.Add(alter);
+                        }
+                        TextBox tb = new TextBox();
+                        tb.Width = 40;
+                        tb.Height = curLineWordsStackPanel.ActualHeight * 0.7;
+                        tb.LostFocus += (object sender, RoutedEventArgs e) => {
+                            wbc.ChangeAlterFromStroke(tb.Text);
+                            MainPage.Current.curPage.HideCurLineStackPanel();
+                        };
+                        curLineWordsStackPanel.Children.Add(tb);
+                        loading.Visibility = Visibility.Collapsed;
+                        curLineWordsStackPanel.Visibility = Visibility.Visible;
+                        curLineParentStack.Visibility = Visibility.Visible;
+                        curLineResultPanel.Visibility = Visibility.Visible;
+                        Canvas.SetLeft(curLineResultPanel, w.BoundingRect.X);
+                        Canvas.SetTop(curLineResultPanel, (lineNum-1) * LINE_HEIGHT);
+                        return;
+                    }
+
+                }
+
+            }
+            if (!hovering)
+                HideCurLineStackPanel();
+
+
+        }
+
         private void InkPresenter_StrokesErased(InkPresenter sender, InkStrokesErasedEventArgs args)
         {
             ClearSelectionAsync();
@@ -74,9 +139,11 @@ namespace PhenoPad.CustomControl
             foreach (var stroke in args.Strokes)
             {
                 inkAnalyzer.RemoveDataForStroke(stroke.Id);
-                int line = getLineNumByRect(stroke.BoundingRect);
-                if (!linesErased.Contains(line))
-                    linesErased.Add(line);
+                if (stroke.BoundingRect.Height <= MAX_WRITING) {
+                    int line = getLineNumByRect(stroke.BoundingRect);
+                    if (!linesErased.Contains(line))
+                        linesErased.Add(line);
+                }
             }
             autosaveDispatcherTimer.Start();
             EraseTimer.Start();
@@ -400,8 +467,7 @@ namespace PhenoPad.CustomControl
                 {
                     thisline.AddRange(lines.Where(x => x.BoundingRect.Y + (x.BoundingRect.Height / 3) >= lowerbound && x.BoundingRect.Y + (x.BoundingRect.Height / 3) <= upperbound).OrderByDescending(x => x.BoundingRect.X).ToList());
                     var temp = thisline.OrderBy(x => x.BoundingRect.X).ToList();
-                    Debug.Assert(temp.Count > 0);
-                    lastStrokeBound = temp[0].BoundingRect;
+                    lastStrokeBound = temp.Count == 0? new Rect(0, lineid * LINE_HEIGHT,5,5): temp[0].BoundingRect;
                 }
                 else {
                     thisline.Add( lines.Where(x => x.BoundingRect.Y + (x.BoundingRect.Height / 3) >= lowerbound && x.BoundingRect.Y + (x.BoundingRect.Height / 3) <= upperbound).FirstOrDefault());

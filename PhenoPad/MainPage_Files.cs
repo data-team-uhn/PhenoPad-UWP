@@ -201,7 +201,8 @@ namespace PhenoPad
                     }
 
                     List<RecognizedPhrases> recogPhrases = await FileManager.getSharedFileManager().GetRecognizedPhraseFromXML(notebookId, pageIds[i]);
-                    aPage.loadRecognizedPhrases(recogPhrases);
+                    if (recogPhrases != null && recogPhrases.Count > 0)
+                        aPage.loadRecognizedPhrases(recogPhrases);
 
                 }
                 curPage = notePages[0];

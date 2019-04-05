@@ -80,6 +80,16 @@ namespace PhenoPad.CustomControl
             UpdateLayout();
         }
 
+        public void ChangeAlterFromStroke(string word) {
+            if (word.Length > 0)
+            {
+                current = word;
+                selected_index = -1;
+                WordBlock.Text = current;
+                corrected = true;
+            }
+        }
+
         private void AlternativeList_Click(object sender, ItemClickEventArgs e) {
             int ind = AlternativeList.Items.IndexOf((string)e.ClickedItem);
             selected_index = ind;

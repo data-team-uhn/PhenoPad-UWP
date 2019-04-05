@@ -210,6 +210,8 @@ namespace PhenoPad.CustomControl
             inkCanvas.InkPresenter.UnprocessedInput.PointerPressed += UnprocessedInput_PointerPressed;
             inkCanvas.InkPresenter.UnprocessedInput.PointerMoved += UnprocessedInput_PointerMoved;
             inkCanvas.InkPresenter.UnprocessedInput.PointerReleased += UnprocessedInput_PointerReleased;
+
+            inkCanvas.PointerMoved += inkCanvas_PointerMoved;
            
             inkCanvas.Tapped += InkCanvas_Tapped;
             inkCanvas.DoubleTapped += InkCanvas_DoubleTapped;
@@ -297,6 +299,7 @@ namespace PhenoPad.CustomControl
             lastWordCount = 0;
 
         }
+
 
 
         #region UI Display
@@ -602,6 +605,7 @@ namespace PhenoPad.CustomControl
             {
                 lasso.Points.Add(args.CurrentPoint.RawPosition);
             }
+            Debug.WriteLine(args.CurrentPoint.Position);
         }
         // select strokes by "marking" handling: pointer released
         private void UnprocessedInput_PointerReleased(InkUnprocessedInput sender, PointerEventArgs args)
@@ -1665,7 +1669,18 @@ namespace PhenoPad.CustomControl
             }
         }
 
+        private void inkCanvas_PointerMoved(object sender, PointerRoutedEventArgs e)
+        {
+
+        }
+
         private void InkCanvas_Tapped(object sender, TappedRoutedEventArgs e)
+        {
+            Point pos = e.GetPosition(inkCanvas);
+            ShowAlterOnHover(pos);
+        }
+
+        private void InkCanvas_DoubleTapped(object sender, DoubleTappedRoutedEventArgs e)
         {
             var position = e.GetPosition(inkCanvas);
             ClearSelectionAsync();
@@ -1698,47 +1713,8 @@ namespace PhenoPad.CustomControl
                 recognizeAndSetUpUIForLine(line, true, serverRecog: true);
 
             }
-        }
 
-        private void InkCanvas_DoubleTapped(object sender, DoubleTappedRoutedEventArgs e)
-        {
-            /**
-            // Convert the selected paragraph or list item
-            if (paragraphSelected != null)
-            {
-                Rect rect = paragraphSelected.BoundingRect;
-                var text = ExtractTextFromParagraph(paragraphSelected);
 
-                if ((rect.X > 0) && (rect.Y > 0) && (text != string.Empty))
-                {
-                    // Create text box with recognized text
-                    var textBlock = new TextBlock();
-                    textBlock.Text = text;
-                    textBlock.MaxWidth = rect.Width;
-                    textBlock.MaxHeight = rect.Height;
-                    Canvas.SetLeft(textBlock, rect.X);
-                    Canvas.SetTop(textBlock, rect.Y);
-
-                    // Remove strokes from InkPresenter
-                    IReadOnlyList<uint> strokeIds = paragraphSelected.GetStrokeIds();
-                    foreach (var strokeId in strokeIds)
-                    {
-                        var stroke = inkCanvas.InkPresenter.StrokeContainer.GetStrokeById(strokeId);
-                        stroke.Selected = true;
-                    }
-                    inkCanvas.InkPresenter.StrokeContainer.DeleteSelected();
-
-                    // Remove strokes from InkAnalyzer
-                    inkAnalyzer.RemoveDataForStrokes(strokeIds);
-
-                    // Hide the SelectionRect
-                    //SelectionRect.Visibility = Visibility.Collapsed;
-
-                    selectionCanvas.Children.Add(textBlock);
-                    paragraphSelected = null;
-                }
-            }
-             **/
         }
 
         private void MoreSymbolIcon_Click(object sender, RoutedEventArgs e)
