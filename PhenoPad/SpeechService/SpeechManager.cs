@@ -45,10 +45,10 @@ namespace PhenoPad.SpeechService
     public class SpeechManager
     {
         //private string serverAddress = "54.226.217.30";
-        private string serverAddress = "phenopad.ccm.sickkids.ca";
-        private string serverPort = "8888";
-        public static string DEFAULT_SERVER = "phenopad.ccm.sickkids.ca";
-        public static string DEFAULT_PORT = "8888";
+        private string serverAddress = "137.135.117.253";
+        private string serverPort = "8080";
+        public static string DEFAULT_SERVER = "137.135.117.253";
+        public static string DEFAULT_PORT = "8080";
         public static SpeechManager sharedSpeechManager;
         
         public Conversation conversation = new Conversation();

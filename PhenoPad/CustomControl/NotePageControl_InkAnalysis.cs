@@ -200,7 +200,7 @@ namespace PhenoPad.CustomControl
                         //marking the current stroke for later server recognition
                         curStroke = s;
                         //here we need instant call to analyze ink for the specified line input
-                        await analyzeInk(s);
+                        await analyzeInk(s,serverFlag:MainPage.Current.abbreviation_enabled);
                         RawStrokeTimer.Start();
                         //OperationLogger.getOpLogger().Log(OperationType.Stroke, s.Id.ToString(), s.StrokeStartedTime.ToString(), s.StrokeDuration.ToString());
                     }
@@ -232,11 +232,11 @@ namespace PhenoPad.CustomControl
             else {
                 foreach (int line in linesErased)
                 {
-                    List<HWRRecognizedText> updated = await RecognizeLine(line);
+                    List<HWRRecognizedText> updated = await RecognizeLine(line, serverFlag: MainPage.Current.abbreviation_enabled, wholeline: true);
                     while (updated == null)
                     {
                         await Task.Delay(TimeSpan.FromSeconds(0.1));
-                        updated = await RecognizeLine(line, wholeline: true);
+                        updated = await RecognizeLine(line, serverFlag:MainPage.Current.abbreviation_enabled,wholeline: true);
                     }
                     NotePhraseControl npc = phrases.Where(x => x.Key == line).FirstOrDefault().Value;
                     npc.UpdateRecognition(updated);
@@ -250,7 +250,7 @@ namespace PhenoPad.CustomControl
         private void RawStrokeTimer_Tick(object sender = null, object e = null)
         {
             RawStrokeTimer.Stop();
-            recognizeAndSetUpUIForLine(curLineObject, timerFlag: true);                       
+            recognizeAndSetUpUIForLine(curLineObject, serverRecog:MainPage.Current.abbreviation_enabled,timerFlag: true);                       
         }
 
         private void LineAnalysisDispatcherTimer_Tick(object sender, object e)
@@ -304,7 +304,7 @@ namespace PhenoPad.CustomControl
                         {
                             // set up for current line
                             Debug.WriteLine($"------------------------recognizing line = {line.Id}");
-                            recognizeAndSetUpUIForLine(line, serverFlag);
+                            recognizeAndSetUpUIForLine(line, serverRecog:serverFlag);
                             return true;
                         }
                     }
@@ -378,7 +378,7 @@ namespace PhenoPad.CustomControl
                 NotePhraseControl phrase = phrases[lineNum];
                 lastWordCount = phrase.words.Count == 0 ? 1 : phrase.words.Count;
                 Debug.WriteLine($"linenume = {lineNum}, before recognize, number of words = {lastWordCount}");
-                List<HWRRecognizedText> results = await RecognizeLine(lineNum,wholeline:true);
+                List<HWRRecognizedText> results = await RecognizeLine(lineNum, serverFlag:serverRecog,wholeline:true);
                 phrase.UpdateRecognition(results);
                 Debug.WriteLine($"after recognize, number of words = {lastWordCount}");
             }
@@ -473,6 +473,8 @@ namespace PhenoPad.CustomControl
                     thisline.Add( lines.Where(x => x.BoundingRect.Y + (x.BoundingRect.Height / 3) >= lowerbound && x.BoundingRect.Y + (x.BoundingRect.Height / 3) <= upperbound).FirstOrDefault());
                     lastStrokeBound = thisline[0].BoundingRect;
                 }
+                if (thisline.Count == 0)
+                    return null;
                 line_index = getLineNumByRect(thisline[0].BoundingRect);
 
                 int selected_count = 0;
@@ -509,7 +511,7 @@ namespace PhenoPad.CustomControl
                 //recognize selection
                 List<HWRRecognizedText> recognitionResults = await HWRManager.getSharedHWRManager().
                     OnRecognizeAsync(inkCanvas.InkPresenter.StrokeContainer,
-                    InkRecognitionTarget.Selected, serverFlag);
+                    InkRecognitionTarget.Selected, server:true);
                 return recognitionResults;
             }
             catch (Exception ex)

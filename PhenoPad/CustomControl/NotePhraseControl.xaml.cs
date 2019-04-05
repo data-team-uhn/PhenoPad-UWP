@@ -70,13 +70,16 @@ namespace PhenoPad.CustomControl
 
         internal void UpdateRecognition(List<HWRRecognizedText> updated)
         {
-            RecognizedPhrase.Children.Clear();
-            words.Clear();
-            for (int i = 0; i < updated.Count; i++)
-            {
-                HWRRecognizedText recognized = updated[i];
-                WordBlockControl wb = new WordBlockControl(lineIndex, 0, i, recognized.selectedCandidate, recognized.candidateList);
-                AddWord(wb);
+            if (updated != null) {
+                RecognizedPhrase.Children.Clear();
+                words.Clear();
+                for (int i = 0; i < updated.Count; i++)
+                {
+                    HWRRecognizedText recognized = updated[i];
+                    WordBlockControl wb = new WordBlockControl(lineIndex, 0, i, recognized.selectedCandidate, recognized.candidateList);
+                    AddWord(wb);
+                }
+
             }
 
         }
