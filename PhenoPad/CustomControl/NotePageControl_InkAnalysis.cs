@@ -355,48 +355,53 @@ namespace PhenoPad.CustomControl
                                                         bool serverRecog = false, bool timerFlag = false)
 
         {
-            Debug.Assert(line != null);
-            //if (line == null)
-            //    return;
             int lineNum = getLineNumByRect(line.BoundingRect);
 
-            // switch to another line, clear result of current line
-            if (lineNum != showingResultOfLine)
-            {
-                Debug.WriteLine($"Switching to a different line, line num= {lineNum}");
-                lastWordCount = 1;
-                curLineCandidatePheno.Clear();
-                curLineWordsStackPanel.Children.Clear();
-                HWRManager.getSharedHWRManager().clearCache();
-                phenoCtrlSlide.Y = 0;
-                showingResultOfLine = lineNum;
-                curLineObject = line;
-            }
-            //writing on an existing line
-            if (phrases.ContainsKey(lineNum))
-            {  
-                NotePhraseControl phrase = phrases[lineNum];
-                lastWordCount = phrase.words.Count == 0 ? 1 : phrase.words.Count;
-                Debug.WriteLine($"linenume = {lineNum}, before recognize, number of words = {lastWordCount}");
-                List<HWRRecognizedText> results = await RecognizeLine(lineNum, serverFlag:serverRecog,wholeline:true);
-                phrase.UpdateRecognition(results);
-                Debug.WriteLine($"after recognize, number of words = {lastWordCount}");
-            }
-            //writing on a new line 
-            else
-            {
-                //new line
-                NotePhraseControl phrase = new NotePhraseControl(lineNum);
-                recognizedCanvas.Children.Add(phrase);
-                double left = curStroke==null? 0 : curStroke.BoundingRect.X;
-                Canvas.SetLeft(phrase, left);
-                Canvas.SetTop(phrase, lineNum * LINE_HEIGHT);
-                phrase.SetPhrasePosition(left, lineNum * LINE_HEIGHT);
-                phrases[lineNum] = phrase;
-                Debug.WriteLine("Created a new line");
-            }
-            //OperationLogger.getOpLogger().Log(OperationType.StrokeRecognition, line.RecognizedText);
+            if (!indetails) {
+                Debug.Assert(line != null);
+                //if (line == null)
+                //    return;
 
+                // switch to another line, clear result of current line
+                if (lineNum != showingResultOfLine)
+                {
+                    Debug.WriteLine($"Switching to a different line, line num= {lineNum}");
+                    lastWordCount = 1;
+                    curLineCandidatePheno.Clear();
+                    curLineWordsStackPanel.Children.Clear();
+                    HWRManager.getSharedHWRManager().clearCache();
+                    phenoCtrlSlide.Y = 0;
+                    showingResultOfLine = lineNum;
+                    curLineObject = line;
+                }
+                //writing on an existing line
+                if (phrases.ContainsKey(lineNum))
+                {
+                    NotePhraseControl phrase = phrases[lineNum];
+                    lastWordCount = phrase.words.Count == 0 ? 1 : phrase.words.Count;
+                    Debug.WriteLine($"linenume = {lineNum}, before recognize, number of words = {lastWordCount}");
+                    List<HWRRecognizedText> results = await RecognizeLine(lineNum, serverFlag: serverRecog, wholeline: true);
+                    phrase.UpdateRecognition(results);
+                    Debug.WriteLine($"after recognize, number of words = {lastWordCount}");
+                }
+                //writing on a new line 
+                else
+                {
+                    //new line
+                    NotePhraseControl phrase = new NotePhraseControl(lineNum);
+                    recognizedCanvas.Children.Add(phrase);
+                    double left = curStroke == null ? 0 : curStroke.BoundingRect.X;
+                    Canvas.SetLeft(phrase, left);
+                    Canvas.SetTop(phrase, lineNum * LINE_HEIGHT);
+                    phrase.SetPhrasePosition(left, lineNum * LINE_HEIGHT);
+                    phrases[lineNum] = phrase;
+                    Debug.WriteLine("Created a new line");
+                }
+                //OperationLogger.getOpLogger().Log(OperationType.StrokeRecognition, line.RecognizedText);
+
+
+
+            }
             // HWR result UI
             setUpCurrentLineResultUI(line);
             // annotation and UI
@@ -407,9 +412,22 @@ namespace PhenoPad.CustomControl
                 curLineWordsStackPanel.Children.Clear();
                 curLineParentStack.Visibility = Visibility.Collapsed;
             }
+
             if (indetails)
             {
+                curLineWordsStackPanel.Children.Clear();
                 string str = phrases[lineNum].GetString();
+                foreach (var w in phrases[lineNum].words) {
+                    TextBlock tb = new TextBlock();
+                    tb.Text = w.current;
+                    tb.VerticalAlignment = VerticalAlignment.Center;
+                    tb.FontSize = 16;
+                    tb.Tapped += (object sender,TappedRoutedEventArgs args)=>{
+                        alternativeListView.ItemsSource = w.candidates;
+                        alter_flyout.ShowAt(tb);
+                    };
+                    curLineWordsStackPanel.Children.Add(tb);
+                }
                 PopupCommandBar.Visibility = Visibility.Collapsed;
                 recognizedPhenoBriefPanel.Visibility = Visibility.Visible;
                 Canvas.SetLeft(PopupCommandBar, boundingRect.X);
@@ -417,6 +435,9 @@ namespace PhenoPad.CustomControl
                 PopupCommandBar.Width = Math.Max(boundingRect.Width, PopupCommandBar.MinWidth);
                 Canvas.SetLeft(recognizedPhenoBriefPanel, Math.Max(boundingRect.X, boundingRect.X));
                 Canvas.SetTop(recognizedPhenoBriefPanel, boundingRect.Y + boundingRect.Height);
+
+                Canvas.SetLeft(curLineResultPanel, Math.Max(boundingRect.X, boundingRect.X));
+                Canvas.SetTop(curLineResultPanel, boundingRect.Y - LINE_HEIGHT);
 
                 selectionCanvas.Children.Add(PopupCommandBar);
                 selectionCanvas.Children.Add(recognizedPhenoBriefPanel);
@@ -570,48 +591,66 @@ namespace PhenoPad.CustomControl
 
         private async void alternativeListView_ItemClick(object sender, ItemClickEventArgs e)
         {
-            NoteLine curLine = idToNoteLine[(uint)showingResultOfLine];
-            Dictionary<string, List<string>> dict = HWRManager.getSharedHWRManager().getDictionary();
 
-            var citem = (string)e.ClickedItem;
-            int ind = alternativeListView.Items.IndexOf(citem);
-            int previous = curLine.HwrResult[showAlterOfWord].selectedIndex;
-            string old_form = curLine.HwrResult[showAlterOfWord].selectedCandidate;
-            string term = "";
-            if (showAlterOfWord - 1 >= 0)
-                term = curLine.HwrResult[showAlterOfWord - 1].selectedCandidate;
+            //var citem = (string)e.ClickedItem;
+            //int ind = alternativeListView.Items.IndexOf(citem);
+            
+            //phrases[showingResultOfLine].words[ind].current = citem;
+            //phrases[showingResultOfLine].words[ind].selected_index = phrases[showingResultOfLine].words[ind].candidates.IndexOf(citem);
+            //foreach (var w in phrases[showingResultOfLine].words)
+            //{
+            //    TextBlock tb = new TextBlock();
+            //    tb.Text = w.current;
+            //    tb.Tapped += (object s, TappedRoutedEventArgs args) => {
+            //        alternativeListView.ItemsSource = w.candidates;
+            //        alter_flyout.ShowAt(tb);
+
+            //    };
+            //    curLineWordsStackPanel.Children.Add(tb);
+            //}
+
+            //NoteLine curLine = idToNoteLine[(uint)showingResultOfLine];
+            //Dictionary<string, List<string>> dict = HWRManager.getSharedHWRManager().getDictionary();
+
+            //var citem = (string)e.ClickedItem;
+            //int ind = alternativeListView.Items.IndexOf(citem);
+            //int previous = curLine.HwrResult[showAlterOfWord].selectedIndex;
+            //string old_form = curLine.HwrResult[showAlterOfWord].selectedCandidate;
+            //string term = "";
+            //if (showAlterOfWord - 1 >= 0)
+            //    term = curLine.HwrResult[showAlterOfWord - 1].selectedCandidate;
 
             //When changing the alternative of an abbreviation, just change result UI and re-annotate
             //note that all words in an extended form of an abbereviation will contains at least one space
             //this is a faster way of identifying an abbreviation, but feel free to change if there's better way of
             //doing so.
-            if (dict.ContainsKey(term.ToLower()) && dict[term.ToLower()].Contains(old_form))
-            {
-                Debug.WriteLine("\nchanging alternative of an abbreviation.\n");
-                curLine.updateHwrResult(showAlterOfWord, ind, old_form);
-                string new_form = curLine.HwrResult[showAlterOfWord].selectedCandidate;
-                string parsed = OperationLogger.getOpLogger().ParseCandidateList(curLine.HwrResult[showAlterOfWord].candidateList);
-                //OperationLogger.getOpLogger().Log(OperationType.Abbreviation,curLine.Text ,term ,old_form ,new_form ,ind.ToString(),parsed);
-            }
-            else
-            {
-                Debug.WriteLine("\nchanging a normal word in dispaly.\n");
-                //HWRManager.getSharedHWRManager().setRequestType(false);
-                await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () => {
-                    curLine.updateHwrResult(showAlterOfWord, ind);
-                });
-                string new_form = curLine.HwrResult[showAlterOfWord].selectedCandidate;
-                //OperationLogger.getOpLogger().Log(OperationType.Alternative, old_form, new_form, ind.ToString());
-                curLine.HwrResult = await HWRManager.getSharedHWRManager().ReRecognizeAsync(curLine.HwrResult);
+            //if (dict.ContainsKey(term.ToLower()) && dict[term.ToLower()].Contains(old_form))
+            //{
+            //    Debug.WriteLine("\nchanging alternative of an abbreviation.\n");
+            //    curLine.updateHwrResult(showAlterOfWord, ind, old_form);
+            //    string new_form = curLine.HwrResult[showAlterOfWord].selectedCandidate;
+            //    string parsed = OperationLogger.getOpLogger().ParseCandidateList(curLine.HwrResult[showAlterOfWord].candidateList);
+            //    //OperationLogger.getOpLogger().Log(OperationType.Abbreviation,curLine.Text ,term ,old_form ,new_form ,ind.ToString(),parsed);
+            //}
+            //else
+            //{
+            //    Debug.WriteLine("\nchanging a normal word in dispaly.\n");
+            //    //HWRManager.getSharedHWRManager().setRequestType(false);
+            //    await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () => {
+            //        curLine.updateHwrResult(showAlterOfWord, ind);
+            //    });
+            //    string new_form = curLine.HwrResult[showAlterOfWord].selectedCandidate;
+            //    //OperationLogger.getOpLogger().Log(OperationType.Alternative, old_form, new_form, ind.ToString());
+            //    curLine.HwrResult = await HWRManager.getSharedHWRManager().ReRecognizeAsync(curLine.HwrResult);
 
-            }
+            //}
 
-            // HWR result UI
-            setUpCurrentLineResultUI(curLineObject);
-            // re-annotation and UI set-up after all HWR has been updated
-            phenoCtrlSlide.Y = 0;
-            curLineCandidatePheno.Clear();
-            annotateCurrentLineAndUpdateUI(curLineObject);
+            //// HWR result UI
+            //setUpCurrentLineResultUI(curLineObject);
+            //// re-annotation and UI set-up after all HWR has been updated
+            //phenoCtrlSlide.Y = 0;
+            //curLineCandidatePheno.Clear();
+            //annotateCurrentLineAndUpdateUI(curLineObject);
         }
 
         private async void annotateCurrentLineAndUpdateUI(InkAnalysisLine line)

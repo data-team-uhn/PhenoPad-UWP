@@ -72,12 +72,16 @@ namespace PhenoPad.CustomControl
         {
             if (updated != null) {
                 RecognizedPhrase.Children.Clear();
+                var dict = HWRManager.getSharedHWRManager().getDictionary();
                 words.Clear();
                 for (int i = 0; i < updated.Count; i++)
                 {
                     HWRRecognizedText recognized = updated[i];
-                    WordBlockControl wb = new WordBlockControl(lineIndex, 0, i, recognized.selectedCandidate, recognized.candidateList);
-                    AddWord(wb);
+                    //currently we replace the abbreviations short form with its extended form
+                    if (!dict.ContainsKey(recognized.selectedCandidate)) {
+                        WordBlockControl wb = new WordBlockControl(lineIndex, 0, i, recognized.selectedCandidate, recognized.candidateList);
+                        AddWord(wb);
+                    }
                 }
 
             }

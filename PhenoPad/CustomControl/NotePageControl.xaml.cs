@@ -1676,6 +1676,7 @@ namespace PhenoPad.CustomControl
 
         private void InkCanvas_Tapped(object sender, TappedRoutedEventArgs e)
         {
+            ClearSelectionAsync();
             Point pos = e.GetPosition(inkCanvas);
             ShowAlterOnHover(pos);
         }
@@ -1709,8 +1710,10 @@ namespace PhenoPad.CustomControl
                 // flyout 
                 // RecognizeSelection();
 
+                
+
                 // pop up panel
-                recognizeAndSetUpUIForLine(line, true, serverRecog: true);
+                recognizeAndSetUpUIForLine(line, indetails:true, serverRecog: MainPage.Current.abbreviation_enabled);
 
             }
 

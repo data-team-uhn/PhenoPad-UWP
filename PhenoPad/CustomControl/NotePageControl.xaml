@@ -129,7 +129,7 @@
                 
             </Flyout>
             
-            <Flyout x:Key="ChangeAlternativeFlyout" Placement="Top">
+            <Flyout x:Name="alter_flyout" x:Key="ChangeAlternativeFlyout" Placement="Top">
                 <StackPanel Padding="0" Margin="3" Width="auto">
                     <ListView x:Name="alternativeListView" IsItemClickEnabled="True"
                               ItemClick="alternativeListView_ItemClick" Width="auto">
