@@ -759,7 +759,7 @@ namespace PhenoPad.PhenotypeService
         public async Task<List<Disease>> predictDisease()
         {
             //Create an HTTP client object
-            Windows.Web.Http.HttpClient httpClient = new Windows.Web.Http.HttpClient();
+            HttpClient httpClient = new HttpClient();
 
             //Add a user-agent header to the GET request. 
             var headers = httpClient.DefaultRequestHeaders;
@@ -778,12 +778,7 @@ namespace PhenoPad.PhenotypeService
                 throw new Exception("Invalid header value: " + header);
             }
 
-            var urlstr = "https://playground.phenotips.org/get/PhenoTips/DiseasePredictService2?format=json&limit=15";
-            /**
-            foreach (var p in savedPhenotypes)
-            {
-                urlstr += "&symptom=" + p.hpId;
-            }**/
+            var urlstr = DIFFERENTIAL_ADDR;
             Uri requestUri = new Uri(urlstr);
 
             //Send the GET request asynchronously and retrieve the response as a string.

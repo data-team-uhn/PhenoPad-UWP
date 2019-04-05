@@ -9,7 +9,13 @@ namespace PhenoPad.PhenotypeService
     public class Disease
     {
         public string id { get; set; }
-        public string name { get; set; }
+        private string _name;
+        public string name {
+            get { return _name; }
+            set {
+                _name = value.Substring(0,1).ToUpper() + value.Substring(1).ToLower();
+            }
+        }
         public string url { get; set; }
         public double score { get; set; }
         

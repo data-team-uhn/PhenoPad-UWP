@@ -736,39 +736,44 @@ namespace PhenoPad.CustomControl
             categoryGrid.Visibility = Visibility.Collapsed;
             try
             {
-                //need to fix here to use file without type ._.
-                var strokefile = await FileManager.getSharedFileManager().GetNoteFileNotCreate(notebookId, pageId,                                                                                             NoteFileType.ImageAnnotation, name);
-                if (strokefile != null)
-                    await FileManager.getSharedFileManager().loadStrokes(strokefile, inkCanvas);
-
-                if (addinType != AddinType.EHR) {
-                        inkCan.Height = this.Height - 48;
-                        inkCan.Width = this.Width;
+                if (addinType != AddinType.EHR)
+                {
+                    inkCan.Height = Height - 48;
+                    inkCan.Width = Width;
                 }
 
-                if (addinType == AddinType.IMAGE || addinType == AddinType.PHOTO)
+                //try to load strokes from disk
+                var strokefile = await FileManager.getSharedFileManager().GetNoteFileNotCreate(notebookId, pageId,                                                                                             NoteFileType.ImageAnnotation, name);
+                if (strokefile != null)
                 {
+                    await FileManager.getSharedFileManager().loadStrokes(strokefile, inkCanvas);
+                    addinType = AddinType.DRAWING;
+                }
 
-                    var file = await FileManager.getSharedFileManager().GetNoteFileNotCreate(notebookId, pageId, NoteFileType.Image, name);
-                    var properties = await file.Properties.GetImagePropertiesAsync();
+                //try to load image file from disk
+                var Imagefile = await FileManager.getSharedFileManager().GetNoteFileNotCreate(notebookId, pageId, NoteFileType.Image, name);
+                if (Imagefile != null) {
+                    var properties = await Imagefile.Properties.GetImagePropertiesAsync();
                     imgratio = (double)properties.Width / properties.Height;
-                    BitmapImage img = new BitmapImage(new Uri(file.Path));
+                    BitmapImage img = new BitmapImage(new Uri(Imagefile.Path));
                     Image photo = new Image();
                     photo.Source = img;
                     photo.Visibility = Visibility.Visible;
                     contentGrid.Children.Add(photo);
                     categoryGrid.Visibility = Visibility.Collapsed;
                     hasImage = true;
-
+                    addinType = AddinType.IMAGE;
                 }
 
-                else if (addinType == AddinType.VIDEO) {
-                    var video = await FileManager.getSharedFileManager().GetNoteFileNotCreate(notebookId, pageId, NoteFileType.Video, name);
+                //try to load video file from disk
+                var video = await FileManager.getSharedFileManager().GetNoteFileNotCreate(notebookId, pageId, NoteFileType.Video, name);
+                if (video != null) {
                     var properties = await video.Properties.GetVideoPropertiesAsync();
                     imgratio = (double)properties.Width / properties.Height;
                     Debug.WriteLine($"imgratio of video={imgratio}");
                     mediaPlayerElement.Source = MediaSource.CreateFromStorageFile(video);
                     hasImage = true;
+                    addinType = AddinType.VIDEO;
                 }
 
                 InitiateInkCanvas(onlyView);
@@ -825,13 +830,13 @@ namespace PhenoPad.CustomControl
                     if (hasImage)
                     {//when loading an image, had to manually adjust dimension to display full size strokes
                         TranslateTransform tt = new TranslateTransform();
-                        //tt.Y = -24;
-                        //contentGrid.RenderTransform = tt;
+                        tt.Y = -24;
+                        contentGrid.RenderTransform = tt;
                         Width = 400;
                         Height = (int)(Width / imgratio);
                         inkCan.Height = Height;
                         inkCan.Width = Width;
-                        mediaPlayerElement.Visibility = Visibility.Collapsed;
+                        mediaPlayerElement.Visibility = addinType == AddinType.VIDEO ? Visibility.Visible : Visibility.Collapsed;
                     }
                     else
                     {//adjust ink canvas size/position to display full stroke view
