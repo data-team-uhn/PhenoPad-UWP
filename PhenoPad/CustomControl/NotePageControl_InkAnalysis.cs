@@ -490,35 +490,12 @@ namespace PhenoPad.CustomControl
         private void setUpCurrentLineResultUI(InkAnalysisLine line)
         {
             int line_index = getLineNumByRect(line.BoundingRect);
-            Dictionary<string, List<string>> dict = HWRManager.getSharedHWRManager().getDictionary();
             var words = phrases[line_index].words;
-            //List<HWRRecognizedText> newResult = idToNoteLine.GetValueOrDefault(line.Id).HwrResult;
             if (words.Count == 0)
                 return;
             curLineWordsStackPanel.Children.Clear();
             foreach (var b in words[words.Count - 1].GetCurWordCandidates())
                 curLineWordsStackPanel.Children.Add(b);
-
-            //foreach (string alternative in words[words.Count - 1].candidates)
-            //{
-            //    Button alter = new Button();
-            //    alter.VerticalAlignment = VerticalAlignment.Center;
-            //    alter.FontSize = 16;
-            //    alter.Content = alternative;
-            //    alter.Click += (object sender, RoutedEventArgs e) =>
-            //    {
-            //        int ind = words[words.Count - 1].candidates.IndexOf((string)((Button)sender).Content);
-            //        words[words.Count - 1].selected_index = ind;
-            //        words[words.Count - 1].current = words[words.Count - 1].candidates[ind];
-            //        words[words.Count - 1].WordBlock.Text = words[words.Count - 1].current;
-            //        words[words.Count - 1].corrected = true;
-            //        annotateCurrentLineAndUpdateUI(line);
-            //        RawStrokeTimer.Stop();
-            //        UpdateLayout();
-            //        HideCurLineStackPanel();
-            //    };
-            //    curLineWordsStackPanel.Children.Add(alter);
-            //}
 
             loading.Visibility = Visibility.Collapsed;
             curLineWordsStackPanel.Visibility = Visibility.Visible;
@@ -537,16 +514,22 @@ namespace PhenoPad.CustomControl
             var words = inkAnalyzer.AnalysisRoot.FindNodes(InkAnalysisNodeKind.InkWord);
             double lowerbound = lineNum * LINE_HEIGHT;
             double upperbound = (lineNum + 1) * LINE_HEIGHT;
+
             words = words.Where(x => x.BoundingRect.Y + x.BoundingRect.Height / 3 >= lowerbound && x.BoundingRect.Y + x.BoundingRect.Height / 3 <= upperbound).OrderBy(x => x.BoundingRect.X).ToList();
+            Debug.WriteLine($"line number {lineNum}, recognized word count = {words.Count}");
             bool hovering = false;
             for (int i = 0; i < words.Count; i++)
             {
                 var w = words[i];
-                if (w.BoundingRect.Contains(pos))
+                Debug.WriteLine($"x={w.BoundingRect.X},y={w.BoundingRect.Y}");
+                Rect wordRect = new Rect(w.BoundingRect.X, lineNum * LINE_HEIGHT, w.BoundingRect.Width, LINE_HEIGHT);
+                if (wordRect.Contains(pos))
                 {
+                    Debug.WriteLine("detected !");
                     WordBlockControl wbc = phrases.Where(x => x.Key == lineNum).FirstOrDefault().Value.words.Where(x => x.word_index == i).FirstOrDefault();
                     if (wbc != null)
                     {
+                        Debug.WriteLine("wbc not null !");
                         hovering = true;
                         curLineWordsStackPanel.Children.Clear();
                         foreach (string alternative in wbc.candidates)

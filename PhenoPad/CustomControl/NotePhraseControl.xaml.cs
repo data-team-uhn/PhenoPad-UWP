@@ -84,7 +84,7 @@ namespace PhenoPad.CustomControl
                     {
                         var extended = updated[i + 1];
                         extended.candidateList.Insert(0, recognized.selectedCandidate);
-                        WordBlockControl wb2 = new WordBlockControl(lineIndex, 0, i+1, extended.selectedCandidate, extended.candidateList);
+                        WordBlockControl wb2 = new WordBlockControl(lineIndex, 0, i, extended.selectedCandidate, extended.candidateList);
                         wb2.is_abbr = true;
                         AddWord(wb2);
                         i++;
