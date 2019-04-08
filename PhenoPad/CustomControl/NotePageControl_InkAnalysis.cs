@@ -43,13 +43,14 @@ using Windows.Graphics.Display;
 using PhenoPad.LogService;
 using MetroLog;
 using Windows.UI.Xaml.Media.Animation;
+using Windows.System;
 
 namespace PhenoPad.CustomControl
 {
     public sealed partial class NotePageControl : UserControl
     {
         DispatcherTimer recognizeTimer;
-        DispatcherTimer RawStrokeTimer;
+        public DispatcherTimer RawStrokeTimer;
         DispatcherTimer EraseTimer;
         List<InkStroke> RawStrokes;
         InkAnalyzer strokeAnalyzer;
@@ -65,69 +66,7 @@ namespace PhenoPad.CustomControl
         #region stroke event handlers
 
 
-        private void ShowAlterOnHover(Point pos) {
 
-            Rect pointerRec = new Rect(pos.X, pos.Y, 1, 1);
-            int lineNum = getLineNumByRect(pointerRec);
-            var words = inkAnalyzer.AnalysisRoot.FindNodes(InkAnalysisNodeKind.InkWord);
-            double lowerbound = lineNum * LINE_HEIGHT;
-            double upperbound = (lineNum + 1) * LINE_HEIGHT;
-            words = words.Where(x => x.BoundingRect.Y + x.BoundingRect.Height / 3 >= lowerbound && x.BoundingRect.Y + x.BoundingRect.Height / 3 <= upperbound).OrderBy(x => x.BoundingRect.X).ToList();
-            bool hovering = false;
-            for (int i = 0; i < words.Count; i++)
-            {
-                var w = words[i];
-                if (w.BoundingRect.Contains(pos))
-                {
-                    WordBlockControl wbc = phrases.Where(x => x.Key == lineNum).FirstOrDefault().Value.words.Where(x => x.word_index == i).FirstOrDefault();
-                    if (wbc != null)
-                    {
-                        hovering = true;
-                        curLineWordsStackPanel.Children.Clear();
-                        foreach (string alternative in wbc.candidates)
-                        {
-                            Button alter = new Button();
-                            alter.VerticalAlignment = VerticalAlignment.Center;
-                            alter.FontSize = 16;
-                            alter.Content = alternative;
-                            alter.Click += (object sender, RoutedEventArgs e) =>
-                            {
-                                int ind = wbc.candidates.IndexOf((string)((Button)sender).Content);
-                                wbc.selected_index = ind;
-                                wbc.current = wbc.candidates[ind];
-                                wbc.WordBlock.Text = wbc.current;
-                                wbc.corrected = true;
-                                MainPage.Current.curPage.HideCurLineStackPanel();
-                                //RawStrokeTimer.Stop();
-                                UpdateLayout();
-                            };
-                            curLineWordsStackPanel.Children.Add(alter);
-                        }
-                        TextBox tb = new TextBox();
-                        tb.Width = 40;
-                        tb.Height = curLineWordsStackPanel.ActualHeight * 0.7;
-                        tb.LostFocus += (object sender, RoutedEventArgs e) => {
-                            wbc.ChangeAlterFromStroke(tb.Text);
-                            MainPage.Current.curPage.HideCurLineStackPanel();
-                        };
-                        curLineWordsStackPanel.Children.Add(tb);
-                        loading.Visibility = Visibility.Collapsed;
-                        curLineWordsStackPanel.Visibility = Visibility.Visible;
-                        curLineParentStack.Visibility = Visibility.Visible;
-                        curLineResultPanel.Visibility = Visibility.Visible;
-                        Canvas.SetLeft(curLineResultPanel, w.BoundingRect.X);
-                        Canvas.SetTop(curLineResultPanel, (lineNum-1) * LINE_HEIGHT);
-                        return;
-                    }
-
-                }
-
-            }
-            if (!hovering)
-                HideCurLineStackPanel();
-
-
-        }
 
         private void InkPresenter_StrokesErased(InkPresenter sender, InkStrokesErasedEventArgs args)
         {
@@ -157,7 +96,12 @@ namespace PhenoPad.CustomControl
                 // dispatcherTimer.Stop();
                 //operationDispathcerTimer.Stop();
                 inkOperationAnalyzer.ClearDataForAllStrokes();
-                RawStrokeTimer.Stop();
+                if (RawStrokeTimer.IsEnabled && Math.Floor(args.CurrentPoint.Position.Y / LINE_HEIGHT) != showingResultOfLine) {
+                    Debug.WriteLine("started writing on new line,will tick timer");
+                    RawStrokeTimer_Tick();
+                }
+                else
+                    RawStrokeTimer.Stop();
             }
             autosaveDispatcherTimer.Stop();
             recognizeTimer.Stop();
@@ -359,8 +303,6 @@ namespace PhenoPad.CustomControl
 
             if (!indetails) {
                 Debug.Assert(line != null);
-                //if (line == null)
-                //    return;
 
                 // switch to another line, clear result of current line
                 if (lineNum != showingResultOfLine)
@@ -398,10 +340,8 @@ namespace PhenoPad.CustomControl
                     Debug.WriteLine("Created a new line");
                 }
                 //OperationLogger.getOpLogger().Log(OperationType.StrokeRecognition, line.RecognizedText);
-
-
-
             }
+
             // HWR result UI
             setUpCurrentLineResultUI(line);
             // annotation and UI
@@ -422,10 +362,6 @@ namespace PhenoPad.CustomControl
                     tb.Text = w.current;
                     tb.VerticalAlignment = VerticalAlignment.Center;
                     tb.FontSize = 16;
-                    tb.Tapped += (object sender,TappedRoutedEventArgs args)=>{
-                        alternativeListView.ItemsSource = w.candidates;
-                        alter_flyout.ShowAt(tb);
-                    };
                     curLineWordsStackPanel.Children.Add(tb);
                 }
                 PopupCommandBar.Visibility = Visibility.Collapsed;
@@ -560,25 +496,29 @@ namespace PhenoPad.CustomControl
             if (words.Count == 0)
                 return;
             curLineWordsStackPanel.Children.Clear();
-            foreach (string alternative in words[words.Count - 1].candidates)
-            {
-                Button alter = new Button();
-                alter.VerticalAlignment = VerticalAlignment.Center;
-                alter.FontSize = 16;
-                alter.Content = alternative;
-                alter.Click += (object sender, RoutedEventArgs e) =>
-                {
-                    int ind = words[words.Count - 1].candidates.IndexOf((string)((Button)sender).Content);
-                    words[words.Count - 1].selected_index = ind;
-                    words[words.Count - 1].current = words[words.Count - 1].candidates[ind];
-                    words[words.Count - 1].WordBlock.Text = words[words.Count - 1].current;
-                    words[words.Count - 1].corrected = true;
-                    MainPage.Current.curPage.HideCurLineStackPanel();
-                    RawStrokeTimer.Stop();
-                    UpdateLayout();
-                };
-                curLineWordsStackPanel.Children.Add(alter);
-            }
+            foreach (var b in words[words.Count - 1].GetCurWordCandidates())
+                curLineWordsStackPanel.Children.Add(b);
+
+            //foreach (string alternative in words[words.Count - 1].candidates)
+            //{
+            //    Button alter = new Button();
+            //    alter.VerticalAlignment = VerticalAlignment.Center;
+            //    alter.FontSize = 16;
+            //    alter.Content = alternative;
+            //    alter.Click += (object sender, RoutedEventArgs e) =>
+            //    {
+            //        int ind = words[words.Count - 1].candidates.IndexOf((string)((Button)sender).Content);
+            //        words[words.Count - 1].selected_index = ind;
+            //        words[words.Count - 1].current = words[words.Count - 1].candidates[ind];
+            //        words[words.Count - 1].WordBlock.Text = words[words.Count - 1].current;
+            //        words[words.Count - 1].corrected = true;
+            //        annotateCurrentLineAndUpdateUI(line);
+            //        RawStrokeTimer.Stop();
+            //        UpdateLayout();
+            //        HideCurLineStackPanel();
+            //    };
+            //    curLineWordsStackPanel.Children.Add(alter);
+            //}
 
             loading.Visibility = Visibility.Collapsed;
             curLineWordsStackPanel.Visibility = Visibility.Visible;
@@ -588,6 +528,85 @@ namespace PhenoPad.CustomControl
             Canvas.SetTop(curLineResultPanel, lastWordPoint.Y - LINE_HEIGHT);
 
         }
+
+        private void ShowAlterOnHover(Point pos)
+        {
+
+            Rect pointerRec = new Rect(pos.X, pos.Y, 1, 1);
+            int lineNum = getLineNumByRect(pointerRec);
+            var words = inkAnalyzer.AnalysisRoot.FindNodes(InkAnalysisNodeKind.InkWord);
+            double lowerbound = lineNum * LINE_HEIGHT;
+            double upperbound = (lineNum + 1) * LINE_HEIGHT;
+            words = words.Where(x => x.BoundingRect.Y + x.BoundingRect.Height / 3 >= lowerbound && x.BoundingRect.Y + x.BoundingRect.Height / 3 <= upperbound).OrderBy(x => x.BoundingRect.X).ToList();
+            bool hovering = false;
+            for (int i = 0; i < words.Count; i++)
+            {
+                var w = words[i];
+                if (w.BoundingRect.Contains(pos))
+                {
+                    WordBlockControl wbc = phrases.Where(x => x.Key == lineNum).FirstOrDefault().Value.words.Where(x => x.word_index == i).FirstOrDefault();
+                    if (wbc != null)
+                    {
+                        hovering = true;
+                        curLineWordsStackPanel.Children.Clear();
+                        foreach (string alternative in wbc.candidates)
+                        {
+                            Button alter = new Button();
+                            alter.VerticalAlignment = VerticalAlignment.Center;
+                            alter.FontSize = 16;
+                            alter.Content = alternative;
+                            alter.Click += (object sender, RoutedEventArgs e) =>
+                            {
+                                int ind = wbc.candidates.IndexOf((string)((Button)sender).Content);
+                                wbc.selected_index = ind;
+                                wbc.current = wbc.candidates[ind];
+                                wbc.WordBlock.Text = wbc.current;
+                                wbc.corrected = true;
+                                HideCurLineStackPanel();
+                                annotateCurrentLineAndUpdateUI(line_index: lineNum);
+                                UpdateLayout();
+                            };
+                            curLineWordsStackPanel.Children.Add(alter);
+                        }
+                        TextBox tb = new TextBox();
+                        tb.Width = 40;
+                        tb.Height = curLineWordsStackPanel.ActualHeight * 0.7;
+                        tb.KeyDown += (object sender, KeyRoutedEventArgs e) => {
+                            if (e.Key.Equals(VirtualKey.Enter))
+                            {
+                                wbc.ChangeAlterFromStroke(tb.Text);
+                                HideCurLineStackPanel();
+                            }
+                        };
+                        tb.LostFocus += (object sender, RoutedEventArgs e) => {
+                            wbc.ChangeAlterFromStroke(tb.Text);
+                            HideCurLineStackPanel();
+                        };
+                        curLineWordsStackPanel.Children.Add(tb);
+                        loading.Visibility = Visibility.Collapsed;
+                        curLineWordsStackPanel.Visibility = Visibility.Visible;
+                        curLineParentStack.Visibility = Visibility.Visible;
+                        curLineResultPanel.Visibility = Visibility.Visible;
+                        Canvas.SetLeft(curLineResultPanel, w.BoundingRect.X);
+                        Canvas.SetTop(curLineResultPanel, (lineNum - 1) * LINE_HEIGHT);
+                        return;
+                    }
+
+                }
+
+            }
+            if (!hovering)
+                HideCurLineStackPanel();
+
+
+        }
+
+        public void ShowAbbreviationAlter(WordBlockControl wbc, List<string> alter)
+        {
+            alternativeListView.ItemsSource = alter;
+            alter_flyout.ShowAt(curLineResultPanel);
+        }
+
 
         private async void alternativeListView_ItemClick(object sender, ItemClickEventArgs e)
         {
@@ -653,9 +672,9 @@ namespace PhenoPad.CustomControl
             //annotateCurrentLineAndUpdateUI(curLineObject);
         }
 
-        private async void annotateCurrentLineAndUpdateUI(InkAnalysisLine line)
+        public async void annotateCurrentLineAndUpdateUI(InkAnalysisLine line=null, int line_index = -1)
         {
-            int lineNum = getLineNumByRect(line.BoundingRect);
+            int lineNum = line == null? line_index:getLineNumByRect(line.BoundingRect);
             // after get annotation, recognized text has also changed
             Dictionary<string, Phenotype> annoResult = await PhenoMana.annotateByNCRAsync(phrases[lineNum].GetString());
             //OperationLogger.getOpLogger().Log(OperationType.Recognition, idToNoteLine.GetValueOrDefault(line.Id).Text, annoResult);

@@ -53,7 +53,9 @@ namespace PhenoPad.CustomControl
         public string GetString() {
             string text = "";
             foreach (WordBlockControl s in words) {
-                text += s.current + " ";
+                text += s.current.Trim('(').Trim(')') + " ";
+                if (s.abbr_current != "")
+                    text += s.abbr_current.Trim('(').Trim(')')+" ";
             }
             return text;
         }
@@ -77,8 +79,17 @@ namespace PhenoPad.CustomControl
                 for (int i = 0; i < updated.Count; i++)
                 {
                     HWRRecognizedText recognized = updated[i];
-                    //currently we replace the abbreviations short form with its extended form
-                    if (!dict.ContainsKey(recognized.selectedCandidate)) {
+                    //not an abbreviation
+                    if (dict.ContainsKey(recognized.selectedCandidate.ToLower()))
+                    {
+                        var extended = updated[i + 1];
+                        extended.candidateList.Insert(0, recognized.selectedCandidate);
+                        WordBlockControl wb2 = new WordBlockControl(lineIndex, 0, i+1, extended.selectedCandidate, extended.candidateList);
+                        wb2.is_abbr = true;
+                        AddWord(wb2);
+                        i++;
+                    }
+                    else {
                         WordBlockControl wb = new WordBlockControl(lineIndex, 0, i, recognized.selectedCandidate, recognized.candidateList);
                         AddWord(wb);
                     }

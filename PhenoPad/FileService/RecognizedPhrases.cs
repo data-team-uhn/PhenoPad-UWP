@@ -30,20 +30,38 @@ namespace PhenoPad.FileService
         /// </summary>
         public RecognizedPhrases()
         {
+            current = "";
+            candidate2 = "";
+            candidate3 = "";
+            candidate4 = "";
+            candidate5 = "";
+
         }
 
         public RecognizedPhrases(int lineNum, double left, int index, string selected,List<string>candidates) {
             line_index = lineNum;
             this.left = left;
             word_index = index;
+            current = "";
+            candidate2 = "";
+            candidate3 = "";
+            candidate4 = "";
+            candidate5 = "";
+
 
             current = selected;
-            List<string> temp = new List<string>();
-            temp.AddRange(candidates);
-            candidate2 = temp[0];
-            candidate3 = temp[1];
-            candidate4 = temp[2];
-            candidate5 = temp[3];
+            if (candidates.Contains(selected))
+                candidates.Remove(selected);
+            foreach (var s in candidates) {
+                if (candidate2.Length == 0)
+                    candidate2 = s;
+                else if (candidate3.Length == 0)
+                    candidate3 = s;
+                else if (candidate4.Length == 0)
+                    candidate4 = s;
+                else if (candidate5.Length == 0)
+                    candidate5 = s;
+            }
         }
     }
 }

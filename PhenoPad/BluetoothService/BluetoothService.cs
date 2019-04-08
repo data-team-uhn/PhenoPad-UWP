@@ -27,8 +27,9 @@ namespace PhenoPad.BluetoothService
         private CancellationTokenSource cancellationSource;
         private RfcommDeviceService blueService = null;
         private BluetoothDevice bluetoothDevice = null;
-        private static string RESTART_AUDIO_FLAG = "AudioClientException";
-        private static string RESTART_BLUETOOTH_FLAG = "DeviceException";
+        private static string RESTART_AUDIO_FLAG = "EXCEPTION";
+        private static string RESTART_AUIDO_SERVER = "TIMEOUTEXIT";
+        private static string RESTART_BLUETOOTH_FLAG = "DEXCETPTION";
 
 
         public bool initialized = false;
@@ -60,8 +61,9 @@ namespace PhenoPad.BluetoothService
                 await InitiateConnection();
                 while (!initialized)
                 {//continuously loop until we connect to raspberry pi
-                    LogService.MetroLogger.getSharedLogger().Info("Could not discover Bluetooh device, trying again...");
+                    //LogService.MetroLogger.getSharedLogger().Info("Could not discover Bluetooh device, trying again...");
                     StopWatcher();
+                    await Task.Delay(TimeSpan.FromSeconds(3));
                     await InitiateConnection();
                 }
             }
@@ -116,7 +118,7 @@ namespace PhenoPad.BluetoothService
                         }
                         if (attempNum == 6)
                         {
-                            LogService.MetroLogger.getSharedLogger().Error("Bluetooth connection attempt exceeded 5, trying again later ...");
+                            //LogService.MetroLogger.getSharedLogger().Error("Bluetooth connection attempt exceeded 5, trying again later ...");
                             rootPage.audioButton.IsEnabled = true;
                             rootPage.audioButton.IsChecked = false;
                             rootPage.bluetoonOn = false;
@@ -206,7 +208,7 @@ namespace PhenoPad.BluetoothService
             // Hook up handlers for the watcher events before starting the watcher
             deviceWatcher.Added += new TypedEventHandler<DeviceWatcher, DeviceInformation>(async (watcher, deviceInfo) =>
             {
-                Debug.WriteLine("device watcher added ================================================");
+                //Debug.WriteLine("device watcher added ================================================");
                 await rootPage.Dispatcher.RunAsync(CoreDispatcherPriority.High, async () =>
                 {
                     // Make sure device name isn't blank
@@ -239,13 +241,13 @@ namespace PhenoPad.BluetoothService
                                 }
                                 else
                                 {
-                                    LogService.MetroLogger.getSharedLogger().Info("Could not discover Bluetooh server on the remote device, trying again...");
-                                    await Task.Delay(500);
+                                    //LogService.MetroLogger.getSharedLogger().Info("Could not discover Bluetooh server on the remote device, trying again...");
+                                    await Task.Delay(TimeSpan.FromSeconds(3));
                                 }
                             }
                             if (attempNum == 6)
                             {
-                                LogService.MetroLogger.getSharedLogger().Error("Bluetooth connection attempt exceeded 5, trying again later ...");
+                                //LogService.MetroLogger.getSharedLogger().Error("Bluetooth connection attempt exceeded 5, trying again later ...");
                                 rootPage.audioButton.IsEnabled = true;
                                 rootPage.audioButton.IsChecked = false;
                                 rootPage.bluetoonOn = false;
@@ -327,13 +329,12 @@ namespace PhenoPad.BluetoothService
 
             });
             deviceWatcher.Stopped += new TypedEventHandler<DeviceWatcher, object>((watcher, deviceInfo) => {
-                MainPage.Current.NotifyUser("device watcher stopped", NotifyType.StatusMessage, 2);
+                //Debug.WriteLine("device watcher stopped");
             });
             deviceWatcher.Removed += new TypedEventHandler<DeviceWatcher, DeviceInformationUpdate>((watcher, deviceInfo) => {
-                MainPage.Current.NotifyUser("device watcher removed", NotifyType.StatusMessage, 2);
+                //Debug.WriteLine("device watcher removed");
             });
-            deviceWatcher.Start();
-            
+            deviceWatcher.Start();           
         }
 
         private void HandleAudioException(string message) {
