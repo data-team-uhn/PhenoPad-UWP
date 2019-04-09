@@ -258,10 +258,8 @@ namespace PhenoPad.CustomControl
                         int lineNum = getLineNumByRect(line.BoundingRect);
                         if (phrases.ContainsKey(lineNum))
                         {
-                            Debug.WriteLine($"Now analyzing line {lineNum}");
                             Dictionary<string, Phenotype> annoResult = await PhenoMana.annotateByNCRAsync(phrases[lineNum].GetString());
                             //OperationLogger.getOpLogger().Log(OperationType.Recognition, nl.Text, annoResult);
-                            Debug.WriteLine($"Number of anno fetched = {annoResult.Count}");
                             if (annoResult != null && annoResult.Count != 0)
                             {
                                 if (!annotatedLines.Contains(lineNum))
@@ -337,7 +335,7 @@ namespace PhenoPad.CustomControl
                     Canvas.SetTop(phrase, lineNum * LINE_HEIGHT);
                     phrase.SetPhrasePosition(left, lineNum * LINE_HEIGHT);
                     phrases[lineNum] = phrase;
-                    Debug.WriteLine("Created a new line");
+                    Debug.WriteLine($"Created a new line = {lineNum}");
                 }
                 //OperationLogger.getOpLogger().Log(OperationType.StrokeRecognition, line.RecognizedText);
             }

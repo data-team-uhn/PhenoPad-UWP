@@ -28,7 +28,6 @@ namespace PhenoPad.BluetoothService
         private RfcommDeviceService blueService = null;
         private BluetoothDevice bluetoothDevice = null;
         private static string RESTART_AUDIO_FLAG = "EXCEPTION";
-        private static string RESTART_AUIDO_SERVER = "TIMEOUTEXIT";
         private static string RESTART_BLUETOOTH_FLAG = "DEXCETPTION";
 
 
@@ -337,14 +336,23 @@ namespace PhenoPad.BluetoothService
             deviceWatcher.Start();           
         }
 
-        private void HandleAudioException(string message) {
+        private async void HandleAudioException(string message) {
             if (message.Equals(RESTART_AUDIO_FLAG))
             {
-                MainPage.Current.RestartAudioOnException();
+                Debug.WriteLine("BluetoothService=> Got EXCEPTION");
+                await MainPage.Current.RestartAudioOnException();
+                Debug.WriteLine("BluetoothService=> after line 344");
+
             }
             else if (message.Equals(RESTART_BLUETOOTH_FLAG)) {
+                Debug.WriteLine("BluetoothService=> Got DEXCEPTION");
 
-            }     
+                MainPage.Current.changeSpeechEngineState_BT();
+                await Task.Delay(TimeSpan.FromSeconds(5));
+                MainPage.Current.changeSpeechEngineState_BT();
+                Debug.WriteLine("BluetoothService=> after line 353");
+
+            }
         }
 
         public string GetPiIP()

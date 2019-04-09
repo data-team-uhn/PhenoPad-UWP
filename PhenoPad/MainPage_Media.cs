@@ -356,9 +356,9 @@ namespace PhenoPad
                 changeSpeechEngineState();
         }
 
-        public async void RestartAudioOnException() {
+        public async Task RestartAudioOnException() {
             AudioStreamButton_Clicked();
-            await Task.Delay(TimeSpan.FromSeconds(3));
+            await Task.Delay(TimeSpan.FromSeconds(5));
             AudioStreamButton_Clicked();
         }
 

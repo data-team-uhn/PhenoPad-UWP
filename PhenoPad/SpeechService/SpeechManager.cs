@@ -49,6 +49,8 @@ namespace PhenoPad.SpeechService
         private string serverPort = "8888";
         public static string DEFAULT_SERVER = "137.135.117.253";
         public static string DEFAULT_PORT = "8080";
+        private static string RESTART_AUIDO_SERVER = "TIMEOUTEXIT";
+        public static bool NEED_RESTART_BT = false;
         public static SpeechManager sharedSpeechManager;
         
         public Conversation conversation = new Conversation();
@@ -206,6 +208,12 @@ namespace PhenoPad.SpeechService
                     await Task.Delay(100);
                     // do the work in the loop
                     string serverResult = await speechResultsSocket.ReceiveMessageUsingStreamWebSocket();
+
+                    if (serverResult.Equals(RESTART_AUIDO_SERVER)) {
+                        NEED_RESTART_BT = true;
+                        break;
+                    }
+
                     // So that we can parse objects
                     serverResult = serverResult.Replace('-', '_');     
                     accumulator += serverResult;
@@ -283,8 +291,14 @@ namespace PhenoPad.SpeechService
             {
                 MetroLogger.getSharedLogger().Info("ASR connection requested cancellation");
             }
+            else if (NEED_RESTART_BT) {
+                MetroLogger.getSharedLogger().Error("Server requested AUDIO restart ... will be restarting");
+                NEED_RESTART_BT = false;
+                await MainPage.Current.RestartAudioOnException();
+            }
             //probably some error happened that disconnectes the ASR, stops ASR before processing
-            else {
+            else
+            {
                 MetroLogger.getSharedLogger().Error("ASR encountered some problem, will call StopASRRsults ...");
                 await StopASRResults(false);
             }
@@ -333,10 +347,7 @@ namespace PhenoPad.SpeechService
 
                 if (!succeed)
                 {
-                    //MainPage.Current.NotifyUser("Connection to speech engine failed.", NotifyType.ErrorMessage, 5);
-
                     // Display a dialog box to allow for retry
-                    // https://code.msdn.microsoft.com/windowsapps/How-to-show-message-dialog-35468701
                     var messageDialog = new MessageDialog("Failed to connect to (" 
                         + this.serverAddress + ":" + this.serverPort  + ").\nWould you like to retry this connection?");
                     messageDialog.Title = "CONNECTION ERROR";
@@ -403,8 +414,8 @@ namespace PhenoPad.SpeechService
             //Task receiving = ReceiveDataAsync(speechStreamSocket.streamSocket);
 
             cancellationSource = new CancellationTokenSource();
-            CancellationToken cancellationToken = cancellationSource.Token;                 // need this to actually cancel reading from websocketS
-
+            // need this to actually cancel reading from websocketS
+            CancellationToken cancellationToken = cancellationSource.Token;
             this.speechInterpreter.newConversation();
 
             await Task.Run(async () =>
@@ -419,6 +430,12 @@ namespace PhenoPad.SpeechService
                      await Task.Delay(500);
                      // do the work in the loop
                      string serverResult = await speechStreamSocket.ReceiveMessageUsingStreamWebSocket();
+
+                     if (serverResult.Equals(RESTART_AUIDO_SERVER))
+                     {
+                         NEED_RESTART_BT = true;
+                         break;
+                     }
 
                      serverResult = serverResult.Replace('-', '_');     // So that we can parse objects
                      accumulator += serverResult;
@@ -501,6 +518,13 @@ namespace PhenoPad.SpeechService
             {
                 MetroLogger.getSharedLogger().Info("ASR connection requested cancellation");
                 return true;
+            }
+            else if (NEED_RESTART_BT)
+            {
+                MetroLogger.getSharedLogger().Error("Server requested AUDIO restart ... will be restarting");
+                NEED_RESTART_BT = false;
+                await MainPage.Current.RestartAudioOnException();
+                return false;
             }
             //probably some error happened that disconnectes the ASR, stops ASR before processing
             else
@@ -664,7 +688,6 @@ namespace PhenoPad.SpeechService
             return true;
         }
 
-
         //==================================================================================================================
         public async Task SaveTranscriptions(bool reload=true)
         {
@@ -825,7 +848,7 @@ namespace PhenoPad.SpeechService
                 if (deviceInputNodeResult.Status != AudioDeviceNodeCreationStatus.Success)
                 {
                     // Cannot create device input node
-                    rootPage.NotifyUser(String.Format("Audio Device Input unavailable because {0}", deviceInputNodeResult.Status.ToString()), NotifyType.ErrorMessage, 2);
+                    rootPage.NotifyUser($"Audio Device Input unavailable because {deviceInputNodeResult.Status.ToString()}",NotifyType.ErrorMessage, 2);
                     return;
                 }
 
