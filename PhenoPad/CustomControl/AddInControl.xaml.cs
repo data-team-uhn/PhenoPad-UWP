@@ -747,7 +747,7 @@ namespace PhenoPad.CustomControl
                 if (strokefile != null)
                 {
                     await FileManager.getSharedFileManager().loadStrokes(strokefile, inkCanvas);
-                    addinType = AddinType.DRAWING;
+                    //addinType = AddinType.DRAWING;
                 }
 
                 //try to load image file from disk
@@ -797,7 +797,7 @@ namespace PhenoPad.CustomControl
                 hideScrollViewer();
 
 
-            if (addinType == AddinType.EHR)
+            if (addinType == AddinType.EHR || commentID != -1)
             {
                 inkCan.Height = this.Height;
                 inkCan.Width = this.Width;

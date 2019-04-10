@@ -297,6 +297,8 @@ namespace PhenoPad.CustomControl
                                                         bool serverRecog = false, bool timerFlag = false)
 
         {
+            if (line == null)
+                return;
             int lineNum = getLineNumByRect(line.BoundingRect);
 
             if (!indetails) {

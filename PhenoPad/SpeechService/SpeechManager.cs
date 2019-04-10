@@ -27,6 +27,7 @@ using Windows.UI.Core;
 using Windows.UI.Popups;
 using Windows.Storage.Streams;
 using PhenoPad.LogService;
+using PhenoPad.BluetoothService;
 //using Newtonsoft.Json.Linq;   // Seems like we only need JSON parsing
 
 namespace PhenoPad.SpeechService
@@ -47,10 +48,10 @@ namespace PhenoPad.SpeechService
         //private string serverAddress = "54.226.217.30";
         private string serverAddress = "phenopad.ccm.sickkids.ca";
         private string serverPort = "8888";
-        public static string DEFAULT_SERVER = "137.135.117.253";
-        public static string DEFAULT_PORT = "8080";
-        private static string RESTART_AUIDO_SERVER = "TIMEOUTEXIT";
-        public static bool NEED_RESTART_BT = false;
+        public static string DEFAULT_SERVER = "phenopad.ccm.sickkids.ca";
+        public static string DEFAULT_PORT = "8888";
+        public static string RESTART_AUIDO_SERVER = "TIMEOUTEXIT";
+        public static bool NEED_RESTART_AUDIO = false;
         public static SpeechManager sharedSpeechManager;
         
         public Conversation conversation = new Conversation();
@@ -97,12 +98,6 @@ namespace PhenoPad.SpeechService
             
         }
 
-        public void cleanUp()
-        {
-            this.conversation.Clear();
-            this.realtimeConversation.Clear();
-            this.speechInterpreter = new SpeechEngineInterpreter(this.conversation, this.realtimeConversation);
-        }
 
         public static SpeechManager getSharedSpeechManager()
         {
@@ -140,6 +135,13 @@ namespace PhenoPad.SpeechService
         {
             return this.speechInterpreter.conversationIndex;
         }
+        public void cleanUp()
+        {
+            this.conversation.Clear();
+            this.realtimeConversation.Clear();
+            this.speechInterpreter = new SpeechEngineInterpreter(this.conversation, this.realtimeConversation);
+        }
+
 
         // ================================= AUDIO START / STOP FOR USING EXTERNAL MICROPHONE =============================
         /// <summary>
@@ -209,8 +211,10 @@ namespace PhenoPad.SpeechService
                     // do the work in the loop
                     string serverResult = await speechResultsSocket.ReceiveMessageUsingStreamWebSocket();
 
-                    if (serverResult.Equals(RESTART_AUIDO_SERVER)) {
-                        NEED_RESTART_BT = true;
+
+                    if (serverResult.Trim('"').Equals(RESTART_AUIDO_SERVER)) {
+                        Debug.WriteLine($"FROM SERVER=>{serverResult}");
+                        NEED_RESTART_AUDIO = true;
                         break;
                     }
 
@@ -289,12 +293,14 @@ namespace PhenoPad.SpeechService
 
             if (cancellationToken.IsCancellationRequested)
             {
-                MetroLogger.getSharedLogger().Info("ASR connection requested cancellation");
+                MetroLogger.getSharedLogger().Info("ASR connection requested cancellation from line 319");
+                
             }
-            else if (NEED_RESTART_BT) {
+            else if (NEED_RESTART_AUDIO) {
                 MetroLogger.getSharedLogger().Error("Server requested AUDIO restart ... will be restarting");
-                NEED_RESTART_BT = false;
-                await MainPage.Current.RestartAudioOnException();
+                NEED_RESTART_AUDIO = false;
+
+                BluetoothService.BluetoothService.getBluetoothService().HandleAudioException(BluetoothService.BluetoothService.RESTART_AUDIO_FLAG);
             }
             //probably some error happened that disconnectes the ASR, stops ASR before processing
             else
@@ -309,7 +315,7 @@ namespace PhenoPad.SpeechService
         public async Task StopASRResults(bool reload = true)
         {
             try
-            {          
+            {               
                 cancellationSource.Cancel();
                 await BluetoothService.BluetoothService.getBluetoothService().sendBluetoothMessage("audio stop");
                 await speechResultsSocket.CloseConnnction();
@@ -324,6 +330,7 @@ namespace PhenoPad.SpeechService
             {
                 MetroLogger.getSharedLogger().Error($"Failed stopping bluetooth ASR:"+ e.Message);
             }
+            return;
         }
         // ================================== AUDIO START / STOP FOR USING INTERNAL MICROPHONE =============================
         public async Task<bool> StartAudio()
@@ -431,9 +438,10 @@ namespace PhenoPad.SpeechService
                      // do the work in the loop
                      string serverResult = await speechStreamSocket.ReceiveMessageUsingStreamWebSocket();
 
-                     if (serverResult.Equals(RESTART_AUIDO_SERVER))
+                     if (serverResult.Trim('"').Equals(RESTART_AUIDO_SERVER))
                      {
-                         NEED_RESTART_BT = true;
+                         Debug.WriteLine($"\nFROM SERVER=>{serverResult}\n");
+                         NEED_RESTART_AUDIO = true;
                          break;
                      }
 
@@ -519,10 +527,10 @@ namespace PhenoPad.SpeechService
                 MetroLogger.getSharedLogger().Info("ASR connection requested cancellation");
                 return true;
             }
-            else if (NEED_RESTART_BT)
+            else if (NEED_RESTART_AUDIO)
             {
                 MetroLogger.getSharedLogger().Error("Server requested AUDIO restart ... will be restarting");
-                NEED_RESTART_BT = false;
+                NEED_RESTART_AUDIO = false;
                 await MainPage.Current.RestartAudioOnException();
                 return false;
             }

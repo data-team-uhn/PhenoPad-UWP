@@ -202,8 +202,10 @@ namespace PhenoPad
             {
                 LogService.MetroLogger.getSharedLogger().Info("Saving and exiting app ...");
                 //only saves the notes if in editing stage
-                if (notebookId != null)
-                    await this.saveNoteToDisk();
+                await Dispatcher.RunAsync(CoreDispatcherPriority.High, async () => {
+                    if (notebookId != null)
+                        await saveNoteToDisk();
+                });
                 Application.Current.Exit();
             }
             else if ((int)result.Id == 1) {

@@ -357,9 +357,63 @@ namespace PhenoPad
         }
 
         public async Task RestartAudioOnException() {
-            AudioStreamButton_Clicked();
+            await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () => {
+                AudioStreamButton_Clicked();                         
+            });
             await Task.Delay(TimeSpan.FromSeconds(5));
-            AudioStreamButton_Clicked();
+            await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () => {
+                AudioStreamButton_Clicked();
+            });
+        }
+
+        public async void RestartBTOnException() {
+
+            Debug.WriteLine("==============================================line 372");
+            uiClinet.disconnect();
+            //stops speech service before closing bluetooth
+            await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, async () => {
+
+                if (speechEngineRunning)
+                    await SpeechManager.getSharedSpeechManager().StopASRResults();
+
+                Debug.WriteLine("stopped ASR RESULT \n");
+                bool result = bluetoothService.CloseConnection();
+
+                if (result)
+                {
+                    bluetoothService = null;
+                    bluetoonOn = false;
+                    bluetoothInitialized(false);
+                    bluetoothicon.Visibility = Visibility.Collapsed;
+                    setStatus("bluetooth");
+                    Debug.WriteLine("Bluetooth Connection disconnected");
+                }
+                else
+                    LogService.MetroLogger.getSharedLogger().Error("Bluetooth Connection failed to disconnect.");
+
+            });
+
+            await Task.Delay(TimeSpan.FromSeconds(5));
+
+            Debug.WriteLine("after 5 sec, will try to re connect blue tooth");
+
+            await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, async () => {
+                //uiClinet = UIWebSocketClient.getSharedUIWebSocketClient();
+                //bool uiResult = await uiClinet.ConnectToServer();
+                //if (!uiResult)
+                //    LogService.MetroLogger.getSharedLogger().Error("UIClient failed to connect.");
+                //this.bluetoothService = BluetoothService.BluetoothService.getBluetoothService();
+                //Debug.WriteLine("==============================================line 381");
+                //await this.bluetoothService.Initialize();
+                changeSpeechEngineState_BT();               
+            });
+            await Task.Delay(TimeSpan.FromSeconds(5));
+            //Debug.WriteLine("after 5 sec, will try to re connect audio");
+
+            //await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, async () => {
+            //    AudioStreamButton_Clicked();
+            //});
+            Debug.WriteLine("END OF RESTART ON BT...\n\n");
         }
 
         /// <summary>
@@ -387,23 +441,29 @@ namespace PhenoPad
                 {
                     uiClinet.disconnect();
                     //stops speech service before closing bluetooth
-                    if (speechEngineRunning) {
-                        await SpeechManager.getSharedSpeechManager().StopASRResults();
+                    await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, async () => {
 
-                    }
-                    bool result = bluetoothService.CloseConnection();
-                    if (result)
-                    {
-                        bluetoothService = null;
-                        bluetoonOn = false;
-                        bluetoothInitialized(false);
-                        setStatus("bluetooth");
-                        NotifyUser("Bluetooth Connection disconnected.", NotifyType.StatusMessage, 2);
-                    }
-                    else
-                    {
-                        NotifyUser("Bluetooth Connection failed to disconnect.", NotifyType.ErrorMessage, 2);
-                    }                   
+                        if (speechEngineRunning)
+                            await SpeechManager.getSharedSpeechManager().StopASRResults();
+
+                        Debug.WriteLine("stopped ASR RESULT \n");
+                        bool result = bluetoothService.CloseConnection();
+
+                        if (result)
+                        {
+                            bluetoothService = null;
+                            bluetoonOn = false;
+                            bluetoothInitialized(false);
+                            bluetoothicon.Visibility = Visibility.Collapsed;
+                            setStatus("bluetooth");
+                            Debug.WriteLine("Bluetooth Connection disconnected");
+                        }
+                        else
+                        {
+                            LogService.MetroLogger.getSharedLogger().Error("Bluetooth Connection failed to disconnect.");
+                        }
+
+                    });
                 }
 
 

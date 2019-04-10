@@ -23,7 +23,7 @@ namespace PhenoPad.WebSocketService
         public string serverAddress = "137.135.117.253";
         public string serverPort = "8080";
 
-        private uint ERROR_INTERNET_OPERATION_CANCELLED = 0x80072EF1;
+        private uint ERROR_INTERNET_OPERATION_CANCELLED = 0x80072EFE;
         NetworkAdapter networkAdapter;
         public StreamWebSocket streamSocket;
         private DataWriter dataWriter;
@@ -131,8 +131,9 @@ namespace PhenoPad.WebSocketService
                     DataReader readPacket = DataReader.FromBuffer(readBuf);
                     uint buffLen = readPacket.UnconsumedBufferLength;
                     returnMessage = readPacket.ReadString(buffLen);
+                    
                 }
-
+                return returnMessage;
             }
             catch (Exception exp)
             {
@@ -140,9 +141,9 @@ namespace PhenoPad.WebSocketService
                 if (exp.HResult == (int)ERROR_INTERNET_OPERATION_CANCELLED)
                     LogService.MetroLogger.getSharedLogger().Info("ERROR_INTERNET_OPERATION_CANCELLED.");
                 else
-                    LogService.MetroLogger.getSharedLogger().Error($"Issue receiving:{exp.Message}");
+                    LogService.MetroLogger.getSharedLogger().Error($"Speechstreamsocket: Issue receiving:{exp.Message}");
+                return returnMessage;
             }
-            return returnMessage;
         }
 
         public async Task<bool> TrySendData() {
@@ -320,6 +321,8 @@ namespace PhenoPad.WebSocketService
                     uint buffLen = readPacket.UnconsumedBufferLength;
                     returnMessage = readPacket.ReadString(buffLen);
                 }
+                return returnMessage;
+
             }
             catch (Exception exp)
             {
@@ -327,10 +330,11 @@ namespace PhenoPad.WebSocketService
                 if (exp.HResult == (int)ERROR_INTERNET_OPERATION_CANCELLED)
                     LogService.MetroLogger.getSharedLogger().Info("ERROR_INTERNET_OPERATION_CANCELLED.");
                 else
-                    LogService.MetroLogger.getSharedLogger().Error($"Issue receiving:{exp.Message}");               
+                    LogService.MetroLogger.getSharedLogger().Error($"Issue receiving:{exp.Message}");
+                //return SpeechService.SpeechManager.RESTART_AUIDO_SERVER;
+                return returnMessage;
             }
 
-            return returnMessage;
         }
 
         public async Task CloseConnnction()
@@ -347,17 +351,17 @@ namespace PhenoPad.WebSocketService
                 //dataWriter.DetachStream();
                 //}
                 //Debug.WriteLine("Sending data using StreamWebSocket: " + message.Length.ToString() + " bytes");
-                streamSocket.Dispose();
-                streamSocket = null;
             }
 
             catch (Exception ex)
             {
-                Debug.WriteLine(ex.Message);
-                Debug.WriteLine("Experienced error closing socket to speech engine");
-                MainPage.Current.NotifyUser("Fail to close speech result socket", NotifyType.ErrorMessage, 2);
-
+                LogService.MetroLogger.getSharedLogger().Error("Speech result closeconnection exception:" + ex + ex.Message);
             }
+
+            dataWriter.Dispose();
+            streamSocket.Dispose();
+            streamSocket = null;
+
         }
         private void WebSocket_ClosedAsync(IWebSocket sender, WebSocketClosedEventArgs args)
         {

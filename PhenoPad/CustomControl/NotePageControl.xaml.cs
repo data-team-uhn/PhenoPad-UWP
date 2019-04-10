@@ -931,7 +931,7 @@ namespace PhenoPad.CustomControl
                 canvasAddIn = new AddInControl(ia.name, notebookId, pageId, ia.widthOrigin, ia.heightOrigin);
             else {
                 //if (ia.commentID != -1)
-                if(ia.addinType == AddinType.EHR)
+                if(ia.addinType == AddinType.EHR || ia.commentID != -1)
                 {//is either an insert/annotation for EHR page
                     canvasAddIn = new AddInControl(ia.name, ehrPage, ia.commentID, ia.anno_type);// need to update this commengID when impleting saving
                 }
@@ -973,7 +973,7 @@ namespace PhenoPad.CustomControl
             {
                 addinCanvasEHR.Children.Add(canvasAddIn);
                 Debug.WriteLine(canvasAddIn.anno_type);
-                if (canvasAddIn.addinType == AddinType.EHR)
+                if (canvasAddIn.addinType == AddinType.EHR || canvasAddIn.commentID != -1)
                 {
                     if (canvasAddIn.anno_type == AnnotationType.TextComment || canvasAddIn.anno_type == AnnotationType.TextInsert)
                     {
@@ -1488,8 +1488,8 @@ namespace PhenoPad.CustomControl
                 string metapath = FileManager.getSharedFileManager().GetNoteFilePath(notebookId, pageId, NoteFileType.ImageAnnotationMeta);
                 result3 = await FileManager.getSharedFileManager().SaveObjectSerilization(metapath, imageList, typeof(List<ImageAndAnnotation>));
 
-                metapath = FileManager.getSharedFileManager().GetNoteFilePath(notebookId, pageId, NoteFileType.RecognizedPhraseMeta);
-                result3 = await FileManager.getSharedFileManager().SaveObjectSerilization(metapath, phraseList, typeof(List<RecognizedPhrases>));
+                string path = FileManager.getSharedFileManager().GetNoteFilePath(notebookId, pageId, NoteFileType.RecognizedPhraseMeta);
+                var result4 = await FileManager.getSharedFileManager().SaveObjectSerilization(path, phraseList, typeof(List<RecognizedPhrases>));
 
                 //saving typed text, if there's any
                 string notetext;
@@ -1628,6 +1628,10 @@ namespace PhenoPad.CustomControl
                 // save handwritings
                 await FileManager.getSharedFileManager().SaveNotePageStrokes(notebookId, pageId, this);
                 Debug.WriteLine("Autosaved current strokes.");
+                List<RecognizedPhrases> phraseList = await GetAllRecognizedPhrases();
+                string path = FileManager.getSharedFileManager().GetNoteFilePath(notebookId, pageId, NoteFileType.RecognizedPhraseMeta);
+                var result4 = await FileManager.getSharedFileManager().SaveObjectSerilization(path, phraseList, typeof(List<RecognizedPhrases>));
+                Debug.WriteLine("Autosaved phrases");
 
             }
             catch (Exception ex)

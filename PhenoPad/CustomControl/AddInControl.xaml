@@ -141,16 +141,22 @@
         </Button>
 
 
-        <Grid Name="categoryGrid" Grid.ColumnSpan="3" Grid.Row="1">
+        <Grid Name="categoryGrid" Grid.ColumnSpan="3" Width="auto" Grid.Row="1">
 
-                <StackPanel Name="SelectionStackPanel"  Width="200"  HorizontalAlignment="Center" VerticalAlignment="Center">
-                    <Button Background="Transparent" Style="{StaticResource MyButtonStyle}" HorizontalAlignment="Stretch" Click="DrawingButton_Click"  Name="DrawingButton" Height="{StaticResource categoryButtonHeight}">
+                <StackPanel Name="SelectionStackPanel"  Width="auto" Orientation="Vertical" HorizontalAlignment="Center" VerticalAlignment="Center">
+                    <Button Background="Transparent" Style="{StaticResource MyButtonStyle}" 
+                            HorizontalAlignment="Stretch" Click="DrawingButton_Click"  Name="DrawingButton" 
+                            Height="{StaticResource categoryButtonHeight}" Width="auto">
                         <TextBlock FontSize="{StaticResource categoryButtonFontSize}" >Create drawing</TextBlock>
                     </Button>
-                    <Button Background="Transparent" Style="{StaticResource MyButtonStyle}" HorizontalAlignment="Stretch" Name="InsertPhotoButton" Click="InsertPhotoButton_Click" Height="{StaticResource categoryButtonHeight}">
+                    <Button Background="Transparent" Style="{StaticResource MyButtonStyle}" 
+                            HorizontalAlignment="Stretch" Name="InsertPhotoButton" Click="InsertPhotoButton_Click" 
+                            Height="{StaticResource categoryButtonHeight}" Width="auto">
                         <TextBlock FontSize="{StaticResource categoryButtonFontSize}" >Insert image</TextBlock>
                     </Button>
-                    <Button Background="Transparent" Style="{StaticResource MyButtonStyle}" HorizontalAlignment="Stretch" Name="TakePhotoButton" Click="TakePhotoButton_Click" Height="{StaticResource categoryButtonHeight}">
+                    <Button Background="Transparent" Style="{StaticResource MyButtonStyle}" 
+                            HorizontalAlignment="Stretch" Name="TakePhotoButton" Click="TakePhotoButton_Click" 
+                            Height="{StaticResource categoryButtonHeight}" Width="auto">
                         <TextBlock FontSize="{StaticResource categoryButtonFontSize}" >Take photo/video</TextBlock>
                     </Button>
                 </StackPanel>
