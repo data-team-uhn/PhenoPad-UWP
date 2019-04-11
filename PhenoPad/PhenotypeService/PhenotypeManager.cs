@@ -169,7 +169,7 @@ namespace PhenoPad.PhenotypeService
                 return;
 
             pheno.sourceType = from;
-            OperationLogger.getOpLogger().Log(OperationType.Phenotype, from.ToString(), "added", pheno.name);
+            //OperationLogger.getOpLogger().Log(OperationType.Phenotype, from.ToString(), "added", pheno.name);
 
             Phenotype temp = savedPhenotypes.Where(x => x == pheno).FirstOrDefault();
             if (temp == null)
@@ -423,7 +423,7 @@ namespace PhenoPad.PhenotypeService
             }
             //target is null only when deleting a phenotype with state -1 in the curline recognition bar
             if (target != null)
-                OperationLogger.getOpLogger().Log(OperationType.Phenotype, type.ToString(), "removed", target.name);
+                //OperationLogger.getOpLogger().Log(OperationType.Phenotype, type.ToString(), "removed", target.name);
 
             autosavetimer.Start();
 
@@ -504,10 +504,10 @@ namespace PhenoPad.PhenotypeService
             switch (state)
             {
                 case 1:
-                    OperationLogger.getOpLogger().Log(OperationType.Phenotype, type.ToString(), "Y", target.name);
+                    //OperationLogger.getOpLogger().Log(OperationType.Phenotype, type.ToString(), "Y", target.name);
                     break;
                 case 0:
-                    OperationLogger.getOpLogger().Log(OperationType.Phenotype, type.ToString(), "N", target.name);
+                    //OperationLogger.getOpLogger().Log(OperationType.Phenotype, type.ToString(), "N", target.name);
                     break;
                 case -1:
                     //shouldn't reach this case but added checker just in case

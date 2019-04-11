@@ -1945,11 +1945,12 @@ namespace PhenoPad.CustomControl
             //by default analyzes whole EHR text
             if (text.Length == 0)
             {
-                sentences = getText(EHRTextBox).Split('.');
+                sentences =getText(EHRTextBox).Split('.');
                 MainPage.Current.NotifyUser("Analyzing Phenotypes from EHR ...", NotifyType.StatusMessage, 7);
             }
             else
                 sentences = new string[] { text };
+
             foreach (string p in sentences)
             {
                 Dictionary<string, Phenotype> annoResult = await parentControl.PhenoMana.annotateByNCRAsync(p);
