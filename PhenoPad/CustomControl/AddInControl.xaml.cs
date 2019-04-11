@@ -480,7 +480,7 @@ namespace PhenoPad.CustomControl
             {
                 //deals with dragging speed relative to current zoom ratio of notepage
                 double deltaModifier = (1.0 / _curWidthRatio);
-                Debug.WriteLine($"cur_ratio = {_curWidthRatio} modifier magnitute = {deltaModifier}");
+                //Debug.WriteLine($"cur_ratio = {_curWidthRatio} modifier magnitute = {deltaModifier}");
                 this.dragTransform.X += e.Delta.Translation.X * deltaModifier;
                 this.dragTransform.Y += e.Delta.Translation.Y * deltaModifier;
             }
@@ -736,7 +736,7 @@ namespace PhenoPad.CustomControl
             categoryGrid.Visibility = Visibility.Collapsed;
             try
             {
-                if (addinType != AddinType.EHR)
+                if (addinType != AddinType.EHR || commentID == -1)
                 {
                     inkCan.Height = Height - 48;
                     inkCan.Width = Width;

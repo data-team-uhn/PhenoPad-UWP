@@ -473,7 +473,6 @@ namespace PhenoPad.PhenotypeService
                     phenotypesInNote.Remove(temp);
                     phenotypesInNote.Insert(ind, pp);
                     //MainPage.Current.curPage.updatePhenotypeLine(pp, ind);
-
                 }
             }
             temp = phenotypesInSpeech.Where(x => x.hpId == pid).FirstOrDefault();
