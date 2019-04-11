@@ -36,6 +36,7 @@ using System.Numerics;
 using Windows.System;
 using Windows.Storage.Streams;
 using System.Text;
+using System.Threading;
 
 //using System.Drawing;
 
@@ -65,6 +66,7 @@ namespace PhenoPad.CustomControl
         private InsertMode insertMode;
         private InsertType insertType;
         private Polyline lasso;
+        public static double COMMENT_X_OFFSET = 20;
 
         private SolidColorBrush INSERT = new SolidColorBrush(Colors.DodgerBlue);
         private SolidColorBrush ANNOTATION = new SolidColorBrush(Colors.Orange);
@@ -233,6 +235,7 @@ namespace PhenoPad.CustomControl
                 }
                 text = text.TrimEnd() + " ";
                 EHRTextBox.Document.SetText(TextSetOptions.None, text);
+                CheckExtendPage();
                 await FileManager.getSharedFileManager().SaveEHRText(notebookid, pageid, this);
                 EHRFormats formats = await FileManager.getSharedFileManager().LoadEHRFormats(notebookid, pageid);
                 if (formats != null)
@@ -244,10 +247,9 @@ namespace PhenoPad.CustomControl
                     await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, RefreshTextStyle);
                 }
                 //After loading text, performs phenotype detection on each sentence
-                String[] sentences = getText(EHRTextBox).Split(".");
-                foreach (string s in sentences) {
-                    AnalyzePhenotype(s);
-                }
+                CancellationToken cancel = MainPage.Current.cancelService.Token;
+                AnalyzePhenotype();
+
             }
             //for taking care of non-existing saved format record files
             catch (FileNotFoundException) { }
@@ -260,7 +262,7 @@ namespace PhenoPad.CustomControl
         public void DrawBackgroundLines()
         {/// Draws background dashed lines to background canvas 
             //drawing background line for EHR text box
-            for (int i = 1; i <= backgroundCanvas.ActualHeight / LINE_HEIGHT; ++i)
+            for (int i = 1; i <= EHRRootGrid.Height / LINE_HEIGHT; ++i)
             {
                 var line = new Line()
                 {
@@ -298,8 +300,8 @@ namespace PhenoPad.CustomControl
         private void ShowInputPanel(Point p)
         {/// <summary>Displays input canvas for inserting into EHR</summary>
 
-            double newX = p.X - 20;
-            double newY = ((int)(p.Y / LINE_HEIGHT) + 2) * LINE_HEIGHT - 20;
+            double newX = p.X - COMMENT_X_OFFSET;
+            double newY = ((int)(p.Y / LINE_HEIGHT) + 2) * LINE_HEIGHT - COMMENT_X_OFFSET;
             if (p.X + inputgrid.ActualWidth > EHR_TEXTBOX_WIDTH.Value)
                 newX = EHR_TEXTBOX_WIDTH.Value - inputgrid.ActualWidth;
             else if (p.X > 600)
@@ -321,7 +323,7 @@ namespace PhenoPad.CustomControl
                 inputTypeBox.Focus(FocusState.Pointer);
         }
 
-        private void HideAndClearInputPanel()
+        public void HideAndClearInputPanel()
         {//clears all input in current input panel and hides it from page
 
             this.insertType = InsertType.None;
@@ -442,14 +444,15 @@ namespace PhenoPad.CustomControl
             inputTypeBox.Focus(FocusState.Pointer);
         }
 
-        private async void CheckExtendPage(object sender, SizeChangedEventArgs e)
+        private async void CheckExtendPage(object sender = null, SizeChangedEventArgs e = null)
         {//checks if EHR text height has exceeded the page size and extend if needed
             //Debug.WriteLine($"size changed ! new height = {e.NewSize.Height}");
             await Dispatcher.RunAsync(CoreDispatcherPriority.Normal,()=> {
                 Rect bound = GetHERTextBound();
                 if (bound.Y + bound.Height + 500 > EHRRootGrid.Height)
                 {
-                    EHRRootGrid.Height += 500;
+                    Debug.WriteLine("too long, extending page!");
+                    EHRRootGrid.Height = bound.Y + bound.Height + 500;
                 }
                 DrawBackgroundLines();
                 UpdateLayout();
@@ -550,120 +553,134 @@ namespace PhenoPad.CustomControl
 
         private void UpdateRecordListInsert(int start = -1, int length = 0)
         {/// Updates and shifts saved record indexes and positions accordingly
-
-            //Checking for insert range bound collision and add to inserts record
-            bool add = true;
-            for (int i = 0; i < inserts.Count; i++)
+            lock (inserts)
             {
-                int list_start = inserts[i][0];
-                int list_end = inserts[i][0] + inserts[i][1];
-
-                //Debug.WriteLine($"current insert record starting: {list_start}");
-
-                //Case1:New insert index is before previously inserted words
-                if (start < list_start && length > 0 && start > -1)
+                //Checking for insert range bound collision and add to inserts record
+                bool add = true;
+                for (int i = 0; i < inserts.Count; i++)
                 {
-                    //Debug.WriteLine("insert is strcitly before inserted");
-                    inserts[i][0] += length;
-                }
-                //Case2: Inserting range collides with inserted range
-                else if (start >= list_start && start < list_end)
-                {
-                    //Debug.WriteLine("---insert collides with inserted");
-                    inserts[i][1] += length;
-                    add = false;
-                }
-            }
-            if (add)
-                inserts.Add(new List<int>() { start, length });
+                    int list_start = inserts[i][0];
+                    int list_end = inserts[i][0] + inserts[i][1];
 
-            //extend highlighting range according to inserted
-            for (int i = 0; i < highlights.Count; i++)
-            {
-                //Case 1: insert index in middle of highlight section
-                if (highlights[i][0] < start && start + length < highlights[i][0] + highlights[i][1])
-                {
-                    highlights[i][1] += length;
-                }
+                    //Debug.WriteLine($"current insert record starting: {list_start}");
 
-                //Case 2: insert index in front of highlight section
-                else if (highlights[i][0] >= start && length > 0)
-                {
-                    highlights[i][0] += length; //just extends this phrase by new word length + space char
-                }
-            }
-
-            //extend deleting range according to inserted
-            for (int i = 0; i < deletes.Count; i++)
-            {
-                //Case 1: insert index in middle of highlight section
-                if (deletes[i][0] < start && start + length < deletes[i][0] + deletes[i][1])
-                {
-                    deletes[i][1] += length;
-                }
-
-                //Case 2: insert index in front of highlight section
-                else if (deletes[i][0] >= start && length > 0)
-                {
-                    deletes[i][0] += length; //just extends this phrase by new word length + space char
-                }
-            }
-            double yShiftOffset = 0;
-            //entend annotated range according to inserted
-            for (int i = 0; i < annotated.Count; i++)
-            {
-                //Case 1: insert index in middle of highlight section
-                if (annotated[i][0] < start && start + length < annotated[i][1])
-                {
-                    annotated[i][1] += length;
-                }
-                //Case 2: insert index in front of highlight section
-                else if (annotated[i][0] >= start && length > 0)
-                {//Need to update the indexes for annotations/comments
-                    AddInControl comment = comments.Where(c => c.commentID == annotated[i][0]).FirstOrDefault();
-                    //comment may be null if it has been deleted before updating annotated range
-                    if (comment == null)
-                        continue;
-
-                    comment.commentID += length;
-                    annotated[i][0] += length;
-                    annotated[i][1] += length;
-
-                    if (yShiftOffset == 0)
+                    //Case1:New insert index is before previously inserted words
+                    if (start < list_start && length > 0 && start > -1)
                     {
-                        //shift the comment panel's left-top position according to new starting index;
-                        var range = EHRTextBox.Document.GetRange(comment.commentID, comment.commentID + 1);
-                        Point pos;
-                        range.GetPoint(HorizontalCharacterAlignment.Left, VerticalCharacterAlignment.Bottom, PointOptions.ClientCoordinates, out pos);
+                        //Debug.WriteLine("insert is strcitly before inserted");
+                        inserts[i][0] += length;
+                    }
+                    //Case2: Inserting range collides with inserted range
+                    else if (start >= list_start && start < list_end)
+                    {
+                        //Debug.WriteLine("---insert collides with inserted");
+                        inserts[i][1] += length;
+                        add = false;
+                    }
+                }
+                if (add)
+                    inserts.Add(new List<int>() { start, length });
+            }
+            lock (highlights)
+            {
+                //extend highlighting range according to inserted
+                for (int i = 0; i < highlights.Count; i++)
+                {
+                    //Case 1: insert index in middle of highlight section
+                    if (highlights[i][0] < start && start + length < highlights[i][0] + highlights[i][1])
+                    {
+                        highlights[i][1] += length;
+                    }
 
-                        //updating X coordinate and slides comment to left
-                        double newX = EHRTextBox.ActualWidth - pos.X + 10;
-                        double xOffset = newX - comment.canvasLeft;
-                        comment.canvasLeft = newX;
-                        Canvas.SetLeft(comment, comment.canvasLeft);
-                        comment.commentslideX -= xOffset;
-                        comment.Slide(x: -xOffset);
+                    //Case 2: insert index in front of highlight section
+                    else if (highlights[i][0] >= start && length > 0)
+                    {
+                        highlights[i][0] += length; //just extends this phrase by new word length + space char
+                    }
+                }
+            }
+            lock (deletes)
+            {
+                //extend deleting range according to inserted
+                for (int i = 0; i < deletes.Count; i++)
+                {
+                    //Case 1: insert index in middle of highlight section
+                    if (deletes[i][0] < start && start + length < deletes[i][0] + deletes[i][1])
+                    {
+                        deletes[i][1] += length;
+                    }
 
-                        //updating Y coordinate
-                        double newY = (Math.Ceiling(pos.Y / LINE_HEIGHT)) * LINE_HEIGHT + 110;
-                        double yOffset = newY - (comment.canvasTop + comment.commentslideY);
+                    //Case 2: insert index in front of highlight section
+                    else if (deletes[i][0] >= start && length > 0)
+                    {
+                        deletes[i][0] += length; //just extends this phrase by new word length + space char
+                    }
+                }
+            }
+            lock (annotated) { 
+                double yShiftOffset = 0;
+                //extend annotated range according to inserted
+                for (int i = 0; i < annotated.Count; i++)
+                {
+                    //Case 1: insert index in middle of highlight section
+                    if (annotated[i][0] < start && start + length < annotated[i][1])
+                    {
+                        annotated[i][1] += length;
+                    }
+                    //Case 2: insert index in front of highlight section
+                    else if (annotated[i][0] >= start && length > 0)
+                    {//Need to update the indexes for annotations/comments
+                        AddInControl comment = comments.Where(c => c.commentID == annotated[i][0]).FirstOrDefault();
+                        //comment may be null if it has been deleted before updating annotated range
+                        if (comment == null)
+                            continue;
 
-                        Debug.WriteLine($"updaterecordlistinsert : yoffset = {yOffset}");
-                        if (yOffset > 0)
+                        lock (comment)
                         {
-                            comment.canvasTop += yOffset;
-                            Canvas.SetTop(comment, comment.canvasTop);
-                            yShiftOffset = yOffset;
-                            //comment.commentslideY -= yOffset;
-                            //comment.Slide(y: yOffset);
+
+                            comment.commentID += length;
+                            annotated[i][0] += length;
+                            annotated[i][1] += length;
+
+                            if (yShiftOffset == 0)
+                            {
+                                //shift the comment panel's left-top position according to new starting index;
+                                var range = EHRTextBox.Document.GetRange(comment.commentID, comment.commentID + 1);
+                                Point pos;
+                                range.GetPoint(HorizontalCharacterAlignment.Left, VerticalCharacterAlignment.Bottom, PointOptions.ClientCoordinates, out pos);
+
+                                //updating X coordinate and slides comment to left
+                                comment.canvasLeft = pos.X;
+                                Canvas.SetLeft(comment, comment.canvasLeft);
+                                //comment.commentslideX -= xOffset;
+                                comment.commentslideX = EHRTextBox.ActualWidth - comment.canvasLeft + COMMENT_X_OFFSET;
+                               // comment.Slide(x: -xOffset);
+                                //updating Y coordinate
+                                double newY = (Math.Ceiling(pos.Y / LINE_HEIGHT)) * LINE_HEIGHT + 110;
+                                double yOffset = newY - (comment.canvasTop + comment.commentslideY);
+
+                                Debug.WriteLine($"updaterecordlistinsert : yoffset = {yOffset}");
+                                if (yOffset > 0)
+                                {
+                                    comment.canvasTop += yOffset;
+                                    Canvas.SetTop(comment, comment.canvasTop);
+                                    yShiftOffset = yOffset;
+                                    //comment.commentslideY -= yOffset;
+                                    //comment.Slide(y: yOffset);
+                                }
+
+                                //yShiftOffset = -1;
+                            }
+                            else
+                            {
+                                comment.canvasTop += yShiftOffset;
+                                Canvas.SetTop(comment, comment.canvasTop);
+                            }
+                            comment.addinSlide.X = comment.commentslideX;
+                            comment.addinSlide.Y = comment.commentslideY;
                         }
-                        //yShiftOffset = -1;
                     }
-                    else
-                    {
-                        comment.canvasTop += yShiftOffset;
-                        Canvas.SetTop(comment, comment.canvasTop);
-                    }
+
                 }
 
             }
@@ -828,7 +845,7 @@ namespace PhenoPad.CustomControl
             if (insertMode == InsertMode.Handwriting)
             {
                 comment = parentControl.NewEHRCommentControl(pos.X , newY + 110, cur_selected.Item1, AnnotationType.RawComment);
-                comment.commentslideX = EHR_TEXTBOX_WIDTH.Value - pos.X + 20;
+                comment.commentslideX = EHR_TEXTBOX_WIDTH.Value - pos.X + COMMENT_X_OFFSET;
                 comment.commentslideY = -LINE_HEIGHT;
 
                 var strokes = inputInkCanvas.InkPresenter.StrokeContainer.GetStrokes();
@@ -892,7 +909,7 @@ namespace PhenoPad.CustomControl
             range.GetPoint(HorizontalCharacterAlignment.Left, VerticalCharacterAlignment.Bottom, PointOptions.ClientCoordinates, out pos);
             ((FontIcon)inputMarkup.Children[0]).Foreground = ANNOTATION;
             insertType = InsertType.Annotation;
-            ShowInputPanel(new Point(pos.X - 20, pos.Y - LINE_HEIGHT));
+            ShowInputPanel(new Point(pos.X - COMMENT_X_OFFSET, pos.Y - LINE_HEIGHT));
         }
 
         private bool Collides(AddInControl c1, AddInControl c2)
@@ -927,7 +944,7 @@ namespace PhenoPad.CustomControl
                     }
                     else
                     {
-                        double lastOffset = (comments[i].canvasTop + comments[i].commentslideY) - (comments[i - 1].canvasTop + comments[i - 1].commentslideY + comments[i - 1].Height + 20);
+                        double lastOffset = (comments[i].canvasTop + comments[i].commentslideY) - (comments[i - 1].canvasTop + comments[i - 1].commentslideY + comments[i - 1].Height + COMMENT_X_OFFSET);
                         //Debug.WriteLine($"i > 0 lastOffset = {lastOffset}");
                         if (comments[i].commentslideY - lastOffset < -LINE_HEIGHT)
                         {
@@ -966,7 +983,7 @@ namespace PhenoPad.CustomControl
             inputTypeBox.Document.SetText(TextSetOptions.None, anno.commentText);
             //because we are re editing a text annotation, switching to raw comment is temp diabled
             HWToggleBtn.IsEnabled = false;
-            ShowInputPanel(new Point(pos.X - 20, pos.Y - LINE_HEIGHT));
+            ShowInputPanel(new Point(pos.X - COMMENT_X_OFFSET, pos.Y - LINE_HEIGHT));
         }
 
         #endregion
@@ -1290,8 +1307,8 @@ namespace PhenoPad.CustomControl
         private void SelectTextInBound(Rect bounding)
         {//selects a range of EHR text based on a given rectangle
             //making the start and end range smaller to avoid over-sensitive range detections
-            Point start = new Point(bounding.X + 10, bounding.Y - LINE_HEIGHT - 20);
-            Point end = new Point(bounding.X + bounding.Width - 30, bounding.Y - LINE_HEIGHT - 20);
+            Point start = new Point(bounding.X + 10, bounding.Y - LINE_HEIGHT - COMMENT_X_OFFSET);
+            Point end = new Point(bounding.X + bounding.Width - 30, bounding.Y - LINE_HEIGHT - COMMENT_X_OFFSET);
             var range1 = EHRTextBox.Document.GetRangeFromPoint(start, PointOptions.ClientCoordinates);
             var range2 = EHRTextBox.Document.GetRangeFromPoint(end, PointOptions.ClientCoordinates);
 
@@ -1571,7 +1588,7 @@ namespace PhenoPad.CustomControl
                             if (gesture == StrokeType.Zigzag)
                             {//Zigzag for deleting
                                 Point start = new Point(bounding.X + 10, bounding.Y + (bounding.Height / 2.0) - LINE_HEIGHT);
-                                Point end = new Point(bounding.X + bounding.Width - 20, bounding.Y + (bounding.Height / 2.0) - LINE_HEIGHT);
+                                Point end = new Point(bounding.X + bounding.Width - COMMENT_X_OFFSET, bounding.Y + (bounding.Height / 2.0) - LINE_HEIGHT);
                                 var range1 = EHRTextBox.Document.GetRangeFromPoint(start, PointOptions.ClientCoordinates);
                                 var range2 = EHRTextBox.Document.GetRangeFromPoint(end, PointOptions.ClientCoordinates);
 
@@ -1932,18 +1949,24 @@ namespace PhenoPad.CustomControl
                 MainPage.Current.NotifyUser("Analyzing Phenotypes from EHR ...", NotifyType.StatusMessage, 7);
             }
             else
-                sentences = new string[] {text};
-            foreach (string p in sentences) {
+                sentences = new string[] { text };
+            foreach (string p in sentences)
+            {
                 Dictionary<string, Phenotype> annoResult = await parentControl.PhenoMana.annotateByNCRAsync(p);
                 if (annoResult != null && annoResult.Count != 0)
                 {
                     foreach (var pp in annoResult.Values)
                     {
+                        if (MainPage.Current.curPage == null || MainPage.Current.curPage != parentControl) {
+                            return;
+                        }
+
                         pp.sourceType = SourceType.Notes;
                         parentControl.PhenoMana.addPhenotypeCandidate(pp, SourceType.Notes);
                     }
                 }
             }
+            return;
         }
 
         private async Task<bool> analyzeInk(InkStroke lastStroke = null, bool serverFlag = false)

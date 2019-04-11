@@ -1,47 +1,21 @@
 ﻿using PhenoPad.PhenotypeService;
 using System;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using System.IO;
 using System.Linq;
-using System.Runtime.InteropServices.WindowsRuntime;
 using Windows.Foundation;
-using Windows.Foundation.Collections;
 using Windows.UI.Core;
 using Windows.UI.Input.Inking;
 using Windows.UI.Input.Inking.Analysis;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
-using Windows.UI.Xaml.Controls.Primitives;
-using Windows.UI.Xaml.Data;
 using Windows.UI.Xaml.Input;
 using Windows.UI.Xaml.Media;
-using Windows.UI.Xaml.Navigation;
 using Windows.UI.Xaml.Shapes;
 using PhenoPad.HWRService;
-using PhenoPad.Styles;
-using Windows.UI.Input.Inking.Core;
 using System.Diagnostics;
 using System.Threading.Tasks;
-using Windows.UI;
-using Windows.Media.Capture;
-using Windows.Storage;
-using Windows.Storage.Streams;
-using Windows.Graphics.Imaging;
-using Windows.UI.Xaml.Media.Imaging;
-using PhenoPad.PhotoVideoService;
-using Windows.UI.Notifications;
-using Windows.ApplicationModel.Core;
-using System.Threading;
-using System.Collections;
-using Windows.UI.Xaml.Documents;
-using Windows.UI.Text;
 using PhenoPad.FileService;
-using System.Numerics;
-using Windows.UI.Xaml.Hosting;
-using Windows.Graphics.Display;
 using PhenoPad.LogService;
-using MetroLog;
 using Windows.UI.Xaml.Media.Animation;
 using Windows.System;
 
@@ -55,12 +29,10 @@ namespace PhenoPad.CustomControl
         List<InkStroke> RawStrokes;
         InkAnalyzer strokeAnalyzer;
         int lastWordCount;
-        //Point lastStrokePoint;
         Point lastWordPoint;
         Rect lastStrokeBound;
         List<int> linesErased = new List<int>();
         private Dictionary<int, NotePhraseControl> phrases = new Dictionary<int, NotePhraseControl>();
-
 
 
         #region stroke event handlers
@@ -177,11 +149,11 @@ namespace PhenoPad.CustomControl
                 foreach (int line in linesErased)
                 {
                     List<HWRRecognizedText> updated = await RecognizeLine(line, serverFlag: MainPage.Current.abbreviation_enabled, wholeline: true);
-                    while (updated == null)
-                    {
-                        await Task.Delay(TimeSpan.FromSeconds(0.1));
-                        updated = await RecognizeLine(line, serverFlag:MainPage.Current.abbreviation_enabled,wholeline: true);
-                    }
+                    //while (updated == null)
+                    //{
+                    //    await Task.Delay(TimeSpan.FromSeconds(3));
+                    //    updated = await RecognizeLine(line, serverFlag:MainPage.Current.abbreviation_enabled,wholeline: true);
+                    //}
                     NotePhraseControl npc = phrases.Where(x => x.Key == line).FirstOrDefault().Value;
                     npc.UpdateRecognition(updated);
                     Canvas.SetLeft(npc, lastStrokeBound.X);
@@ -223,11 +195,8 @@ namespace PhenoPad.CustomControl
             ///  from fetching API
 
             dispatcherTimer.Stop();
-            //Debug.WriteLine("analyzing...");
             if (inkAnalyzer.IsAnalyzing)
             {
-                // inkAnalyzer is being used 
-                // try again after some time by dispatcherTimer 
                 dispatcherTimer.Start();
                 return false;
             }
@@ -237,7 +206,7 @@ namespace PhenoPad.CustomControl
             {
                 //int line = linesToAnnotate.Dequeue();
                 IReadOnlyList<IInkAnalysisNode> lineNodes = inkAnalyzer.AnalysisRoot.FindNodes(InkAnalysisNodeKind.Line);
-                Debug.WriteLine($"----------number of lineNode = {lineNodes.Count}");
+                Debug.WriteLine($"\n---------------------number of lineNode = {lineNodes.Count}");
                 foreach (InkAnalysisLine line in lineNodes)
                 {
                     // only focus on current line
@@ -247,7 +216,7 @@ namespace PhenoPad.CustomControl
                         if (line.GetStrokeIds().Contains(lastStroke.Id))
                         {
                             // set up for current line
-                            Debug.WriteLine($"------------------------recognizing line = {line.Id}");
+                            Debug.WriteLine($"---------------------recognizing line = {line.Id}");
                             recognizeAndSetUpUIForLine(line, serverRecog:serverFlag);
                             return true;
                         }
@@ -302,7 +271,6 @@ namespace PhenoPad.CustomControl
             int lineNum = getLineNumByRect(line.BoundingRect);
 
             if (!indetails) {
-                Debug.Assert(line != null);
 
                 // switch to another line, clear result of current line
                 if (lineNum != showingResultOfLine)
@@ -466,8 +434,7 @@ namespace PhenoPad.CustomControl
                     return new List<HWRRecognizedText>();
 
                 //recognize selection
-                List<HWRRecognizedText> recognitionResults = await HWRManager.getSharedHWRManager().
-                    OnRecognizeAsync(inkCanvas.InkPresenter.StrokeContainer,
+                List<HWRRecognizedText> recognitionResults = await HWRManager.getSharedHWRManager().OnRecognizeAsync(inkCanvas.InkPresenter.StrokeContainer,
                     InkRecognitionTarget.Selected, server:true);
                 return recognitionResults;
             }
@@ -516,20 +483,18 @@ namespace PhenoPad.CustomControl
             double upperbound = (lineNum + 1) * LINE_HEIGHT;
 
             words = words.Where(x => x.BoundingRect.Y + x.BoundingRect.Height / 3 >= lowerbound && x.BoundingRect.Y + x.BoundingRect.Height / 3 <= upperbound).OrderBy(x => x.BoundingRect.X).ToList();
-            Debug.WriteLine($"line number {lineNum}, recognized word count = {words.Count}");
+
             bool hovering = false;
             for (int i = 0; i < words.Count; i++)
             {
                 var w = words[i];
-                Debug.WriteLine($"x={w.BoundingRect.X},y={w.BoundingRect.Y}");
+
                 Rect wordRect = new Rect(w.BoundingRect.X, lineNum * LINE_HEIGHT, w.BoundingRect.Width, LINE_HEIGHT);
                 if (wordRect.Contains(pos))
                 {
-                    Debug.WriteLine("detected !");
                     WordBlockControl wbc = phrases.Where(x => x.Key == lineNum).FirstOrDefault().Value.words.Where(x => x.word_index == i).FirstOrDefault();
                     if (wbc != null)
                     {
-                        Debug.WriteLine("wbc not null !");
                         hovering = true;
                         curLineWordsStackPanel.Children.Clear();
                         foreach (string alternative in wbc.candidates)
@@ -591,7 +556,7 @@ namespace PhenoPad.CustomControl
         }
 
 
-        private async void alternativeListView_ItemClick(object sender, ItemClickEventArgs e)
+        private void alternativeListView_ItemClick(object sender, ItemClickEventArgs e)
         {
 
             //var citem = (string)e.ClickedItem;
@@ -662,9 +627,8 @@ namespace PhenoPad.CustomControl
             Dictionary<string, Phenotype> annoResult = await PhenoMana.annotateByNCRAsync(phrases[lineNum].GetString());
             //OperationLogger.getOpLogger().Log(OperationType.Recognition, idToNoteLine.GetValueOrDefault(line.Id).Text, annoResult);
 
-            if (annoResult != null && annoResult.Count != 0)
+            if (annoResult != null && annoResult.Count > 0)
             {
-                curWordPhenoControlGrid.Visibility = Visibility.Visible;
 
                 // update global annotations
                 foreach (var anno in annoResult.ToList())
@@ -687,7 +651,6 @@ namespace PhenoPad.CustomControl
                 {
                     //Debug.WriteLine($"current Y offset is at {phenoCtrlSlide.Y}, visibility is {curWordPhenoControlGrid.Visibility}");
                     phenoCtrlSlide.Y = 0;
-
                     ((DoubleAnimation)curWordPhenoAnimation.Children[0]).By = -45;
                     curWordPhenoAnimation.Begin();
                 }
@@ -698,13 +661,11 @@ namespace PhenoPad.CustomControl
                     var temp = curLineCandidatePheno.Where(x => x == pheno).FirstOrDefault();
                     pheno.state = PhenotypeManager.getSharedPhenotypeManager().getStateByHpid(pheno.hpId);
                     if (temp == null)
-                    {
                         curLineCandidatePheno.Add(pheno);
-                    }
                     else
                     {
                         if (temp.state != pheno.state)
-                        {
+                        {                           
                             var ind = curLineCandidatePheno.IndexOf(temp);
                             curLineCandidatePheno.Remove(temp);
                             curLineCandidatePheno.Insert(ind, pheno);
@@ -756,6 +717,7 @@ namespace PhenoPad.CustomControl
                 //curWordPhenoHideAnimation.Begin();
             }
 
+            curWordPhenoControlGrid.Visibility = Visibility.Visible;
 
         }
 
@@ -930,15 +892,7 @@ namespace PhenoPad.CustomControl
             if (currentStrokes.Count > 0)
             {
                 List<HWRRecognizedText> recognitionResults = new List<HWRRecognizedText>();
-                if (MainPage.Current.abbreviation_enabled)
-                {
-                    recognitionResults = await HWRManager.getSharedHWRManager().OnRecognizeAsync
-                                                            (inkCanvas.InkPresenter.StrokeContainer, InkRecognitionTarget.Selected, true);
-                }
-                else {
-                    recognitionResults = await HWRManager.getSharedHWRManager().OnRecognizeAsync
-                                        (inkCanvas.InkPresenter.StrokeContainer, InkRecognitionTarget.Selected);
-                }
+                recognitionResults = await HWRManager.getSharedHWRManager().OnRecognizeAsync(inkCanvas.InkPresenter.StrokeContainer, InkRecognitionTarget.Selected, server:MainPage.Current.abbreviation_enabled);
                 string str = "";
                 if (recognitionResults != null)
                 {

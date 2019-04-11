@@ -9,6 +9,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Xml;
+using Windows.UI.Core;
 using Windows.UI.Xaml;
 using Windows.Web.Http;
 
@@ -124,33 +125,42 @@ namespace PhenoPad.PhenotypeService
             }
             autosavetimer.Start();
         }
-        public void addPhenotypeCandidate(Phenotype pheno, SourceType from)
-        {
-            Phenotype temp = phenotypesCandidates.Where(x => x == pheno).FirstOrDefault();
-            if(temp != null)
-                phenotypesCandidates.Remove(temp);
-            Phenotype pp = pheno.Clone();
 
-            temp = savedPhenotypes.Where(x => x == pheno).FirstOrDefault();
-            if (temp != null)
-                pp.state = temp.state;
-            phenotypesCandidates.Insert(0, pp);
+        public async void addPhenotypeCandidate(Phenotype pheno, SourceType from)
+        {//addes a phenotype tag to the candidate list UI
 
-            if (from == SourceType.Speech)
+            await Windows.ApplicationModel.Core.CoreApplication.MainView.CoreWindow.Dispatcher.RunAsync(CoreDispatcherPriority.Normal,() =>
             {
-                temp = phenotypesInSpeech.Where(x => x == pheno).FirstOrDefault();
-                if (temp == null)
-                {
-                    phenotypesInSpeech.Insert(0, pp);
+                Phenotype pp = pheno.Clone();
+                Phenotype temp = null;
+
+                if (from == SourceType.Notes)
+                    temp = savedPhenotypes.Where(x => x == pheno).FirstOrDefault();
+
+                else if (from == SourceType.Speech)
+                    temp = phenotypesInSpeech.Where(x => x == pheno).FirstOrDefault();
+
+                if (temp != null)
+                    pp.state = temp.state;
+                else
+                    pp.state = -1;
+
+ 
+                //if (temp != null && phenotypesCandidates[0].name != temp.name)
+                //{
+                //    phenotypesCandidates.Remove(temp);
+                //    phenotypesCandidates.Insert(0, pp);
+                //}
+                if (temp == null && phenotypesCandidates.Where(x=>x == pheno).FirstOrDefault() == null)
+                    phenotypesCandidates.Insert(0, pp);
+            
+                if (!MainPage.Current.CandidateIsOpened())
+                    MainPage.Current.OpenCandidate();
+                return;
+
                 }
-                else {
-                    temp.state = pheno.state;
-                }
-            }           
-           
-            MainPage.Current.OpenCandidate();
-            //autosavetimer.Start();
-            return;
+            );
+
         }
 
         public void addPhenotype(Phenotype pheno, SourceType from)
@@ -259,9 +269,7 @@ namespace PhenoPad.PhenotypeService
                     predictedDiseases.Add(d);
                 }
             }
-
             autosavetimer.Start();
-
         }
 
         public bool deletePhenotypeByIndex(int idx)
@@ -676,7 +684,6 @@ namespace PhenoPad.PhenotypeService
             catch (Exception ex)
             {
                 httpResponseBody = "Error: " + ex.HResult.ToString("X") + " Message: " + ex.Message;
-                MainPage.Current.NotifyUser(httpResponseBody, NotifyType.ErrorMessage, 3);
                 MetroLogger.getSharedLogger().Error("Failed to annotate by NCR, " + httpResponseBody);
             }
             return null;

@@ -141,7 +141,6 @@ namespace PhenoPad.HWRService
 
                     lastServerRecog = recogResults;
 
-
                     return recogResults;
                 }
                 // if no text is recognized, return null

@@ -320,7 +320,8 @@
                                           ScrollViewer.HorizontalScrollBarVisibility="Hidden"
                                           ScrollViewer.VerticalScrollBarVisibility="Hidden"
                                           ScrollViewer.IsHorizontalRailEnabled="True"
-                                          x:Name="curLineCandidatePhenoListView" ItemsSource="{x:Bind curLineCandidatePheno, Mode=OneWay}">
+                                          x:Name="curLineCandidatePhenoListView" 
+                                          ItemsSource="{x:Bind curLineCandidatePheno, Mode=OneWay}">
                                     <ListView.ItemsPanel>
                                         <ItemsPanelTemplate>
                                             <VirtualizingStackPanel  Orientation="Horizontal"/>

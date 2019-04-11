@@ -98,6 +98,7 @@ namespace PhenoPad
         public static readonly string ViewMode = "Previewing Mode";
         private string currentMode = WritingMode;
         private bool ifViewMode = false;
+        public CancellationTokenSource cancelService;
 
         private int num = 0;
         public bool abbreviation_enabled;
@@ -169,6 +170,9 @@ namespace PhenoPad
             audioTimer.Interval = TimeSpan.FromSeconds(3);
             audioTimer.Tick += onAudioStarted;
 
+            cancelService = new CancellationTokenSource();
+            
+
             //When user clicks X while in mainpage, auto-saves all current process and exits the program.
             Windows.UI.Core.Preview.SystemNavigationManagerPreview.GetForCurrentView().CloseRequested +=
             async (sender, args) =>
@@ -200,21 +204,22 @@ namespace PhenoPad
             var result = await messageDialog.ShowAsync();
             if ((int)result.Id == 0)
             {
-                LogService.MetroLogger.getSharedLogger().Info("Saving and exiting app ...");
+                MetroLogger.getSharedLogger().Info("Saving and exiting app ...");
                 //only saves the notes if in editing stage
-                await Dispatcher.RunAsync(CoreDispatcherPriority.High, async () => {
+                await Task.Run(async () => {
                     if (notebookId != null)
                         await saveNoteToDisk();
+                    return;
                 });
                 Application.Current.Exit();
             }
             else if ((int)result.Id == 1) {
-                LogService.MetroLogger.getSharedLogger().Info("Exiting app without saving ...");
+                MetroLogger.getSharedLogger().Info("Exiting app without saving ...");
                 Application.Current.Exit();
             }
             else
             {
-                LogService.MetroLogger.getSharedLogger().Info("Canceled Exiting app");
+                MetroLogger.getSharedLogger().Info("Canceled Exiting app");
             }
         }
 
@@ -373,6 +378,7 @@ namespace PhenoPad
         /// </summary>
         protected async override void OnNavigatedTo(NavigationEventArgs e)
         {
+
             LoadingPopup.IsOpen = true;
 
             var nid = e.Parameter as string;
@@ -407,26 +413,8 @@ namespace PhenoPad
         protected async override void OnNavigatingFrom(NavigatingCancelEventArgs e)
         {
 
-            // Microsoft ASR, not used for now
-            //if (this.speechRecognizer != null)
-            //{
-            //    if (isListening)
-            //    {
-            //        await this.speechRecognizer.ContinuousRecognitionSession.CancelAsync();
-            //        isListening = false;
-            //    }
-
-            //    //cmdBarTextBlock.Text = "";
-
-            //    speechRecognizer.ContinuousRecognitionSession.Completed -= ContinuousRecognitionSession_Completed;
-            //    speechRecognizer.ContinuousRecognitionSession.ResultGenerated -= ContinuousRecognitionSession_ResultGenerated;
-            //    speechRecognizer.HypothesisGenerated -= SpeechRecognizer_HypothesisGenerated;
-            //    speechRecognizer.StateChanged -= SpeechRecognizer_StateChanged;
-
-            //    this.speechRecognizer.Dispose();
-            //    this.speechRecognizer = null;
-            //}
             await Dispatcher.RunAsync(CoreDispatcherPriority.High, async ()=> {
+
                 if (speechEngineRunning)
                 {//close all audio services before navigating
                     Debug.WriteLine("on leaving mainpage");
@@ -1151,7 +1139,8 @@ namespace PhenoPad
 
         private async void BackButton_Click(object sender, RoutedEventArgs e)
         {
-
+            cancelService.Cancel();
+            cancelService = new CancellationTokenSource();
             LoadingPopup.IsOpen = true;
             // save note
             //await this.saveNoteToDisk();
@@ -1160,6 +1149,7 @@ namespace PhenoPad
             LoadingPopup.IsOpen = false;
             //On_BackRequested();
             this.Frame.Navigate(typeof(PageOverview));
+         
 
         }
         // Handles system-level BackRequested events and page-level back button Click events

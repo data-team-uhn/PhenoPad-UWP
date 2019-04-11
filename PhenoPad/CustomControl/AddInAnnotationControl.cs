@@ -279,10 +279,16 @@ namespace PhenoPad.CustomControl
             {
 
                 //if there's a comment currently at edit mode, slide it back to avoid position shifting errors
-                AddInControl lastActiveComment = ehr.comments.Where(x => x.commentID == ehr.lastAddedCommentID).FirstOrDefault();
-                if (lastActiveComment != null)
-                {
-                    lastActiveComment.SlideToRight();
+                //AddInControl lastActiveComment = ehr.comments.Where(x => x.commentID == ehr.lastAddedCommentID).FirstOrDefault();
+                //if (lastActiveComment != null)
+                //{
+                //    lastActiveComment.SlideToRight();
+                //}
+                ehr.HideAndClearInputPanel();
+                var editings = ehr.comments.Where(x => x.addinSlide.X == 0).ToList();
+                if (editings != null) {
+                    foreach (var c in editings)
+                        c.SlideToRight();
                 }
 
                 ehr.HideCommentLine();

@@ -9,7 +9,6 @@ using Windows.Storage.Streams;
 using Windows.UI.Core;
 using System.Diagnostics;
 using System.Threading;
-using PhenoPad.SpeechService;
 
 namespace PhenoPad.BluetoothService
 {
@@ -56,24 +55,24 @@ namespace PhenoPad.BluetoothService
             {
                 rootPage.bluetoothprogress.Visibility = Windows.UI.Xaml.Visibility.Visible;
                 rootPage.bluetoothicon.Visibility = Windows.UI.Xaml.Visibility.Collapsed;
-                rootPage.NotifyUser("Connecting to Raspberry Pi through Bluetooth.", NotifyType.StatusMessage, 3);
-                await InitiateConnection();
-                Debug.WriteLine($"bluetooth initialized = {initialized}\n");
-                //while (!initialized)
-                //{//continuously loop until we connect to raspberry pi
-                //    //LogService.MetroLogger.getSharedLogger().Info("Could not discover Bluetooh device, trying again...");
-                //    StopWatcher();
-                //    await Task.Delay(TimeSpan.FromSeconds(3));
-                //    await InitiateConnection();
-                //}
+                await Windows.ApplicationModel.Core.CoreApplication.MainView.CoreWindow.Dispatcher.RunAsync(CoreDispatcherPriority.Normal, async () =>{
+                    while (!initialized)
+                    {
+                        Debug.WriteLine("Trying Bluetooth connection ...");
+                        await Task.Delay(TimeSpan.FromSeconds(3));
+                        await InitiateConnection();
+                    }
+                    rootPage.NotifyUser("Bluetooth is now connected.", NotifyType.StatusMessage, 2);
+                });
             }
             else
             {
                 rootPage.NotifyUser("Bluetooth is connected.", NotifyType.StatusMessage, 2);
                 rootPage.bluetoonOn = true;
             }
+            return;
         }
-        
+
         /// <summary>
         /// Initiate bluetooth connection with Raspberry Pi
         /// </summary>
@@ -117,7 +116,7 @@ namespace PhenoPad.BluetoothService
                             }
                             else
                             {
-                                await Task.Delay(TimeSpan.FromSeconds(3));
+                                await Task.Delay(TimeSpan.FromSeconds(1));
                             }
                         }
                         if (attempNum == 6)
@@ -206,7 +205,6 @@ namespace PhenoPad.BluetoothService
             // Hook up handlers for the watcher events before starting the watcher
             deviceWatcher.Added += new TypedEventHandler<DeviceWatcher, DeviceInformation>(async (watcher, deviceInfo) =>
             {
-                //Debug.WriteLine("device watcher added =================================");
                 if (initialized)
                     return;
                 //await rootPage.Dispatcher.RunAsync(CoreDispatcherPriority.High, async () =>
