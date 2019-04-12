@@ -1005,7 +1005,7 @@ namespace PhenoPad.CustomControl
                     phrases[last_line] = npc;
                     npc.SetPhrasePosition(ph.left, npc.lineIndex * LINE_HEIGHT);
                     recognizedCanvas.Children.Add(npc);
-                    Canvas.SetLeft(npc, npc.canvasLeft);
+                    Canvas.SetLeft(npc, ph.left);
                     Canvas.SetTop(npc, npc.lineIndex * LINE_HEIGHT);
                     npc.UpdateLayout();
                     words = new List<WordBlockControl>();
@@ -1024,9 +1024,10 @@ namespace PhenoPad.CustomControl
             if (words.Count > 0) {
                 NotePhraseControl npc = new NotePhraseControl(last_line, words);
                 phrases[last_line] = npc;
-                npc.SetPhrasePosition(recogPhrases[0].left, npc.lineIndex * LINE_HEIGHT);
+                double left = recogPhrases.Count == 1 ? recogPhrases[0].left : recogPhrases[recogPhrases.Count-1].left;
+                npc.SetPhrasePosition(left, npc.lineIndex * LINE_HEIGHT);
                 recognizedCanvas.Children.Add(npc);
-                Canvas.SetLeft(npc, npc.canvasLeft);
+                Canvas.SetLeft(npc, left);
                 Canvas.SetTop(npc, npc.lineIndex * LINE_HEIGHT);
                 npc.UpdateLayout();
             }

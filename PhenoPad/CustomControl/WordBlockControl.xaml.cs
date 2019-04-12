@@ -94,6 +94,7 @@ namespace PhenoPad.CustomControl
             f.ShowAt(WordBlock);
             showing = ShowingType.WORD;
         }
+
         private void ShowAbbrCandidate(object sender, RoutedEventArgs args)
         {
             AlternativeList.ItemsSource = abbr_candidates;
@@ -112,6 +113,7 @@ namespace PhenoPad.CustomControl
                 WordBlock.Text = current;
                 corrected = true;
             }
+
             else if (showing == ShowingType.ABBR && text.Length > 0)
             {
                 abbr_current = "(" + text.Trim() + ")";
@@ -120,6 +122,7 @@ namespace PhenoPad.CustomControl
                 corrected = true;
             }
             MainPage.Current.curPage.annotateCurrentLineAndUpdateUI(line_index: line_index);
+            MainPage.Current.NotifyUser($"Changed to {text}", NotifyType.StatusMessage, 1);
 
         }
 
@@ -133,6 +136,7 @@ namespace PhenoPad.CustomControl
                 WordBlock.Text = current;
                 MainPage.Current.curPage.annotateCurrentLineAndUpdateUI(line_index: line_index);
                 corrected = true;
+                MainPage.Current.NotifyUser($"Changed to {current}", NotifyType.StatusMessage, 1);
             }
         }
 
@@ -162,6 +166,8 @@ namespace PhenoPad.CustomControl
             }
             corrected = true;
             MainPage.Current.curPage.annotateCurrentLineAndUpdateUI(line_index: line_index);
+            MainPage.Current.NotifyUser($"Changed to {current}", NotifyType.StatusMessage, 1);
+
             UpdateLayout();
         }
 
@@ -198,6 +204,7 @@ namespace PhenoPad.CustomControl
             MainPage.Current.curPage.RawStrokeTimer.Stop();
             MainPage.Current.curPage.annotateCurrentLineAndUpdateUI(line_index: line_index);
             MainPage.Current.curPage.HideCurLineStackPanel();
+            MainPage.Current.NotifyUser($"Changed to {current}", NotifyType.StatusMessage, 1);
 
             UpdateLayout();
         }
