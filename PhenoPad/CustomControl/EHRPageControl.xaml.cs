@@ -2014,7 +2014,7 @@ namespace PhenoPad.CustomControl
                 stroke.Selected = true;
 
             //recognize selection
-            List<HWRRecognizedText> newResult = await HWRManager.getSharedHWRManager().OnRecognizeAsync(inputInkCanvas.InkPresenter.StrokeContainer, InkRecognitionTarget.Selected, serverRecog);
+            List<HWRRecognizedText> newResult = await HWRManager.getSharedHWRManager().OnRecognizeAsync(inputInkCanvas.InkPresenter.StrokeContainer, InkRecognitionTarget.Selected);
             inputRecogResult = newResult == null ? inputRecogResult : newResult;
 
             // HWR result UI

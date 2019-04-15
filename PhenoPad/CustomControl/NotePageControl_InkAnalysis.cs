@@ -40,27 +40,34 @@ namespace PhenoPad.CustomControl
 
 
 
-        private void InkPresenter_StrokesErased(InkPresenter sender, InkStrokesErasedEventArgs args)
+        private async void InkPresenter_StrokesErased(InkPresenter sender, InkStrokesErasedEventArgs args)
         {
-            ClearSelectionAsync();
-            EraseTimer.Stop();
+            await Windows.ApplicationModel.Core.CoreApplication.MainView.CoreWindow.Dispatcher.RunAsync(CoreDispatcherPriority.Normal,
+                () =>
+                {
+                    ClearSelectionAsync();
+                    EraseTimer.Stop();
 
-            curLineResultPanel.Visibility = Visibility.Collapsed;
-            curLineWordsStackPanel.Children.Clear();
+                    curLineResultPanel.Visibility = Visibility.Collapsed;
+                    curLineWordsStackPanel.Children.Clear();
 
-            linesErased.Clear();
-            foreach (var stroke in args.Strokes)
-            {
-                inkAnalyzer.RemoveDataForStroke(stroke.Id);
-                if (stroke.BoundingRect.Height <= MAX_WRITING) {
-                    int line = getLineNumByRect(stroke.BoundingRect);
-                    if (!linesErased.Contains(line))
-                        linesErased.Add(line);
+                    linesErased.Clear();
+                    foreach (var stroke in args.Strokes)
+                    {
+                        inkAnalyzer.RemoveDataForStroke(stroke.Id);
+                        if (stroke.BoundingRect.Height <= MAX_WRITING)
+                        {
+                            int line = getLineNumByRect(stroke.BoundingRect);
+                            if (!linesErased.Contains(line))
+                                linesErased.Add(line);
+                        }
+                    }
+
+                    autosaveDispatcherTimer.Start();
+                    EraseTimer.Start();
+
                 }
-            }
-
-            autosaveDispatcherTimer.Start();
-            EraseTimer.Start();
+            );
         }
 
         private void StrokeInput_StrokeStarted(InkStrokeInput sender, PointerEventArgs args)
@@ -152,6 +159,7 @@ namespace PhenoPad.CustomControl
                 foreach (int line in linesErased)
                 {
                     List<HWRRecognizedText> updated = await RecognizeLine(line, serverFlag: MainPage.Current.abbreviation_enabled, wholeline: true);
+
                     //while (updated == null)
                     //{
                     //    await Task.Delay(TimeSpan.FromSeconds(3));
@@ -404,27 +412,23 @@ namespace PhenoPad.CustomControl
                     thisline.Add( allwords.Where(x => x.BoundingRect.Y + (x.BoundingRect.Height / 3) >= lowerbound && x.BoundingRect.Y + (x.BoundingRect.Height / 3) <= upperbound).FirstOrDefault());
                     lastStrokeBound = thisline.Count == 0? lastStrokeBound: thisline[0].BoundingRect;
                 }
-                Debug.WriteLine($"first word is at x={lastStrokeBound.X}");
-                Debug.WriteLine($"this line node count = {thisline.Count}");
-                
+                //Debug.WriteLine($"first word is at x={lastStrokeBound.X}");
+                //Debug.WriteLine($"this line node count = {thisline.Count}");
+
+                //return empty recognized result if there's no strokes
                 if (thisline.Count == 0)
-                    return null;
+                    return new List<HWRRecognizedText>();
 
                 line_index = getLineNumByRect(thisline[0].BoundingRect);
 
-                int selected_count = 0;
                 lowerbound = line_index * LINE_HEIGHT;
                 upperbound = (line_index + 1) * LINE_HEIGHT;
                 //sometimes microsoft thinks two phrases on the same line 
                 foreach (var x in thisline)
                 {
-                    if (x.BoundingRect.Y + (x.BoundingRect.Height / 3) >= lowerbound && x.BoundingRect.Y + (x.BoundingRect.Height / 3) <= upperbound)
+                    foreach (var sid in x.GetStrokeIds())
                     {
-                        foreach (var sid in x.GetStrokeIds())
-                        {
-                            inkCanvas.InkPresenter.StrokeContainer.GetStrokeById(sid).Selected = true;
-                            selected_count++;
-                        }
+                        inkCanvas.InkPresenter.StrokeContainer.GetStrokeById(sid).Selected = true;
                     }
                 }
                 //find the most recent word of the line and records its coordinates
@@ -439,13 +443,9 @@ namespace PhenoPad.CustomControl
                 else
                     lastWordPoint = new Point(thisline[0].BoundingRect.X, line_index * LINE_HEIGHT);
 
-                //return empty recognized result if there's no selected strokes
-                if (selected_count == 0)
-                    return new List<HWRRecognizedText>();
-
                 //recognize selection
                 List<HWRRecognizedText> recognitionResults = await HWRManager.getSharedHWRManager().OnRecognizeAsync(inkCanvas.InkPresenter.StrokeContainer,
-                    InkRecognitionTarget.Selected, server:true);
+                    InkRecognitionTarget.Selected);
                 return recognitionResults;
             }
             catch (Exception ex)
@@ -740,17 +740,17 @@ namespace PhenoPad.CustomControl
         /// <summary>
         /// PS:10/9/2018 this method is currently not used as the timer tick is commented out
         /// </summary>
-        private void recognizeLine(int line, bool serverRecog = false)
+        private void recognizeLine(int line)
         {
             if (line < 0)
                 return;
-            SelectAndAnnotateByLineNum(line, serverRecog);
+            SelectAndAnnotateByLineNum(line);
         }
 
         /// <summary>
         /// PS:10/9/2018 this method is currently not used as the timer tick is commented out
         /// </summary>
-        public async void SelectAndAnnotateByLineNum(int line, bool server)
+        public async void SelectAndAnnotateByLineNum(int line)
         {
             await deleteSemaphoreSlim.WaitAsync();
             try
@@ -790,8 +790,7 @@ namespace PhenoPad.CustomControl
                     if (shouldRecognize)
                     {
                         List<HWRRecognizedText> recognitionResults = await HWRManager.getSharedHWRManager().OnRecognizeAsync(
-                                                                        inkCanvas.InkPresenter.StrokeContainer, InkRecognitionTarget.Selected,
-                                                                        server);
+                                                                        inkCanvas.InkPresenter.StrokeContainer, InkRecognitionTarget.Selected);
 
                         //ClearSelection();
                         if (recognitionResults != null)
@@ -904,7 +903,7 @@ namespace PhenoPad.CustomControl
             if (currentStrokes.Count > 0)
             {
                 List<HWRRecognizedText> recognitionResults = new List<HWRRecognizedText>();
-                recognitionResults = await HWRManager.getSharedHWRManager().OnRecognizeAsync(inkCanvas.InkPresenter.StrokeContainer, InkRecognitionTarget.Selected, server:MainPage.Current.abbreviation_enabled);
+                recognitionResults = await HWRManager.getSharedHWRManager().OnRecognizeAsync(inkCanvas.InkPresenter.StrokeContainer, InkRecognitionTarget.Selected);
                 string str = "";
                 if (recognitionResults != null)
                 {
@@ -1257,108 +1256,7 @@ namespace PhenoPad.CustomControl
                 result = await analyzeInk(serverFlag: true);//will be using server side HWR upon page load
         }
 
-        /// <summary>
-        /// Dynamic programming for caluculating best alignment of two string list
-        /// http://www.biorecipes.com/DynProgBasic/code.html
-        /// </summary>
-        /// <param name="newList"></param>
-        /// <param name="oldList"></param>
-        private (List<int>, List<int>) alignTwoStringList(List<string> newList, List<string> oldList)
-        {
-            // score matrix
-            int gap_score = 0;
-            int mismatch_score = 0;
-            int match_score = 1;
 
-            int newLen = newList.Count();
-            int oldLen = oldList.Count();
-            int[,] scoreMatrix = new int[newLen + 1, oldLen + 1];
-            int[,] tracebackMatrix = new int[newLen + 1, oldLen + 1];
-
-            // base condition
-            scoreMatrix[0, 0] = 0;
-            int ind = 0;
-            for (ind = 0; ind <= oldLen; ++ind)
-            {
-                scoreMatrix[0, ind] = 0;
-                tracebackMatrix[0, ind] = 1;
-            }
-
-            for (ind = 0; ind <= newLen; ++ind)
-            {
-                scoreMatrix[ind, 0] = 0;
-                tracebackMatrix[ind, 0] = -1;
-            }
-            tracebackMatrix[0, 0] = 0;
-
-            // recurrence 
-            int i;
-            int j;
-            for (i = 1; i <= newLen; ++i)
-                for (j = 1; j <= oldLen; ++j)
-                {
-                    // align i and j
-                    scoreMatrix[i, j] = newList[i - 1] == oldList[j - 1] ? scoreMatrix[i - 1, j - 1] + match_score : scoreMatrix[i - 1, j - 1] + mismatch_score;
-                    tracebackMatrix[i, j] = 0;
-                    // insert gap to old 
-                    if (scoreMatrix[i - 1, j] + gap_score > scoreMatrix[i, j])
-                        tracebackMatrix[i, j] = -1;
-                    // insert gap to new 
-                    if (scoreMatrix[i, j - 1] + gap_score > scoreMatrix[i, j])
-                        tracebackMatrix[i, j] = 1;
-                }
-
-            // trace back
-            List<int> newIndex = new List<int>();
-            List<int> oldIndex = new List<int>();
-
-            i = newLen;
-            j = oldLen;
-            while (i >= 0 && j >= 0)
-            {
-                switch (tracebackMatrix[i, j])
-                {
-                    case -1:
-                        newIndex.Insert(0, i - 1);
-                        oldIndex.Insert(0, -1); // gap
-                        i--;
-                        break;
-                    case 1:
-                        newIndex.Insert(0, -1); // gap
-                        oldIndex.Insert(0, j - 1);
-                        j--;
-                        break;
-                    case 0:
-                        newIndex.Insert(0, i - 1);
-                        oldIndex.Insert(0, j - 1);
-                        i--;
-                        j--;
-                        break;
-
-                }
-
-            }
-
-            // remove fake element at beginning
-            newIndex.RemoveAt(0);
-            oldIndex.RemoveAt(0);
-            if (newIndex.Count() != oldIndex.Count())
-                Debug.WriteLine("Alignment error!");
-
-            // use newIndex as base line
-            Debug.WriteLine("Alignment results: ");
-            string newString = "";
-            string oldString = "";
-            for (i = 0; i < newIndex.Count(); i++)
-            {
-                oldString += oldIndex[i] == -1 ? "_\t" : oldList[oldIndex[i]] + "\t";
-                newString += newIndex[i] == -1 ? "_\t" : newList[newIndex[i]] + "\t";
-            }
-            Debug.WriteLine("Old string:    " + oldString);
-            Debug.WriteLine("New String:    " + newString);
-            return (newIndex, oldIndex);
-
-        }
 
         private async void searchPhenotypesAndSetUpBriefView(string str)
         {

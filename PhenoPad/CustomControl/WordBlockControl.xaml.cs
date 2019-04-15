@@ -195,7 +195,7 @@ namespace PhenoPad.CustomControl
 
             //TODO: HANDLE ABBR
             string content = (string)((Button)sender).Content;
-            int ind = candidates.IndexOf(content.Trim('(').Trim(')'));
+            int ind = candidates.IndexOf(content);
 
             selected_index = ind;
             current = candidates[ind];

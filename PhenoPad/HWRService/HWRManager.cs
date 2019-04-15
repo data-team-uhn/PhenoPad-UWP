@@ -99,11 +99,13 @@ namespace PhenoPad.HWRService
         /// <summary>
         /// Gets the components in InkStrokeContainer and tries to recognize and return text, returns null if no text is recognized.
         /// </summary>
-        public async Task<List<HWRRecognizedText>> OnRecognizeAsync(InkStrokeContainer container, InkRecognitionTarget target, bool server=false)
+        public async Task<List<HWRRecognizedText>> OnRecognizeAsync(InkStrokeContainer container, InkRecognitionTarget target)
         {
             try
             {
+                inkRecognizerContainer = new InkRecognizerContainer();
                 var recognitionResults = await inkRecognizerContainer.RecognizeAsync(container, target);
+                recognitionResults = recognitionResults.OrderBy(x => x.BoundingRect.X).ToList();
                 //if there are avilable recognition results, add to recognized text list    
                 if ( recognitionResults != null && recognitionResults.Count > 0)
                 {
@@ -129,7 +131,7 @@ namespace PhenoPad.HWRService
                         ind++;
                     }
                     //triggers server side abbreviation detection
-                    if (server && MainPage.Current.abbreviation_enabled)
+                    if (MainPage.Current.abbreviation_enabled)
                     {
                         string fullsentence = listToString(sentence);
                         HTTPRequest unprocessed = new HTTPRequest(fullsentence, this.alternatives, this.newRequest.ToString());

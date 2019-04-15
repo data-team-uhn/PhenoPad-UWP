@@ -242,12 +242,12 @@ namespace PhenoPad.CustomControl
         public async void ConvertStrokeToText(object sender, RoutedEventArgs e) {
             if (addinSlide.X == commentslideX) {
 
-                List<HWRRecognizedText> recognitionResults = await HWRManager.getSharedHWRManager().OnRecognizeAsync(inkCanvas.InkPresenter.StrokeContainer, InkRecognitionTarget.All, server: false);
+                List<HWRRecognizedText> recognitionResults = await HWRManager.getSharedHWRManager().OnRecognizeAsync(inkCanvas.InkPresenter.StrokeContainer, InkRecognitionTarget.All);
 
                 //continue analyzing until we have a result
                 while (recognitionResults == null) {
                     await Task.Delay(TimeSpan.FromSeconds(0.5));
-                    recognitionResults = await HWRManager.getSharedHWRManager().OnRecognizeAsync(inkCanvas.InkPresenter.StrokeContainer, InkRecognitionTarget.All, server: true);
+                    recognitionResults = await HWRManager.getSharedHWRManager().OnRecognizeAsync(inkCanvas.InkPresenter.StrokeContainer, InkRecognitionTarget.All);
                 }
 
                 string text = "";

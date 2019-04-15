@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices.WindowsRuntime;
@@ -50,6 +51,15 @@ namespace PhenoPad.CustomControl
             return str;
         }
 
+        private List<string> ParseStringAsList(List<WordBlockControl> updated)
+        {
+            List<string> str = new List<string>();
+            foreach (var s in updated)
+                str.Add(s.current);
+            return str;
+        }
+
+
         public string GetString() {
             string text = "";
             foreach (WordBlockControl s in words) {
@@ -70,12 +80,159 @@ namespace PhenoPad.CustomControl
             RecognizedPhrase.Children.Add(word);
         }
 
+        internal List<WordBlockControl> MergeNewResultToOld(List<WordBlockControl> updated) {
+            List<WordBlockControl> merged = new List<WordBlockControl>();
+
+            var old = GetStringAsList();
+            var _new = ParseStringAsList(updated);
+
+            var indexes = alignTwoStringList(_new, old);
+            var old_index = indexes.Item2;
+            var new_index = indexes.Item1;
+
+            int total = new_index.Count;
+
+            for(int i = 0; i < total; i++) {
+
+                if (old_index[i] == -1)
+                {
+                    merged.Add(updated[new_index[i]]);
+                }
+                else if (new_index[i] == -1)
+                {
+                    //dont do anything
+                }
+                else {
+                    if (words[old_index[i]].corrected)
+                        merged.Add(words[old_index[i]]);
+                    else
+                        merged.Add(updated[new_index[i]]);
+                }
+            }
+
+            return merged;
+        }
+
+
+        /// <summary>
+        /// Dynamic programming for caluculating best alignment of two string list
+        /// http://www.biorecipes.com/DynProgBasic/code.html
+        /// </summary>
+        /// <param name="newList"></param>
+        /// <param name="oldList"></param>
+        private (List<int>, List<int>) alignTwoStringList(List<string> newList, List<string> oldList)
+        {
+            // score matrix
+            int gap_score = 0;
+            int mismatch_score = 0;
+            int match_score = 1;
+
+            int newLen = newList.Count();
+            int oldLen = oldList.Count();
+            int[,] scoreMatrix = new int[newLen + 1, oldLen + 1];
+            int[,] tracebackMatrix = new int[newLen + 1, oldLen + 1];
+
+            // base condition
+            scoreMatrix[0, 0] = 0;
+            int ind = 0;
+            for (ind = 0; ind <= oldLen; ++ind)
+            {
+                scoreMatrix[0, ind] = 0;
+                tracebackMatrix[0, ind] = 1;
+            }
+
+            for (ind = 0; ind <= newLen; ++ind)
+            {
+                scoreMatrix[ind, 0] = 0;
+                tracebackMatrix[ind, 0] = -1;
+            }
+            tracebackMatrix[0, 0] = 0;
+
+            // recurrence 
+            int i;
+            int j;
+            for (i = 1; i <= newLen; ++i)
+                for (j = 1; j <= oldLen; ++j)
+                {
+                    // align i and j
+                    scoreMatrix[i, j] = newList[i - 1] == oldList[j - 1] ? scoreMatrix[i - 1, j - 1] + match_score : scoreMatrix[i - 1, j - 1] + mismatch_score;
+                    tracebackMatrix[i, j] = 0;
+                    // insert gap to old 
+                    if (scoreMatrix[i - 1, j] + gap_score > scoreMatrix[i, j])
+                        tracebackMatrix[i, j] = -1;
+                    // insert gap to new 
+                    if (scoreMatrix[i, j - 1] + gap_score > scoreMatrix[i, j])
+                        tracebackMatrix[i, j] = 1;
+                }
+
+            // trace back
+            List<int> newIndex = new List<int>();
+            List<int> oldIndex = new List<int>();
+
+            i = newLen;
+            j = oldLen;
+            while (i >= 0 && j >= 0)
+            {
+                switch (tracebackMatrix[i, j])
+                {
+                    case -1:
+                        newIndex.Insert(0, i - 1);
+                        oldIndex.Insert(0, -1); // gap
+                        i--;
+                        break;
+                    case 1:
+                        newIndex.Insert(0, -1); // gap
+                        oldIndex.Insert(0, j - 1);
+                        j--;
+                        break;
+                    case 0:
+                        newIndex.Insert(0, i - 1);
+                        oldIndex.Insert(0, j - 1);
+                        i--;
+                        j--;
+                        break;
+
+                }
+
+            }
+
+            // remove fake element at beginning
+            newIndex.RemoveAt(0);
+            oldIndex.RemoveAt(0);
+            if (newIndex.Count() != oldIndex.Count())
+                Debug.WriteLine("Alignment error!");
+
+            // use newIndex as base line
+            string newString = "";
+            string oldString = "";
+            for (i = 0; i < newIndex.Count(); i++)
+            {
+                oldString += oldIndex[i] == -1 ? "_\t" : oldList[oldIndex[i]] + "\t";
+                newString += newIndex[i] == -1 ? "_\t" : newList[newIndex[i]] + "\t";
+            }
+
+            //Debug.WriteLine("Alignment results: ");
+            //Debug.WriteLine("Old string:    " + oldString);
+            //foreach (var k in oldIndex)
+            //    Debug.Write(k + " ");
+            //Debug.WriteLine("\n--");
+            //Debug.WriteLine("New String:    " + newString);
+            //foreach (var kk in newIndex)
+            //    Debug.Write(kk + " ");
+            //Debug.WriteLine("\n");
+
+            return (newIndex, oldIndex);
+
+        }
+
         internal void UpdateRecognition(List<HWRRecognizedText> updated)
         {
             if (updated != null) {
+
+
                 RecognizedPhrase.Children.Clear();
                 var dict = HWRManager.getSharedHWRManager().getDictionary();
-                words.Clear();
+                List<WordBlockControl> new_w = new List<WordBlockControl>();
                 for (int i = 0; i < updated.Count; i++)
                 {
                     HWRRecognizedText recognized = updated[i];
@@ -84,17 +241,25 @@ namespace PhenoPad.CustomControl
                     {
                         var extended = updated[i + 1];
                         extended.candidateList.Insert(0, recognized.selectedCandidate);
+                        for (int j = 1; j < extended.candidateList.Count; j++)
+                            extended.candidateList[j] = "(" + extended.candidateList[j] + ")";
                         WordBlockControl wb2 = new WordBlockControl(lineIndex, 0, i, extended.selectedCandidate, extended.candidateList);
-                        wb2.is_abbr = true;
-                        AddWord(wb2);
+                        new_w.Add(wb2);
                         i++;
                     }
                     else {
                         WordBlockControl wb = new WordBlockControl(lineIndex, 0, i, recognized.selectedCandidate, recognized.candidateList);
-                        AddWord(wb);
+                        new_w.Add(wb);
                     }
                 }
-
+                var merged_new = MergeNewResultToOld(new_w);
+                words.Clear();
+                int new_index = 0;
+                foreach (var w in merged_new) {
+                    w.word_index = new_index;
+                    AddWord(w);
+                    new_index++;
+                }
             }
 
         }
