@@ -295,6 +295,7 @@ namespace PhenoPad.CustomControl
 
             //lastStrokePoint = new Point(0,0);
             lastWordPoint = new Point(0, 0);
+            lastWordIndex = 0;
             phrases = new Dictionary<int, NotePhraseControl>();
             lastWordCount = 0;
 
@@ -1628,16 +1629,14 @@ namespace PhenoPad.CustomControl
                 }
                 // save handwritings
                 await FileManager.getSharedFileManager().SaveNotePageStrokes(notebookId, pageId, this);
-                Debug.WriteLine("Autosaved current strokes.");
                 List<RecognizedPhrases> phraseList = await GetAllRecognizedPhrases();
                 string path = FileManager.getSharedFileManager().GetNoteFilePath(notebookId, pageId, NoteFileType.RecognizedPhraseMeta);
                 var result4 = await FileManager.getSharedFileManager().SaveObjectSerilization(path, phraseList, typeof(List<RecognizedPhrases>));
-                Debug.WriteLine("Autosaved phrases");
-
+                Debug.WriteLine("Autosaved");
             }
             catch (Exception ex)
             {
-                MetroLogger.getSharedLogger().Error($"Failed to auto-save strokes: {ex.Message}");
+                MetroLogger.getSharedLogger().Error($"Failed to auto-save strokes/phrases: {ex + ex.Message}");
             }
             finally
             {

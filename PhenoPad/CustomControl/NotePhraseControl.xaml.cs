@@ -4,10 +4,12 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices.WindowsRuntime;
+using System.Threading.Tasks;
 using System.Xml.Serialization;
 using PhenoPad.HWRService;
 using Windows.Foundation;
 using Windows.Foundation.Collections;
+using Windows.UI.Core;
 using Windows.UI.Input.Inking;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
@@ -227,9 +229,8 @@ namespace PhenoPad.CustomControl
 
         internal void UpdateRecognition(List<HWRRecognizedText> updated)
         {
-            if (updated != null) {
-
-
+            if (updated != null)
+            {
                 RecognizedPhrase.Children.Clear();
                 var dict = HWRManager.getSharedHWRManager().getDictionary();
                 List<WordBlockControl> new_w = new List<WordBlockControl>();
@@ -247,7 +248,8 @@ namespace PhenoPad.CustomControl
                         new_w.Add(wb2);
                         i++;
                     }
-                    else {
+                    else
+                    {
                         WordBlockControl wb = new WordBlockControl(lineIndex, 0, i, recognized.selectedCandidate, recognized.candidateList);
                         new_w.Add(wb);
                     }
@@ -255,13 +257,13 @@ namespace PhenoPad.CustomControl
                 var merged_new = MergeNewResultToOld(new_w);
                 words.Clear();
                 int new_index = 0;
-                foreach (var w in merged_new) {
+                foreach (var w in merged_new)
+                {
                     w.word_index = new_index;
                     AddWord(w);
                     new_index++;
                 }
             }
-
         }
 
 

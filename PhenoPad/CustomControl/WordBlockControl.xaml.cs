@@ -137,6 +137,7 @@ namespace PhenoPad.CustomControl
                 MainPage.Current.curPage.annotateCurrentLineAndUpdateUI(line_index: line_index);
                 corrected = true;
                 MainPage.Current.NotifyUser($"Changed to {current}", NotifyType.StatusMessage, 1);
+                MainPage.Current.curPage.ClearSelectionAsync();
             }
         }
 
@@ -167,7 +168,7 @@ namespace PhenoPad.CustomControl
             corrected = true;
             MainPage.Current.curPage.annotateCurrentLineAndUpdateUI(line_index: line_index);
             MainPage.Current.NotifyUser($"Changed to {current}", NotifyType.StatusMessage, 1);
-
+            MainPage.Current.curPage.ClearSelectionAsync();
             UpdateLayout();
         }
 
@@ -205,6 +206,7 @@ namespace PhenoPad.CustomControl
             MainPage.Current.curPage.annotateCurrentLineAndUpdateUI(line_index: line_index);
             MainPage.Current.curPage.HideCurLineStackPanel();
             MainPage.Current.NotifyUser($"Changed to {current}", NotifyType.StatusMessage, 1);
+            MainPage.Current.curPage.ClearSelectionAsync();
 
             UpdateLayout();
         }

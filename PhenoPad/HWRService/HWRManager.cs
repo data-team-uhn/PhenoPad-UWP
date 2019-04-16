@@ -103,12 +103,13 @@ namespace PhenoPad.HWRService
         {
             try
             {
-                inkRecognizerContainer = new InkRecognizerContainer();
                 var recognitionResults = await inkRecognizerContainer.RecognizeAsync(container, target);
-                recognitionResults = recognitionResults.OrderBy(x => x.BoundingRect.X).ToList();
+
                 //if there are avilable recognition results, add to recognized text list    
                 if ( recognitionResults != null && recognitionResults.Count > 0)
                 {
+                    recognitionResults = recognitionResults.OrderBy(x => x.BoundingRect.X).ToList();
+
                     List<HWRRecognizedText> recogResults = new List<HWRRecognizedText>();
                     sentence = new List<string>();
                     alternatives = new List<List<string>>();
@@ -137,11 +138,11 @@ namespace PhenoPad.HWRService
                         HTTPRequest unprocessed = new HTTPRequest(fullsentence, this.alternatives, this.newRequest.ToString());
                         List<HWRRecognizedText> processed = await UpdateResultFromServer(unprocessed);
                         recogResults = processed == null ? recogResults : processed;
-                        lastServerRecog = recogResults;
+                        lastServerRecog = processed == null ? lastServerRecog : recogResults;
                     }
-                    recogResults = CompareAndUpdateWithServer(recogResults);
+                    //recogResults = CompareAndUpdateWithServer(recogResults);
 
-                    lastServerRecog = recogResults;
+                    //lastServerRecog = recogResults;
 
                     return recogResults;
                 }
@@ -311,6 +312,7 @@ namespace PhenoPad.HWRService
                 HttpStringContent data = new HttpStringContent(rawdatastr, UnicodeEncoding.Utf8, "application/json");
                 httpResponse = await httpClient.PostAsync(requestUri, data);
                 httpResponse.EnsureSuccessStatusCode();
+
                 httpResponseBody = await httpResponse.Content.ReadAsStringAsync();
                 //Debug.WriteLine("\n res: \n" + httpResponseBody + "\n");
 
@@ -323,8 +325,6 @@ namespace PhenoPad.HWRService
                 }
                 else
                     recogResults = processAbbr(result.abbreviations, recogResults);
-
-
                 return recogResults;
             }
             catch (System.Net.Http.HttpRequestException he)
