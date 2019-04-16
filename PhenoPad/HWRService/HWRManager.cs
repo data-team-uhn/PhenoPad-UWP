@@ -44,6 +44,8 @@ namespace PhenoPad.HWRService
         InkRecognizerContainer inkRecognizerContainer = null;
         List <string> sentence;
         List<List<string>> alternatives;
+        Stack<(int, List<HWRRecognizedText> result)> linesToUpdate;
+        
         bool newRequest;
         int lastLine;
         Dictionary<string, List<string>> abbrDict;
@@ -63,6 +65,7 @@ namespace PhenoPad.HWRService
             newRequest = true;
             abbrDict = new Dictionary<string, List<string>>();
             lastServerRecog = new List<HWRRecognizedText>();
+            linesToUpdate = new Stack<(int, List<HWRRecognizedText> result)>();
         }
 
 
@@ -170,15 +173,23 @@ namespace PhenoPad.HWRService
                 string response = await GetServerRecognition(request);
                 if (response != "")
                 {
-                    Debug.WriteLine("will update result from server...");
                     List<HWRRecognizedText> processed = UpdateResultFromServer(response);
                     recogResults = processed.Count == 0 ? recogResults : processed;
                     lastServerRecog = processed.Count == 0 ? lastServerRecog : recogResults;
+                    Debug.WriteLine("parsed response...");
+                    foreach (var r in recogResults)
+                    {
+                        Debug.WriteLine(r.selectedCandidate);
+                    }
+
+                    if (recogResults.Count > 0)
+                    {
+                        MainPage.Current.curPage.UpdateRecognition(lastLine, recogResults);
+                        Debug.WriteLine("updated from server...");
+                    }
+
                 }
-                if (recogResults.Count > 0)
-                {
-                    MainPage.Current.curPage.UpdateRecognition(lastLine, recogResults);
-                }
+
             }
             catch (Exception e) {
                 Debug.WriteLine(e + e.Message);
@@ -299,13 +310,12 @@ namespace PhenoPad.HWRService
             try
             {
                 string rawdatastr = JsonConvert.SerializeObject(rawdata);
-                //Debug.WriteLine("\n raw: \n"+ rawdatastr + "\n");
                 HttpStringContent data = new HttpStringContent(rawdatastr, UnicodeEncoding.Utf8, "application/json");
-                Debug.WriteLine(data);
+                //Debug.WriteLine(data);
                 httpResponse = await httpClient.PostAsync(requestUri, data);
                 httpResponse.EnsureSuccessStatusCode();
                 httpResponseBody = await httpResponse.Content.ReadAsStringAsync();
-                Debug.WriteLine(httpResponseBody);
+                //Debug.WriteLine(httpResponseBody);
                 return httpResponseBody;
 
             }
