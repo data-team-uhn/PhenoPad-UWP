@@ -1715,7 +1715,7 @@ namespace PhenoPad.CustomControl
                 // RecognizeSelection();            
 
                 // pop up panel
-                recognizeAndSetUpUIForLine(line, indetails:true);
+                recognizeAndSetUpUIForLine(line, indetails:true, serverRecog: MainPage.Current.abbreviation_enabled);
 
             }
 
