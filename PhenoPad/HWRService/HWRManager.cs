@@ -41,11 +41,11 @@ namespace PhenoPad.HWRService
     class HWRManager
     {
         public static HWRManager sharedHWRManager;
-
         InkRecognizerContainer inkRecognizerContainer = null;
         List <string> sentence;
         List<List<string>> alternatives;
         bool newRequest;
+        int lastLine;
         Dictionary<string, List<string>> abbrDict;
         List<HWRRecognizedText> lastServerRecog;
         //default Abbreviation detection IP Address
@@ -99,7 +99,7 @@ namespace PhenoPad.HWRService
         /// <summary>
         /// Gets the components in InkStrokeContainer and tries to recognize and return text, returns null if no text is recognized.
         /// </summary>
-        public async Task<List<HWRRecognizedText>> OnRecognizeAsync(InkStrokeContainer container, InkRecognitionTarget target)
+        public async Task<List<HWRRecognizedText>> OnRecognizeAsync(InkStrokeContainer container, InkRecognitionTarget target, int lineNum=-1)
         {
             try
             {
@@ -108,6 +108,7 @@ namespace PhenoPad.HWRService
                 //if there are avilable recognition results, add to recognized text list    
                 if ( recognitionResults != null && recognitionResults.Count > 0)
                 {
+                    lastLine = lineNum;
                     recognitionResults = recognitionResults.OrderBy(x => x.BoundingRect.X).ToList();
 
                     List<HWRRecognizedText> recogResults = new List<HWRRecognizedText>();
@@ -134,14 +135,9 @@ namespace PhenoPad.HWRService
                     //triggers server side abbreviation detection
                     if (MainPage.Current.abbreviation_enabled)
                     {
-                        string fullsentence = listToString(sentence);
-                        HTTPRequest unprocessed = new HTTPRequest(fullsentence, this.alternatives, this.newRequest.ToString());
-                        List<HWRRecognizedText> processed = await UpdateResultFromServer(unprocessed);
-                        recogResults = processed == null ? recogResults : processed;
-                        lastServerRecog = processed == null ? lastServerRecog : recogResults;
+                        TriggerServerRecognition(sentence, alternatives);
                     }
                     //recogResults = CompareAndUpdateWithServer(recogResults);
-
                     //lastServerRecog = recogResults;
 
                     return recogResults;
@@ -165,33 +161,30 @@ namespace PhenoPad.HWRService
             sentence.Clear();
         }
 
-        public async Task<List<HWRRecognizedText>> ReRecognizeAsync(List<HWRRecognizedText> newLine) {
-            try {
-                //triggers server side abbreviation detection
-                if (MainPage.Current.abbreviation_enabled)
+        public async void TriggerServerRecognition(List<string> sentence, List<List<string>> alternatives ) {
+            try
+            {
+                List<HWRRecognizedText> recogResults = new List<HWRRecognizedText>();
+                string fullsentence = listToString(sentence);
+                HTTPRequest request = new HTTPRequest(fullsentence, alternatives, newRequest.ToString());
+                string response = await GetServerRecognition(request);
+                if (response != "")
                 {
-                    string fullsentence = "";
-                    for (int i = 0; i < newLine.Count; i++) {
-                        HWRRecognizedText rt = newLine[i];
-                        string key = rt.selectedCandidate.ToLower();
-                        fullsentence += key+" ";
-                        if (abbrDict.ContainsKey(key)) {
-                            i++;
-                        }
-                    }
-                    HTTPRequest unprocessed = new HTTPRequest(fullsentence, this.alternatives, false.ToString());
-                    List<HWRRecognizedText> processed = await UpdateResultFromServer(unprocessed,newLine);
-                    lastServerRecog = processed;
-                    return processed;
+                    Debug.WriteLine("will update result from server...");
+                    List<HWRRecognizedText> processed = UpdateResultFromServer(response);
+                    recogResults = processed.Count == 0 ? recogResults : processed;
+                    lastServerRecog = processed.Count == 0 ? lastServerRecog : recogResults;
                 }
-                return newLine;
+                if (recogResults.Count > 0)
+                {
+                    MainPage.Current.curPage.UpdateRecognition(lastLine, recogResults);
+                }
             }
             catch (Exception e) {
-                LogService.MetroLogger.getSharedLogger().Error($"{e}:{e.Message}");
-                return newLine;
+                Debug.WriteLine(e + e.Message);
             }
-
         }
+
 
         /// <summary>
         /// Compares the current HWR result with last server retrieved result and updates words
@@ -279,9 +272,7 @@ namespace PhenoPad.HWRService
             return sentence;
         }
 
-        public async Task<List<HWRRecognizedText>> UpdateResultFromServer(HTTPRequest rawdata,List<HWRRecognizedText> old=null)
-        {
-            List<List<string>> processedAlter = new List<List<string>>();
+        public async Task<string> GetServerRecognition(HTTPRequest rawdata) {
             //Create an HTTP client object
             HttpClient httpClient = new HttpClient();
             //Add a user-agent header to the GET request. 
@@ -304,39 +295,51 @@ namespace PhenoPad.HWRService
             //Send the GET request asynchronously and retrieve the response as a string.
             HttpResponseMessage httpResponse = new HttpResponseMessage();
             string httpResponseBody = "";
+
             try
             {
                 string rawdatastr = JsonConvert.SerializeObject(rawdata);
                 //Debug.WriteLine("\n raw: \n"+ rawdatastr + "\n");
-
                 HttpStringContent data = new HttpStringContent(rawdatastr, UnicodeEncoding.Utf8, "application/json");
+                Debug.WriteLine(data);
                 httpResponse = await httpClient.PostAsync(requestUri, data);
                 httpResponse.EnsureSuccessStatusCode();
-
                 httpResponseBody = await httpResponse.Content.ReadAsStringAsync();
-                //Debug.WriteLine("\n res: \n" + httpResponseBody + "\n");
+                Debug.WriteLine(httpResponseBody);
+                return httpResponseBody;
 
-                HTTPResponse result = JsonConvert.DeserializeObject<HTTPResponse>(httpResponseBody);
-                sentence = result.result.Split(" ").ToList();
-                List<HWRRecognizedText> recogResults = new List<HWRRecognizedText>();
-                recogResults = processAlternative(result.alternatives);
-                if ((recogResults == null || recogResults.Count == 0) && old != null) {
-                    recogResults = processAbbr(result.abbreviations, old);
-                }
-                else
-                    recogResults = processAbbr(result.abbreviations, recogResults);
-                return recogResults;
             }
             catch (System.Net.Http.HttpRequestException he)
             {
                 MainPage.Current.NotifyUser("HWR Server connection error", NotifyType.ErrorMessage, 3);
-                LogService.MetroLogger.getSharedLogger().Error($"HWR connection:{he}+{he.Message}");
+                LogService.MetroLogger.getSharedLogger().Error($"HWR connection:{he}+{he.Message},\nBody={httpResponse.Content.ReadAsStringAsync()}");
             }
             catch (Exception e)
             {
-                LogService.MetroLogger.getSharedLogger().Error(e + e.Message);
+                LogService.MetroLogger.getSharedLogger().Error($"{e + e.Message},\nBody={httpResponse.Content.ReadAsStringAsync()}");
             }
-            return null;            
+            return "";
+        }
+
+        public List<HWRRecognizedText> UpdateResultFromServer(string httpResponse,List<HWRRecognizedText> old=null)
+        {
+            List<List<string>> processedAlter = new List<List<string>>();
+
+            HTTPResponse result = JsonConvert.DeserializeObject<HTTPResponse>(httpResponse);
+            sentence = result.result.Split(" ").ToList();
+            List<HWRRecognizedText> recogResults = new List<HWRRecognizedText>();
+
+            recogResults = processAlternative(result.alternatives);
+
+            if ((recogResults == null || recogResults.Count == 0) && old != null) {
+                recogResults = processAbbr(result.abbreviations, old);
+            }
+            else
+                recogResults = processAbbr(result.abbreviations, recogResults);
+
+
+            return recogResults;
+            
         }
 
         public List<HWRRecognizedText> processAbbr(List<Abbreviation> abbrs, List<HWRRecognizedText> recog)
