@@ -1712,9 +1712,7 @@ namespace PhenoPad.CustomControl
                 curLineResultPanel.Visibility = Visibility.Visible;
 
                 // flyout 
-                // RecognizeSelection();
-
-                
+                // RecognizeSelection();            
 
                 // pop up panel
                 recognizeAndSetUpUIForLine(line, indetails:true);

@@ -123,7 +123,6 @@ namespace PhenoPad.CustomControl
             }
             MainPage.Current.curPage.annotateCurrentLineAndUpdateUI(line_index: line_index);
             MainPage.Current.NotifyUser($"Changed to {text}", NotifyType.StatusMessage, 1);
-
         }
 
 

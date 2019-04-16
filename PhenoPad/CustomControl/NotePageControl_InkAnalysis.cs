@@ -38,9 +38,6 @@ namespace PhenoPad.CustomControl
 
         #region stroke event handlers
 
-
-
-
         private async void InkPresenter_StrokesErased(InkPresenter sender, InkStrokesErasedEventArgs args)
         {
             await Windows.ApplicationModel.Core.CoreApplication.MainView.CoreWindow.Dispatcher.RunAsync(CoreDispatcherPriority.Normal,
@@ -71,7 +68,7 @@ namespace PhenoPad.CustomControl
             );
         }
 
-        private void StrokeInput_StrokeStarted(InkStrokeInput sender, PointerEventArgs args)
+        private async void StrokeInput_StrokeStarted(InkStrokeInput sender, PointerEventArgs args)
         {
             if (!leftLasso)
             {
@@ -79,12 +76,15 @@ namespace PhenoPad.CustomControl
                 // dispatcherTimer.Stop();
                 //operationDispathcerTimer.Stop();
                 inkOperationAnalyzer.ClearDataForAllStrokes();
-                if (RawStrokeTimer.IsEnabled && Math.Floor(args.CurrentPoint.Position.Y / LINE_HEIGHT) != showingResultOfLine) {
-                    Debug.WriteLine("started writing on new line,will tick timer");
-                    RawStrokeTimer_Tick();
-                }
-                else
-                    RawStrokeTimer.Stop();
+                RawStrokeTimer.Stop();
+                if (Math.Floor(args.CurrentPoint.Position.Y / LINE_HEIGHT) != showingResultOfLine) {
+
+                    await Windows.ApplicationModel.Core.CoreApplication.MainView.CoreWindow.Dispatcher.RunAsync(CoreDispatcherPriority.Normal,
+                    () =>{
+                        //recognizeAndSetUpUIForLine(curLineObject, timerFlag: true);
+                    });
+                    
+                }                   
             }
             autosaveDispatcherTimer.Stop();
             recognizeTimer.Stop();
@@ -127,7 +127,7 @@ namespace PhenoPad.CustomControl
                         //marking the current stroke for later server recognition
                         curStroke = s;
                         //here we need instant call to analyze ink for the specified line input
-                        await analyzeInk(s,serverFlag:MainPage.Current.abbreviation_enabled);
+                        await analyzeInk(s);
                         RawStrokeTimer.Start();
                         //OperationLogger.getOpLogger().Log(OperationType.Stroke, s.Id.ToString(), s.StrokeStartedTime.ToString(), s.StrokeDuration.ToString());
                     }
@@ -167,7 +167,7 @@ namespace PhenoPad.CustomControl
                         updated = await RecognizeLine(line, wholeline: true);
                     }
                     NotePhraseControl npc = phrases.Where(x => x.Key == line).FirstOrDefault().Value;
-                    npc.UpdateRecognition(updated);
+                    npc.UpdateRecognition(updated,false);
                     Canvas.SetLeft(npc, lastStrokeBound.X);
                     npc.SetPhrasePosition(lastStrokeBound.X, npc.canvasTop);
                 }
@@ -178,7 +178,10 @@ namespace PhenoPad.CustomControl
         private void RawStrokeTimer_Tick(object sender = null, object e = null)
         {
             RawStrokeTimer.Stop();
-            recognizeAndSetUpUIForLine(curLineObject, serverRecog:MainPage.Current.abbreviation_enabled,timerFlag: true);                       
+            curLineWordsStackPanel.Children.Clear();
+            curLineParentStack.Visibility = Visibility.Collapsed;
+
+            //recognizeAndSetUpUIForLine(curLineObject,timerFlag: true);                       
         }
 
         private void LineAnalysisDispatcherTimer_Tick(object sender, object e)
@@ -197,11 +200,27 @@ namespace PhenoPad.CustomControl
             }
         }
 
+        public void UpdateRecognition(int lineNum, List<HWRRecognizedText> result) {
+            if (result.Count > 0) {
+                NotePhraseControl npc = phrases[lineNum];
+                npc.UpdateRecognition(result,true);
+                var words = phrases[lineNum].words;
+                //don't show the UI if no words/results is available
+                if (words.Count == 0 || lastWordIndex >= words.Count)
+                    return;
+
+                curLineWordsStackPanel.Children.Clear();
+                foreach (var b in words[lastWordIndex].GetCurWordCandidates())
+                    curLineWordsStackPanel.Children.Add(b);
+                Debug.WriteLine("result updated from server..........");
+            }
+        }
+
         #endregion
 
         #region stroke recognition/analyze/UIsettings
 
-        private async Task<bool> analyzeInk(InkStroke lastStroke = null, bool serverFlag = false)
+        private async Task<bool> analyzeInk(InkStroke lastStroke = null)
         {
             ///  Analyze ink strokes contained in inkAnalyzer and add phenotype candidates
             ///  from fetching API
@@ -228,7 +247,7 @@ namespace PhenoPad.CustomControl
                         {
                             // set up for current line
                             //Debug.WriteLine($"---------------------recognizing line = {line.Id}");
-                            recognizeAndSetUpUIForLine(line, serverRecog:serverFlag);
+                            recognizeAndSetUpUIForLine(line);
                             return true;
                         }
                     }
@@ -273,8 +292,7 @@ namespace PhenoPad.CustomControl
             return false;
         }
 
-        private async void recognizeAndSetUpUIForLine(InkAnalysisLine line, bool indetails = false, 
-                                                        bool serverRecog = false, bool timerFlag = false)
+        private async void recognizeAndSetUpUIForLine(InkAnalysisLine line, bool indetails = false, bool timerFlag = false)
 
         {
             if (line == null)
@@ -285,7 +303,7 @@ namespace PhenoPad.CustomControl
             if (!indetails) {
 
                 // switch to another line, clear result of current line
-                if (lineNum != showingResultOfLine)
+                if (lineNum != showingResultOfLine && !timerFlag)
                 {
                     Debug.WriteLine($"Switching to a different line, line num= {lineNum}");
                     lastWordCount = 1;
@@ -298,12 +316,12 @@ namespace PhenoPad.CustomControl
                     curLineObject = line;
                 }
                 //writing on an existing line
-                if (phrases.ContainsKey(lineNum))
+                if (phrases.ContainsKey(lineNum) || timerFlag)
                 {
                     NotePhraseControl phrase = phrases[lineNum];
                     lastWordCount = phrase.words.Count == 0 ? 1 : phrase.words.Count;
                     List<HWRRecognizedText> results = await RecognizeLine(lineNum, wholeline: true);
-                    phrase.UpdateRecognition(results);
+                    phrase.UpdateRecognition(results,false);
                     Canvas.SetLeft(phrase, lastStrokeBound.X);
                     phrase.SetPhrasePosition(lastStrokeBound.X, phrase.lineIndex * LINE_HEIGHT);
                 }
@@ -401,19 +419,15 @@ namespace PhenoPad.CustomControl
             {
                 // clear selection
                 foreach (var stroke in inkCanvas.InkPresenter.StrokeContainer.GetStrokes())
-                {
                     stroke.Selected = false;
-                }
-                //first setting lower/uppbound in case argument lineid refers to UI line (called from erase.tick)
+
                 double lowerbound = lineid * LINE_HEIGHT;
                 double upperbound = (lineid + 1) * LINE_HEIGHT;
                 // select storkes of this line
                 var allwords = inkAnalyzer.AnalysisRoot.FindNodes(InkAnalysisNodeKind.InkWord);
 
-                ////for microsoft HWR line.id
-                //exclusively for erased lines
                 var thisline = new List<IInkAnalysisNode>();
-                int line_index = 0;
+                //int line_index = 0;
                 if (wholeline)
                 {
                     thisline.AddRange(allwords.Where(x => x.BoundingRect.Y + (x.BoundingRect.Height / 3) >= lowerbound && x.BoundingRect.Y + (x.BoundingRect.Height / 3) <= upperbound).OrderByDescending(x => x.BoundingRect.X).ToList());
@@ -431,10 +445,10 @@ namespace PhenoPad.CustomControl
                 if (thisline.Count == 0)
                     return new List<HWRRecognizedText>();
 
-                line_index = getLineNumByRect(thisline[0].BoundingRect);
+                //line_index = getLineNumByRect(thisline[0].BoundingRect);
 
-                lowerbound = line_index * LINE_HEIGHT;
-                upperbound = (line_index + 1) * LINE_HEIGHT;
+                //lowerbound = line_index * LINE_HEIGHT;
+                //upperbound = (line_index + 1) * LINE_HEIGHT;
                 //sometimes microsoft thinks two phrases on the same line 
                 foreach (var x in thisline)
                 {
@@ -444,7 +458,7 @@ namespace PhenoPad.CustomControl
 
                 //recognize selection
                 List<HWRRecognizedText> recognitionResults = await HWRManager.getSharedHWRManager().OnRecognizeAsync(inkCanvas.InkPresenter.StrokeContainer,
-                    InkRecognitionTarget.Selected);
+                    InkRecognitionTarget.Selected, lineid);
 
                 //find the most recent word of the line and records its coordinates
                 var words = inkAnalyzer.AnalysisRoot.FindNodes(InkAnalysisNodeKind.InkWord);
@@ -462,7 +476,7 @@ namespace PhenoPad.CustomControl
                 //if no words are recognized, by default sets X-pos to starting of line
                 else
                 {
-                    lastWordPoint = new Point(thisline[0].BoundingRect.X, line_index * LINE_HEIGHT);
+                    lastWordPoint = new Point(thisline[0].BoundingRect.X, lineid * LINE_HEIGHT);
                     lastWordIndex = 0;
                 }
 
@@ -1044,8 +1058,7 @@ namespace PhenoPad.CustomControl
                     {
                         //Debug.WriteLine("\nfound line.");
                         // set up for current line
-                        HWRManager.getSharedHWRManager().setRequestType(true);
-                        recognizeAndSetUpUIForLine(line, false, serverRecog: true);
+                        recognizeAndSetUpUIForLine(line, timerFlag:false);
                     }
 
                 }
@@ -1268,10 +1281,8 @@ namespace PhenoPad.CustomControl
             inkAnalyzer.AddDataForStrokes(inkCan.InkPresenter.StrokeContainer.GetStrokes());
             bool result = false;
             while (!result)
-                result = await analyzeInk(serverFlag: true);//will be using server side HWR upon page load
+                result = await analyzeInk();//will be using server side HWR upon page load
         }
-
-
 
         private async void searchPhenotypesAndSetUpBriefView(string str)
         {
