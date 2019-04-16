@@ -61,6 +61,7 @@ namespace PhenoPad.CustomControl
             return str;
         }
 
+
         public string GetString() {
             string text = "";
             foreach (WordBlockControl s in words) {
@@ -113,6 +114,7 @@ namespace PhenoPad.CustomControl
 
             return merged;
         }
+
 
         /// <summary>
         /// Dynamic programming for caluculating best alignment of two string list
@@ -225,15 +227,10 @@ namespace PhenoPad.CustomControl
 
         }
 
-        internal void UpdateRecognition(List<HWRRecognizedText> updated, bool fromServer)
+        internal void UpdateRecognition(List<HWRRecognizedText> updated)
         {
             if (updated != null)
             {
-                foreach (var r in updated)
-                {
-                    Debug.WriteLine(r.selectedCandidate);
-                }
-
                 RecognizedPhrase.Children.Clear();
                 var dict = HWRManager.getSharedHWRManager().getDictionary();
                 List<WordBlockControl> new_w = new List<WordBlockControl>();
@@ -241,7 +238,7 @@ namespace PhenoPad.CustomControl
                 {
                     HWRRecognizedText recognized = updated[i];
                     //not an abbreviation
-                    if (dict.ContainsKey(recognized.selectedCandidate.ToLower()) && fromServer)
+                    if (dict.ContainsKey(recognized.selectedCandidate.ToLower()))
                     {
                         var extended = updated[i + 1];
                         extended.candidateList.Insert(0, recognized.selectedCandidate);
