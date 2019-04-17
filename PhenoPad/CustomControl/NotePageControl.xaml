@@ -34,6 +34,7 @@
             <Flyout x:Key="PhenotypeSelectionFlyout" Placement="Bottom"  Closed="PhenotypeSelectionFlyoutClosed">
             <StackPanel>
                 <TextBox Name="recognizedResultTextBlock" KeyDown="recognizedResultTextBlock_KeyDown" 
+                         IsReadOnly="True"
                          GotFocus ="recognizedResultTextBlock_GotFocus" SelectionChanged="recognizedResultTextBlock_SelectionChanged"></TextBox>
 
                 <!--
@@ -447,7 +448,6 @@
                     <Canvas x:Name="addinCanvasEHR" x:FieldModifier="public" Canvas.ZIndex="100" />
                 </Grid>
             </ScrollViewer>
-
 
             <!--Sidebar dock to show minimized add in controls-->
             <Grid x:Name="addinBase" Grid.Column="1"  x:FieldModifier="public"

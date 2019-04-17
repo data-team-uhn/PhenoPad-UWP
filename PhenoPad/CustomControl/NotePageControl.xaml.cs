@@ -1342,7 +1342,7 @@ namespace PhenoPad.CustomControl
             unprocessedDispatcherTimer.Start();
         }
 
-        private async void OperationDispatcherTimer_Tick(object sender, object e)
+        private void OperationDispatcherTimer_Tick(object sender, object e)
         {
             operationDispathcerTimer.Stop();
             Debug.WriteLine("operationdispatcher tick was called?????????????????????????");
@@ -1703,19 +1703,20 @@ namespace PhenoPad.CustomControl
                     stroke.Selected = true;
                     SetSelectedStrokeStyle(stroke);
                 }
-                curWordPhenoControlGrid.Visibility = Visibility.Collapsed;
-                Canvas.SetLeft(curLineResultPanel, line.BoundingRect.Left);
-                int lineNum = getLineNumByRect(line.BoundingRect);
-                Canvas.SetTop(curLineResultPanel, (lineNum - 1) * LINE_HEIGHT);
-                curLineWordsStackPanel.Visibility = Visibility.Collapsed;
-                loading.Visibility = Visibility.Visible;
-                curLineResultPanel.Visibility = Visibility.Visible;
+                RecognizeSelection();
+                //curWordPhenoControlGrid.Visibility = Visibility.Collapsed;
+                //Canvas.SetLeft(curLineResultPanel, line.BoundingRect.Left);
+                //int lineNum = getLineNumByRect(line.BoundingRect);
+                //Canvas.SetTop(curLineResultPanel, (lineNum - 1) * LINE_HEIGHT);
+                //curLineWordsStackPanel.Visibility = Visibility.Collapsed;
+                //loading.Visibility = Visibility.Visible;
+                //curLineResultPanel.Visibility = Visibility.Visible;
 
-                // flyout 
-                // RecognizeSelection();            
+                //// flyout 
+                //// RecognizeSelection();            
 
-                // pop up panel
-                recognizeAndSetUpUIForLine(line, indetails:true);
+                //// pop up panel
+                //recognizeAndSetUpUIForLine(line, indetails:true);
 
             }
 

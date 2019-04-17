@@ -161,11 +161,11 @@ namespace PhenoPad.CustomControl
                 {
                     List<HWRRecognizedText> updated = await RecognizeLine(line, wholeline: true);
 
-                    while (updated == null)
-                    {
-                        await Task.Delay(TimeSpan.FromSeconds(1));
-                        updated = await RecognizeLine(line, wholeline: true);
-                    }
+                    //while (updated == null)
+                    //{
+                    //    await Task.Delay(TimeSpan.FromSeconds(1));
+                    //    updated = await RecognizeLine(line, wholeline: true);
+                    //}
                     NotePhraseControl npc = phrases.Where(x => x.Key == line).FirstOrDefault().Value;
                     npc.UpdateRecognition(updated,false);
                     Canvas.SetLeft(npc, lastStrokeBound.X);
@@ -210,8 +210,6 @@ namespace PhenoPad.CustomControl
             curLineWordsStackPanel.Children.Clear();
             foreach (var b in words[lastWordIndex].GetCurWordCandidates())
                 curLineWordsStackPanel.Children.Add(b);
-
-
         }
 
         #endregion
@@ -1270,9 +1268,6 @@ namespace PhenoPad.CustomControl
             return null;
         }
 
-
-
-
         /// <summary>
         /// Called upon page creation/page switch, will re-analyze everything on the current page and
         /// change phenotype candidates accordingly.
@@ -1286,8 +1281,6 @@ namespace PhenoPad.CustomControl
             while (!result)
                 result = await analyzeInk(serverFlag: true);//will be using server side HWR upon page load
         }
-
-
 
         private async void searchPhenotypesAndSetUpBriefView(string str)
         {
