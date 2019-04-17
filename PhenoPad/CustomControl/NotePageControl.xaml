@@ -36,27 +36,6 @@
                 <TextBox Name="recognizedResultTextBlock" KeyDown="recognizedResultTextBlock_KeyDown" 
                          IsReadOnly="True"
                          GotFocus ="recognizedResultTextBlock_GotFocus" SelectionChanged="recognizedResultTextBlock_SelectionChanged"></TextBox>
-
-                <!--
-                <ListView x:Name="recognizedResultListView" ItemsSource="{x:Bind recognizedText}" 
-                          ScrollViewer.VerticalScrollMode="Disabled" 
-                          ScrollViewer.HorizontalScrollMode="Enabled" 
-                          ScrollViewer.HorizontalScrollBarVisibility="Auto" 
-                          ScrollViewer.IsHorizontalRailEnabled="True">
-                    <ListView.ItemTemplate>
-                        <DataTemplate x:DataType="hwrservice:HWRRecognizedText">
-                            <ComboBox SelectedValue="{x:Bind selectedCandidate, Mode=TwoWay}"
-                                      SelectedValuePath="selectedCandidate"
-                                      ItemsSource="{x:Bind candidateList}" />
-                        </DataTemplate>
-                    </ListView.ItemTemplate>
-                </ListView>
-                -->
-                <!--
-                <ListView x:Name="recognizedCandidateListView" ItemsSource="{x:Bind recognizedText}" Margin="0, 10">
-                    <ListView.ItemTemplate>
-                        <DataTemplate x:DataType="hwrservice:HWRRecognizedText">
-                -->
                 
                 <ListView x:Name="candidateListView" Visibility="Collapsed" 
                           Margin="0, 10" ScrollViewer.VerticalScrollMode="Disabled" 

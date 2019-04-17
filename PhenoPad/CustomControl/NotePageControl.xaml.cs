@@ -887,7 +887,7 @@ namespace PhenoPad.CustomControl
                         //temoporarily setting phrase index 0, will update later when implementing stroke-text place matching
                         for (int i = 0; i < npc.words.Count; i++) {
                             WordBlockControl wb = npc.words[i];
-                            RecognizedPhrases ph = new RecognizedPhrases(npc.lineIndex, npc.canvasLeft, i, wb.current, wb.candidates);
+                            RecognizedPhrases ph = new RecognizedPhrases(npc.lineIndex, npc.canvasLeft, i, wb.current, wb.candidates,wb.corrected);
                             phrases.Add(ph);
                         }
                     }
@@ -1019,6 +1019,7 @@ namespace PhenoPad.CustomControl
                 candidates.Add(ph.candidate4);
                 candidates.Add(ph.candidate5);
                 WordBlockControl wb = new WordBlockControl(ph.line_index, ph.left, ph.word_index, ph.current, candidates);
+                wb.corrected = ph.is_corrected;
                 words.Add(wb);
             }
             //this handles the case when there's only one line of note on the page
@@ -1032,7 +1033,7 @@ namespace PhenoPad.CustomControl
                 Canvas.SetTop(npc, npc.lineIndex * LINE_HEIGHT);
                 npc.UpdateLayout();
             }
-            Debug.WriteLine("done loading phrases");
+            //Debug.WriteLine("done loading phrases");
         }
 
         /// <summary>
@@ -1704,19 +1705,6 @@ namespace PhenoPad.CustomControl
                     SetSelectedStrokeStyle(stroke);
                 }
                 RecognizeSelection();
-                //curWordPhenoControlGrid.Visibility = Visibility.Collapsed;
-                //Canvas.SetLeft(curLineResultPanel, line.BoundingRect.Left);
-                //int lineNum = getLineNumByRect(line.BoundingRect);
-                //Canvas.SetTop(curLineResultPanel, (lineNum - 1) * LINE_HEIGHT);
-                //curLineWordsStackPanel.Visibility = Visibility.Collapsed;
-                //loading.Visibility = Visibility.Visible;
-                //curLineResultPanel.Visibility = Visibility.Visible;
-
-                //// flyout 
-                //// RecognizeSelection();            
-
-                //// pop up panel
-                //recognizeAndSetUpUIForLine(line, indetails:true);
 
             }
 

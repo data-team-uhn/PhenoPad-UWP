@@ -20,6 +20,8 @@ namespace PhenoPad.FileService
         public string candidate4;
         public string candidate5;
 
+        public bool is_corrected;
+
         public int word_index;
         public double left;
         public int line_index;
@@ -38,7 +40,7 @@ namespace PhenoPad.FileService
 
         }
 
-        public RecognizedPhrases(int lineNum, double left, int index, string selected,List<string>candidates) {
+        public RecognizedPhrases(int lineNum, double left, int index, string selected,List<string>candidates, bool isCorrected) {
             line_index = lineNum;
             this.left = left;
             word_index = index;
@@ -48,6 +50,7 @@ namespace PhenoPad.FileService
             candidate4 = "";
             candidate5 = "";
 
+            is_corrected = isCorrected;
 
             current = selected;
             if (candidates.Contains(selected))
