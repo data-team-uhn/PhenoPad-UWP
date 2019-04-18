@@ -797,7 +797,7 @@ namespace PhenoPad.CustomControl
                 hideScrollViewer();
 
 
-            if (addinType == AddinType.EHR || commentID != -1)
+            if (commentID != -1)
             {
                 inkCan.Height = this.Height;
                 inkCan.Width = this.Width;
@@ -834,12 +834,11 @@ namespace PhenoPad.CustomControl
                         contentGrid.RenderTransform = tt;
                         Width = 400;
                         Height = (int)(Width / imgratio);
-                        inkCan.Height = Height;
-                        inkCan.Width = Width;
                         mediaPlayerElement.Visibility = addinType == AddinType.VIDEO ? Visibility.Visible : Visibility.Collapsed;
                     }
                     else
                     {//adjust ink canvas size/position to display full stroke view
+                        Debug.WriteLine("adjusting stroke bounds");
                         Rect bound = inkCanvas.InkPresenter.StrokeContainer.BoundingRect;
                         double ratio = bound.Width / bound.Height;
                         inkCan.Height = bound.Height + 10;

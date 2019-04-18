@@ -178,7 +178,7 @@ namespace PhenoPad.CustomControl
         private void RawStrokeTimer_Tick(object sender = null, object e = null)
         {
             RawStrokeTimer.Stop();
-            recognizeAndSetUpUIForLine(curLineObject, serverRecog:MainPage.Current.abbreviation_enabled,timerFlag: true);                       
+            recognizeAndSetUpUIForLine(curLineObject,timerFlag: true);                       
         }
 
         private void LineAnalysisDispatcherTimer_Tick(object sender, object e)
@@ -206,10 +206,12 @@ namespace PhenoPad.CustomControl
             //don't show the UI if no words/results is available
             if (words.Count == 0 || lastWordIndex >= words.Count)
                 return;
-
-            curLineWordsStackPanel.Children.Clear();
-            foreach (var b in words[lastWordIndex].GetCurWordCandidates())
-                curLineWordsStackPanel.Children.Add(b);
+            //if user is still writing at the current line, update the server recognition
+            if (line == showingResultOfLine) {
+                curLineWordsStackPanel.Children.Clear();
+                foreach (var b in words[lastWordIndex].GetCurWordCandidates())
+                    curLineWordsStackPanel.Children.Add(b);
+            }
         }
 
         #endregion
@@ -362,6 +364,8 @@ namespace PhenoPad.CustomControl
             {
                 curLineWordsStackPanel.Children.Clear();
                 curLineParentStack.Visibility = Visibility.Collapsed;
+                if (curLineCandidatePheno.Count == 0)
+                    curWordPhenoControlGrid.Visibility = Visibility.Collapsed;
             }
 
             if (indetails)
@@ -536,27 +540,30 @@ namespace PhenoPad.CustomControl
                         }
                         hovering = true;
                         curLineWordsStackPanel.Children.Clear();
-                        foreach (string alternative in wbc.candidates)
-                        {
-                            Button alter = new Button();
-                            alter.VerticalAlignment = VerticalAlignment.Center;
-                            alter.FontSize = 16;
-                            alter.Content = alternative;
-                            alter.Click += (object sender, RoutedEventArgs e) =>
-                            {
-                                int ind = wbc.candidates.IndexOf((string)((Button)sender).Content);
-                                wbc.selected_index = ind;
-                                wbc.current = wbc.candidates[ind];
-                                wbc.WordBlock.Text = wbc.current;
-                                wbc.corrected = true;
-                                HideCurLineStackPanel();
-                                annotateCurrentLineAndUpdateUI(line_index: lineNum);
-                                MainPage.Current.NotifyUser($"Changed to {wbc.current}", NotifyType.StatusMessage, 1);
-                                ClearSelectionAsync();
-                                UpdateLayout();
-                            };
-                            curLineWordsStackPanel.Children.Add(alter);
+                        foreach (var b in wbc.GetCurWordCandidates()) {
+                            curLineWordsStackPanel.Children.Add(b);
                         }
+                        //foreach (string alternative in wbc.candidates)
+                        //{
+                        //    Button alter = new Button();
+                        //    alter.VerticalAlignment = VerticalAlignment.Center;
+                        //    alter.FontSize = 16;
+                        //    alter.Content = alternative;
+                        //    alter.Click += (object sender, RoutedEventArgs e) =>
+                        //    {
+                        //        int ind = wbc.candidates.IndexOf((string)((Button)sender).Content);
+                        //        wbc.selected_index = ind;
+                        //        wbc.current = wbc.candidates[ind];
+                        //        wbc.WordBlock.Text = wbc.current;
+                        //        wbc.corrected = true;
+                        //        HideCurLineStackPanel();
+                        //        annotateCurrentLineAndUpdateUI(line_index: lineNum);
+                        //        MainPage.Current.NotifyUser($"Changed to {wbc.current}", NotifyType.StatusMessage, 1);
+                        //        ClearSelectionAsync();
+                        //        UpdateLayout();
+                        //    };
+                        //    curLineWordsStackPanel.Children.Add(alter);
+                        //}
                         TextBox tb = new TextBox();
                         tb.Width = 40;
                         tb.Height = curLineWordsStackPanel.ActualHeight * 0.7;

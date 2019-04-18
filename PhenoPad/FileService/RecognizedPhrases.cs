@@ -1,11 +1,4 @@
-﻿using PhenoPad.CustomControl;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using Windows.UI.Xaml;
-using Windows.UI.Xaml.Media;
+﻿using System.Collections.Generic;
 
 namespace PhenoPad.FileService
 {
@@ -55,6 +48,7 @@ namespace PhenoPad.FileService
             current = selected;
             if (candidates.Contains(selected))
                 candidates.Remove(selected);
+
             foreach (var s in candidates) {
                 if (candidate2.Length == 0)
                     candidate2 = s;

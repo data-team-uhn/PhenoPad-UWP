@@ -119,6 +119,7 @@ namespace PhenoPad.CustomControl
                 abbr_current = "(" + text.Trim() + ")";
                 selected_index = -1;
                 AbbreviationBlock.Text = abbr_current;
+                WordBlock.Text = abbr_current;
                 corrected = true;
             }
             MainPage.Current.curPage.annotateCurrentLineAndUpdateUI(line_index: line_index);
@@ -174,6 +175,19 @@ namespace PhenoPad.CustomControl
         public List<Button> GetCurWordCandidates() {
             //TODO HANDLE ABBR
             List<Button> lst = new List<Button>();
+            //if user has manually added alternative from text input, add it to candidates as well
+            if (!candidates.Contains(current)) {
+                Button tb = new Button();
+                tb.FontSize = 16;
+                tb.VerticalAlignment = VerticalAlignment.Center;
+
+                if (is_abbr)
+                    tb.Content = "(" + current + ")";
+                else
+                    tb.Content = current;
+                lst.Add(tb);
+                tb.Click += CandidateList_Click;
+            }
             foreach (string candidate in candidates)
             {
                 Button tb = new Button();
@@ -196,9 +210,14 @@ namespace PhenoPad.CustomControl
             //TODO: HANDLE ABBR
             string content = (string)((Button)sender).Content;
             int ind = candidates.IndexOf(content);
-
-            selected_index = ind;
-            current = candidates[ind];
+            if (ind == -1)
+            {
+                current = content;
+            }
+            else {
+                selected_index = ind;
+                current = candidates[ind];
+            }
             WordBlock.Text = current;
             corrected = true;
             MainPage.Current.curPage.RawStrokeTimer.Stop();
