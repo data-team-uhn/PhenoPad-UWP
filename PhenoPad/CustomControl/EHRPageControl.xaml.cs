@@ -218,6 +218,13 @@ namespace PhenoPad.CustomControl
 
             try
             {
+                //only analyze phenotypes from text if there'aren't any saved candidates 
+                bool init_analyze = false;
+                List<Phenotype> phenocand = await FileManager.getSharedFileManager().GetSavedPhenotypeObjectsFromXML(notebookid, NoteFileType.PhenotypeCandidates);
+                if (phenocand == null)
+                    init_analyze = true;
+
+                //reading text from file and parsing
                 IBuffer buffer = await FileIO.ReadBufferAsync(file);
                 DataReader reader = DataReader.FromBuffer(buffer);
                 byte[] fileContent = new byte[reader.UnconsumedBufferLength];
@@ -249,7 +256,8 @@ namespace PhenoPad.CustomControl
                 }
                 //After loading text, performs phenotype detection on each sentence
                 CancellationToken cancel = MainPage.Current.cancelService.Token;
-                AnalyzePhenotype();
+                if (init_analyze)
+                    AnalyzePhenotype();
 
             }
             //for taking care of non-existing saved format record files
