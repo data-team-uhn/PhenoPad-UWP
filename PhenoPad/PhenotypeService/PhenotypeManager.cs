@@ -235,16 +235,24 @@ namespace PhenoPad.PhenotypeService
 
                 if (from == SourceType.Notes)
                 {
-                        phenotypesInNote.Add(pheno);
+                    phenotypesInNote.Add(pheno);
                 }
                 if (from == SourceType.Speech)
                 {
-                        phenotypesInSpeech.Add(pheno);
+                    phenotypesInSpeech.Add(pheno);
                    
                 }
             }
-            MainPage.Current.NotifyUser("Saved phenotypes are loaded.", NotifyType.StatusMessage, 2);
+            MainPage.Current.NotifyUser("Saved phenotypes are loaded.", NotifyType.StatusMessage, 1);
             updateSuggestionAndDifferential();
+        }
+
+        public void addPhenotypeCandidateFromFile(List<Phenotype> phenos) {
+            foreach (Phenotype p in phenos) {
+                addPhenotypeCandidate(p, p.sourceType);
+            }
+            MainPage.Current.NotifyUser("Phenotype candidates are loaded.", NotifyType.StatusMessage, 1);
+
         }
 
         public async void updateSuggestionAndDifferential()
@@ -331,54 +339,6 @@ namespace PhenoPad.PhenotypeService
 
             //autosavetimer.Start();
         }
-
-        //public void removeByIdAsync(string pid, SourceType type)
-        //{
-        //    //if (type == SourceType.Saved)
-        //    //{
-        //        Phenotype temp = savedPhenotypes.Where(x => x.hpId == pid).FirstOrDefault();
-        //        if (temp != null)
-        //            savedPhenotypes.Remove(temp);
-        //   //}
-        //    //if (type == SourceType.Speech)
-        //    //{
-        //        temp = phenotypesInSpeech.Where(x => x.hpId == pid).FirstOrDefault();
-        //        if (temp != null)
-        //            phenotypesInSpeech.Remove(temp);
-        //    //}
-        //   // if (type == SourceType.Notes)
-        //    //{
-        //        temp = phenotypesInNote.Where(x => x.hpId == pid).FirstOrDefault();
-        //    if (temp != null)
-        //    {
-        //        phenotypesInNote.Remove(temp);
-        //    }
-        //    //}
-
-        //    // if deletion is from suggest, then we should remove it, otherwise set it state to -1
-        //    temp = phenotypesCandidates.Where(x => x.hpId == pid).FirstOrDefault();
-
-        //    if (temp != null)
-        //    {
-        //        if (type == SourceType.Suggested)
-        //        {
-        //            phenotypesCandidates.Remove(temp);
-        //        }
-        //        else
-        //        {
-        //            Phenotype pp = temp.Clone();
-        //            pp.state = -1;
-        //            int ind = phenotypesCandidates.IndexOf(temp);
-        //            phenotypesCandidates.Remove(temp);
-        //            phenotypesCandidates.Insert(ind, pp);
-        //        }
-        //    }
-
-        //    OperationLogger.getOpLogger().Log(OperationType.Phenotype, type.ToString(), "removed", temp.name);
-
-        //    autosavetimer.Start();
-
-        //}
 
         public void removeByIdAsync(string pid, SourceType type)
         {
@@ -612,6 +572,7 @@ namespace PhenoPad.PhenotypeService
                 foreach (var row in result.rows)
                 {
                     Phenotype pheno = new Phenotype(row);
+                    pheno.pageSource = MainPage.Current.curPageIndex;
                     Phenotype temp = savedPhenotypes.Where(x => x.hpId == pheno.hpId).FirstOrDefault();
                     if (temp != null)
                     {
@@ -673,8 +634,9 @@ namespace PhenoPad.PhenotypeService
                     var keystr = str.Substring(res.start, res.end - res.start);
                     if (!returnResult.ContainsKey(keystr))
                     {
-                    returnResult.Add(keystr, new Phenotype(res));
-                    // Debug.WriteLine("Annotation:\t" + str.Substring(res.start, res.end - res.start) + "\t" + res.names[0]);
+                        Phenotype pp = new Phenotype(res);
+                        pp.pageSource = MainPage.Current.curPageIndex;
+                        returnResult.Add(keystr, pp);
                     }
                 }
               
@@ -750,6 +712,7 @@ namespace PhenoPad.PhenotypeService
                 foreach (var p in result)
                 {
                     Phenotype pheno = new Phenotype(p);
+                    pheno.pageSource = MainPage.Current.curPageIndex;
                     phenotypes.Add(pheno);
                 }
                 return phenotypes;

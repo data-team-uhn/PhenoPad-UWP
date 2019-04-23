@@ -102,7 +102,7 @@ namespace PhenoPad.HWRService
         /// <summary>
         /// Gets the components in InkStrokeContainer and tries to recognize and return text, returns null if no text is recognized.
         /// </summary>
-        public async Task<List<HWRRecognizedText>> OnRecognizeAsync(InkStrokeContainer container, InkRecognitionTarget target, int lineNum=-1)
+        public async Task<List<HWRRecognizedText>> OnRecognizeAsync(InkStrokeContainer container, InkRecognitionTarget target, int lineNum = -1, bool fromEHR = false)
         {
             try
             {
@@ -136,7 +136,7 @@ namespace PhenoPad.HWRService
                         ind++;
                     }
                     //triggers server side abbreviation detection
-                    if (MainPage.Current.abbreviation_enabled)
+                    if (MainPage.Current.abbreviation_enabled && !fromEHR)
                     {
                         TriggerServerRecognition(sentence, alternatives);
                     }

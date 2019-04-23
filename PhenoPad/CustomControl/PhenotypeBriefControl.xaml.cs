@@ -125,7 +125,7 @@ namespace PhenoPad.CustomControl
             //AddPhenotypeSB.Begin();
             setPhenotypeState(1);
             //YNSwitch.Margin = new Thickness(0, 0, 0, 0);
-            PhenotypeManager.getSharedPhenotypeManager().addPhenotype(new Phenotype(phenotypeId, phenotypeName, 1), sourceType);
+            PhenotypeManager.getSharedPhenotypeManager().addPhenotype(new Phenotype(phenotypeId, phenotypeName, 1, MainPage.Current.curPageIndex), sourceType);
         }
         
         private void DeleteBtn_Click(object sender, RoutedEventArgs e)
@@ -193,7 +193,7 @@ namespace PhenoPad.CustomControl
                 case -1:
                     localState = 1;
                         setPhenotypeState(1);
-                    PhenotypeManager.getSharedPhenotypeManager().addPhenotype(new Phenotype(phenotypeId, phenotypeName, 1), SourceType.Notes);
+                    PhenotypeManager.getSharedPhenotypeManager().addPhenotype(new Phenotype(phenotypeId, phenotypeName, 1,MainPage.Current.curPageIndex), SourceType.Notes);
                     break;
                 case 0:
                     localState = 1;

@@ -118,12 +118,12 @@
                            FontSize="15" RelativePanel.AlignBottomWithPanel="True" Grid.Column="1"/>
 
                             </RelativePanel>
-                                <Button Style="{StaticResource MyButtonStyle}" x:Name="ViewButton" Tag="{x:Bind id}"  
+                                <!--<Button Style="{StaticResource MyButtonStyle}" x:Name="ViewButton" Tag="{x:Bind id}"  
                                     Background="Transparent" Grid.Column="2" 
                                         Click="ViewButton_Click"
                                     HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
                                     <TextBlock Foreground="{StaticResource WORD_DARK}">View</TextBlock>
-                                </Button>
+                                </Button>-->
 
 
                                 <Button Style="{StaticResource MyButtonStyle}" x:Name="OpenButton" Tag="{x:Bind id}"  
@@ -175,28 +175,6 @@
             </ListView>
         </Grid>
         
-       <!-- 
-        <StackPanel Grid.Column="0" Padding="30 20 30 20 ">
-            <TextBlock Text="New note" FontSize="28" Foreground="{StaticResource WORD_DARK}"/>
-            <TextBlock Text="Patient name" Margin="0 20 0 5"></TextBlock>
-            <TextBox></TextBox>
-
-            <TextBlock Text="Gender" Margin="0 20 0 5"></TextBlock>
-            <StackPanel Orientation="Horizontal">
-                <RadioButton Content="Female"></RadioButton>
-
-                <RadioButton Content="Male"></RadioButton>
-            </StackPanel>
-
-            <TextBlock Text="Date" Margin="0 20 0 5"></TextBlock>
-            <DatePicker></DatePicker>
-
-            <Button Margin="0 30 0 5" Background="{StaticResource WORD_DARK}" Foreground="White" Name="CreateButton" Click="CreateButton_Click">
-                <TextBlock Text="Create" FontSize="18"></TextBlock>
-            </Button>
-
-        </StackPanel>
-        -->
         
         <!--NOTE QUICK VIEW PANEL-->
         <Grid Grid.Column="1" Background="White">

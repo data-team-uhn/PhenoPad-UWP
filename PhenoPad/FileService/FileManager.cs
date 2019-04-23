@@ -31,6 +31,7 @@ namespace PhenoPad.FileService
         Image,
         ImageAnnotation,
         Phenotypes,
+        PhenotypeCandidates,
         Audio,
         Transcriptions,
         Video,
@@ -56,6 +57,7 @@ namespace PhenoPad.FileService
         private string EHR_FORMAT_NAME = "ehrformat.xml";
         private string OPERATION_LOG_NAME = "OperationLogs.txt";
         private string PHENOTYPE_FILE_NAME = "phenotypes.txt";
+        private string PHENOTYPECANDIDATE_FILE_NAME = "phenotype_candidates.txt";
         private string NOTENOOK_NAME_PREFIX = "note_";
         private string NOTE_META_FILE = "meta.xml";
         private string NOTE_TEXT_FILE = "text.txt";
@@ -214,13 +216,13 @@ namespace PhenoPad.FileService
 
 
         /// <summary>
-        /// Returns all saved phenotypes object from XML meta file by Notebook ID. Returns null if failed.
+        /// Returns all saved phenotypes object or phenotype candidates from XML meta file by Notebook ID. Returns null if failed.
         /// </summary>
-        public async Task<List<Phenotype>> GetSavedPhenotypeObjectsFromXML(string notebookId)
+        public async Task<List<Phenotype>> GetSavedPhenotypeObjectsFromXML(string notebookId, NoteFileType type = NoteFileType.Phenotypes)
         {
             try {
                 // meta data
-                var phenofile = await GetNoteFile(notebookId, "", NoteFileType.Phenotypes);
+                var phenofile = await GetNoteFile(notebookId, "", type);
                 object obj = await LoadObjectFromSerilization(phenofile, typeof(List<Phenotype>));
                 if (obj != null)
                     return obj as List<Phenotype>;
@@ -366,6 +368,9 @@ namespace PhenoPad.FileService
                 case NoteFileType.Phenotypes:
                     foldername = String.Format(@"{0}\", notebookId);
                     break;
+                case NoteFileType.PhenotypeCandidates:
+                    foldername = String.Format(@"{0}\", notebookId);
+                    break;
                 case NoteFileType.Audio:
                     foldername += @"Audio\";
                     break;
@@ -400,6 +405,9 @@ namespace PhenoPad.FileService
                     break;
                 case NoteFileType.Phenotypes:
                     filename = PHENOTYPE_FILE_NAME;
+                    break;
+                case NoteFileType.PhenotypeCandidates:
+                    filename = PHENOTYPECANDIDATE_FILE_NAME;
                     break;
                 case NoteFileType.Audio:
                     filename = name + ".wav";
@@ -986,13 +994,18 @@ namespace PhenoPad.FileService
             bool result = true;
             try
             {
+                //saved phenotypes
                 string phenopath = GetNoteFilePath(notebookId, "", NoteFileType.Phenotypes);
                 List<Phenotype> saved = new List<Phenotype>(PhenotypeManager.getSharedPhenotypeManager().savedPhenotypes);
                 result = await SaveObjectSerilization(phenopath, saved, typeof(List<Phenotype>));
+                //candidates
+                phenopath = GetNoteFilePath(notebookId, "", NoteFileType.PhenotypeCandidates);
+                List<Phenotype> cand = new List<Phenotype>(PhenotypeManager.getSharedPhenotypeManager().phenotypesCandidates);
+                result &= await SaveObjectSerilization(phenopath, cand, typeof(List<Phenotype>));
             }
             catch (Exception ex)
             {
-                LogService.MetroLogger.getSharedLogger().Error($"Failed to save phenotypes for notebook {notebookId}, error: {ex.Message}");
+                MetroLogger.getSharedLogger().Error($"Failed to save phenotypes for notebook {notebookId}, error: {ex.Message}");
                 result = false;
             }
             return result;

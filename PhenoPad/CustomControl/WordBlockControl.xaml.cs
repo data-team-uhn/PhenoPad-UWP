@@ -177,6 +177,9 @@ namespace PhenoPad.CustomControl
             List<Button> lst = new List<Button>();
             //if user has manually added alternative from text input, add it to candidates as well
             if (!candidates.Contains(current)) {
+
+                Debug.WriteLine("candidates does not contain current");
+
                 Button tb = new Button();
                 tb.FontSize = 16;
                 tb.VerticalAlignment = VerticalAlignment.Center;

@@ -67,6 +67,7 @@ namespace PhenoPad.CustomControl
         private InsertType insertType;
         private Polyline lasso;
         public static double COMMENT_X_OFFSET = 20;
+        private bool insertingAtEnd = false;
 
         private SolidColorBrush INSERT = new SolidColorBrush(Colors.DodgerBlue);
         private SolidColorBrush ANNOTATION = new SolidColorBrush(Colors.Orange);
@@ -332,6 +333,7 @@ namespace PhenoPad.CustomControl
             inputInkCanvas.InkPresenter.StrokeContainer.Clear();
             curLineWordsStackPanel.Children.Clear();
             inputgrid.Visibility = Visibility.Collapsed;
+            insertingAtEnd = false;
 
             //lastAddedCommentID = -1;
             RefreshTextStyle();
@@ -472,10 +474,17 @@ namespace PhenoPad.CustomControl
 
         private void OnElementTapped(object sender = null, TappedRoutedEventArgs e = null)
         {/// Dismiss all pop-ups when tapping on canvas
-                if (InputHasContent())
-                    InsertToEHRClick();
-                else
-                    SlideCommentsToSide();
+            Debug.WriteLine("on element tapped");
+            if (InputHasContent())
+            {
+                InsertToEHRClick();
+            }
+            if (! InputHasContent() && insertingAtEnd) {
+                Debug.WriteLine("deleting trailing period");
+                EHRTextBox.Document.SetText(TextSetOptions.None, getText(EHRTextBox).Trim().TrimEnd('.') + " ");
+            }
+            else
+                SlideCommentsToSide();
             HideAndClearInputPanel();
             cpMenu.Visibility = Visibility.Collapsed;
             SelectionMenu.Visibility = Visibility.Collapsed;
@@ -1504,6 +1513,8 @@ namespace PhenoPad.CustomControl
                     highlightText.Text = "Cancel Highlight";
                     cur_highlight = (h[0], h[0] + h[1]);
                     cur_selected = (h[0], h[0] + h[1]);
+                    cur_selectedText = getText(EHRTextBox).Substring(h[0], h[1]);
+                    Debug.WriteLine($"selected text at highlight = {cur_selectedText}");
                     showMenu = true;
                     break;
                 }
@@ -1514,6 +1525,9 @@ namespace PhenoPad.CustomControl
                 {
                     deleteText.Text = "Cancel Delete";
                     cur_delete = (d[0], d[0] + d[1]);
+                    cur_selected = (d[0], d[0] + d[1]);
+                    cur_selectedText = getText(EHRTextBox).Substring(d[0], d[1]);
+                    Debug.WriteLine($"selected text at delete = {cur_selectedText}");
                     showMenu = true;
                     break;
                 }
@@ -1618,6 +1632,7 @@ namespace PhenoPad.CustomControl
                                     range.GetPoint(HorizontalCharacterAlignment.Left, VerticalCharacterAlignment.Baseline,
                                                             PointOptions.ClientCoordinates, out pos);
                                     current_index = text.Length;
+                                    insertingAtEnd = true;
                                     insertType = InsertType.Insert;
                                     ((FontIcon)inputMarkup.Children[0]).Foreground = INSERT;
                                     ShowInputPanel(pos);
@@ -1698,6 +1713,7 @@ namespace PhenoPad.CustomControl
                                 var range2 = EHRTextBox.Document.GetRange(current_index - 1, text.Length);
                                 range2.CharacterFormat.ForegroundColor = Colors.White;
                                 UpdateLayout();
+                                insertingAtEnd = true;
                             }
                         }
                     }
@@ -1769,23 +1785,11 @@ namespace PhenoPad.CustomControl
             lastOperationStrokeIDs.Clear();
         }
 
-        private async void inputInkCanvas_StrokesCollected(InkPresenter sender, InkStrokesCollectedEventArgs args)
+        private void inputInkCanvas_StrokesCollected(InkPresenter sender, InkStrokesCollectedEventArgs args)
         {
             Rect bound = inputInkCanvas.InkPresenter.StrokeContainer.BoundingRect;
             if (bound.Height > inputInkCanvas.Height * 0.8)
                 inputCanvasRow.Height = new GridLength(inputCanvasRow.Height.Value + (double)LINE_HEIGHT);
-
-            foreach (var s in args.Strokes)
-            {
-                //Instantly analyze ink inputs
-                inputInkAnalyzer.AddDataForStroke(s);
-                inputInkAnalyzer.SetStrokeDataKind(s.Id, InkAnalysisStrokeKind.Writing);
-                //marking the current stroke for later server recognition
-                curStroke = s;
-                //here we need instant call to analyze ink for the specified line input
-                await analyzeInk(s);
-            }
-
         }
 
         private void UnprocessedInput_PointerPressed(InkUnprocessedInput sender, PointerEventArgs args)

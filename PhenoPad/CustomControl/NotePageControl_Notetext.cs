@@ -224,6 +224,7 @@ namespace PhenoPad.CustomControl
             {
                 Phenotype p = new Phenotype(ann);
                 p.sourceType = SourceType.Notes;
+                p.pageSource = MainPage.Current.curPageIndex;
                 p.state = PhenotypeManager.getSharedPhenotypeManager().getStateByHpid(p.hpId);
                 phenotypes.Add(p);
                 //var windex = convertStringIndexToWordIndex(ann.start, ann.end);
@@ -247,6 +248,7 @@ namespace PhenoPad.CustomControl
             // update annotations by word
             Phenotype p = new Phenotype(ncr);
             p.sourceType = SourceType.Notes;
+            p.pageSource = MainPage.Current.curPageIndex;
             // update saved phenotypes
             phenotypes.Add(p);
             p.state = PhenotypeManager.getSharedPhenotypeManager().getStateByHpid(p.hpId);

@@ -13,74 +13,45 @@ namespace PhenoPad.PhenotypeService
         public string name { get; set; }
         public List<string> alternatives { get; set; }
         public int state { get; set; } // NA: -1, Y: 1, N: 0
+        public int pageSource { get; set; }
         public SourceType sourceType { get; set; }
-        /**
-        private int _state;
-        public int state
-        {
-            get { return _state; }
-            set
-            {
-                _state = value;
-                RaisePropertyChanged("state");
-            }
-        }**/
+
         public DateTime time;
 
 
         public Phenotype()
         {
         }
-
-        public Phenotype(string hpid, string name, List<String> alter, int state)
+        //Initiate from phenopad
+        public Phenotype(string hpid, string name, int state, int page,List<String> alter = null, SourceType st = SourceType.None)
         {
             this.hpId = hpid;
             this.name = name;
-            this.alternatives = alter;
+            this.alternatives = (alter==null)? new List<string>():alter;
             this.state = state;
-            sourceType = SourceType.None;
+            pageSource = page;
+            sourceType = st;
         }
-        public Phenotype(string hpid, string name, List<String> alter, int state, SourceType st)
-        {
-            this.hpId = hpid;
-            this.name = name;
-            this.alternatives = alter;
-            this.state = state;
-            this.sourceType = st;
-        }
-        public Phenotype(string hpid, string name, int state)
-        {
-            this.hpId = hpid;
-            this.name = name;
-            this.alternatives = new List<string>();
-            this.state = state;
-            sourceType = SourceType.None;
-        }
+        //public Phenotype(string hpid, string name, List<String> alter, int state, SourceType st)
+        //{
+        //    this.hpId = hpid;
+        //    this.name = name;
+        //    this.alternatives = alter;
+        //    this.state = state;
+        //    this.sourceType = st;
+        //    pageSource = -1;
 
-        [System.Xml.Serialization.XmlIgnore]
-        public Action<Phenotype> OnRemoveCallback { get; set; }
-        public void OnRemove()
-        {
-            OnRemoveCallback(this);
-        }
-        
-        public event PropertyChangedEventHandler PropertyChanged;
-        protected void RaisePropertyChanged(string name)
-        {
-            if (PropertyChanged != null)
-            {
-                PropertyChanged(this, new PropertyChangedEventArgs(name));
-            }
-        }
+        //}
+        //public Phenotype(string hpid, string name, int state)
+        //{
+        //    this.hpId = hpid;
+        //    this.name = name;
+        //    this.alternatives = new List<string>();
+        //    this.state = state;
+        //    sourceType = SourceType.None;
+        //    pageSource = -1;
 
-        public Phenotype Clone()
-        {
-
-            Phenotype p = new Phenotype(this.hpId, this.name, this.alternatives, this.state, this.sourceType);
-            return p;
-        }
-
-
+        //}
 
         // Initiate from json of Phenotips
         public Phenotype(Row row)
@@ -104,6 +75,34 @@ namespace PhenoPad.PhenotypeService
             this.alternatives = new List<string>();
             this.state = -1;
         }
+
+
+        [System.Xml.Serialization.XmlIgnore]
+        public Action<Phenotype> OnRemoveCallback { get; set; }
+        public void OnRemove()
+        {
+            OnRemoveCallback(this);
+        }
+        
+        public event PropertyChangedEventHandler PropertyChanged;
+        protected void RaisePropertyChanged(string name)
+        {
+            if (PropertyChanged != null)
+            {
+                PropertyChanged(this, new PropertyChangedEventArgs(name));
+            }
+        }
+
+        public Phenotype Clone()
+        {
+
+            Phenotype p = new Phenotype(this.hpId, this.name, this.state, this.pageSource,this.alternatives, this.sourceType);
+            return p;
+        }
+
+
+
+
         public override bool Equals(object obj)
         {
             var phenotype = obj as Phenotype;

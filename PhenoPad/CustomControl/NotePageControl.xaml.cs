@@ -1225,15 +1225,35 @@ namespace PhenoPad.CustomControl
         }
 
         
-        public async void quickShowDock()
+        public async Task quickShowDock()
         {/// <summary>Quick plays addin dock sliding animation</summary>
-            if (slide.X == 250) {
-                await addinShowAnimation.BeginAsync();
+            if (slide.X == 250)
+            {
+                await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, async () =>
+                {
+                    await addinShowAnimation.BeginAsync();
+
+                });
                 await Task.Delay(TimeSpan.FromSeconds(0.3));
+
                 await addinHideAnimation.BeginAsync();
             }
-            else
-                await addinHideAnimation.BeginAsync();
+            else if (slide.X == 0) {
+                await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, async () => {
+                    await addinHideAnimation.BeginAsync();
+
+                });
+
+            }
+            return;
+        }
+
+        public void FlashAddInSideButton() {
+            for (int i = 0; i < 5; i++) {
+                badgeGrid.Background = new SolidColorBrush(Colors.LightGoldenrodYellow);
+                Task.Delay(TimeSpan.FromSeconds(1));
+                badgeGrid.Background = new SolidColorBrush(Colors.Transparent);
+            }
         }
 
         #endregion

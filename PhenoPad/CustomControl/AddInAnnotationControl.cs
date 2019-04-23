@@ -242,13 +242,7 @@ namespace PhenoPad.CustomControl
         public async void ConvertStrokeToText(object sender, RoutedEventArgs e) {
             if (addinSlide.X == commentslideX) {
 
-                List<HWRRecognizedText> recognitionResults = await HWRManager.getSharedHWRManager().OnRecognizeAsync(inkCanvas.InkPresenter.StrokeContainer, InkRecognitionTarget.All);
-
-                //continue analyzing until we have a result
-                while (recognitionResults == null) {
-                    await Task.Delay(TimeSpan.FromSeconds(0.5));
-                    recognitionResults = await HWRManager.getSharedHWRManager().OnRecognizeAsync(inkCanvas.InkPresenter.StrokeContainer, InkRecognitionTarget.All);
-                }
+                List<HWRRecognizedText> recognitionResults = await HWRManager.getSharedHWRManager().OnRecognizeAsync(inkCanvas.InkPresenter.StrokeContainer, InkRecognitionTarget.All,fromEHR:true);
 
                 string text = "";
 
@@ -275,7 +269,7 @@ namespace PhenoPad.CustomControl
 
         public async void ReEdit(object sender = null, RoutedEventArgs e = null)
         {//Slides comment back and re-enables edit mode
-            if (inDock)
+            if (addinSlide.X == commentslideX)
             {
 
                 //if there's a comment currently at edit mode, slide it back to avoid position shifting errors
@@ -309,7 +303,7 @@ namespace PhenoPad.CustomControl
                     s.Selected = true;
                 }
                 Rect bound = inkCan.InkPresenter.StrokeContainer.BoundingRect;
-                Debug.WriteLine($"REEDIT bound.width = {bound.Width}, bound.height = {bound.Height}, bound.x = {bound.X}, bound.y = {bound.Y}");
+                //Debug.WriteLine($"REEDIT bound.width = {bound.Width}, bound.height = {bound.Height}, bound.x = {bound.X}, bound.y = {bound.Y}");
 
                 //foreach (InkStroke s in inkCan.InkPresenter.StrokeContainer.GetStrokes()) {
                 //    s.PointTransform *= Matrix3x2.CreateTranslation((float)(-1 * bound.X), (float)(-1 * bound.Y));

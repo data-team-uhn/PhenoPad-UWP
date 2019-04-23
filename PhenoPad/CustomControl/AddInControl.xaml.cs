@@ -512,17 +512,17 @@ namespace PhenoPad.CustomControl
 
         public async void Minimize_Click(object sender = null, RoutedEventArgs e = null)
         {
-            this.inDock = true;
+            inDock = true;
             var element_Visual_Relative = MainPage.Current.curPage.TransformToVisual(MainPage.Current);
-            Point point  = element_Visual_Relative.TransformPoint(new Point(0, 0));
+            Point point = element_Visual_Relative.TransformPoint(new Point(0, 0));
             DoubleAnimation da = (DoubleAnimation)addinPanelHideAnimation.Children.ElementAt(0);
-            da.By = point.X + MainPage.Current.curPage.ActualWidth - (this.canvasLeft + this.dragTransform.X);
+            da.By = point.X + MainPage.Current.curPage.ActualWidth - ( canvasLeft + dragTransform.X);
 
-            await MainPage.Current.curPage.AutoSaveAddin(this.name);
+            await MainPage.Current.curPage.AutoSaveAddin(name);
             await MainPage.Current.curPage.refreshAddInList();
-            MainPage.Current.curPage.quickShowDock();
+            //await MainPage.Current.curPage.quickShowDock();
             await addinPanelHideAnimation.BeginAsync();
-            this.Visibility = Visibility.Collapsed;
+            Visibility = Visibility.Collapsed;
         }
 
 
@@ -592,7 +592,6 @@ namespace PhenoPad.CustomControl
             mediaPlayerElement.Source = MediaSource.CreateFromStorageFile(temp);
             var properties = await temp.Properties.GetVideoPropertiesAsync();
             imgratio = (double)properties.Width / properties.Height;
-            Debug.WriteLine($"imgratio of video={imgratio}+***********");
             mediaPlayerElement.Visibility = Visibility.Visible;
             categoryGrid.Visibility = Visibility.Collapsed;
             PhotoButton.Visibility = Visibility.Collapsed;
@@ -736,7 +735,7 @@ namespace PhenoPad.CustomControl
             categoryGrid.Visibility = Visibility.Collapsed;
             try
             {
-                if (addinType != AddinType.EHR || commentID == -1)
+                if (commentID == -1)
                 {
                     inkCan.Height = Height - 48;
                     inkCan.Width = Width;
@@ -747,7 +746,6 @@ namespace PhenoPad.CustomControl
                 if (strokefile != null)
                 {
                     await FileManager.getSharedFileManager().loadStrokes(strokefile, inkCanvas);
-                    //addinType = AddinType.DRAWING;
                 }
 
                 //try to load image file from disk
@@ -829,16 +827,17 @@ namespace PhenoPad.CustomControl
                     inkCanvas.InkPresenter.IsInputEnabled = false;
                     if (hasImage)
                     {//when loading an image, had to manually adjust dimension to display full size strokes
-                        TranslateTransform tt = new TranslateTransform();
-                        tt.Y = -24;
-                        contentGrid.RenderTransform = tt;
-                        Width = 400;
-                        Height = (int)(Width / imgratio);
+
+                        Grid.SetRow(contentGrid, 0);
+                        Grid.SetRowSpan(contentGrid, 3);
+                        //Width = 500;
+                        //Height = (int)(Width / imgratio);
+                        inkCan.Width = ActualHeight * imgratio;
+                        inkCan.Height = ActualHeight;
                         mediaPlayerElement.Visibility = addinType == AddinType.VIDEO ? Visibility.Visible : Visibility.Collapsed;
                     }
                     else
                     {//adjust ink canvas size/position to display full stroke view
-                        Debug.WriteLine("adjusting stroke bounds");
                         Rect bound = inkCanvas.InkPresenter.StrokeContainer.BoundingRect;
                         double ratio = bound.Width / bound.Height;
                         inkCan.Height = bound.Height + 10;
