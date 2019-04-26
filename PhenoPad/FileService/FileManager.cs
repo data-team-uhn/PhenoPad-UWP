@@ -1115,7 +1115,8 @@ namespace PhenoPad.FileService
                 string textPath = GetNoteFilePath(notebookId, pageId, NoteFileType.NoteText);
                 StorageFile textFile = await ROOT_FOLDER.GetFileAsync(textPath);
                 //saves text to local .txt file
-
+                if (textFile == null)
+                    return "";
                 string text = await FileIO.ReadTextAsync(textFile);
                 return text;
             }

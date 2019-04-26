@@ -52,8 +52,8 @@
         <!--TOP MENU BAR-->
         <Grid Name="TopMenuRelativePanel" Grid.Row="0" Background="{StaticResource TITLE_BAR_WHITE}">
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="200"></ColumnDefinition>
-                <ColumnDefinition Width="*"></ColumnDefinition>
+                <ColumnDefinition Width="5*"></ColumnDefinition>
+                <ColumnDefinition Width="5*"></ColumnDefinition>
                 <ColumnDefinition Width="Auto"></ColumnDefinition>
             </Grid.ColumnDefinitions>
             
@@ -64,6 +64,7 @@
                     <SymbolIcon Symbol="Back"></SymbolIcon>
                 </Button>
                 <TextBox Name="noteNameTextBox" KeyDown="noteNameTextBox_KeyDown"  LostFocus="noteNameTextBox_LostFocus" 
+                         Width="auto"
                          BorderThickness="0" Background="{StaticResource TITLE_BAR_WHITE}" FontSize="18" Text="" Margin="5 0 0 0" 
                          VerticalAlignment="Center"/>
             </StackPanel>

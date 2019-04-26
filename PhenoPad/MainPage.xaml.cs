@@ -178,7 +178,13 @@ namespace PhenoPad
             async (sender, args) =>
             {
                 args.Handled = true;
-                await confirmOnExit_Clicked();
+                bool result = await confirmOnExit_Clicked();
+                if (result)
+                {
+                    Debug.WriteLine("Successful, will exit app ...");
+                    Application.Current.Exit();
+                }
+                args.Handled = false;
             };
         }
 
@@ -186,7 +192,7 @@ namespace PhenoPad
         /// Prompts the user for exiting confirmation and saves the most recently edited notebook
         /// if user attempts to exit while editing, exit apps after
         /// </summary>
-        private async Task confirmOnExit_Clicked() {
+        private async Task<bool> confirmOnExit_Clicked() {
             //no need to ask user if already at note overview page
             if (Frame.CurrentSourcePageType == typeof(PageOverview))
                 Application.Current.Exit();
@@ -204,23 +210,22 @@ namespace PhenoPad
             var result = await messageDialog.ShowAsync();
             if ((int)result.Id == 0)
             {
-                MetroLogger.getSharedLogger().Info("Saving and exiting app ...");
+                bool saved = false;
                 //only saves the notes if in editing stage
-                await Task.Run(async () => {
-                    if (notebookId != null)
-                        await saveNoteToDisk();
-                    return;
-                });
-                Application.Current.Exit();
+                if (notebookId != null)
+                {
+                    MetroLogger.getSharedLogger().Info("Saving ...");
+                    saved = await saveNoteToDisk();
+                }
+                if (saved)
+                    return true;
             }
             else if ((int)result.Id == 1) {
                 MetroLogger.getSharedLogger().Info("Exiting app without saving ...");
-                Application.Current.Exit();
+                return true;
             }
-            else
-            {
-                MetroLogger.getSharedLogger().Info("Canceled Exiting app");
-            }
+            MetroLogger.getSharedLogger().Info("Canceled Exiting app");
+            return false;
         }
 
         /// <summary>
@@ -439,8 +444,6 @@ namespace PhenoPad
                     curPage.Visibility = Visibility.Collapsed;
                     await saveNoteToDisk();
                 }
-                PhenotypeManager.getSharedPhenotypeManager().clearCache();
-                //PhenotypeManager.getSharedPhenotypeManager().phenotypesCandidates.Clear();
                 SpeechManager.getSharedSpeechManager().cleanUp();
                 CloseCandidate();
                 notePages = null;
@@ -449,6 +452,8 @@ namespace PhenoPad
                 clearPageIndexPanel();
                 inkCanvas = null;
                 curPage = null;
+                PhenotypeManager.getSharedPhenotypeManager().clearCache();
+
             });
         }
 
@@ -726,7 +731,6 @@ namespace PhenoPad
 
             setPageIndexText();
             addNoteIndex(curPageIndex);
-            PhenoMana.phenotypesCandidates.Clear();
             await FileManager.getSharedFileManager().CreateNotePage(notebookObject, curPageIndex.ToString());
             //auto-saves whenever a new page is created, this operation doesn't need a timer since 
             //we assume the user will not spam adding pages...
@@ -784,19 +788,20 @@ namespace PhenoPad
             var aPage = notePages.ElementAt(curPageIndex);
             inkCanvas = aPage.inkCan;
             curPage = aPage;
-            //PageHostContentTrans.HorizontalOffset = 100;
-            //(PageHost.ContentTransitions.ElementAt(0) as ContentThemeTransition).HorizontalOffset = 500;
             PageHost.Content = curPage;
-            CloseCandidate();
             setPageIndexText();
             setNotePageIndex(curPageIndex);
-            PhenoMana.phenotypesCandidates.Clear();
-
-            if (curPage.ehrPage == null)
-                aPage.initialAnalyze();
+            int count = PhenoMana.ShowPhenoCandAtPage(curPageIndex);
+            if (count <= 0)
+                CloseCandidate();
             else
-                aPage.ehrPage.AnalyzePhenotype();
-            
+                OpenCandidate();
+
+
+            //if (curPage.ehrPage == null)
+            //else
+            //    aPage.ehrPage.AnalyzePhenotype();
+
             aPage.Visibility = Visibility.Visible;
         }
 

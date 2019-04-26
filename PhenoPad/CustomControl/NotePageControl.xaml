@@ -281,7 +281,7 @@
                     </Canvas>
 
                     <!-- Add in control panel -->
-                    <Canvas x:Name="userControlCanvas"/>
+                    <Canvas x:Name="userControlCanvas" x:FieldModifier="public"/>
 
                     <!-- Current line result -->
                     <Canvas >

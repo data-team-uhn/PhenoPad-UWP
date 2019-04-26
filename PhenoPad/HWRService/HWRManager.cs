@@ -112,7 +112,9 @@ namespace PhenoPad.HWRService
                 if ( recognitionResults != null && recognitionResults.Count > 0)
                 {
                     lastLine = lineNum;
-                    recognitionResults = recognitionResults.OrderBy(x => x.BoundingRect.X).ToList();
+                    //only reorder the wo
+                    if (!fromEHR)
+                        recognitionResults = recognitionResults.OrderBy(x => x.BoundingRect.X).ToList();
 
                     List<HWRRecognizedText> recogResults = new List<HWRRecognizedText>();
                     sentence = new List<string>();
@@ -176,7 +178,7 @@ namespace PhenoPad.HWRService
                     List<HWRRecognizedText> processed = UpdateResultFromServer(response);
                     recogResults = processed.Count == 0 ? recogResults : processed;
                     lastServerRecog = processed.Count == 0 ? lastServerRecog : recogResults;
-                    Debug.WriteLine("parsed response...");
+                    //Debug.WriteLine("parsed response...");
                     //foreach (var r in recogResults)
                     //{
                     //    Debug.WriteLine(r.selectedCandidate);
@@ -185,7 +187,7 @@ namespace PhenoPad.HWRService
                     if (recogResults.Count > 0)
                     {
                         MainPage.Current.curPage.UpdateRecognition(lastLine, recogResults);
-                        Debug.WriteLine("updated from server...");
+                        //Debug.WriteLine("updated from server...");
                     }
                 }
             }

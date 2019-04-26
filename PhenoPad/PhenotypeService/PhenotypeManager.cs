@@ -74,6 +74,20 @@ namespace PhenoPad.PhenotypeService
             //rootPage = MainPage.Current;
         }
 
+        public int ShowPhenoCandAtPage(int pgId) {
+            var curPageCand = phenotypesCandidates.Where(x => x.pageSource == pgId).OrderBy(x=>x.state).ToList();
+            if (curPageCand == null)
+                return 0;
+            foreach (var p in curPageCand) {
+                Phenotype pp = p.Clone();
+                phenotypesCandidates.Remove(p);
+                phenotypesCandidates.Insert(0, pp);
+
+                //addPhenotypeCandidate(p, p.sourceType);
+            }
+            return curPageCand.Count;
+        }
+
         public async void autosaver_tick(object sender = null, object e = null) {
             await MainPage.Current.AutoSavePhenotypes();
             autosavetimer.Stop();
@@ -133,9 +147,12 @@ namespace PhenoPad.PhenotypeService
             {
                 Phenotype pp = pheno.Clone();
                 Phenotype temp = null;
+                Phenotype tempInCand = phenotypesCandidates.Where(x => x == pheno).FirstOrDefault();
 
                 if (from == SourceType.Notes)
+                {
                     temp = savedPhenotypes.Where(x => x == pheno).FirstOrDefault();
+                }
 
                 else if (from == SourceType.Speech)
                     temp = phenotypesInSpeech.Where(x => x == pheno).FirstOrDefault();
@@ -145,21 +162,20 @@ namespace PhenoPad.PhenotypeService
                 else
                     pp.state = -1;
 
- 
-                //if (temp != null && phenotypesCandidates[0].name != temp.name)
-                //{
-                //    phenotypesCandidates.Remove(temp);
-                //    phenotypesCandidates.Insert(0, pp);
-                //}
-                if (temp == null && phenotypesCandidates.Where(x=>x == pheno).FirstOrDefault() == null)
+                //phenotype is not saved and not in candidate list
+                if (temp == null && tempInCand == null)
                     phenotypesCandidates.Insert(0, pp);
-            
+                //phenotype is in candidate list
+                else if (tempInCand != null && phenotypesCandidates[0] != tempInCand) {
+                    phenotypesCandidates.Remove(pheno);
+                    phenotypesCandidates.Insert(0, pp);
+                }
+
                 if (!MainPage.Current.CandidateIsOpened())
                     MainPage.Current.OpenCandidate();
                 return;
 
-                }
-            );
+            });
 
         }
 
@@ -249,10 +265,19 @@ namespace PhenoPad.PhenotypeService
 
         public void addPhenotypeCandidateFromFile(List<Phenotype> phenos) {
             foreach (Phenotype p in phenos) {
-                addPhenotypeCandidate(p, p.sourceType);
+                //addPhenotypeCandidate(p, p.sourceType);
+                Phenotype pp = p.Clone();
+                //only insert at front if it is a saved phenotype with valid state
+                if (p.state == -1)
+                    phenotypesCandidates.Add(pp);
+                else
+                    phenotypesCandidates.Insert(0, pp);
             }
-            MainPage.Current.NotifyUser("Phenotype candidates are loaded.", NotifyType.StatusMessage, 1);
-
+            if (phenos.Count > 0) {
+                MainPage.Current.NotifyUser("Phenotype candidates are loaded.", NotifyType.StatusMessage, 1);
+                MainPage.Current.OpenCandidate();
+                updateSuggestionAndDifferential();
+            }
         }
 
         public async void updateSuggestionAndDifferential()

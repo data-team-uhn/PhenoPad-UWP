@@ -1281,7 +1281,7 @@ namespace PhenoPad.CustomControl
         /// </summary>
         public async void initialAnalyze()
         {
-            rootPage.NotifyUser("Analyzing current page ...", NotifyType.StatusMessage, 2);
+            rootPage.NotifyUser($"Analyzing page {pageId}...", NotifyType.StatusMessage, 2);
             inkAnalyzer = new InkAnalyzer();
             inkAnalyzer.AddDataForStrokes(inkCan.InkPresenter.StrokeContainer.GetStrokes());
             bool result = false;

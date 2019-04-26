@@ -735,11 +735,6 @@ namespace PhenoPad.CustomControl
             categoryGrid.Visibility = Visibility.Collapsed;
             try
             {
-                if (commentID == -1)
-                {
-                    inkCan.Height = Height - 48;
-                    inkCan.Width = Width;
-                }
 
                 //try to load strokes from disk
                 var strokefile = await FileManager.getSharedFileManager().GetNoteFileNotCreate(notebookId, pageId,                                                                                             NoteFileType.ImageAnnotation, name);
@@ -750,7 +745,8 @@ namespace PhenoPad.CustomControl
 
                 //try to load image file from disk
                 var Imagefile = await FileManager.getSharedFileManager().GetNoteFileNotCreate(notebookId, pageId, NoteFileType.Image, name);
-                if (Imagefile != null) {
+                if (Imagefile != null)
+                {
                     var properties = await Imagefile.Properties.GetImagePropertiesAsync();
                     imgratio = (double)properties.Width / properties.Height;
                     BitmapImage img = new BitmapImage(new Uri(Imagefile.Path));
@@ -768,7 +764,7 @@ namespace PhenoPad.CustomControl
                 if (video != null) {
                     var properties = await video.Properties.GetVideoPropertiesAsync();
                     imgratio = (double)properties.Width / properties.Height;
-                    Debug.WriteLine($"imgratio of video={imgratio}");
+                    //Debug.WriteLine($"imgratio of video={imgratio}");
                     mediaPlayerElement.Source = MediaSource.CreateFromStorageFile(video);
                     hasImage = true;
                     addinType = AddinType.VIDEO;
@@ -791,25 +787,29 @@ namespace PhenoPad.CustomControl
             inkCan.Visibility = Visibility.Visible;
 
             //disables scroll viewer for all addins that are not drawings
-            if (addinType != AddinType.DRAWING || onlyView)
+            if (hasImage || onlyView)
                 hideScrollViewer();
 
 
             if (commentID != -1)
             {
+                Debug.WriteLine($"{commentID}");
                 inkCan.Height = this.Height;
                 inkCan.Width = this.Width;
                 TitleRelativePanel.Visibility = Visibility.Collapsed;
                 if (anno_type == AnnotationType.TextComment || anno_type == AnnotationType.TextInsert)
                     inkCan.Visibility = Visibility.Collapsed;
             }
+
             else
             {
+
+
                 if (!onlyView)
                 {// added from note page, need editing       
                  // Set supported input type to default using both moush and pen
-                    inkCanvas.InkPresenter.InputDeviceTypes = Windows.UI.Core.CoreInputDeviceTypes.Pen;
 
+                    inkCanvas.InkPresenter.InputDeviceTypes = Windows.UI.Core.CoreInputDeviceTypes.Pen;
                     // Set initial ink stroke attributes and updates
                     InkDrawingAttributes drawingAttributes = new InkDrawingAttributes();
                     drawingAttributes.Color = Colors.Black;
@@ -825,15 +825,19 @@ namespace PhenoPad.CustomControl
                 else
                 {// only for viewing on page overview page / addin collection dock
                     inkCanvas.InkPresenter.IsInputEnabled = false;
+                    Grid.SetRow(contentGrid, 0);
+                    Grid.SetRowSpan(contentGrid, 3);
+
                     if (hasImage)
                     {//when loading an image, had to manually adjust dimension to display full size strokes
 
-                        Grid.SetRow(contentGrid, 0);
-                        Grid.SetRowSpan(contentGrid, 3);
                         //Width = 500;
-                        //Height = (int)(Width / imgratio);
-                        inkCan.Width = ActualHeight * imgratio;
-                        inkCan.Height = ActualHeight;
+                        //Height = (int)(ActualWidth / imgratio);
+                        inkCan.Width = ActualWidth;
+                        inkCan.Height = ActualWidth / imgratio;
+                        //inkCan.Height = Height - 48;
+                        //inkCan.Width = Width;
+
                         mediaPlayerElement.Visibility = addinType == AddinType.VIDEO ? Visibility.Visible : Visibility.Collapsed;
                     }
                     else

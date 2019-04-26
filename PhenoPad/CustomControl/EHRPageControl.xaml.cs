@@ -257,7 +257,13 @@ namespace PhenoPad.CustomControl
                 //After loading text, performs phenotype detection on each sentence
                 CancellationToken cancel = MainPage.Current.cancelService.Token;
                 if (init_analyze)
-                    AnalyzePhenotype();
+                {
+                    await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () => {
+                        MainPage.Current.NotifyUser("Analyzing Phenotypes from EHR ...", NotifyType.StatusMessage, 7);
+                        AnalyzePhenotype();
+                    });
+                    MainPage.Current.NotifyUser("Done analyzing phnotypes", NotifyType.StatusMessage, 1);
+                }
 
             }
             //for taking care of non-existing saved format record files
@@ -507,6 +513,9 @@ namespace PhenoPad.CustomControl
             current_index = -1;
             RefreshTextStyle();
             ToggleHandwritingMode();
+            parentControl.addinCanvasEHR.UpdateLayout();
+            parentControl.userControlCanvas.UpdateLayout();
+
             //insertType = InsertType.None;            
         }
 
@@ -566,6 +575,10 @@ namespace PhenoPad.CustomControl
                         ReplaceAnnotation();
                     break;
             }
+
+            parentControl.addinCanvasEHR.UpdateLayout();
+            parentControl.userControlCanvas.UpdateLayout();
+
         }
 
         private void UpdateRecordListInsert(int start = -1, int length = 0)
@@ -693,9 +706,18 @@ namespace PhenoPad.CustomControl
                                 comment.canvasTop += yShiftOffset;
                                 Canvas.SetTop(comment, comment.canvasTop);
                             }
+                            Debug.WriteLine($"addin slides = {comment.addinSlide.X},{comment.addinSlide.Y}");
+                            Debug.WriteLine($"comment slides = {comment.commentslideX},{comment.commentslideY}");
+                            //need to manually reslides the addins if the current sliding offest is different than the updated ones
+                            if (comment.addinSlide.X != comment.commentslideX || comment.addinSlide.Y != comment.commentslideY)
+                                comment.Slide(x: comment.commentslideX - comment.addinSlide.X, y: comment.commentslideY - comment.addinSlide.Y);
                             comment.addinSlide.X = comment.commentslideX;
                             comment.addinSlide.Y = comment.commentslideY;
+                            parentControl.addinCanvasEHR.UpdateLayout();
+                            parentControl.userControlCanvas.UpdateLayout();
+                            UpdateLayout();
                         }
+
                     }
 
                 }
@@ -741,7 +763,7 @@ namespace PhenoPad.CustomControl
             }
         }
 
-        public void AddInsert(AddInControl insertFromComment = null, int index = -1)
+        public async void AddInsert(AddInControl insertFromComment = null, int index = -1)
         {//Adds either a raw stroke insert or typed text insert to EHR Text
 
             if (insertMode == InsertMode.Handwriting && insertFromComment == null)
@@ -771,7 +793,9 @@ namespace PhenoPad.CustomControl
             {
                 if (index != -1 && insertFromComment != null) {
                     current_index = index;
-                    RemoveAnnotation(insertFromComment);
+                    await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () => {
+                        RemoveAnnotation(insertFromComment);
+                    });
                 }
 
                 string text = "";
@@ -985,6 +1009,7 @@ namespace PhenoPad.CustomControl
             HideCommentLine();
             await MainPage.Current.curPage.AutoSaveAddin(null);
             await FileManager.getSharedFileManager().DeleteAddInFile(notebookid, pageid, comment.name);
+            parentControl.userControlCanvas.UpdateLayout();
         }
 
         internal void ReEditTextAnnotation(AddInControl anno)
@@ -1132,7 +1157,6 @@ namespace PhenoPad.CustomControl
                 if (comment.anno_type == AnnotationType.TextComment)
                 {
                     int end = annotated.Where(x => x[0] == comment.commentID).FirstOrDefault()[1];
-                    Debug.WriteLine("end = " + end);
                     textAnnos.Add(end, comment.commentText.Trim(Environment.NewLine.ToCharArray()));
                 }
             }
@@ -1398,6 +1422,8 @@ namespace PhenoPad.CustomControl
                         text += p + Environment.NewLine;
                     else
                         text += p + " " + Environment.NewLine;
+                    //analyze phenotypes on newly pasted line
+                    AnalyzePhenotype(p);
                 }
 
                 string ehr_text = getText(EHRTextBox);
@@ -1413,7 +1439,7 @@ namespace PhenoPad.CustomControl
                 else
                     EHRTextBox.Document.SetText(TextSetOptions.None, ehr_text + Environment.NewLine + text);
             }
-            MainPage.Current.NotifyUser("Pasted EHR to note", NotifyType.StatusMessage, 1);
+            MainPage.Current.NotifyUser("Pasted and analyzing phenotypes ...", NotifyType.StatusMessage, 1);
             cpMenu.Visibility = Visibility.Collapsed;
             RefreshTextStyle();
 
@@ -1522,7 +1548,6 @@ namespace PhenoPad.CustomControl
                     cur_highlight = (h[0], h[0] + h[1]);
                     cur_selected = (h[0], h[0] + h[1]);
                     cur_selectedText = getText(EHRTextBox).Substring(h[0], h[1]);
-                    Debug.WriteLine($"selected text at highlight = {cur_selectedText}");
                     showMenu = true;
                     break;
                 }
@@ -1535,7 +1560,6 @@ namespace PhenoPad.CustomControl
                     cur_delete = (d[0], d[0] + d[1]);
                     cur_selected = (d[0], d[0] + d[1]);
                     cur_selectedText = getText(EHRTextBox).Substring(d[0], d[1]);
-                    Debug.WriteLine($"selected text at delete = {cur_selectedText}");
                     showMenu = true;
                     break;
                 }
@@ -1958,7 +1982,6 @@ namespace PhenoPad.CustomControl
             if (text.Length == 0)
             {
                 sentences =getText(EHRTextBox).Split('.');
-                MainPage.Current.NotifyUser("Analyzing Phenotypes from EHR ...", NotifyType.StatusMessage, 7);
             }
             else
                 sentences = new string[] { text };
@@ -1971,6 +1994,7 @@ namespace PhenoPad.CustomControl
                     foreach (var pp in annoResult.Values)
                     {
                         if (MainPage.Current.curPage == null || MainPage.Current.curPage != parentControl) {
+                            Debug.WriteLine("user interruption, will pause phenotype analysis");
                             return;
                         }
 

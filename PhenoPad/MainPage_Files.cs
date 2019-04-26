@@ -159,9 +159,12 @@ namespace PhenoPad
                     PhenotypeManager.getSharedPhenotypeManager().addPhenotypesFromFile(phenos);
 
                 //Gets all phenotype candidates from XML meta
+                bool init_analyze = false;
                 List<Phenotype> phenocand = await FileManager.getSharedFileManager().GetSavedPhenotypeObjectsFromXML(notebookId,NoteFileType.PhenotypeCandidates);
                 if (phenocand != null && phenocand.Count > 0)
                     PhenotypeManager.getSharedPhenotypeManager().addPhenotypeCandidateFromFile(phenocand);
+                else if (phenocand == null)
+                    init_analyze = true;
 
                 // Process loading note pages one by one
                 notePages = new List<NotePageControl>();
@@ -209,6 +212,9 @@ namespace PhenoPad
                     if (recogPhrases != null && recogPhrases.Count > 0)
                         aPage.loadRecognizedPhrases(recogPhrases);
 
+                    //if no saved phenotype candidates, initial analyze on each page 
+                    if (init_analyze)
+                        aPage.initialAnalyze();
                 }
                 curPage = notePages[0];
                 curPageIndex = 0;
@@ -220,7 +226,6 @@ namespace PhenoPad
                 {
                     //initializing for regular note page
                     inkCanvas = notePages[0].inkCan;
-                    curPage.initialAnalyze();
                 }
                 else {
                     //current implementation assumes if there's ehr, it must be on first page
@@ -229,6 +234,7 @@ namespace PhenoPad
                     //curPage.ehrPage.SlideCommentsToSide();
                 }
                 OperationLogger.getOpLogger().SetCurrentNoteID(notebookId);
+                PhenoMana.ShowPhenoCandAtPage(curPageIndex);
                 MainPageInkBar.TargetInkCanvas = inkCanvas;
                 await Task.Delay(TimeSpan.FromSeconds(2));
                 LoadingPopup.IsOpen = false;

@@ -229,10 +229,10 @@ namespace PhenoPad.CustomControl
         {
             if (updated != null)
             {
-                foreach (var r in updated)
-                {
-                    Debug.WriteLine(r.selectedCandidate);
-                }
+                //foreach (var r in updated)
+                //{
+                //    Debug.WriteLine(r.selectedCandidate);
+                //}
 
                 RecognizedPhrase.Children.Clear();
                 var dict = HWRManager.getSharedHWRManager().getDictionary();

@@ -358,7 +358,7 @@ namespace PhenoPad.PhotoVideoService
 
         public async void OnTimeUpStopRecording(object sender = null, object e = null)
         {
-            VideoTimer.Stop();
+            //VideoTimer.Stop();
             await StopRecordingAsync();
         }
 
@@ -386,7 +386,7 @@ namespace PhenoPad.PhotoVideoService
                 VideoButton.Visibility = Visibility.Collapsed;
                 PhotoButton.Visibility = Visibility.Collapsed;
 
-                VideoTimer.Start();
+                //VideoTimer.Start();
                 Debug.WriteLine("Started recording!");
                 return videoFile;
             }
