@@ -111,7 +111,7 @@ namespace PhenoPad.CustomControl
         public PhenotypeManager PhenoMana => PhenotypeManager.getSharedPhenotypeManager();
         public ObservableCollection<Phenotype> recognizedPhenotypes = new ObservableCollection<Phenotype>();
         public ObservableCollection<HWRRecognizedText> recognizedText = new ObservableCollection<HWRRecognizedText>();
-
+        private Dictionary<uint, Color> tempFormat = new Dictionary<uint, Color>();
         private MainPage rootPage;
         public EHRPageControl ehrPage;
         //private string[] textLines;
@@ -709,15 +709,24 @@ namespace PhenoPad.CustomControl
         private void SetSelectedStrokeStyle(InkStroke stroke)
         {
             var drawingAttributes = stroke.DrawingAttributes;
+            if (!tempFormat.ContainsKey(stroke.Id))
+            {
+                tempFormat.Add(stroke.Id, drawingAttributes.Color);
+            }
             drawingAttributes.Color = SELECTED_STROKE_COLOR;
             stroke.DrawingAttributes = drawingAttributes;
         }
 
         private void SetDefaultStrokeStyle(InkStroke stroke)
         {
-            var drawingAttributes = stroke.DrawingAttributes;
-            drawingAttributes.Color = DEFAULT_STROKE_COLOR;
-            stroke.DrawingAttributes = drawingAttributes;
+            //var drawingAttributes = stroke.DrawingAttributes;
+            if (tempFormat.ContainsKey(stroke.Id))
+            {
+                var temp = stroke.DrawingAttributes;
+                temp.Color = tempFormat[stroke.Id];
+                stroke.DrawingAttributes = temp;
+                tempFormat.Remove(stroke.Id);
+            }
         }
 
         #endregion

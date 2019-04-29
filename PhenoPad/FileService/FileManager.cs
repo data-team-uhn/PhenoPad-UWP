@@ -864,7 +864,7 @@ namespace PhenoPad.FileService
             try {
                 // Prevent updates to the file until updates are 
                 // finalized with call to CompleteUpdatesAsync.
-                //Windows.Storage.CachedFileManager.DeferUpdates(strokesFile);
+                Windows.Storage.CachedFileManager.DeferUpdates(strokesFile);
                 // Open a file stream for writing.
                 IRandomAccessStream stream = await strokesFile.OpenAsync(FileAccessMode.ReadWrite);
                 // Write the ink strokes to the output stream.

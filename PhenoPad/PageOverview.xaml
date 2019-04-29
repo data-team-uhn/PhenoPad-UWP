@@ -212,22 +212,24 @@
                                 </Border>
                                 <Border Height="400" Width="283" Grid.Row="2">
                                     <BitmapIcon UriSource="{x:Bind strokeUri}"/>
-                                    <!-- 
-                            <Image Source="{x:Bind strokeUri}"/>
-                            -->
                                 </Border>
-                            </Grid>
+                                    <Border Height="400" Width="283" Grid.Row="2">
+                                        <TextBlock Padding="10" TextWrapping="WrapWholeWords" FontSize="8" Text="{x:Bind EHR}"/>
+                                    </Border>
+                                </Grid>
                         </DataTemplate>
                     </GridView.ItemTemplate>
                     <GridView.Items>
                         <GridViewItem BorderThickness="1" BorderBrush="Black">
-                            <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE710;" Foreground="{StaticResource WORD_DARK}" FontSize="72" FontWeight="ExtraBold"/>
+                            <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE710;" 
+                                      Foreground="{StaticResource WORD_DARK}" FontSize="72" FontWeight="ExtraBold"/>
                         </GridViewItem>
                     </GridView.Items>
                 </GridView>
 
                 <Border Background="{StaticResource Title_Background}" Height="40">
-                    <TextBlock VerticalAlignment="Center" Grid.Row="0" FontSize="20" Foreground="Black" Margin="10 0 0 0">Photos and annotations</TextBlock>
+                    <TextBlock VerticalAlignment="Center" Grid.Row="0" FontSize="20" Foreground="Black" 
+                               Margin="10 0 0 0">Photos and annotations</TextBlock>
                 </Border>
 
                 <GridView Name="ImageAnnotationGridView"  Padding="10 10 10 10" Height="250"

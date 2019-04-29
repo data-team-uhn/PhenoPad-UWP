@@ -177,7 +177,7 @@
                     <AppBarButton x:Name="underlineButton" Icon="Underline"  ToolTipService.ToolTip="Underline" Visibility="Collapsed"/>
                 </CommandBar>
                 <InkToolbar Margin="0 0 0 0" Visibility="Visible"  Name="MainPageInkBar" Width="204"
-                            ActiveToolChanged="CurrentToolChanged" Orientation="Horizontal" 
+                            ActiveToolChanged="CurrentToolChanged" Orientation="Horizontal"                         
                             ButtonFlyoutPlacement="Bottom" InitialControls="None">
                     <InkToolbar.Resources>
 

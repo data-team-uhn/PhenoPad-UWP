@@ -1289,6 +1289,15 @@ namespace PhenoPad.CustomControl
                 result = await analyzeInk(serverFlag: true);//will be using server side HWR upon page load
         }
 
+        public async void initialAnalyzeNoPhenotype() {
+            inkAnalyzer = new InkAnalyzer();
+            inkAnalyzer.AddDataForStrokes(inkCan.InkPresenter.StrokeContainer.GetStrokes());
+            await inkAnalyzer.AnalyzeAsync();
+
+        }
+
+
+
         private async void searchPhenotypesAndSetUpBriefView(string str)
         {
             List<Phenotype> result = await PhenotypeManager.getSharedPhenotypeManager().searchPhenotypeByPhenotipsAsync(str);

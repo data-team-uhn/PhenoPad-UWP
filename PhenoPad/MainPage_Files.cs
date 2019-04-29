@@ -215,6 +215,9 @@ namespace PhenoPad
                     //if no saved phenotype candidates, initial analyze on each page 
                     if (init_analyze)
                         aPage.initialAnalyze();
+                    else {
+                        aPage.initialAnalyzeNoPhenotype();
+                    }
                 }
                 curPage = notePages[0];
                 curPageIndex = 0;

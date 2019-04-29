@@ -245,19 +245,21 @@ namespace PhenoPad.CustomControl
                 List<HWRRecognizedText> recognitionResults = await HWRManager.getSharedHWRManager().OnRecognizeAsync(inkCanvas.InkPresenter.StrokeContainer, InkRecognitionTarget.All,fromEHR:true);
 
                 string text = "";
-
                 foreach (var res in recognitionResults)
-                {
                     text += res.selectedCandidate + " ";
-                }
+
                 commentTextBlock.Document.SetText(Windows.UI.Text.TextSetOptions.None, text.Trim());
                 commentTextBlock.Visibility = Visibility.Visible;
                 inkCan.Visibility = Visibility.Collapsed;
                 commentText = text;
+                UpdateLayout(); //need this to update textbox height after setting text
+
                 if (anno_type == AnnotationType.RawComment)
                 {
                     anno_type = AnnotationType.TextComment;
                 }
+                this.Height = Math.Ceiling(getTextBound().Height / COMMENT_HEIGHT) * COMMENT_HEIGHT;
+                this.Width = DEFAULT_COMMENT_WIDTH;
             }
 
         }
