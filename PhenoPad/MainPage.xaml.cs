@@ -279,9 +279,10 @@ namespace PhenoPad
         /// <summary>
         /// Sets the ink bar controller to the current ink canvas.
         /// </summary>
-        private void setPageIndexText()
+        private void setPageIndexText(int index)
         {
             MainPageInkBar.TargetInkCanvas = inkCanvas;
+            curPageIndexBlock.Text = $"{index+1}";
         }
 
         //  ************Switching between editing / view mode *********************
@@ -449,9 +450,10 @@ namespace PhenoPad
                 notePages = null;
                 notebookId = null;
                 // clear page index panel
-                clearPageIndexPanel();
+                //clearPageIndexPanel();
                 inkCanvas = null;
                 curPage = null;
+                addinlist.ItemsSource = new List<ImageAndAnnotation>();
                 PhenotypeManager.getSharedPhenotypeManager().clearCache();
 
             });
@@ -497,13 +499,14 @@ namespace PhenoPad
         /// <param name="index"></param>
         private void setNotePageIndex(int index)
         {
-            foreach (var btn in pageIndexButtons)
-            {
-                btn.Background = new SolidColorBrush(Colors.WhiteSmoke);
-                btn.Foreground = new SolidColorBrush(Colors.Gray);
-            }
-            pageIndexButtons.ElementAt(index).Background = Application.Current.Resources["Button_Background"] as SolidColorBrush;
-            pageIndexButtons.ElementAt(index).Foreground = new SolidColorBrush(Colors.Black);
+            curPageIndexBlock.Text = $"{index+1}";
+            //foreach (var btn in pageIndexButtons)
+            //{
+            //    btn.Background = new SolidColorBrush(Colors.WhiteSmoke);
+            //    btn.Foreground = new SolidColorBrush(Colors.Gray);
+            //}
+            //pageIndexButtons.ElementAt(index).Background = Application.Current.Resources["Button_Background"] as SolidColorBrush;
+            //pageIndexButtons.ElementAt(index).Foreground = new SolidColorBrush(Colors.Black);
         }
 
         /// <summary>
@@ -511,18 +514,18 @@ namespace PhenoPad
         /// </summary>
         private void addNoteIndex(int index)
         {
-            Button btn = new Button();
-            btn.Click += IndexBtn_Click;
-            btn.Background = new SolidColorBrush(Colors.WhiteSmoke);
-            btn.Foreground = new SolidColorBrush(Colors.Black);
-            btn.Padding = new Thickness(0, 0, 0, 0);
-            btn.Content = "" + (index + 1);
-            btn.Width = 30;
-            btn.Height = 30;
-            pageIndexButtons.Add(btn);
-            if (pageIndexPanel.Children.Count >= 1)
-                pageIndexPanel.Children.Insert(pageIndexPanel.Children.Count - 1, btn);
-            setNotePageIndex(index);
+            //Button btn = new Button();
+            //btn.Click += IndexBtn_Click;
+            //btn.Background = new SolidColorBrush(Colors.WhiteSmoke);
+            //btn.Foreground = new SolidColorBrush(Colors.Black);
+            //btn.Padding = new Thickness(0, 0, 0, 0);
+            //btn.Content = "" + (index + 1);
+            //btn.Width = 30;
+            //btn.Height = 30;
+            //pageIndexButtons.Add(btn);
+            //if (pageIndexPanel.Children.Count >= 1)
+            //    pageIndexPanel.Children.Insert(pageIndexPanel.Children.Count - 1, btn);
+            //setNotePageIndex(index);
 
         }
 
@@ -729,8 +732,9 @@ namespace PhenoPad
             CloseCandidate();
             PageHost.Content = curPage;
 
-            setPageIndexText();
-            addNoteIndex(curPageIndex);
+            setPageIndexText(curPageIndex);
+
+            //addNoteIndex(curPageIndex);
             await FileManager.getSharedFileManager().CreateNotePage(notebookObject, curPageIndex.ToString());
             //auto-saves whenever a new page is created, this operation doesn't need a timer since 
             //we assume the user will not spam adding pages...
@@ -738,7 +742,7 @@ namespace PhenoPad
             curPage.Visibility = Visibility.Visible;
         }
 
-        private void NextPageButton_Click(object sender, RoutedEventArgs e)
+        private async void NextPageButton_Click(object sender, RoutedEventArgs e)
         {
             if (curPageIndex < notePages.Count - 1)
             {
@@ -749,12 +753,19 @@ namespace PhenoPad
                 //PageHostContentTrans.HorizontalOffset = 100;
                 //(PageHost.ContentTransitions.ElementAt(0) as ContentThemeTransition).HorizontalOffset = 500;
                 PageHost.Content = curPage;
-
-                setPageIndexText();
+                setPageIndexText(curPageIndex);
+                var addins = await curPage.GetAllAddInObjects();
+                showAddIn(addins);
+                int count = PhenoMana.ShowPhenoCandAtPage(curPageIndex);
+                if (count <= 0)
+                    CloseCandidate();
+                else
+                    OpenCandidate();
+                aPage.Visibility = Visibility.Visible;
             }
         }
 
-        private void PreviousPageButton_Click(object sender, RoutedEventArgs e)
+        private async void PreviousPageButton_Click(object sender, RoutedEventArgs e)
         {
             if (curPageIndex > 0)
             {
@@ -766,14 +777,23 @@ namespace PhenoPad
                 //(PageHost.ContentTransitions.ElementAt(0) as ContentThemeTransition).HorizontalOffset = -500;
                 PageHost.Content = curPage;
 
-                setPageIndexText();
+                setPageIndexText(curPageIndex);
+                var addins = await curPage.GetAllAddInObjects();
+                showAddIn(addins);
+                int count = PhenoMana.ShowPhenoCandAtPage(curPageIndex);
+                if (count <= 0)
+                    CloseCandidate();
+                else
+                    OpenCandidate();
+                aPage.Visibility = Visibility.Visible;
+
             }
         }
 
         /// <summary>
         /// Called when user clicks on a notepage index button
         /// </summary>
-        private void IndexBtn_Click(object sender, RoutedEventArgs e)
+        private async void IndexBtn_Click(object sender, RoutedEventArgs e)
         {
             var button = (Button)sender;
             foreach (var btn in pageIndexButtons)
@@ -789,8 +809,12 @@ namespace PhenoPad
             inkCanvas = aPage.inkCan;
             curPage = aPage;
             PageHost.Content = curPage;
-            setPageIndexText();
-            setNotePageIndex(curPageIndex);
+            setPageIndexText(curPageIndex);
+            //setNotePageIndex(curPageIndex);
+            //shows add-in icons into side bar
+            var addins = await curPage.GetAllAddInObjects();
+            showAddIn(addins);
+
             int count = PhenoMana.ShowPhenoCandAtPage(curPageIndex);
             if (count <= 0)
                 CloseCandidate();
@@ -1503,9 +1527,108 @@ namespace PhenoPad
         {
             throw new NotImplementedException("MultimediaPreviewFlyout_Opened");
         }
+        #endregion
 
+        #region ADDIN PANEL HANDLERS
 
+        public void showAddIn(List<ImageAndAnnotation> images)
+        {
+            /// <summary>
+            /// Refreshes the listitem source of current page add-ins in the addin preview dock 
+            /// </summary>
 
+            try
+            {
+                if (images.Count > 0)
+                {
+                    addinlist.Visibility = Visibility.Visible;
+                    List<ImageAndAnnotation> addins = images.Where(x => x.commentID == -1).ToList();
+                    addinlist.ItemsSource = addins;
+                    if (addins.Count > 0)
+                    {
+                        NumIcon.Text = $"{addins.Count}";
+                        badgeGrid.Visibility = Visibility.Visible;
+                    }
+                }
+                else
+                {
+                    addinlist.ItemsSource = new List<ImageAndAnnotation>();
+                    //addinlist.Visibility = Visibility.Collapsed;
+                    NumIcon.Text = "";
+                    badgeGrid.Visibility = Visibility.Collapsed;
+                }
+            }
+            catch (Exception e)
+            {
+                MetroLogger.getSharedLogger().Error($"Failed to refresh addin icon list:{e}{e.Message}");
+            }
+        }
+
+        public async Task quickShowDock()
+        {/// <summary>Quick plays addin dock sliding animation</summary>
+            if (slide.X == 250)
+            {
+                await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, async () =>
+                {
+                    await addinShowAnimation.BeginAsync();
+
+                });
+                await Task.Delay(TimeSpan.FromSeconds(0.3));
+
+                await addinHideAnimation.BeginAsync();
+            }
+            else if (slide.X == 0)
+            {
+                await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, async () => {
+                    await addinHideAnimation.BeginAsync();
+                });
+
+            }
+            return;
+        }
+
+        public async void AddinsButton_Click(object sender, RoutedEventArgs e)
+        {
+            /// <summary>
+            /// Refreshes and show the list of addins within a notepage
+            /// </summary>
+
+            if (slide.X == 250)
+                await addinShowAnimation.BeginAsync();
+            else
+                await addinHideAnimation.BeginAsync();
+        }
+
+        /// <summary>
+        /// Toggles the in dock status of an addin and show/hides it from main canvas
+        /// </summary>
+        public async void addInIcon_Click(object sender, RoutedEventArgs e)
+        {
+            //gets the clicked addin name and search for the specific addin
+            //in user canvas, then hides its panel
+            Viewbox icon = (Viewbox)((Button)sender).Content;
+            AddInControl icon_addin = (AddInControl)icon.Child;
+            string name = icon_addin.name;
+            List<AddInControl> addinlist = await curPage.GetAllAddInControls();
+            AddInControl addin = addinlist.Where(x => x.name == name).ToList()[0];
+            addin.Maximize_Addin();
+        }
+
+        /// <summary>
+        /// Refetch updated meta XML data for addins and uses showAddIn() to refresh preview dock.
+        /// </summary>
+        public async Task refreshAddInList()
+        {
+            try
+            {
+                List<ImageAndAnnotation> imageAndAnno = await FileManager.getSharedFileManager().
+                                              GetImgageAndAnnotationObjectFromXML(notebookId, curPage.pageId);
+                showAddIn(imageAndAnno);
+            }
+            catch (Exception)
+            {
+            }
+        }
         #endregion
 
         #region FOR TESTING/DEMO ONLY

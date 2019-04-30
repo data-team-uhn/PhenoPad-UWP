@@ -20,6 +20,7 @@
     xmlns:phenotypeservice="using:PhenoPad.PhenotypeService"
     xmlns:customcontrol="using:PhenoPad.CustomControl"
     xmlns:controls="using:Microsoft.Toolkit.Uwp.UI.Controls"
+    xmlns:fileservice="using:PhenoPad.FileService"
     mc:Ignorable="d"
     Loaded="Page_Loaded"
     NavigationCacheMode="Required">
@@ -36,6 +37,80 @@
         <Storyboard x:Name="StatusBorderExitStoryboard">
             <FadeOutThemeAnimation Duration="0:0:0.6" Storyboard.TargetName="StatusBorder" />
         </Storyboard>
+        <Storyboard x:Name="addinHideAnimation">
+            <DoubleAnimation Storyboard.TargetName="slide" 
+                                 Storyboard.TargetProperty="X"
+                                 By="250"  
+                                 Duration="0:0:0.1">
+                <DoubleAnimation.EasingFunction>
+                    <CircleEase EasingMode="EaseOut" />
+                </DoubleAnimation.EasingFunction>
+            </DoubleAnimation>
+            <DoubleAnimation Storyboard.TargetName="Buttonslide" 
+                                 Storyboard.TargetProperty="X"
+                                 By="250"  
+                                 Duration="0:0:0.1">
+                <DoubleAnimation.EasingFunction>
+                    <CircleEase EasingMode="EaseOut" />
+                </DoubleAnimation.EasingFunction>
+            </DoubleAnimation>
+            <DoubleAnimation Storyboard.TargetName="textslide" 
+                                 Storyboard.TargetProperty="X"
+                                 By="250"  
+                                 Duration="0:0:0.1">
+                <DoubleAnimation.EasingFunction>
+                    <CircleEase EasingMode="EaseOut" />
+                </DoubleAnimation.EasingFunction>
+            </DoubleAnimation>
+
+            <DoubleAnimation Storyboard.TargetName="PageButtonslide" 
+                                 Storyboard.TargetProperty="X"
+                                 By="250"  
+                                 Duration="0:0:0.1">
+                <DoubleAnimation.EasingFunction>
+                    <CircleEase EasingMode="EaseOut" />
+                </DoubleAnimation.EasingFunction>
+            </DoubleAnimation>
+
+        </Storyboard>
+
+        <Storyboard x:Name="addinShowAnimation" x:FieldModifier="public">
+            <DoubleAnimation Storyboard.TargetName="slide" 
+                                 Storyboard.TargetProperty="X"
+                                 By="-250"  
+                                 Duration="0:0:0.1">
+                <DoubleAnimation.EasingFunction>
+                    <CircleEase EasingMode="EaseIn" />
+                </DoubleAnimation.EasingFunction>
+            </DoubleAnimation>
+            <DoubleAnimation Storyboard.TargetName="Buttonslide" x:FieldModifier="public"
+                                 Storyboard.TargetProperty="X"
+                                 By="-250"  
+                                 Duration="0:0:0.1">
+                <DoubleAnimation.EasingFunction>
+                    <CircleEase EasingMode="EaseIn" />
+                </DoubleAnimation.EasingFunction>
+            </DoubleAnimation>
+            <DoubleAnimation Storyboard.TargetName="textslide" x:FieldModifier="public"
+                                 Storyboard.TargetProperty="X"
+                                 By="-250"  
+                                 Duration="0:0:0.1">
+                <DoubleAnimation.EasingFunction>
+                    <CircleEase EasingMode="EaseIn" />
+                </DoubleAnimation.EasingFunction>
+            </DoubleAnimation>
+
+            <DoubleAnimation Storyboard.TargetName="PageButtonslide" x:FieldModifier="public"
+                                 Storyboard.TargetProperty="X"
+                                 By="-250"  
+                                 Duration="0:0:0.1">
+                <DoubleAnimation.EasingFunction>
+                    <CircleEase EasingMode="EaseIn" />
+                </DoubleAnimation.EasingFunction>
+            </DoubleAnimation>
+
+        </Storyboard>
+
 
     </Page.Resources>
 
@@ -103,7 +178,6 @@
                     </ToolTipService.ToolTip>
                     <SymbolIcon Symbol="Clock"/>
                 </AppBarToggleButton>
-
                 <AppBarSeparator/>
 
                 <AppBarButton  Name="SaveButton" Icon="Save" Label="Save notes" Click="SaveButton_Click">
@@ -111,6 +185,7 @@
                         <TextBlock Text="Save notes."/>
                     </ToolTipService.ToolTip>
                 </AppBarButton>
+                
                 <AppBarButton  Name="PrintBtn" Icon="Print" Label="Print note." Click="PrintButton_Click">
                     <ToolTipService.ToolTip>
                         <TextBlock Text="Print current page."/>
@@ -121,30 +196,6 @@
                         <TextBlock Text="Enter full screen mode."/>
                     </ToolTipService.ToolTip>
                 </AppBarButton>
-
-
-
-                <!--
-                    <AppBarButton Name="imageButton" Icon="BrowsePhotos" Label="Speech Recognition" Click="LoadImage_Click">
-                        <ToolTipService.ToolTip>
-                            <TextBlock Text="Load a image."/>
-                        </ToolTipService.ToolTip>
-                    </AppBarButton>
-                    -->
-
-                <!--
-                    <AppBarButton Name="MyScriptButton" Label="MyScript" Click="MyScriptButton_Click"></AppBarButton>
-                    -->
-                <!--
-                    <AppBarToggleButton Name="" Foreground="LightBlue" Icon="Microphone" Label="Speech Recognition" Click="MicButton_Click">
-                        <ToolTipService.ToolTip>
-                            <TextBlock Text="Use Microsoft speech recognition."/>
-                        </ToolTipService.ToolTip>
-                    </AppBarToggleButton>
-                    -->
-
-
-
             </CommandBar>
             
             <StackPanel Orientation="Horizontal" Grid.Column="2">
@@ -196,8 +247,8 @@
 
             </StackPanel>
 
-
         </Grid>
+        
         <!--SIDE/BOTTOM MENU VIEW-->
         <SplitView   Name="MainSplitView" Grid.Row="1" DisplayMode="CompactInline"  IsPaneOpen="False" OpenPaneLength="400"  CompactPaneLength="40" PanePlacement="Left">
             <SplitView.Style>
@@ -292,20 +343,13 @@
                     
                     <!--Quick View Panels-->
                     <Grid Name="QuickView1" Background="White" Grid.Row="0" Grid.Column="1">
-                        <ListView ScrollViewer.VerticalScrollBarVisibility="Hidden" x:Name="savedPhenoListView" Padding="3 0" ItemsSource="{x:Bind PhenoMana.savedPhenotypes, Mode=OneWay}">
-                            <!--
-                            <ListView.HeaderTemplate>
-                                <DataTemplate>
-                                    <StackPanel >
-                                        <TextBlock Text="Saved phenotypes" FontSize="16" Padding="10 5" FontWeight="SemiBold"  Style="{ThemeResource CaptionTextBlockStyle}"/>
-                                    </StackPanel>
-                                </DataTemplate>
-                            </ListView.HeaderTemplate>
-                            -->
+                        <ListView ScrollViewer.VerticalScrollBarVisibility="Hidden" x:Name="savedPhenoListView" Padding="3 0" 
+                                  ItemsSource="{x:Bind PhenoMana.savedPhenotypes, Mode=OneWay}">
                             <ListView.Header>
                                 <controls:ScrollHeader Mode="Sticky" TargetListViewBase="{x:Bind savedPhenoListView}">
                                     <StackPanel Background="White">
-                                        <TextBlock  Foreground="{StaticResource WORD_DARKER}" Text="Saved phenotypes" FontSize="16" FontWeight="SemiBold" Padding="5"/>
+                                        <TextBlock  Foreground="{StaticResource WORD_DARKER}" Text="Saved phenotypes" FontSize="16" 
+                                                    FontWeight="SemiBold" Padding="5"/>
                                     </StackPanel>
                                 </controls:ScrollHeader>
                             </ListView.Header>
@@ -632,12 +676,17 @@
 
                 </Grid>
             </SplitView.Pane>
+            
             <!--Container for notepagecontrol-->
             <Grid Background="LightGray">
 
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"/>
                 </Grid.ColumnDefinitions>
+
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
 
                 <ContentControl x:Name="PageHost"  HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch">
                     <ContentControl.ContentTransitions>
@@ -648,7 +697,7 @@
                     </ContentControl.ContentTransitions>
                 </ContentControl>
 
-                <RelativePanel>
+                <RelativePanel Grid.Row="0">
                     <!--Editing mode/ preview mode text block-->
                     <TextBlock Visibility="Visible" x:Name="modeTextBlock" Width="190" Height="30"
                                RelativePanel.AlignLeftWithPanel="True" 
@@ -657,19 +706,51 @@
                                Padding=" 0 0 10 0" FontSize="20" FontFamily="Segoe UI" 
                                FontWeight="ExtraBold" Foreground="Black" Opacity="0.2" /> 
                     
-                    <!--page index panel-->
+                    <!--PAGE INDEX PANEL-->
                     <StackPanel Spacing="2" Background="Transparent" Name="pageIndexPanel"  Margin="0 10 0 10" 
                                 Orientation="Vertical"  
-                                RelativePanel.AlignRightWithPanel="True"
+                                RelativePanel.AlignRightWith="addinBase"
+                                RelativePanel.AlignBottomWithPanel="True"
                                 RelativePanel.AlignHorizontalCenterWithPanel="True" Padding="0 0 0 0"
                                 Canvas.ZIndex="90">
+
+                        <StackPanel.RenderTransform>
+                            <TranslateTransform x:FieldModifier="public" x:Name="PageButtonslide" X="0"/>
+                        </StackPanel.RenderTransform>
                         
-                        <Button Height="30" Width="30" Padding="0 0 0 0" Background="WhiteSmoke"  Click="AddPageButton_Click">
+                        <Button Height="30" Width="30" Style="{StaticResource MyButtonStyle}" Visibility="Visible"
+                                Padding="0 0 0 0" Background="{StaticResource TITLE_BAR_WHITE}"  Click="PreviousPageButton_Click">
+                            <SymbolIcon Symbol="Previous" Foreground="Black" >
+                                <SymbolIcon.RenderTransform>
+                                    <RotateTransform Angle="90" CenterX="10" CenterY="10" />
+                                </SymbolIcon.RenderTransform>
+                            </SymbolIcon>
+                        </Button>
+
+                        <Grid Height="30" Width="30" Background="WhiteSmoke" Visibility="Visible">
+                            <TextBlock x:Name="curPageIndexBlock" Text="1"  
+                                       VerticalAlignment="Center" HorizontalAlignment="Center" FontSize="18"/>
+                        </Grid>
+
+                        <Button Height="30" Width="30" Style="{StaticResource MyButtonStyle}" Visibility="Visible"
+                                Padding="0 0 0 0" Background="{StaticResource TITLE_BAR_WHITE}"  Click="NextPageButton_Click">
+                            <SymbolIcon Symbol="Next" Foreground="Black" >
+                                <SymbolIcon.RenderTransform>
+                                    <RotateTransform Angle="90" CenterX="10" CenterY="10" />
+                                </SymbolIcon.RenderTransform>
+                            </SymbolIcon>
+                        </Button>
+
+                        <Button Height="30" Width="30" 
+                                Padding="0 0 0 0" Background="WhiteSmoke"  Click="AddPageButton_Click">
                             <SymbolIcon Symbol="Add" Foreground="{StaticResource Button_Background}" />
                         </Button>
+
+
+
                     </StackPanel>
                     
-                    <!--notification bar-->
+                    <!--NOTIFICATION PANEL-->
                     <Grid RelativePanel.AlignTopWithPanel="True" RelativePanel.AlignHorizontalCenterWithPanel="True" >
                         <Border CornerRadius="10" x:Name="StatusBorder" Margin="0,50,0,0" 
                             RelativePanel.AlignTopWithPanel="True" RelativePanel.AlignHorizontalCenterWithPanel="True" 
@@ -679,7 +760,7 @@
                         </Border>
                     </Grid>
 
-                    <!-- phenotype candidate bar -->
+                    <!-- PHENOTYPE CANDIDATE PANEL -->
                     <Grid  Name="CandidateGrid" HorizontalAlignment="Stretch" 
                            RelativePanel.AlignLeftWithPanel="True" 
                            RelativePanel.AlignTopWithPanel="True">
@@ -835,9 +916,100 @@
                          Visibility="Collapsed"  />
                         </Grid>
                     </Grid>
-                    
+
+                    <!--ADDIN SIDE PANEL-->
+                    <Grid x:Name="addinBase"  x:FieldModifier="public"
+                        Visibility="Visible" Padding="5" Width="250" Height="9999"
+                        RelativePanel.AlignRightWithPanel="True"
+                        Background="{StaticResource TITLE_BAR_WHITE}" HorizontalAlignment="Right"                
+                        VerticalAlignment="Stretch">
+
+                        <Grid.RenderTransform>
+                            <TranslateTransform x:FieldModifier="public" x:Name="slide" X="250"/>
+                        </Grid.RenderTransform>
+                        
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="*"/>
+                        </Grid.RowDefinitions>
+
+                        <ListView Name="addinlist" ScrollViewer.VerticalScrollBarVisibility="Hidden"
+                        Margin="0" Grid.Row="0">
+                            <ListView.Header>
+                                <controls:ScrollHeader Mode="Sticky" TargetListViewBase="{x:Bind addinlist}">
+                                    <TextBlock  Foreground="{StaticResource WORD_DARKER}" Text="Collection" FontSize="24" 
+                                            FontWeight="SemiBold" Padding="20 5 5 5"/>
+                                </controls:ScrollHeader>
+                            </ListView.Header>
+
+                            <ListView.ItemTemplate>
+                                <DataTemplate x:DataType="fileservice:ImageAndAnnotation">
+                                    <Button Click="addInIcon_Click" HorizontalAlignment="Center" Width="200" Margin="0" Padding="0"
+                                Style="{StaticResource ButtonStyleaddin}">
+                                        <Viewbox Name="AddInIcon" Stretch="Uniform" CanDrag="False">
+                                            <customcontrol:AddInControl name="{x:Bind name}" notebookId="{x:Bind notebookId}" 
+                                                        viewOnly="True" CommentID="{x:Bind commentID}"
+                                                        pageId="{x:Bind pageId}"  />
+                                        </Viewbox>
+                                    </Button>
+                                </DataTemplate>
+                            </ListView.ItemTemplate>
+                            <ListView.ItemContainerStyle>
+                                <Style TargetType="ListViewItem">
+                                    <Setter Property="Padding" Value="0"/>
+                                    <Setter Property="Margin" Value="10"/>
+                                    <Setter Property="HorizontalAlignment" Value="Center" />
+                                    <!--<Setter Property="Template">
+                            <Setter.Value>
+                                <ControlTemplate>
+                                    <ContentPresenter/>
+                                </ControlTemplate>
+                            </Setter.Value>
+                        </Setter>-->
+                                </Style>
+                            </ListView.ItemContainerStyle>
+                        </ListView>
+                    </Grid>
+                    <Button Name="addinButton"
+                            Visibility="Visible"
+                            RelativePanel.AlignVerticalCenterWithPanel="True"
+                            RelativePanel.AlignRightWith="addinBase"
+                            Style="{StaticResource ButtonStyle1}"
+                            ToolTipService.ToolTip="Toggle Add-In Box"
+                            Click="AddinsButton_Click">
+                        <Button.Template>
+                            <ControlTemplate>
+                                <Border CornerRadius="20 0 0 20" Background="{StaticResource TITLE_BAR_WHITE}">
+                                    <SymbolIcon Symbol="Pictures" Margin="10"/>
+                                </Border>
+                            </ControlTemplate>
+                        </Button.Template>
+                        <Button.RenderTransform>
+                            <TranslateTransform x:Name="Buttonslide" X="0"/>
+                        </Button.RenderTransform>
+                    </Button>
+
+                    <Grid x:Name="badgeGrid"  
+                          RelativePanel.AlignRightWith="addinButton"
+                          RelativePanel.AlignBottomWith="addinButton"
+                          Visibility="Visible">
+                        <Border CornerRadius="14" BorderThickness="2.5" BorderBrush="{StaticResource TITLE_BAR_WHITE}">
+                            <Grid Background="White" Width="20" Height="20">
+                                <TextBlock Text="" Name="NumIcon" VerticalAlignment="Center" HorizontalAlignment="Center"                    
+                               FontSize="12"/>
+                            </Grid>
+                        </Border>
+                        <Grid.RenderTransform>
+                            <TranslateTransform x:Name="textslide" Y="-22" X="-22"/>
+                        </Grid.RenderTransform>
+                    </Grid>
+
+
                 </RelativePanel>
+                
+                
+                
             </Grid>
+            
         </SplitView>
         <!--APP SETTINGS POP UP GRID-->
         <Grid x:Name="AppSetting" Background="{StaticResource TITLE_BAR_WHITE}"

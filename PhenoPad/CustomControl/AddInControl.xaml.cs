@@ -506,7 +506,7 @@ namespace PhenoPad.CustomControl
         {
             ((Panel)this.Parent).Children.Remove(this);
             await rootPage.curPage.AutoSaveAddin(null);
-            await rootPage.curPage.refreshAddInList();
+            await MainPage.Current.refreshAddInList();
             await FileManager.getSharedFileManager().DeleteAddInFile(notebookId, pageId, name);
         }
 
@@ -519,7 +519,7 @@ namespace PhenoPad.CustomControl
             da.By = point.X + MainPage.Current.curPage.ActualWidth - ( canvasLeft + dragTransform.X);
 
             await MainPage.Current.curPage.AutoSaveAddin(name);
-            await MainPage.Current.curPage.refreshAddInList();
+            await MainPage.Current.refreshAddInList();
             //await MainPage.Current.curPage.quickShowDock();
             await addinPanelHideAnimation.BeginAsync();
             Visibility = Visibility.Collapsed;
@@ -546,7 +546,7 @@ namespace PhenoPad.CustomControl
                 this.Visibility = Visibility.Visible;
                 await MainPage.Current.curPage.AutoSaveAddin(this.name);
                 await addinPanelShowAnimation.BeginAsync();
-                MainPage.Current.curPage.quickShowDock();
+                await MainPage.Current.quickShowDock();
             }
         }
 

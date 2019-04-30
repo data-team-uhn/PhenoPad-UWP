@@ -1161,108 +1161,13 @@ namespace PhenoPad.CustomControl
     **/
         }
 
-        /// <summary>
-        /// Refreshes the listitem source of current page add-ins in the addin preview dock 
-        /// </summary>
-        public void showAddIn(List<ImageAndAnnotation> images)
-        {
-            try
-            { 
-                if (images.Count > 0)
-                {
-                    addinlist.Visibility = Visibility.Visible;
-                    List<ImageAndAnnotation> addins = images.Where(x => x.commentID == -1).ToList();
-                    addinlist.ItemsSource = addins;
-                    if (addins.Count > 0)
-                    {
-                        NumIcon.Text = $"{addins.Count}";
-                        badgeGrid.Visibility = Visibility.Visible;
-                    }
-                }
-                else
-                {
-                    addinlist.ItemsSource = new List<ImageAndAnnotation>();
-                    addinlist.Visibility = Visibility.Collapsed;
-                    NumIcon.Text = "";
-                    badgeGrid.Visibility = Visibility.Collapsed;
-                }
-            }
-            catch (Exception e) {
-                MetroLogger.getSharedLogger().Error($"Failed to refresh addin icon list:{e}{e.Message}");
-            }
-        }
 
-        /// <summary>
-        /// Toggles the in dock status of an addin and show/hides it from main canvas
-        /// </summary>
-        public async void addInIcon_Click(object sender, RoutedEventArgs e)
-        {
-            //gets the clicked addin name and search for the specific addin
-            //in user canvas, then hides its panel
-            Viewbox icon = (Viewbox)((Button)sender).Content;
-            AddInControl icon_addin = (AddInControl)icon.Child;
-            string name = icon_addin.name;
-            List<AddInControl> addinlist = await GetAllAddInControls();
-            AddInControl addin = addinlist.Where(x => x.name == name).ToList()[0];
-            addin.Maximize_Addin();
-        }
 
-        /// <summary>
-        /// Refreshes and show the list of addins within a notepage
-        /// </summary>
-        public async void AddinsButton_Click(object sender, RoutedEventArgs e)
-        {
-            if (slide.X == 250)
-                await addinShowAnimation.BeginAsync();
-            else
-                await addinHideAnimation.BeginAsync();
-        }
-
-        /// <summary>
-        /// Refetch updated meta XML data for addins and uses showAddIn() to refresh preview dock.
-        /// </summary>
-        public async Task refreshAddInList() {
-            try
-            {
-                List<ImageAndAnnotation> imageAndAnno = await FileManager.getSharedFileManager().
-                                              GetImgageAndAnnotationObjectFromXML(notebookId, pageId);
-                showAddIn(imageAndAnno);
-            }
-            catch (Exception) {
-            }
-        }
 
         
-        public async Task quickShowDock()
-        {/// <summary>Quick plays addin dock sliding animation</summary>
-            if (slide.X == 250)
-            {
-                await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, async () =>
-                {
-                    await addinShowAnimation.BeginAsync();
 
-                });
-                await Task.Delay(TimeSpan.FromSeconds(0.3));
 
-                await addinHideAnimation.BeginAsync();
-            }
-            else if (slide.X == 0) {
-                await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, async () => {
-                    await addinHideAnimation.BeginAsync();
 
-                });
-
-            }
-            return;
-        }
-
-        public void FlashAddInSideButton() {
-            for (int i = 0; i < 5; i++) {
-                badgeGrid.Background = new SolidColorBrush(Colors.LightGoldenrodYellow);
-                Task.Delay(TimeSpan.FromSeconds(1));
-                badgeGrid.Background = new SolidColorBrush(Colors.Transparent);
-            }
-        }
 
         #endregion
 
@@ -1618,7 +1523,6 @@ namespace PhenoPad.CustomControl
                     //finds the specific add-in control and save it to disk  
                     List<AddInControl> addinlist = await GetAllAddInControls();
                     AddInControl addin = addinlist.Where(x => x.name == name).ToArray()[0];
-                    Debug.WriteLine($"found current addin to be saved {addin.name}");
 
                     var strokesFile = await FileManager.getSharedFileManager().GetNoteFile(notebookId, pageId, NoteFileType.ImageAnnotation, addin.name);
                     result1 = await FileManager.getSharedFileManager().saveStrokes(strokesFile, addin.inkCan);
@@ -1630,9 +1534,6 @@ namespace PhenoPad.CustomControl
                 List<ImageAndAnnotation> imageList = await GetAllAddInObjects();
                 string metapath = FileManager.getSharedFileManager().GetNoteFilePath(notebookId, pageId, NoteFileType.ImageAnnotationMeta);
                 result2 = await FileManager.getSharedFileManager().SaveObjectSerilization(metapath, imageList, typeof(List<ImageAndAnnotation>));
-
-                if (result1 && result2)
-                    Debug.WriteLine($"Auto-saving add-in completed.");
                 
             }
             catch (Exception e) {
