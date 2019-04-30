@@ -83,15 +83,14 @@
                     </AppBarButton.Flyout>
                 </AppBarButton>
                 
-                <AppBarToggleButton Style="{StaticResource MyAppBarToggleButtonStyle}" IsChecked="True" Label="Notes" Name="NotesButton" Click="NotesButton_Click">
+                <!--<AppBarToggleButton Style="{StaticResource MyAppBarToggleButtonStyle}" IsChecked="True" Label="Notes" Name="NotesButton" Click="NotesButton_Click">
                     <ToolTipService.ToolTip>
                         <TextBlock>Show notes panel</TextBlock>
                     </ToolTipService.ToolTip>
-                    
+
                     <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xF0E3;"/>
-                    
-                   
-                </AppBarToggleButton>
+                </AppBarToggleButton>-->
+                
                 <AppBarToggleButton Icon="PreviewLink" Style="{StaticResource MyAppBarToggleButtonStyle}" Label="Overview" 
                                     Name="OverviewButton" Click="OverviewButton_Click">
                     <ToolTipService.ToolTip>
@@ -327,7 +326,8 @@
                             </ListView.ItemContainerStyle>
                         </ListView>
                     </Grid>
-
+<!--Phenotype Suggestion Panel-->
+                    
                     <Grid Name="QuickView2" Height="auto" Background="White" Grid.Row="1" Grid.Column="1" >
 
                         <ListView ScrollViewer.VerticalScrollBarVisibility="Hidden" x:Name="suggestedPhenoListView"  
@@ -361,10 +361,10 @@
                             </ListView.ItemContainerStyle>
                         </ListView>
                     </Grid>
+                    
+<!--Differential Diagnosis Panel-->
 
                     <Grid Name="QuickView3"  MaxHeight="300" Background="White" Grid.Row="2" Grid.Column="1">
-
-
                         <ListView x:Name="diseaseListView" ScrollViewer.VerticalScrollBarVisibility="Hidden" ItemsSource="{x:Bind PhenoMana.predictedDiseases}">
                             <ListView.Header>
                                 <controls:ScrollHeader Mode="Sticky" TargetListViewBase="{x:Bind diseaseListView}">
@@ -390,7 +390,8 @@
                             </ListView.ItemContainerStyle>
                         </ListView>
                     </Grid>
-
+                    
+<!--Real time speech view-->
                     <Grid x:Name="speechQuickView" x:FieldModifier="public" Grid.Row="0" Grid.Column="1" 
                           Grid.RowSpan="3" Visibility="Collapsed" Padding="5" 
                           Background="White">
@@ -400,7 +401,6 @@
                             <RowDefinition Height="2*"></RowDefinition>
                         </Grid.RowDefinitions>
 
-                        <!--<TextBlock Text="Current Conversation" FontSize="16" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="10" />-->
                         <!--colored speech bubbles-->
                             <local:ChatListView x:Name="chatView" Visibility="Visible" Background="White"  Grid.Row="0"
                             IncrementalLoadingThreshold="2" 
@@ -415,7 +415,8 @@
                             <ListView.Header>
                                 <controls:ScrollHeader Mode="Sticky" TargetListViewBase="{x:Bind savedPhenoListView}">
                                     <StackPanel Background="White">
-                                        <TextBlock  Foreground="{StaticResource WORD_DARKER}" Text="Realtime Conversation" FontSize="16" FontWeight="SemiBold" Padding="5"/>
+                                        <TextBlock  Foreground="{StaticResource WORD_DARKER}" Text="Realtime Conversation" 
+                                                    FontSize="16" FontWeight="SemiBold" Padding="5"/>
                                     </StackPanel>
                                 </controls:ScrollHeader>
                             </ListView.Header>
@@ -437,6 +438,7 @@
                             <ListView.ItemTemplate>
                                 <DataTemplate x:DataType="local:TextMessage">
                                     <Grid Margin="0" Padding="5">
+                                        
                                         <Grid.RowDefinitions>
                                             <RowDefinition Height="Auto" />
                                         </Grid.RowDefinitions>
@@ -462,9 +464,7 @@
                                             Visibility="{x:Bind Path=IsNotFinal}"/>
                                         </Border>
 
-                                        <Grid MaxWidth="260" MinWidth="100"
-                                            Grid.Row="0"
-                                            Grid.Column="0">
+                                        <Grid MaxWidth="260" MinWidth="100" Grid.Row="0" Grid.Column="0">
                                             <Grid.RowDefinitions>
                                                 <RowDefinition Height="Auto"/>
                                             </Grid.RowDefinitions>
@@ -486,6 +486,7 @@
                                 </DataTemplate>
                             </ListView.ItemTemplate>
                         </local:ChatListView>
+                        
                         <!--gray realtime speech bubbles-->
                             <local:ChatListView x:Name="realtimeChatView" Grid.Row="1" Background="White"
                             IncrementalLoadingThreshold="2" 
@@ -510,33 +511,24 @@
 
                                         <ListView.ItemTemplate>
                                             <DataTemplate x:DataType="local:TextMessage">
-                                    <Grid Margin="2">
-
+                                            <Grid Margin="2">
                                         <!--Message color-->
-                                                    <Grid
-                            Grid.Row="0"
-                            Background="LightGray"/>
+                                        <Grid Grid.Row="0" Background="LightGray"/>
+                                        <Grid MaxWidth="260" MinWidth="100" Grid.Row="0">
+                                            <Grid.RowDefinitions>
+                                                <RowDefinition Height="Auto"/>
+                                                <RowDefinition Height="Auto"/>
+                                            </Grid.RowDefinitions>
 
-                                                    <Grid MaxWidth="260" MinWidth="100"
-                            Grid.Row="0">
-                                                        <Grid.RowDefinitions>
-                                                            <RowDefinition Height="Auto"/>
-                                                            <RowDefinition Height="Auto"/>
-                                                        </Grid.RowDefinitions>
-
-                                                        <TextBlock 
-                                Text="{x:Bind Body}"
-                                Grid.Row="0"
-                                Grid.Column="0"
-                                TextWrapping="Wrap"
-                               
-                                FontSize="13"
-                                Padding="5"
-                                VerticalAlignment="Center"
-                                Foreground="Black"/>
-
-
-                                                    </Grid>
+                                            <TextBlock Text="{x:Bind Body}"
+                                                Grid.Row="0"
+                                                Grid.Column="0"
+                                                TextWrapping="Wrap"                            
+                                                FontSize="13"
+                                                Padding="5"
+                                                VerticalAlignment="Center"
+                                                Foreground="Black"/>
+                                        </Grid>
 
                                                 </Grid>
                                             </DataTemplate>
@@ -640,7 +632,7 @@
 
                 </Grid>
             </SplitView.Pane>
-
+            <!--Container for notepagecontrol-->
             <Grid Background="LightGray">
 
                 <Grid.ColumnDefinitions>
@@ -650,23 +642,25 @@
                 <ContentControl x:Name="PageHost"  HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch">
                     <ContentControl.ContentTransitions>
                         <TransitionCollection>
-                            <ContentThemeTransition x:Name="PageHostContentTrans"/>
+                            <!--<PaneThemeTransition Edge="Bottom"  />-->
+                            <EntranceThemeTransition FromVerticalOffset="1500"  x:Name="PageHostContentTrans"/>
                         </TransitionCollection>
                     </ContentControl.ContentTransitions>
                 </ContentControl>
 
                 <RelativePanel>
-
+                    <!--Editing mode/ preview mode text block-->
                     <TextBlock Visibility="Visible" x:Name="modeTextBlock" Width="190" Height="30"
                                RelativePanel.AlignLeftWithPanel="True" 
                                RelativePanel.AlignBottomWithPanel="True"
                                Margin="10 10 10 10" Text="Handwriting Mode"
                                Padding=" 0 0 10 0" FontSize="20" FontFamily="Segoe UI" 
                                FontWeight="ExtraBold" Foreground="Black" Opacity="0.2" /> 
-
+                    
+                    <!--page index panel-->
                     <StackPanel Spacing="2" Background="Transparent" Name="pageIndexPanel"  Margin="0 10 0 10" 
-                                Orientation="Horizontal"  
-                                RelativePanel.AlignBottomWithPanel="True"
+                                Orientation="Vertical"  
+                                RelativePanel.AlignRightWithPanel="True"
                                 RelativePanel.AlignHorizontalCenterWithPanel="True" Padding="0 0 0 0"
                                 Canvas.ZIndex="90">
                         
@@ -674,7 +668,8 @@
                             <SymbolIcon Symbol="Add" Foreground="{StaticResource Button_Background}" />
                         </Button>
                     </StackPanel>
-
+                    
+                    <!--notification bar-->
                     <Grid RelativePanel.AlignTopWithPanel="True" RelativePanel.AlignHorizontalCenterWithPanel="True" >
                         <Border CornerRadius="10" x:Name="StatusBorder" Margin="0,50,0,0" 
                             RelativePanel.AlignTopWithPanel="True" RelativePanel.AlignHorizontalCenterWithPanel="True" 
@@ -684,7 +679,7 @@
                         </Border>
                     </Grid>
 
-                    <!-- pheotypes user are looking for -->
+                    <!-- phenotype candidate bar -->
                     <Grid  Name="CandidateGrid" HorizontalAlignment="Stretch" 
                            RelativePanel.AlignLeftWithPanel="True" 
                            RelativePanel.AlignTopWithPanel="True">
@@ -694,6 +689,7 @@
                         </Grid.ColumnDefinitions>
                         <Grid.RowDefinitions>
                             <RowDefinition Height="40" />
+                            <RowDefinition Height="*"/>
                         </Grid.RowDefinitions>
 
                         <Grid Name="OpenCandidatePanelButtonGrid" Grid.Column="0">
@@ -709,6 +705,7 @@
                         </Grid>
 
                         <StackPanel Orientation="Vertical" Grid.Column="1" 
+                                    Width="auto"
                                     Name="CandidatePanelStackPanel" 
                                     Padding="5 0 5 0"
                                     HorizontalAlignment="Center"
@@ -729,7 +726,8 @@
                                 <ListView.ItemTemplate>
                                     <DataTemplate x:DataType="phenotypeservice:Phenotype">
 
-                                        <customcontrol:PhenotypeBriefControl VerticalAlignment="Center" phenotypeName="{x:Bind name}" 
+                                        <customcontrol:PhenotypeBriefControl 
+                                            VerticalAlignment="Center" phenotypeName="{x:Bind name}" 
                                                                         phenotypeId="{x:Bind hpId}" phenotypeState="{x:Bind state}" 
                                                                         sourceType="{x:Bind sourceType}" presentPosition="List" />
                                     </DataTemplate>
@@ -739,7 +737,7 @@
                                     <Style TargetType="ListViewItem">
                                         <Setter Property="Padding" Value="0 0 0 0" />
                                         <Setter Property="Margin" Value="0 0 0 0" />
-                                        <Setter Property="Height" Value="40"/>
+                                        <!--<Setter Property="Height" Value="40"/>-->
                                         <Setter Property="HorizontalContentAlignment" Value="Left" />
                                         <Setter Property="Template">
                                             <Setter.Value>

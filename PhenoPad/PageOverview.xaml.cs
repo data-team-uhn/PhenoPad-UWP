@@ -154,7 +154,7 @@ namespace PhenoPad
 
                 ImageAnnotationPlaceHoder.Visibility = Visibility.Visible;
             }
-
+            UpdateLayout();
         }
 
         private void OpenButton_Click(object sender, RoutedEventArgs e)

@@ -183,6 +183,7 @@
 
         </ResourceDictionary>
     </UserControl.Resources>
+    
     <Grid Name="rootGrid">
         <Grid x:Name="NoteGrid" >
             <Grid.ColumnDefinitions>
@@ -204,9 +205,9 @@
                 </Canvas>
                 </Grid>
             </ScrollViewer>
-        
+        <!--scroll viewer for note mode-->
             <ScrollViewer Grid.Column="1"  x:Name="scrollViewer" 
-                RelativePanel.AlignLeftWithPanel="True"
+                RelativePanel.AlignLeftWithPanel="True"               
                 ZoomMode="Enabled" 
                 MinZoomFactor="0.3" 
                 VerticalScrollMode="Enabled" 
@@ -215,7 +216,8 @@
                 HorizontalScrollBarVisibility="Auto"
                 ViewChanged="ScrollView_ViewChanged">
                 
-                <Grid x:Name="outputGrid" Margin="0 10 0 0" Padding="0 100 0 0" 
+                <!--Note page grid-->
+                <Grid x:Name="outputGrid" Margin="0 30 0 30" Padding="0 100 0 0" 
                       Background="{ThemeResource SystemControlBackgroundChromeWhiteBrush}" 
                       Height="{x:Bind PAGE_HEIGHT}" Width="{x:Bind PAGE_WIDTH}">
                     <!-- Inking area -->
@@ -411,7 +413,7 @@
 
                 </Grid>
             </ScrollViewer>
-
+        <!--scroll viewer for EHR Text mode-->
             <ScrollViewer Grid.Column="1" x:Name="EHRScrollViewer" x:FieldModifier="public" Visibility="Collapsed"
                         ZoomMode="Enabled" 
                         MinZoomFactor="0.3"    
@@ -421,9 +423,8 @@
                         HorizontalScrollMode="Enabled" 
                         HorizontalScrollBarVisibility="Hidden"
                         >
-
+        <!--for EHR side addin controls-->
                 <Grid x:Name="EHROutputGrid">
-
                     <Canvas x:Name="addinCanvasEHR" x:FieldModifier="public" Canvas.ZIndex="100" />
                 </Grid>
             </ScrollViewer>

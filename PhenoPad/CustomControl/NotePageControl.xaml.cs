@@ -709,17 +709,16 @@ namespace PhenoPad.CustomControl
         private void SetSelectedStrokeStyle(InkStroke stroke)
         {
             var drawingAttributes = stroke.DrawingAttributes;
+            //saves current stroke to dict for cache
             if (!tempFormat.ContainsKey(stroke.Id))
-            {
                 tempFormat.Add(stroke.Id, drawingAttributes.Color);
-            }
             drawingAttributes.Color = SELECTED_STROKE_COLOR;
             stroke.DrawingAttributes = drawingAttributes;
         }
 
         private void SetDefaultStrokeStyle(InkStroke stroke)
         {
-            //var drawingAttributes = stroke.DrawingAttributes;
+            //only sets the color of the stroke back if it has been set to selected color
             if (tempFormat.ContainsKey(stroke.Id))
             {
                 var temp = stroke.DrawingAttributes;

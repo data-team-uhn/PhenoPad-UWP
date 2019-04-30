@@ -637,7 +637,7 @@ namespace PhenoPad
 
         private void NotesButton_Click(object sender, RoutedEventArgs e)
         {
-            NotesButton.IsChecked = true;
+            //NotesButton.IsChecked = true;
             if (OverviewPopUp.IsOpen)
             {
                 OverviewButton.IsChecked = false;
@@ -664,7 +664,7 @@ namespace PhenoPad
 
         private void OverviewButton_Click(object sender, RoutedEventArgs e)
         {
-            NotesButton.IsChecked = false;
+            //NotesButton.IsChecked = false;
             if (!OverviewPopUp.IsOpen)
             {
                 OverivePopUpPage.Width = Window.Current.Bounds.Width;
@@ -687,7 +687,7 @@ namespace PhenoPad
 
         private void SpeechButton_Click(object sender, RoutedEventArgs e)
         {
-            NotesButton.IsChecked = false;
+            //NotesButton.IsChecked = false;
             if (!SpeechPopUp.IsOpen)
             {
                 SpeechPopUpPage.Width = Window.Current.Bounds.Width;
