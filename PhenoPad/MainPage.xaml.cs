@@ -257,33 +257,8 @@ namespace PhenoPad
             // Draw background lines
             if (curPage != null)
                 curPage.DrawBackgroundLines();
-
-            
-
         }
 
-
-
-        /// <summary>
-        /// Clears all page index records in the StackPanel.
-        /// </summary>
-        private void clearPageIndexPanel()
-        {
-            if (pageIndexPanel.Children.Count() > 1)
-            {
-                while (pageIndexPanel.Children.Count() > 1)
-                    pageIndexPanel.Children.RemoveAt(0);
-            }
-        }
-
-        /// <summary>
-        /// Sets the ink bar controller to the current ink canvas.
-        /// </summary>
-        private void setPageIndexText(int index)
-        {
-            MainPageInkBar.TargetInkCanvas = inkCanvas;
-            curPageIndexBlock.Text = $"{index+1}";
-        }
 
         //  ************Switching between editing / view mode *********************
         #region Switching between Editing / View Mode
@@ -453,7 +428,8 @@ namespace PhenoPad
                 //clearPageIndexPanel();
                 inkCanvas = null;
                 curPage = null;
-                addinlist.ItemsSource = new List<ImageAndAnnotation>();
+                curPageIndex = -1;
+                showAddIn(new List<ImageAndAnnotation>());
                 PhenotypeManager.getSharedPhenotypeManager().clearCache();
 
             });
@@ -493,41 +469,6 @@ namespace PhenoPad
             control.IsTabStop = isTabStop;
         }
 
-        /// <summary>
-        /// Sets the display color of all note page buttons
-        /// </summary>
-        /// <param name="index"></param>
-        private void setNotePageIndex(int index)
-        {
-            curPageIndexBlock.Text = $"{index+1}";
-            //foreach (var btn in pageIndexButtons)
-            //{
-            //    btn.Background = new SolidColorBrush(Colors.WhiteSmoke);
-            //    btn.Foreground = new SolidColorBrush(Colors.Gray);
-            //}
-            //pageIndexButtons.ElementAt(index).Background = Application.Current.Resources["Button_Background"] as SolidColorBrush;
-            //pageIndexButtons.ElementAt(index).Foreground = new SolidColorBrush(Colors.Black);
-        }
-
-        /// <summary>
-        /// Adds a new button to page index after creating a new page
-        /// </summary>
-        private void addNoteIndex(int index)
-        {
-            //Button btn = new Button();
-            //btn.Click += IndexBtn_Click;
-            //btn.Background = new SolidColorBrush(Colors.WhiteSmoke);
-            //btn.Foreground = new SolidColorBrush(Colors.Black);
-            //btn.Padding = new Thickness(0, 0, 0, 0);
-            //btn.Content = "" + (index + 1);
-            //btn.Width = 30;
-            //btn.Height = 30;
-            //pageIndexButtons.Add(btn);
-            //if (pageIndexPanel.Children.Count >= 1)
-            //    pageIndexPanel.Children.Insert(pageIndexPanel.Children.Count - 1, btn);
-            //setNotePageIndex(index);
-
-        }
 
         // ************** Tool Toggle event handlers ********************
         #region Tool Toggles
@@ -719,8 +660,24 @@ namespace PhenoPad
         }
 
         //=======================================SWITCHING NOTE PAGES========================================
-        private async void AddPageButton_Click(object sender, RoutedEventArgs e)
+        public void AddNewNotePage(string state = "") {
+            if (state == "next")
+            {
+                if (curPageIndex == notePages.Count - 1)
+                    AddPageButton_Click();
+                else
+                    NextPageButton_Click();
+            }
+            else if (state == "previous")
+            {
+                PreviousPageButton_Click();
+            }
+        }
+
+        private async void AddPageButton_Click(object sender = null, RoutedEventArgs e = null)
         {
+            PageHostContentTrans.Edge = Windows.UI.Xaml.Controls.Primitives.EdgeTransitionLocation.Bottom;
+            curPage.Visibility = Visibility.Collapsed;
             //defining a new string name for the page and creates a new page controller to bind
             string newPageName = (notePages.Count).ToString();
             NotePageControl aPage = new NotePageControl(this.notebookId, newPageName);
@@ -740,94 +697,160 @@ namespace PhenoPad
             //we assume the user will not spam adding pages...
             await this.saveNoteToDisk();
             curPage.Visibility = Visibility.Visible;
+            curPage.ScrollToTop();
         }
 
-        private async void NextPageButton_Click(object sender, RoutedEventArgs e)
+        private async void NextPageButton_Click(object sender = null, RoutedEventArgs e = null)
         {
+            PageHostContentTrans.Edge = Windows.UI.Xaml.Controls.Primitives.EdgeTransitionLocation.Bottom;
+
             if (curPageIndex < notePages.Count - 1)
             {
+                curPage.Visibility = Visibility.Collapsed;
                 curPageIndex++;
                 var aPage = notePages.ElementAt(curPageIndex);
                 inkCanvas = aPage.inkCan;
                 curPage = aPage;
-                //PageHostContentTrans.HorizontalOffset = 100;
-                //(PageHost.ContentTransitions.ElementAt(0) as ContentThemeTransition).HorizontalOffset = 500;
                 PageHost.Content = curPage;
                 setPageIndexText(curPageIndex);
-                var addins = await curPage.GetAllAddInObjects();
-                showAddIn(addins);
                 int count = PhenoMana.ShowPhenoCandAtPage(curPageIndex);
                 if (count <= 0)
                     CloseCandidate();
                 else
                     OpenCandidate();
-                aPage.Visibility = Visibility.Visible;
+                curPage.Visibility = Visibility.Visible;
+                var addins = await curPage.GetAllAddInObjects();
+                showAddIn(addins);
+                curPage.ScrollToTop();
+                return;
             }
+            NotifyUser("This is the last page", NotifyType.StatusMessage, 1);
         }
 
-        private async void PreviousPageButton_Click(object sender, RoutedEventArgs e)
+        private async void PreviousPageButton_Click(object sender=null, RoutedEventArgs e=null)
         {
+            PageHostContentTrans.Edge = Windows.UI.Xaml.Controls.Primitives.EdgeTransitionLocation.Top;
+
             if (curPageIndex > 0)
             {
+                curPage.Visibility = Visibility.Collapsed;
                 curPageIndex--;
                 var aPage = notePages.ElementAt(curPageIndex);
                 inkCanvas = aPage.inkCan;
                 curPage = aPage;
-                //PageHostContentTrans.HorizontalOffset = -100;
-                //(PageHost.ContentTransitions.ElementAt(0) as ContentThemeTransition).HorizontalOffset = -500;
                 PageHost.Content = curPage;
-
                 setPageIndexText(curPageIndex);
-                var addins = await curPage.GetAllAddInObjects();
-                showAddIn(addins);
                 int count = PhenoMana.ShowPhenoCandAtPage(curPageIndex);
                 if (count <= 0)
                     CloseCandidate();
                 else
                     OpenCandidate();
-                aPage.Visibility = Visibility.Visible;
-
+                curPage.Visibility = Visibility.Visible;
+                var addins = await curPage.GetAllAddInObjects();
+                showAddIn(addins);
+                curPage.ScrollToTop();
+                return;
             }
         }
+
+        private void clearPageIndexPanel()
+        {
+            /// <summary>
+            /// Clears all page index records in the StackPanel.
+            /// </summary>
+
+            if (pageIndexPanel.Children.Count() > 1)
+            {
+                while (pageIndexPanel.Children.Count() > 1)
+                    pageIndexPanel.Children.RemoveAt(0);
+            }
+        }
+
+        private void setPageIndexText(int index)
+        {
+            /// <summary>
+            /// Sets the ink bar controller to the current ink canvas.
+            /// </summary>
+            MainPageInkBar.TargetInkCanvas = inkCanvas;
+            curPageIndexBlock.Text = $"{index + 1}";
+        }
+
 
         /// <summary>
-        /// Called when user clicks on a notepage index button
+        /// Sets the display color of all note page buttons
         /// </summary>
-        private async void IndexBtn_Click(object sender, RoutedEventArgs e)
-        {
-            var button = (Button)sender;
-            foreach (var btn in pageIndexButtons)
-            {
-                btn.Background = new SolidColorBrush(Colors.WhiteSmoke);
-                btn.Foreground = Application.Current.Resources["Button_Background"] as SolidColorBrush;
-            }
-            button.Background = Application.Current.Resources["Button_Background"] as SolidColorBrush;
-            button.Foreground = new SolidColorBrush(Colors.WhiteSmoke);
+        //private void setNotePageIndex(int index)
+        //{
+        //    curPageIndexBlock.Text = $"{index + 1}";
+        //    foreach (var btn in pageIndexButtons)
+        //    {
+        //        btn.Background = new SolidColorBrush(Colors.WhiteSmoke);
+        //        btn.Foreground = new SolidColorBrush(Colors.Gray);
+        //    }
+        //    pageIndexButtons.ElementAt(index).Background = Application.Current.Resources["Button_Background"] as SolidColorBrush;
+        //    pageIndexButtons.ElementAt(index).Foreground = new SolidColorBrush(Colors.Black);
+        //}
 
-            curPageIndex = Int32.Parse(button.Content.ToString()) - 1;
-            var aPage = notePages.ElementAt(curPageIndex);
-            inkCanvas = aPage.inkCan;
-            curPage = aPage;
-            PageHost.Content = curPage;
-            setPageIndexText(curPageIndex);
-            //setNotePageIndex(curPageIndex);
-            //shows add-in icons into side bar
-            var addins = await curPage.GetAllAddInObjects();
-            showAddIn(addins);
+        /// <summary>
+        /// Adds a new button to page index after creating a new page
+        /// </summary>
+        //private void addNoteIndex(int index)
+        //{
+        //    Button btn = new Button();
+        //    btn.Click += IndexBtn_Click;
+        //    btn.Background = new SolidColorBrush(Colors.WhiteSmoke);
+        //    btn.Foreground = new SolidColorBrush(Colors.Black);
+        //    btn.Padding = new Thickness(0, 0, 0, 0);
+        //    btn.Content = "" + (index + 1);
+        //    btn.Width = 30;
+        //    btn.Height = 30;
+        //    pageIndexButtons.Add(btn);
+        //    if (pageIndexPanel.Children.Count >= 1)
+        //        pageIndexPanel.Children.Insert(pageIndexPanel.Children.Count - 1, btn);
+        //    setNotePageIndex(index);
 
-            int count = PhenoMana.ShowPhenoCandAtPage(curPageIndex);
-            if (count <= 0)
-                CloseCandidate();
-            else
-                OpenCandidate();
+        //}
 
 
-            //if (curPage.ehrPage == null)
-            //else
-            //    aPage.ehrPage.AnalyzePhenotype();
+        //private async void IndexBtn_Click(object sender, RoutedEventArgs e)
+        //{
+        //    /// <summary>
+        //    /// Called when user clicks on a notepage index button
+        //    /// </summary>
 
-            aPage.Visibility = Visibility.Visible;
-        }
+        //    var button = (Button)sender;
+        //    foreach (var btn in pageIndexButtons)
+        //    {
+        //        btn.Background = new SolidColorBrush(Colors.WhiteSmoke);
+        //        btn.Foreground = Application.Current.Resources["Button_Background"] as SolidColorBrush;
+        //    }
+        //    button.Background = Application.Current.Resources["Button_Background"] as SolidColorBrush;
+        //    button.Foreground = new SolidColorBrush(Colors.WhiteSmoke);
+
+        //    curPageIndex = Int32.Parse(button.Content.ToString()) - 1;
+        //    var aPage = notePages.ElementAt(curPageIndex);
+        //    inkCanvas = aPage.inkCan;
+        //    curPage = aPage;
+        //    PageHost.Content = curPage;
+        //    setPageIndexText(curPageIndex);
+        //    //setNotePageIndex(curPageIndex);
+        //    //shows add-in icons into side bar
+        //    var addins = await curPage.GetAllAddInObjects();
+        //    showAddIn(addins);
+
+        //    int count = PhenoMana.ShowPhenoCandAtPage(curPageIndex);
+        //    if (count <= 0)
+        //        CloseCandidate();
+        //    else
+        //        OpenCandidate();
+
+
+        //    //if (curPage.ehrPage == null)
+        //    //else
+        //    //    aPage.ehrPage.AnalyzePhenotype();
+
+        //    aPage.Visibility = Visibility.Visible;
+        //}
 
         //=======================================NOTE SAVING INTERFACES=====================================
 
@@ -988,22 +1011,6 @@ namespace PhenoPad
             MainPageInkBar.Visibility = Visibility.Visible;
             curPage.hideTextEditGrid();
         }
-
-    //    private void MyScriptButton_Click(object sender, RoutedEventArgs e)
-    //    {
-    //        /**
-    //        if (myScriptEditor.Visibility == Visibility.Collapsed)
-    //        {
-    //            myScriptEditor.Visibility = Visibility.Visible;
-    //            myScriptEditor.NewFile();
-    //        }
-    //        else
-    //        {
-    //            myScriptEditor.Visibility = Visibility.Collapsed;
-    //        }
-    //**/
-
-    //    }
 
         private void FullscreenButton_Click(object sender, RoutedEventArgs e)
         {
@@ -1213,11 +1220,6 @@ namespace PhenoPad
 
         }
 
-        //private void MyscriptBtn_Click(object sender, RoutedEventArgs e)
-        //{
-        //    // myScriptEditor.Visibility = MyscriptBtn.IsChecked != null && (bool)MyscriptBtn.IsChecked ? Visibility.Visible : Visibility.Collapsed;
-        //}
-
         private void PrintButton_Click(object sender, RoutedEventArgs e)
         {
             try
@@ -1378,7 +1380,7 @@ namespace PhenoPad
         /// Display a message to the user.
         /// This method may be called from any thread.
         /// </summary>
-        public void NotifyUser(string strMessage, NotifyType type, int seconds)
+        public void NotifyUser(string strMessage, NotifyType type, double seconds)
         {
             // If called from the UI thread, then update immediately.
             // Otherwise, schedule a task on the UI thread to perform the update.
@@ -1395,7 +1397,7 @@ namespace PhenoPad
         /// <summary>
         /// Updates the notice message to StatusBlock using a semaphore.
         /// </summary>
-        private async void UpdateStatusAsync(string strMessage, NotifyType type, int seconds)
+        private async void UpdateStatusAsync(string strMessage, NotifyType type, double seconds)
         {
             await notifySemaphoreSlim.WaitAsync();
             try
@@ -1426,14 +1428,14 @@ namespace PhenoPad
                     StatusBorder.Visibility = Visibility.Collapsed;
                 }
 
-                await Task.Delay(1000 * seconds);
+                await Task.Delay(TimeSpan.FromSeconds(seconds));
                 await StatusBorderExitStoryboard.BeginAsync();
                 StatusBorder.Visibility = Visibility.Collapsed;
 
             }
             catch (Exception e)
             {
-                LogService.MetroLogger.getSharedLogger().Error(e+e.Message);
+                MetroLogger.getSharedLogger().Error(e+e.Message);
             }
             finally
             {
@@ -1539,6 +1541,8 @@ namespace PhenoPad
 
             try
             {
+                badgeGrid.Visibility = Visibility.Collapsed;
+
                 if (images.Count > 0)
                 {
                     addinlist.Visibility = Visibility.Visible;
@@ -1555,7 +1559,6 @@ namespace PhenoPad
                     addinlist.ItemsSource = new List<ImageAndAnnotation>();
                     //addinlist.Visibility = Visibility.Collapsed;
                     NumIcon.Text = "";
-                    badgeGrid.Visibility = Visibility.Collapsed;
                 }
             }
             catch (Exception e)

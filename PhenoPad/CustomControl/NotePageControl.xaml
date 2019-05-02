@@ -364,7 +364,9 @@
             <ScrollViewer Grid.Column="1" x:Name="EHRScrollViewer" x:FieldModifier="public" Visibility="Collapsed"
                         ZoomMode="Enabled" 
                         MinZoomFactor="0.3"    
-                          MaxZoomFactor="2"
+                        MaxZoomFactor="2"
+                        ManipulationMode="TranslateY,TranslateInertia,System" 
+
                         VerticalScrollMode="Enabled" 
                         VerticalScrollBarVisibility="Hidden" 
                         HorizontalScrollMode="Enabled" 

@@ -104,7 +104,7 @@
                               HorizontalScrollBarVisibility="Hidden">
                     <Grid x:Name="scrollGrid">
                         <Canvas x:Name="commentbg" Visibility="Collapsed"/>
-                        <Viewbox Name="canvasViewBox">
+                        <Viewbox Name="canvasViewBox" Stretch="Uniform">
                             <InkCanvas Visibility="Collapsed" x:Name="inkCanvas" Canvas.ZIndex="5"/>
                         </Viewbox>
                         <RichEditBox Style="{StaticResource MyRichEditBoxStyle}" Background="Transparent" 

@@ -512,7 +512,6 @@ namespace PhenoPad.CustomControl
 
         public async void Minimize_Click(object sender = null, RoutedEventArgs e = null)
         {
-            inDock = true;
             var element_Visual_Relative = MainPage.Current.curPage.TransformToVisual(MainPage.Current);
             Point point = element_Visual_Relative.TransformPoint(new Point(0, 0));
             DoubleAnimation da = (DoubleAnimation)addinPanelHideAnimation.Children.ElementAt(0);
@@ -523,6 +522,8 @@ namespace PhenoPad.CustomControl
             //await MainPage.Current.curPage.quickShowDock();
             await addinPanelHideAnimation.BeginAsync();
             Visibility = Visibility.Collapsed;
+            inDock = true;
+
         }
 
 
@@ -803,8 +804,6 @@ namespace PhenoPad.CustomControl
 
             else
             {
-
-
                 if (!onlyView)
                 {// added from note page, need editing       
                  // Set supported input type to default using both moush and pen
@@ -824,18 +823,19 @@ namespace PhenoPad.CustomControl
                 }
                 else
                 {// only for viewing on page overview page / addin collection dock
+
                     inkCanvas.InkPresenter.IsInputEnabled = false;
                     Grid.SetRow(contentGrid, 0);
                     Grid.SetRowSpan(contentGrid, 3);
 
                     if (hasImage)
-                    {//when loading an image, had to manually adjust dimension to display full size strokes
+                    {//when loading an image, had to manually adjust dimension to display full size with no border
 
-                        //Width = 500;
+                        Width = 400;
+                        Height = Width / imgratio;
                         //Height = (int)(ActualWidth / imgratio);
-                        inkCan.Width = ActualWidth;
-                        inkCan.Height = ActualWidth / imgratio;
-                        //inkCan.Height = Height - 48;
+                        //inkCan.Width = Width;
+                        //inkCan.Height = Height;
                         //inkCan.Width = Width;
 
                         mediaPlayerElement.Visibility = addinType == AddinType.VIDEO ? Visibility.Visible : Visibility.Collapsed;

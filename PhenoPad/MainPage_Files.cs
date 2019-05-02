@@ -97,7 +97,7 @@ namespace PhenoPad
             curPage = aPage;
             curPageIndex = 0;
             PageHost.Content = curPage;
-            setNotePageIndex(0);
+            //curPageIndexBlock.Text = $"{curPageIndex + 1}";
             setPageIndexText(0);
 
             currentMode = WritingMode;
@@ -255,7 +255,10 @@ namespace PhenoPad
             }
 
         }
-
+        
+        /// <summary>
+        /// Initializes the EHR Text file from a picked .txt file
+        /// </summary>
         public async void InitializeEHRNote(StorageFile file)
         {
             PhenoMana.clearCache();
@@ -289,8 +292,6 @@ namespace PhenoPad
             curPageIndex = 0;
             PageHost.Content = curPage;
             setPageIndexText(0);
-            //addNoteIndex(curPageIndex);
-            //setNotePageIndex(curPageIndex);
             // create file sturcture for this page
             await FileManager.getSharedFileManager().CreateNotePage(notebookObject, curPageIndex.ToString());
 
@@ -298,6 +299,8 @@ namespace PhenoPad
             inkCanvas = curPage.ehrPage.annotations;
             MainPageInkBar.TargetInkCanvas = inkCanvas;
             OperationLogger.getOpLogger().SetCurrentNoteID(notebookId);
+            var addins = await curPage.GetAllAddInObjects();
+            showAddIn(addins);
 
             currentMode = WritingMode;
             modeTextBlock.Text = WritingMode;
@@ -338,9 +341,7 @@ namespace PhenoPad
                 foreach (var page in notePages)
                 {
                     await CoreApplication.MainView.CoreWindow.Dispatcher.RunAsync(
-                        CoreDispatcherPriority.Normal,
-                        async () =>
-                        {
+                        CoreDispatcherPriority.Normal, async () => {
                             flag = await page.SaveToDisk();
                             if (!flag)
                             {
@@ -357,7 +358,6 @@ namespace PhenoPad
 
                 if (! (pgResult && result2))
                     MetroLogger.getSharedLogger().Info($"Some parts of notebook {notebookId} failed to save.");
-
 
             }
             catch (NullReferenceException)

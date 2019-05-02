@@ -174,7 +174,7 @@
                 </AppBarToggleButton>
                 <AppBarToggleButton Style="{StaticResource MyAppBarToggleButtonStyle}" Label="Speech" Name="SpeechButton" Click="SpeechButton_Click">
                     <ToolTipService.ToolTip>
-                        <TextBlock  >Show Past Conversations</TextBlock>
+                        <TextBlock>Show Past Conversations</TextBlock>
                     </ToolTipService.ToolTip>
                     <SymbolIcon Symbol="Clock"/>
                 </AppBarToggleButton>
@@ -197,7 +197,8 @@
                     </ToolTipService.ToolTip>
                 </AppBarButton>
             </CommandBar>
-            
+            <!--<AppBarSeparator/>-->
+
             <StackPanel Orientation="Horizontal" Grid.Column="2">
                 <CommandBar  OverflowButtonVisibility="Collapsed" Background="{StaticResource TITLE_BAR_WHITE}">
 
@@ -691,8 +692,8 @@
                 <ContentControl x:Name="PageHost"  HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch">
                     <ContentControl.ContentTransitions>
                         <TransitionCollection>
-                            <!--<PaneThemeTransition Edge="Bottom"  />-->
-                            <EntranceThemeTransition FromVerticalOffset="1500"  x:Name="PageHostContentTrans"/>
+                            <PaneThemeTransition Edge="Bottom" x:Name="PageHostContentTrans"   />
+                            <!--<EntranceThemeTransition FromVerticalOffset="1500"  x:Name="PageHostContentTrans"/>-->
                         </TransitionCollection>
                     </ContentControl.ContentTransitions>
                 </ContentControl>

@@ -168,6 +168,10 @@ namespace PhenoPad.CustomControl
         Dictionary<string, List<Phenotype>> oldAnnotations = new Dictionary<string, List<Phenotype>>();
         Dictionary<TextBox, List<string>> textBlockToAlternatives = new Dictionary<TextBox, List<string>>();
 
+        //for note-page switching
+        public bool pointer_pressing = false;
+        public double y = -1;
+
 
         //====================================================================================
         //                              END OF CLASS PROPERTIES
@@ -179,19 +183,17 @@ namespace PhenoPad.CustomControl
         /// Initializes a new note page controller instance given notebook id and notepage id.
         /// </summary>
         public NotePageControl(string notebookid,string pageid)
-        {  
+        {
+            InitializeComponent();
+
             rootPage = MainPage.Current;
             windowHeight = rootPage.Height;
 
-            this.InitializeComponent();
-
-            this.Visibility = Visibility.Collapsed;
-
-            this.DrawBackgroundLines();
-
-            this.notebookId = notebookid;
-            this.pageId = pageid;
-            this.ehrPage = null;
+            Visibility = Visibility.Collapsed;
+            DrawBackgroundLines();
+            notebookId = notebookid;
+            pageId = pageid;
+            ehrPage = null;
 
 
             UNPROCESSED_COLOR = new SolidColorBrush(UNPROCESSED_COLOR.Color);
@@ -205,7 +207,6 @@ namespace PhenoPad.CustomControl
             inkCanvas.InkPresenter.StrokeInput.StrokeEnded += StrokeInput_StrokeEnded;
             inkCanvas.InkPresenter.StrokesErased += InkPresenter_StrokesErased;
             inkCanvas.InkPresenter.StrokesCollected += InkPresenter_StrokesCollectedAsync;
-    
             inkCanvas.InkPresenter.InputProcessingConfiguration.RightDragAction = InkInputRightDragAction.LeaveUnprocessed;
             inkCanvas.InkPresenter.UnprocessedInput.PointerPressed += UnprocessedInput_PointerPressed;
             inkCanvas.InkPresenter.UnprocessedInput.PointerMoved += UnprocessedInput_PointerMoved;
@@ -218,7 +219,6 @@ namespace PhenoPad.CustomControl
             //CoreInkIndependentInputSource core = CoreInkIndependentInputSource.Create(inkCanvas.InkPresenter);
             //core.PointerMoving += InkCanvas_PointerMoving;
             
-
             inkAnalyzer = new InkAnalyzer();
             inkOperationAnalyzer = new InkAnalyzer();
             paragraphSelected = null;
@@ -243,7 +243,6 @@ namespace PhenoPad.CustomControl
             unprocessedDispatcherTimer = new DispatcherTimer();
             unprocessedDispatcherTimer.Tick += UnprocessedDispathcerTimer_Tick;
             
-
             // We perform analysis when there has been a change to the
             // ink presenter and the user has been idle for 1 second.
             dispatcherTimer.Interval = TimeSpan.FromSeconds(1);
@@ -299,7 +298,23 @@ namespace PhenoPad.CustomControl
             phrases = new Dictionary<int, NotePhraseControl>();
             lastWordCount = 0;
 
+            //for note-page switching event handlers
+            scrollViewer.PointerPressed += ScrollViewer_PointerPressed;
+            scrollViewer.PointerMoved += ScrollViewer_PointerMoved;
+            scrollViewer.PointerReleased += ScrollViewer_PointerReleased;
+            //outputGrid.ManipulationDelta += aaa;
+            EHRScrollViewer.PointerPressed += EHRScrollViewer_PointerPressed;
+            EHRScrollViewer.PointerMoved += EHRScrollViewer_PointerMoved;
+            EHRScrollViewer.PointerReleased += EHRScrollViewer_PointerReleased;
+
         }
+
+        private void aaa(object sender, ManipulationDeltaRoutedEventArgs e)
+        {
+            Debug.WriteLine("manipulation deltaaaa");
+            scrollViewer.ChangeView(0, e.Position.Y, scrollViewer.ZoomFactor, true);
+        }
+
 
 
 
@@ -367,8 +382,8 @@ namespace PhenoPad.CustomControl
             {
                 ClearSelectionAsync();
                 //Debug.WriteLine("page loaded");
-                EHRScrollViewer.ChangeView(0, 50, 0.645f, true);
-                EHRScrollViewer.Visibility = Visibility.Collapsed;
+                scrollViewer.ChangeView(0, 50, 0.645f, true);
+                scrollViewer.Visibility = Visibility.Collapsed;
                 scrollViewer.Visibility = Visibility.Visible;
             }
             else {
@@ -379,9 +394,15 @@ namespace PhenoPad.CustomControl
             // Draw background lines
             DrawBackgroundLines();
         }
-       
+
+        public void ScrollToTop() {
+            scrollViewer.ChangeView(0, -200, 0.645f, false);
+            EHRScrollViewer.ChangeView(0, -200, 0.645f, false);
+
+        }
+
         // Left button lasso control
-        
+
         public void enableLeftButtonLasso() {
             drawingAttributesBackUp = inkCanvas.InkPresenter.CopyDefaultDrawingAttributes();
             var temp = inkCanvas.InkPresenter.CopyDefaultDrawingAttributes();
@@ -415,6 +436,7 @@ namespace PhenoPad.CustomControl
             inkCanvas.InkPresenter.UnprocessedInput.PointerMoved += UnprocessedInput_PointerMoved;
             inkCanvas.InkPresenter.UnprocessedInput.PointerReleased += UnprocessedInput_PointerReleased;
         }
+
         private async void DrawCanvas_PointerExitingAsync(CoreInkIndependentInputSource sender, PointerEventArgs args)
         {
             await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () =>
@@ -448,7 +470,6 @@ namespace PhenoPad.CustomControl
             Canvas.SetLeft(panel, Canvas.GetLeft(panel) + e.Delta.Translation.X);
             Canvas.SetTop(panel, Canvas.GetTop(panel) + e.Delta.Translation.Y);
         }
-
 
         #endregion
 
@@ -540,6 +561,7 @@ namespace PhenoPad.CustomControl
             });
             **/
         }     
+
         private async void Core_PointerHovering(CoreInkIndependentInputSource sender, PointerEventArgs args)
         {
             await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () =>
@@ -565,27 +587,31 @@ namespace PhenoPad.CustomControl
         // ==================================== Handwriting mode ===================================================/
 
 
-        // stroke input handling: mouse pointer pressed
         private void StrokeInput_PointerPressed(InkStrokeInput sender, PointerEventArgs args)
         {
+            // stroke input handling: mouse pointer pressed
+
             UnprocessedInput_PointerPressed(null, args);
             //autosaveDispatcherTimer.Stop();
         }
-        // stroke input handling: mouse pointer moved
         private void StrokeInput_PointerMoved(InkStrokeInput sender, PointerEventArgs args)
         {
+            // stroke input handling: mouse pointer moved
+
             UnprocessedInput_PointerMoved(null, args);
         }
-        // stroke input handling: mouse pointer released
         private void StrokeInput_PointerReleased(InkStrokeInput sender, PointerEventArgs args)
         {
+            // stroke input handling: mouse pointer released
+
             UnprocessedInput_PointerReleased(null, args);
             //autosaveDispatcherTimer.Start();
         }
 
-        // select strokes by "marking" handling: pointer pressed
         private void UnprocessedInput_PointerPressed(InkUnprocessedInput sender, PointerEventArgs args)
         {
+            // select strokes by "marking" handling: pointer pressed
+
             ClearSelectionAsync();
             lasso = new Polyline()
             {
@@ -599,18 +625,21 @@ namespace PhenoPad.CustomControl
             isBoundRect = true;
             unprocessedDispatcherTimer.Start();
         }
-        // select strokes by "marking" handling: pointer moved
         private void UnprocessedInput_PointerMoved(InkUnprocessedInput sender, PointerEventArgs args)
         {
+            // select strokes by "marking" handling: pointer moved
+
             if (isBoundRect)
             {
                 lasso.Points.Add(args.CurrentPoint.RawPosition);
             }
             Debug.WriteLine(args.CurrentPoint.Position);
         }
-        // select strokes by "marking" handling: pointer released
+
         private void UnprocessedInput_PointerReleased(InkUnprocessedInput sender, PointerEventArgs args)
         {
+            // select strokes by "marking" handling: pointer released
+
             unprocessedDispatcherTimer.Stop();
             lasso.Points.Add(args.CurrentPoint.RawPosition);
             //lasso.Points.Add(lasso.Points.ElementAt(0));
@@ -730,10 +759,11 @@ namespace PhenoPad.CustomControl
 
         #endregion
 
-        /// <summary>
-        /// Returns the current note page's zoomed width in relation to control window frame
-        /// </summary>
         public double getPageWindowRatio() {
+            /// <summary>
+            /// Returns the current note page's zoomed width in relation to control window frame
+            /// </summary>
+
             if (ehrPage != null) 
                 return (ehrPage.ActualWidth * EHRScrollViewer.ZoomFactor) / ehrPage.ActualWidth;
             else
@@ -1160,17 +1190,9 @@ namespace PhenoPad.CustomControl
             await photo.DeleteAsync();
     **/
         }
-
-
-
-
-        
-
-
-
+      
 
         #endregion
-
 
         #region Timer Event Handlers
         //==============================TIMER EVENT HANDLERS ========================================//
@@ -1658,7 +1680,6 @@ namespace PhenoPad.CustomControl
             var recogPhenoFlyout = (Flyout)this.Resources["PhenotypeSelectionFlyout"];
             recogPhenoFlyout.ShowAt(rectangle);
         }
-
         
         private TextBox AddBoundingRectAndLabel(int line, Rect bounding, string str, List<string> alters) {
             /**
@@ -1976,9 +1997,58 @@ namespace PhenoPad.CustomControl
 
         }
 
-        //triggered when user zooms in/out of the scroll view panel
+
+        #region Note Page Switching
+
+        private void ScrollViewer_PointerReleased(object sender, PointerRoutedEventArgs e)
+        {
+            if (pointer_pressing)
+            {
+                pointer_pressing = false;
+            }
+
+        }
+
+        private void ScrollViewer_PointerMoved(object sender, PointerRoutedEventArgs e)
+        {
+            if (pointer_pressing && y != -1)
+            {
+                double offset = Math.Abs(e.GetCurrentPoint(scrollViewer).Position.Y - y);
+                Debug.WriteLine($"offset = {offset}");
+
+                bool at_end = (scrollViewer.VerticalOffset + scrollViewer.ViewportHeight >= scrollViewer.ExtentHeight - 1) &&
+                    (scrollViewer.VerticalOffset + scrollViewer.ViewportHeight <= scrollViewer.ExtentHeight + 1);
+                bool at_start = scrollViewer.VerticalOffset == 0;
+
+                //only triggers the handlers if the swipe offset is within valid range
+                //setting an upper bound to avoid accidents
+                if (offset >= 6 && offset <= 50)
+                {
+                    string state = "";
+                    if (at_end)
+                        state = "next";
+                    else if (at_start)
+                        state = "previous";
+                    MainPage.Current.AddNewNotePage(state);
+                    pointer_pressing = false;
+                    y = -1;
+                }
+            }
+        }
+
+        private void ScrollViewer_PointerPressed(object sender, PointerRoutedEventArgs e)
+        {
+            if (e.Pointer.PointerDeviceType != Windows.Devices.Input.PointerDeviceType.Pen)
+            {
+                pointer_pressing = true;
+                y = e.GetCurrentPoint(scrollViewer).Position.Y;
+            }
+        }
+
         private void ScrollView_ViewChanged(object sender, ScrollViewerViewChangedEventArgs e)
         {
+            //triggered when user zooms in/out of the scroll view panel
+
             if (sender == sideScrollView)
             {
                 //scrollViewer.ScrollToVerticalOffset(sideScrollView.VerticalOffset);
@@ -1990,6 +2060,55 @@ namespace PhenoPad.CustomControl
                 sideScrollView.ChangeView(null, scrollViewer.VerticalOffset, scrollViewer.ZoomFactor, true);
             }
         }
+
+        private void EHRScrollViewer_PointerReleased(object sender, PointerRoutedEventArgs e)
+        {
+            if (pointer_pressing)
+            {
+                pointer_pressing = false;
+            }
+
+        }
+
+        private void EHRScrollViewer_PointerMoved(object sender, PointerRoutedEventArgs e)
+        {
+            if (pointer_pressing && y != -1)
+            {
+                double offset = Math.Abs(e.GetCurrentPoint(EHRScrollViewer).Position.Y - y);
+                Debug.WriteLine($"offset = {offset}");
+
+                bool at_end = (EHRScrollViewer.VerticalOffset + EHRScrollViewer.ViewportHeight >= EHRScrollViewer.ExtentHeight - 1) &&
+                    (EHRScrollViewer.VerticalOffset + EHRScrollViewer.ViewportHeight <= EHRScrollViewer.ExtentHeight + 1);
+                bool at_start = EHRScrollViewer.VerticalOffset == 0;
+
+                //only triggers the handlers if the swipe offset is within valid range
+                //setting an upper bound to avoid accidents
+                if (offset >= 6 && offset <= 50)
+                {
+
+                    string state = "";
+                    if (at_end)
+                        state = "next";
+                    else if (at_start)
+                        state = "previous";
+                    MainPage.Current.AddNewNotePage(state);
+                    pointer_pressing = false;
+                    y = -1;
+                }
+            }
+        }
+
+        private void EHRScrollViewer_PointerPressed(object sender, PointerRoutedEventArgs e)
+        {
+            if (e.Pointer.PointerDeviceType != Windows.Devices.Input.PointerDeviceType.Pen)
+            {
+                pointer_pressing = true;
+                y = e.GetCurrentPoint(EHRScrollViewer).Position.Y;
+            }
+        }
+
+        #endregion
+
 
     }
 

@@ -52,8 +52,6 @@ namespace PhenoPad
             //hide_titlebar();
 
             // https://stackoverflow.com/questions/43699256/how-to-use-acrylic-accent-in-windows-10-creators-update/43711413#43711413
-
-
         }
 
         private void hide_titlebar() {
@@ -178,7 +176,6 @@ namespace PhenoPad
             messageDialog.CancelCommandIndex = 0;
             // Show the message dialog
             var result = await messageDialog.ShowAsync();
-
 
             //var notebookId = (sender as Button).Tag;
             //LogService.MetroLogger.getSharedLogger().Info($"Viewing notebook ID { notebookId }");
