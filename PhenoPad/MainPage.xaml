@@ -1,16 +1,4 @@
-﻿<!--
-//*********************************************************
-//
-// Copyright (c) Microsoft. All rights reserved.
-// This code is licensed under the MIT License (MIT).
-// THIS CODE IS PROVIDED *AS IS* WITHOUT WARRANTY OF
-// ANY KIND, EITHER EXPRESS OR IMPLIED, INCLUDING ANY
-// IMPLIED WARRANTIES OF FITNESS FOR A PARTICULAR this.Frame.Navigate(typeof(MainPage));
-// PURPOSE, MERCHANTABILITY, OR NON-INFRINGEMENT.
-//
-//*********************************************************
--->
-<Page
+﻿<Page
     x:Class="PhenoPad.MainPage"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
@@ -26,17 +14,63 @@
     NavigationCacheMode="Required">
 
     <Page.Resources>
+
+        <Flyout x:Name="AllPagesPanel" Placement="Left"
+                ScrollViewer.HorizontalScrollMode="Disabled" 
+                ScrollViewer.VerticalScrollMode="Disabled">
+
+            <GridView Name="NoteGridView" Padding="10" Grid.Column="0"
+                          ItemClick="AllPageItem_Click"
+                          IsItemClickEnabled="True"
+                          HorizontalAlignment="Center">
+
+                    <GridView.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <ItemsWrapGrid Orientation="Vertical" />
+                        </ItemsPanelTemplate>
+                    </GridView.ItemsPanel>
+
+                    <GridView.ItemTemplate>
+                        <DataTemplate x:DataType="fileservice:NotePage">
+                                <Grid Padding="5" Margin="5" CornerRadius="10"
+                                      BorderThickness="1" Width="150" Height="200" Background="White"
+                                      BorderBrush="LightGray">
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="*"></RowDefinition>
+
+                                        <RowDefinition Height="8*"></RowDefinition>
+                                    </Grid.RowDefinitions>
+                                    <Border Grid.Row="0" >
+                                        <TextBlock Text="{x:Bind name}" FontSize="16" Foreground="{StaticResource WORD_DARK}"/>
+                                    </Border>
+                                    <Border  Grid.Row="1">
+                                        <BitmapIcon UriSource="{x:Bind strokeUri}"/>
+                                    </Border>
+                                    <Border  Grid.Row="1">
+                                        <TextBlock Padding="10" TextWrapping="WrapWholeWords" FontSize="3" Text="{x:Bind EHR}"/>
+                                    </Border>
+                                </Grid>
+                        </DataTemplate>
+                    </GridView.ItemTemplate>
+                </GridView>
+            <!--</Grid>-->
+        </Flyout>
+
+
         <!-- Don't need to convert toggle status
         <local:ToggleValueConverter x:Key="toggleValueConverter" />
         -->
         <local:BackgroundColorConverter x:Key="bcConverter" />
         <local:IntervalDisplayConverter x:Key="intervalConverter" />
+        
         <Storyboard x:Name="StatusBorderEnterStoryboard">
             <FadeInThemeAnimation Duration="0:0:0.6" Storyboard.TargetName="StatusBorder" />
         </Storyboard>
+        
         <Storyboard x:Name="StatusBorderExitStoryboard">
             <FadeOutThemeAnimation Duration="0:0:0.6" Storyboard.TargetName="StatusBorder" />
         </Storyboard>
+        
         <Storyboard x:Name="addinHideAnimation">
             <DoubleAnimation Storyboard.TargetName="slide" 
                                  Storyboard.TargetProperty="X"
@@ -62,7 +96,6 @@
                     <CircleEase EasingMode="EaseOut" />
                 </DoubleAnimation.EasingFunction>
             </DoubleAnimation>
-
             <DoubleAnimation Storyboard.TargetName="PageButtonslide" 
                                  Storyboard.TargetProperty="X"
                                  By="250"  
@@ -71,7 +104,6 @@
                     <CircleEase EasingMode="EaseOut" />
                 </DoubleAnimation.EasingFunction>
             </DoubleAnimation>
-
         </Storyboard>
 
         <Storyboard x:Name="addinShowAnimation" x:FieldModifier="public">
@@ -99,7 +131,6 @@
                     <CircleEase EasingMode="EaseIn" />
                 </DoubleAnimation.EasingFunction>
             </DoubleAnimation>
-
             <DoubleAnimation Storyboard.TargetName="PageButtonslide" x:FieldModifier="public"
                                  Storyboard.TargetProperty="X"
                                  By="-250"  
@@ -108,7 +139,6 @@
                     <CircleEase EasingMode="EaseIn" />
                 </DoubleAnimation.EasingFunction>
             </DoubleAnimation>
-
         </Storyboard>
 
 
@@ -144,19 +174,8 @@
                          VerticalAlignment="Center"/>
             </StackPanel>
 
-            <CommandBar Grid.Column="1" HorizontalAlignment="Right" Margin="0 0 30 0"  Name="topCmdBar" OverflowButtonVisibility="Collapsed" Background="{StaticResource TITLE_BAR_WHITE}">
-                <AppBarButton ToolTipService.ToolTip="Dev Functions" HorizontalContentAlignment="Center" Icon="Setting" Click="AppBarButton_Click_1">
-                    <AppBarButton.Flyout>
-                        <MenuFlyout>
-                            <!--<MenuFlyoutItem Text="Open file folder" Click="OpenFileFolder_Click"/>
-                            <MenuFlyoutItem Text="Create new note" Tag="rating"/>
-                            <MenuFlyoutItem Text="Save note" Tag="Save note to disk." Click="SaveNote_Click"/>
-                            <MenuFlyoutItem Text="Save image" Tag="Save note to image." Click="SaveNoteToImage_Click"/>
-                            <MenuFlyoutItem Text="Open saved note" Tag="Open a saved note." Click="LoadNote_Click"/>-->
-                            <MenuFlyoutItem Text="Settings" HorizontalAlignment="Center" Tag="Change configurations" Click="Settings_Click"/>
-                        </MenuFlyout>
-                    </AppBarButton.Flyout>
-                </AppBarButton>
+            <CommandBar Grid.Column="1" HorizontalAlignment="Right" Margin="0 0 0 0"  Name="topCmdBar" OverflowButtonVisibility="Collapsed" 
+                        Background="{StaticResource TITLE_BAR_WHITE}">
                 
                 <!--<AppBarToggleButton Style="{StaticResource MyAppBarToggleButtonStyle}" IsChecked="True" Label="Notes" Name="NotesButton" Click="NotesButton_Click">
                     <ToolTipService.ToolTip>
@@ -165,27 +184,60 @@
 
                     <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xF0E3;"/>
                 </AppBarToggleButton>-->
-                
+
                 <AppBarToggleButton Icon="PreviewLink" Style="{StaticResource MyAppBarToggleButtonStyle}" Label="Overview" 
-                                    Name="OverviewButton" Click="OverviewButton_Click">
-                    <ToolTipService.ToolTip>
-                        <TextBlock >Show overview panel</TextBlock>
-                    </ToolTipService.ToolTip>
-                </AppBarToggleButton>
-                <AppBarToggleButton Style="{StaticResource MyAppBarToggleButtonStyle}" Label="Speech" Name="SpeechButton" Click="SpeechButton_Click">
-                    <ToolTipService.ToolTip>
-                        <TextBlock>Show Past Conversations</TextBlock>
-                    </ToolTipService.ToolTip>
-                    <SymbolIcon Symbol="Clock"/>
-                </AppBarToggleButton>
+                                    Name="OverviewButton" Click="OverviewButton_Click" Width="160" 
+                                    ToolTipService.ToolTip="Show Overview"/>
+
+
+                <AppBarToggleButton Icon="Clock" Style="{StaticResource MyAppBarToggleButtonStyle}" Label="Speech" 
+                                    Name="SpeechButton" Click="SpeechButton_Click" Width="160"
+                                    ToolTipService.ToolTip="Show Chat Record"/>
+
+                <AppBarButton ToolTipService.ToolTip="Dev Functions" 
+                              HorizontalContentAlignment="Center" Icon="Setting" Click="AppBarButton_Click_1">
+                    <AppBarButton.Flyout>
+                        <MenuFlyout Placement="Bottom">
+                            <MenuFlyoutItem Text="Save" 
+                                            HorizontalAlignment="Stretch"
+                                            Tag="Save Note" Click="SaveButton_Click">
+                                <MenuFlyoutItem.Icon>
+                                    <SymbolIcon Symbol="Save"/>
+                                </MenuFlyoutItem.Icon>
+                            </MenuFlyoutItem>
+                            <MenuFlyoutItem Text="Print" 
+                                            HorizontalAlignment="Stretch"
+                                            Tag="Print Note" Click="PrintButton_Click">
+                                <MenuFlyoutItem.Icon>
+                                    <SymbolIcon Symbol="Print"/>
+                                </MenuFlyoutItem.Icon>
+                            </MenuFlyoutItem>
+                            <MenuFlyoutItem Text="Full Screen" 
+                                            HorizontalAlignment="Stretch"
+                                            x:Name="FullscreenBtn"
+                                            Tag="Full Screen" Click="FullscreenButton_Click">
+                                <MenuFlyoutItem.Icon>
+                                    <SymbolIcon Symbol="FullScreen"/>
+                                </MenuFlyoutItem.Icon>
+                            </MenuFlyoutItem>
+                            <MenuFlyoutItem Text="Settings" 
+                                            HorizontalAlignment="Stretch"
+                                            Tag="Change configurations" Click="Settings_Click">
+                                <MenuFlyoutItem.Icon>
+                                    <SymbolIcon Symbol="Setting"/>
+                                </MenuFlyoutItem.Icon>
+                            </MenuFlyoutItem>
+                        </MenuFlyout>
+                    </AppBarButton.Flyout>
+                </AppBarButton>
+
                 <AppBarSeparator/>
 
-                <AppBarButton  Name="SaveButton" Icon="Save" Label="Save notes" Click="SaveButton_Click">
+                <!--<AppBarButton  Name="SaveButton" Icon="Save" Label="Save notes" Click="SaveButton_Click">
                     <ToolTipService.ToolTip>
                         <TextBlock Text="Save notes."/>
                     </ToolTipService.ToolTip>
                 </AppBarButton>
-                
                 <AppBarButton  Name="PrintBtn" Icon="Print" Label="Print note." Click="PrintButton_Click">
                     <ToolTipService.ToolTip>
                         <TextBlock Text="Print current page."/>
@@ -195,9 +247,8 @@
                     <ToolTipService.ToolTip>
                         <TextBlock Text="Enter full screen mode."/>
                     </ToolTipService.ToolTip>
-                </AppBarButton>
+                </AppBarButton>-->
             </CommandBar>
-            <!--<AppBarSeparator/>-->
 
             <StackPanel Orientation="Horizontal" Grid.Column="2">
                 <CommandBar  OverflowButtonVisibility="Collapsed" Background="{StaticResource TITLE_BAR_WHITE}">
@@ -708,7 +759,7 @@
                                FontWeight="ExtraBold" Foreground="Black" Opacity="0.2" /> 
                     
                     <!--PAGE INDEX PANEL-->
-                    <StackPanel Spacing="2" Background="Transparent" Name="pageIndexPanel"  Margin="0 10 0 10" 
+                    <StackPanel Spacing="0" Background="Transparent" Name="pageIndexPanel"  Margin="0 10 0 10" 
                                 Orientation="Vertical"  
                                 RelativePanel.AlignRightWith="addinBase"
                                 RelativePanel.AlignBottomWithPanel="True"
@@ -718,36 +769,44 @@
                         <StackPanel.RenderTransform>
                             <TranslateTransform x:FieldModifier="public" x:Name="PageButtonslide" X="0"/>
                         </StackPanel.RenderTransform>
-                        
-                        <Button Height="30" Width="30" Style="{StaticResource MyButtonStyle}" Visibility="Visible"
-                                Padding="0 0 0 0" Background="{StaticResource TITLE_BAR_WHITE}"  Click="PreviousPageButton_Click">
-                            <SymbolIcon Symbol="Previous" Foreground="Black" >
-                                <SymbolIcon.RenderTransform>
-                                    <RotateTransform Angle="90" CenterX="10" CenterY="10" />
-                                </SymbolIcon.RenderTransform>
-                            </SymbolIcon>
-                        </Button>
 
-                        <Grid Height="30" Width="30" Background="WhiteSmoke" Visibility="Visible">
-                            <TextBlock x:Name="curPageIndexBlock" Text="1"  
-                                       VerticalAlignment="Center" HorizontalAlignment="Center" FontSize="18"/>
+                        <Grid CornerRadius="10 0 0 0">
+                            <Button Height="35" Width="35" Style="{StaticResource MyButtonStyle}" Visibility="Visible"
+                                    Padding="0 0 0 0" Background="{StaticResource TITLE_BAR_WHITE}"  Click="PreviousPageButton_Click">
+                                <SymbolIcon Symbol="Play" Foreground="Black" >
+                                    <SymbolIcon.RenderTransform>
+                                        <RotateTransform Angle="-90" CenterX="10" CenterY="10" />
+                                    </SymbolIcon.RenderTransform>
+                                </SymbolIcon>
+                            </Button>
                         </Grid>
 
-                        <Button Height="30" Width="30" Style="{StaticResource MyButtonStyle}" Visibility="Visible"
+                        <Grid>
+                            <Button x:Name="curPageIndexBlock" Height="35" Width="35" Style="{StaticResource MyButtonStyle}"
+                                    Click="ShowAllPagePanel"
+                                    Background="{StaticResource TITLE_BAR_WHITE}"
+                                       VerticalAlignment="Center" HorizontalAlignment="Center" FontSize="18"/>
+                        </Grid>
+                        
+                        <Grid CornerRadius="0 0 0 10">
+                            <Button Height="35" Width="35" Style="{StaticResource MyButtonStyle}" Visibility="Visible"
                                 Padding="0 0 0 0" Background="{StaticResource TITLE_BAR_WHITE}"  Click="NextPageButton_Click">
-                            <SymbolIcon Symbol="Next" Foreground="Black" >
-                                <SymbolIcon.RenderTransform>
-                                    <RotateTransform Angle="90" CenterX="10" CenterY="10" />
-                                </SymbolIcon.RenderTransform>
-                            </SymbolIcon>
-                        </Button>
+                                <SymbolIcon Symbol="Play" Foreground="Black" >
+                                    <SymbolIcon.RenderTransform>
+                                        <RotateTransform Angle="90" CenterX="10" CenterY="10" />
+                                    </SymbolIcon.RenderTransform>
+                                </SymbolIcon>
+                            </Button>
+                        </Grid>
+                        
+                        <Grid CornerRadius="10 0 0 10" Margin="0 15 0 0">
 
-                        <Button Height="30" Width="30" 
-                                Padding="0 0 0 0" Background="WhiteSmoke"  Click="AddPageButton_Click">
-                            <SymbolIcon Symbol="Add" Foreground="{StaticResource Button_Background}" />
-                        </Button>
+                            <Button Height="35" Width="35" Style="{StaticResource MyButtonStyle}"
+                                Padding="0 0 0 0" Background="{StaticResource TITLE_BAR_WHITE}"  Click="AddPageButton_Click">
+                                <SymbolIcon Symbol="Add"  />
+                            </Button>
 
-
+                        </Grid>
 
                     </StackPanel>
                     

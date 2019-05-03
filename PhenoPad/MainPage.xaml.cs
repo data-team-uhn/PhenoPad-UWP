@@ -5,49 +5,28 @@ using Windows.UI.Input.Inking;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
 using Windows.UI.Xaml.Media;
-using Windows.UI.Xaml.Shapes;
 using PhenoPad.PhenotypeService;
 using Windows.UI.Xaml.Input;
 using System.Collections.Generic;
 using Windows.UI.Popups;
-using System.Collections.ObjectModel;
 using System.Threading.Tasks;
 using Windows.Foundation.Metadata;
 using Windows.UI.ViewManagement;
-using Windows.UI.Input.Inking.Analysis;
 using Windows.UI.Xaml.Navigation;
-using Windows.Media.SpeechRecognition;
 using System.Text;
-using Windows.Globalization;
 using PhenoPad.SpeechService;
 using Windows.Devices.Sensors;
 using Windows.UI;
 using System.Diagnostics;
 using PhenoPad.CustomControl;
 using Windows.Graphics.Display;
-using System.Reflection;
 using System.Linq;
-using Windows.UI.Xaml.Media.Animation;
-using Windows.Storage.Pickers;
-using Windows.Storage.Streams;
 using PhenoPad.WebSocketService;
 using Windows.ApplicationModel.Core;
-using PhenoPad.Styles;
-using Windows.Graphics.Imaging;
-using Windows.UI.Xaml.Media.Imaging;
-using Microsoft.Graphics.Canvas;
 using PhenoPad.FileService;
-using Windows.UI.Xaml.Data;
 using System.ComponentModel;
 using System.Threading;
-
-using PhenoPad.BluetoothService;
-using Windows.System.Threading;
-using System.IO;
 using Windows.Storage;
-using Windows.Media.Editing;
-using System.Runtime.InteropServices.WindowsRuntime;
-using MetroLog;
 using Microsoft.Toolkit.Uwp.UI.Animations;
 using PhenoPad.LogService;
 
@@ -100,7 +79,7 @@ namespace PhenoPad
         private bool ifViewMode = false;
         public CancellationTokenSource cancelService;
 
-        private int num = 0;
+        //private int num = 0;
         public bool abbreviation_enabled;
 
         private SemaphoreSlim notifySemaphoreSlim = new SemaphoreSlim(1);
@@ -772,9 +751,56 @@ namespace PhenoPad
             /// Sets the ink bar controller to the current ink canvas.
             /// </summary>
             MainPageInkBar.TargetInkCanvas = inkCanvas;
-            curPageIndexBlock.Text = $"{index + 1}";
+            curPageIndexBlock.Content = $"{index + 1}";
         }
 
+        public async void ShowAllPagePanel(object sender, RoutedEventArgs args) {
+
+            NoteGridView.ItemsSource = new List<NotePage>();
+            var curNotebook = MainPage.Current.notebookObject;
+            List<NotePage> pages = await FileManager.getSharedFileManager().GetAllNotePageObjects(curNotebook.id);
+
+            if (pages != null)
+            {
+                NoteGridView.ItemsSource = pages;
+            }
+            else
+                Debug.WriteLine("oops pages are null");
+
+            AllPagesPanel.ShowAt((Button)sender);
+        }
+
+        public async void AllPageItem_Click(object sender, ItemClickEventArgs args) {
+
+            int index;
+            Int32.TryParse((((NotePage)args.ClickedItem).id),out index);
+
+            if (index > curPageIndex)
+                PageHostContentTrans.Edge = Windows.UI.Xaml.Controls.Primitives.EdgeTransitionLocation.Bottom;
+            else
+                PageHostContentTrans.Edge = Windows.UI.Xaml.Controls.Primitives.EdgeTransitionLocation.Top;
+
+            if (index >= 0 && index < notePages.Count && index != curPageIndex)
+            {
+                curPage.Visibility = Visibility.Collapsed;
+                curPageIndex = index;
+                var aPage = notePages.ElementAt(curPageIndex);
+                inkCanvas = aPage.inkCan;
+                curPage = aPage;
+                PageHost.Content = curPage;
+                setPageIndexText(curPageIndex);
+                int count = PhenoMana.ShowPhenoCandAtPage(curPageIndex);
+                if (count <= 0)
+                    CloseCandidate();
+                else
+                    OpenCandidate();
+                curPage.Visibility = Visibility.Visible;
+                var addins = await curPage.GetAllAddInObjects();
+                showAddIn(addins);
+                //curPage.ScrollToTop();
+                return;
+            }
+        }
 
         /// <summary>
         /// Sets the display color of all note page buttons
