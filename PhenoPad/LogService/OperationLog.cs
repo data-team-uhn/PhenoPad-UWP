@@ -115,12 +115,12 @@ namespace PhenoPad.LogService
                     log = $"{GetTimeStamp()}|Abbreviation| {args[0]} | {args[1]}, {args[2]} | {args[3]} | {args[4]} | {args[5]}";
                     break;
                 case OperationType.Alternative:
-                    //args format= (args0:original text, args1:selected text, args2:candidate rank )
+                    //args format= (args0:original text, args1:selected/user input text, args2:candidate rank(-1 if user inputs) )
                     Debug.Assert(args.Count() == 3);
                     log = $"{GetTimeStamp()}|Alternative| {args[0]} | {args[1]} | {args[2]}";
                     break;
             }
-            //only adds the log if it's got different content from the previous log
+            //only adds the log if it's got different content from the previous log 
             if (!CheckIfSameLog(log)) {
                 CacheLogs.Add(log);
                 lastHWRLog = log;
@@ -307,7 +307,7 @@ namespace PhenoPad.LogService
             this.notebookID = notebookID;
             this.pageID = pageID;
             this.type = type;
-            this.strokeID = new List<uint>();
+            strokeID = new List<uint>();
             timestamp = time;
             context = null;
             source = null;

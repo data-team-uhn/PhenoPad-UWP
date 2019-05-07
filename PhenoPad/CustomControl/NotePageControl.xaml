@@ -143,13 +143,10 @@
                           ViewChanged="ScrollView_ViewChanged" 
                           VerticalScrollBarVisibility="Hidden" >
                 <Grid Padding="0 100 0 0">
-                <Canvas  Height="{x:Bind PAGE_HEIGHT}" Width="{x:Bind PAGE_WIDTH}" Name="sideCanvas">
-
-                
-                </Canvas>
+                    <Canvas  Height="{x:Bind PAGE_HEIGHT}" Width="{x:Bind PAGE_WIDTH}" Name="sideCanvas"/>
                 </Grid>
             </ScrollViewer>
-        <!--scroll viewer for note mode-->
+            <!--scroll viewer for note mode-->
             <ScrollViewer Grid.Column="1"  x:Name="scrollViewer" 
                 RelativePanel.AlignLeftWithPanel="True"               
                 ZoomMode="Enabled" 
@@ -159,13 +156,13 @@
                 HorizontalScrollMode="Enabled" 
                 HorizontalScrollBarVisibility="Auto"
                 ViewChanged="ScrollView_ViewChanged">
-                
+
                 <!--Note page grid-->
                 <Grid x:Name="outputGrid" Margin="0 30 0 30" Padding="0 100 0 0" 
                       Background="{ThemeResource SystemControlBackgroundChromeWhiteBrush}" 
                       Height="{x:Bind PAGE_HEIGHT}" Width="{x:Bind PAGE_WIDTH}">
-                    <!-- Inking area -->
 
+                    <!-- Inking area -->
                     <Canvas x:Name="backgroundCanvas" />
 
                     <!-- Note taking ink canvas -->
@@ -182,8 +179,8 @@
                         <RichEditBox Style="{StaticResource MyRichEditBoxStyle}" Background="Transparent" 
                                      x:Name="textNoteEditBox" TextChanged="TextNoteEdit_TextChanged" 
                                      IsEnabled="False"
-                                     BorderThickness="0">
-                        </RichEditBox>
+                                     BorderThickness="0"/>
+
                     </Grid>
 
 
@@ -193,18 +190,16 @@
                     <!-- pop up after selection-->
                     <Canvas x:Name="selectionCanvas">
                         <RelativePanel x:Name="PopupCommandBar" MinWidth="60" Height="30"  Visibility="Collapsed">
-                            <Button Foreground="PaleVioletRed" Click="PopupDeleteButton_Click" Background="WhiteSmoke" Padding="0" RelativePanel.AlignLeftWithPanel="True">
+                            <Button Foreground="PaleVioletRed" Click="PopupDeleteButton_Click" Background="WhiteSmoke" 
+                                    Padding="0" RelativePanel.AlignLeftWithPanel="True">
                                 <SymbolIcon Symbol="Delete" Height="30" Width="30"/>
                             </Button>
-                            <!--
-                            <Button Background="WhiteSmoke" Padding="0" RelativePanel.AlignRightWithPanel="True"  Click="MoreSymbolIcon_Click">
-                                <SymbolIcon Symbol="More" Height="30" Width="30"></SymbolIcon>
-                            </Button>
-                            -->
                         </RelativePanel>
-                        
-                        <RelativePanel x:Name="recognizedPhenoBriefPanel" Height="200" Visibility="Collapsed"  Background="WhiteSmoke" BorderThickness="1" BorderBrush="Gray">
-                            <ListView x:Name="recognizedPhenoBriefListView" Height="200" HorizontalAlignment="Stretch" Visibility="Collapsed">
+
+                        <RelativePanel x:Name="recognizedPhenoBriefPanel" Height="200" Visibility="Collapsed"  
+                                       Background="WhiteSmoke" BorderThickness="1" BorderBrush="Gray">
+                            <ListView x:Name="recognizedPhenoBriefListView" Height="200" HorizontalAlignment="Stretch" 
+                                      Visibility="Collapsed">
                                 <ListView.ItemTemplate>
                                     <DataTemplate x:DataType="phenotypeservice:Phenotype">
                                         <local:PhenotypeControl Padding="0" phenotypeName="{x:Bind name}" phenotypeId="{x:Bind hpId}" phenotypeState="{x:Bind state}" sourceType="Notes"></local:PhenotypeControl>
@@ -220,20 +215,21 @@
                                     </Style>
                                 </ListView.ItemContainerStyle>
                             </ListView>
-                            <ProgressRing x:Name="breifPhenoProgressBar" Height="100" Width="200"  IsActive="True" RelativePanel.AlignHorizontalCenterWithPanel="True" RelativePanel.AlignVerticalCenterWithPanel="True"></ProgressRing>
+
+                            <ProgressRing x:Name="breifPhenoProgressBar" Height="100" Width="200"  
+                                          IsActive="True" RelativePanel.AlignHorizontalCenterWithPanel="True" 
+                                          RelativePanel.AlignVerticalCenterWithPanel="True"/>
                         </RelativePanel>
 
-                        <Rectangle StrokeDashArray="2 2"  Name="selectionRectangle" Stroke="DarkBlue" StrokeThickness="2"></Rectangle>
+                        <Rectangle StrokeDashArray="2 2"  Name="selectionRectangle" Stroke="DarkBlue" StrokeThickness="2"/>
                     </Canvas>
 
                     <!-- Add in control panel -->
                     <Canvas x:Name="userControlCanvas" x:FieldModifier="public"/>
 
                     <!-- Current line result -->
-                    <Canvas >
+                    <Canvas>
                         <Grid Name="curLineResultPanel" Visibility="Collapsed" HorizontalAlignment="Right">
-
-
                             <Grid x:Name="curWordPhenoControlGrid" Height="40" HorizontalAlignment="Left" 
                                   Background="WhiteSmoke"  Padding="5" BorderBrush="LightGray" BorderThickness="0" 
                                   CornerRadius="10">
@@ -331,7 +327,7 @@
                                     </ListView.ItemsPanel>
                                     <ListView.ItemTemplate>
                                         <DataTemplate >
-                                            <TextBlock Text="{Binding}" VerticalAlignment="Center"></TextBlock>
+                                            <TextBlock Text="{Binding}" VerticalAlignment="Center"/>
                                         </DataTemplate>
                                     </ListView.ItemTemplate>
                                     <ListView.ItemContainerStyle>
@@ -357,28 +353,21 @@
 
                 </Grid>
             </ScrollViewer>
-        <!--scroll viewer for EHR Text mode-->
+            <!--scroll viewer for EHR Text mode-->
             <ScrollViewer Grid.Column="1" x:Name="EHRScrollViewer" x:FieldModifier="public" Visibility="Collapsed"
                         ZoomMode="Enabled" 
                         MinZoomFactor="0.3"    
                         MaxZoomFactor="2"
-                        ManipulationMode="TranslateY,TranslateInertia,System" 
-
                         VerticalScrollMode="Enabled" 
                         VerticalScrollBarVisibility="Hidden" 
                         HorizontalScrollMode="Enabled" 
                         HorizontalScrollBarVisibility="Hidden"
                         >
-        <!--for EHR side addin controls-->
+                <!--for EHR side addin controls-->
                 <Grid x:Name="EHROutputGrid">
                     <Canvas x:Name="addinCanvasEHR" x:FieldModifier="public" Canvas.ZIndex="100" />
                 </Grid>
             </ScrollViewer>
-
-
-
         </Grid>
-        
-
     </Grid>
 </UserControl>

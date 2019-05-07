@@ -15,18 +15,18 @@
 
     <Page.Resources>
 
-        <Flyout x:Name="AllPagesPanel" Placement="Left"
+        <Flyout x:Name="AllPagesPanel" Placement="Left" 
                 ScrollViewer.HorizontalScrollMode="Disabled" 
                 ScrollViewer.VerticalScrollMode="Disabled">
 
-            <GridView Name="NoteGridView" Padding="10" Grid.Column="0"
+            <GridView Name="NoteGridView" Padding="10" VariableSizedWrapGrid.ColumnSpan="1" MaxWidth="500"
                           ItemClick="AllPageItem_Click"
                           IsItemClickEnabled="True"
                           HorizontalAlignment="Center">
 
                     <GridView.ItemsPanel>
                     <ItemsPanelTemplate>
-                        <ItemsWrapGrid Orientation="Vertical" />
+                        <ItemsWrapGrid FlowDirection="LeftToRight" MaximumRowsOrColumns="3"  Orientation="Horizontal" />
                         </ItemsPanelTemplate>
                     </GridView.ItemsPanel>
 
@@ -324,13 +324,15 @@
                     <!-- Tab buttons-->
                     
                     <StackPanel Orientation="Vertical" VerticalAlignment="Top" Grid.Row="0" Grid.Column="0" Background="Transparent">
-                        <Button Visibility="Collapsed"  BorderThickness="0" Foreground="Gray" Background="WhiteSmoke" Width="40" Height="30" Name="QuickViewButton" Click="QuickViewButton_Click">
+                        <Button Visibility="Collapsed"  BorderThickness="0" Foreground="Gray" 
+                                Background="WhiteSmoke" Width="40" Height="30" Name="QuickViewButton" 
+                                Click="QuickViewButton_Click">
                             <SymbolIcon Name="QuickViewButtonSymbol" Symbol="Clear"></SymbolIcon>
                         </Button>
-                        <ToggleButton IsChecked="False" ToolTipService.ToolTip="Show Phenotype/Diagnosis" Style="{StaticResource MyToggleButtonStyle}" Background="{StaticResource Left_Panel_Title_BG}" Width="40" Height="80" Name="OverViewToggleButton" Click="OverViewToggleButton_Click">
-                            <Grid>
-                                <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE8BC;"/>
-                            </Grid>
+                        <ToggleButton IsChecked="False" ToolTipService.ToolTip="Show Phenotype/Diagnosis" 
+                                      Style="{StaticResource MyToggleButtonStyle}" Background="{StaticResource Left_Panel_Title_BG}" 
+                                      Width="40" Height="80" Name="OverViewToggleButton" Click="OverViewToggleButton_Click">
+                            <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE8BC;"/>
                         </ToggleButton>
                         <ToggleButton Style="{StaticResource MyToggleButtonStyle}" 
                                       ToolTipService.ToolTip="Show Speech conversations" 
