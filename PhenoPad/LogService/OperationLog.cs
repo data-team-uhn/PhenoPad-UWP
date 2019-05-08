@@ -88,7 +88,7 @@ namespace PhenoPad.LogService
                 case OperationType.Stroke:
                     //args format= (args0:strokeID, args1: strokeaStarttime, args2: strokeDuration)
                     Debug.Assert(args.Count() == 3);
-                    log = $"{GetTimeStamp()}|Stroke| {args[0]} | {args[1]} | {args[2]}";
+                    log = $"{args[0]}|Stroke| {args[0]} | {args[1]} | {args[2]}";
                     break;
                 case OperationType.Recognition:
                     //args format= ( args0:recognized text, args1: {keyword:Phenotype}) 
