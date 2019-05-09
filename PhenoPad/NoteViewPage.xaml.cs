@@ -61,7 +61,12 @@ namespace PhenoPad
             readTimer.Tick += EndAudioStream;
             cancelSource = new CancellationTokenSource();
             token = cancelSource.Token;
+            BackButton.PointerPressed += aaaa;
 
+        }
+
+        private void aaaa(object obk, PointerRoutedEventArgs e) {
+            Debug.WriteLine("hit");
         }
 
         private void EndAudioStream(object sender, object e)
@@ -78,6 +83,7 @@ namespace PhenoPad
         {
             var nid = e.Parameter as string;
             StorageFile file = e.Parameter as StorageFile;
+            BackButton.IsEnabled = true;
 
             if (e.Parameter == null || file != null)
             {//is a file for importing EHR
@@ -85,15 +91,12 @@ namespace PhenoPad
             }
             else
             {//is a valid note to load
-                Debug.WriteLine("loading");
                 this.notebookId = nid;
                 FileManager.getSharedFileManager().currentNoteboookId = nid;
                 //await Dispatcher.RunAsync(CoreDispatcherPriority.High, LoadNotebook);
             }
-            await Task.Delay(TimeSpan.FromSeconds(3));
-            PlayMedia();
+            //PlayMedia();
             LoadNotebook();
-            return;
         }
 
         private async void PlayMedia()
@@ -165,60 +168,58 @@ namespace PhenoPad
 
                 //If notebook file exists, continues with loading...
                 notebookObject = await FileManager.getSharedFileManager().GetNotebookObjectFromXML(notebookId);
-                //Gets all stored pages and notebook object from the disk
-                List<string> pageIds = await FileManager.getSharedFileManager().GetPageIdsByNotebook(notebookId);
                 noteNameTextBox.Text = notebookObject.name;
-                List<OperationItem> logs = await OperationLogger.getOpLogger().ParseOperationItems(notebookId);
-                List<InkStroke> allstrokes = new List<InkStroke>();
 
-                for (int i = 0; i < pageIds.Count; i++) {
-                    InkCanvas tempCanvas = new InkCanvas();
-                    await FileManager.getSharedFileManager().LoadNotePageStroke(notebookId, i.ToString(), null, tempCanvas);
-                    var strokes = tempCanvas.InkPresenter.StrokeContainer.GetStrokes();
-                    allstrokes.AddRange(strokes.ToList());
-                }
+                //Gets all stored pages and notebook object from the disk
+                //List<string> pageIds = await FileManager.getSharedFileManager().GetPageIdsByNotebook(notebookId);
+                //List<OperationItem> logs = await OperationLogger.getOpLogger().ParseOperationItems(notebookId);
+                //List<InkStroke> allstrokes = new List<InkStroke>();
 
-                foreach (InkStroke s in allstrokes)
-                    Debug.WriteLine(s.Id);
+                //for (int i = 0; i < pageIds.Count; i++) {
+                //    InkCanvas tempCanvas = new InkCanvas();
+                //    await FileManager.getSharedFileManager().LoadNotePageStroke(notebookId, i.ToString(), null, tempCanvas);
+                //    var strokes = tempCanvas.InkPresenter.StrokeContainer.GetStrokes();
+                //    allstrokes.AddRange(strokes.ToList());
+                //}
 
                 //TODO: separate operation items based on type, then order by timespan and rearrange
-                List<OperationItem> phenotypes = logs.Where(x => x.type == "Phenotype").ToList();
-                List<OperationItem> handwriting = logs.Where(x => x.type == "Strokes").ToList();
-                List<Phenotype> saved = new List<Phenotype>();
+                //List<OperationItem> phenotypes = logs.Where(x => x.type == "Phenotype").ToList();
+                //List<OperationItem> handwriting = logs.Where(x => x.type == "Strokes").ToList();
+                //List<Phenotype> saved = new List<Phenotype>();
 
                 //process saved phenotypes
-                foreach (OperationItem op in phenotypes) {
-                    if (saved.Contains(op.phenotype))
-                        saved.Remove(op.phenotype);
-                    saved.Add(op.phenotype);
-                }
+                //foreach (OperationItem op in phenotypes) {
+                //    if (saved.Contains(op.phenotype))
+                //        saved.Remove(op.phenotype);
+                //    saved.Add(op.phenotype);
+                //}
                 //process handwritings
-                handwriting = handwriting.OrderBy(h => h.timestamp).ToList();
-                foreach (OperationItem op in handwriting) {
-                    DateTime start = op.timestamp;
-                    DateTime end = op.timeEnd;
-                    InkCanvas tempCanvas = new InkCanvas();
-                    var strokes = allstrokes.Where(x => (x.StrokeStartedTime >= start && x.StrokeStartedTime <= end));
-                    Debug.WriteLine($"all strokes added {strokes.Count()}.......");
+                //handwriting = handwriting.OrderBy(h => h.timestamp).ToList();
+                //foreach (OperationItem op in handwriting) {
+                //    DateTime start = op.timestamp;
+                //    DateTime end = op.timeEnd;
+                //    InkCanvas tempCanvas = new InkCanvas();
+                //    var strokes = allstrokes.Where(x => (x.StrokeStartedTime >= start && x.StrokeStartedTime <= end));
+                //    Debug.WriteLine($"all strokes added {strokes.Count()}.......");
 
-                    foreach (var s in strokes)
-                    {
-                        var s_clone = s.Clone();
-                        s_clone.Selected = true;
-                        tempCanvas.InkPresenter.StrokeContainer.AddStroke(s_clone);
-                    }
-                    Rect bound = tempCanvas.InkPresenter.StrokeContainer.BoundingRect;
-                    tempCanvas.InkPresenter.StrokeContainer.MoveSelected(new Point(-bound.Left, -bound.Top));
-                    tempCanvas.Height = bound.Height;
-                    tempCanvas.Width = bound.Width;
+                //    foreach (var s in strokes)
+                //    {
+                //        var s_clone = s.Clone();
+                //        s_clone.Selected = true;
+                //        tempCanvas.InkPresenter.StrokeContainer.AddStroke(s_clone);
+                //    }
+                //    Rect bound = tempCanvas.InkPresenter.StrokeContainer.BoundingRect;
+                //    tempCanvas.InkPresenter.StrokeContainer.MoveSelected(new Point(-bound.Left, -bound.Top));
+                //    tempCanvas.Height = bound.Height;
+                //    tempCanvas.Width = bound.Width;
 
-                    strokesGrid.Children.Add(tempCanvas);
-                }
+                //    //strokesGrid.Children.Add(tempCanvas);
+                //}
 
                 //sorts the phenotypes in ascending timeline order
-                saved = saved.OrderBy( p => p.time).ToList();
-                PhenoListView.ItemsSource = saved;
-                TimeListView.ItemsSource = saved;
+                //saved = saved.OrderBy( p => p.time).ToList();
+                //PhenoListView.ItemsSource = saved;
+                //TimeListView.ItemsSource = saved;
 
             }
             catch (NullReferenceException ne)

@@ -12,38 +12,66 @@
 
     <Grid Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
         <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="50"/>
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
 
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="Auto"/>
-            <ColumnDefinition Width="5*"/>
-            <ColumnDefinition Width="5*"/>
+            <ColumnDefinition Width="70"/>
+            <ColumnDefinition Width="*"/>
         </Grid.ColumnDefinitions>
-        <Grid Name="TopMenuRelativePanel" Grid.Row="0" Grid.ColumnSpan="3" 
-              Height="45"
+        
+        <!--TOP MENU BAR-->
+        <Grid Name="TopMenuRelativePanel" Grid.Row="0" Grid.ColumnSpan="2" 
               Background="{StaticResource TITLE_BAR_WHITE}">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="200"></ColumnDefinition>
-                <ColumnDefinition Width="*"></ColumnDefinition>
-                <ColumnDefinition Width="Auto"></ColumnDefinition>
-            </Grid.ColumnDefinitions>
-            <StackPanel Orientation="Horizontal" Grid.Column="0" Grid.ColumnSpan="2" >
-                <Button Name="BackButton" Width="40"  
+            
+            
+            <StackPanel Orientation="Horizontal" Spacing="30" >
+                
+                <Button Name="BackButton"
                         Click="BackButton_Clicked"
+                        Width="70"
                         Background="{StaticResource Button_Background}" 
                         BorderThickness="0" VerticalAlignment="Stretch">
-                    <SymbolIcon Symbol="Back"></SymbolIcon>
+                    <SymbolIcon Symbol="Back"/>
                 </Button>
-                <TextBox Name="noteNameTextBox" FontSize="18" Text="" Margin="5 0 0 0" 
-                         BorderThickness="0" Background="Transparent" 
-                         IsEnabled="False" 
-                         VerticalAlignment="Center"/>
+                
+                <TextBlock Name="noteNameTextBox" FontSize="18" Text="" VerticalAlignment="Center"/>
+            </StackPanel>
+            
+            <StackPanel Orientation="Horizontal" Spacing=" 30" Margin="5 5 30 5"  HorizontalAlignment="Right">
+                <ComboBox HorizontalAlignment="Right" VerticalAlignment="Center" PlaceholderText="Sort by" Width="100">
+                    <x:String>Datetime</x:String>
+                    <x:String>Line Number</x:String>
+                </ComboBox>
+                <StackPanel Orientation="Horizontal" Spacing="5" VerticalAlignment="Center">
+                    <SymbolIcon Symbol="Find"/>
+                    <TextBox x:Name="searchInpput" Width="300"/>
+                    <Button Content="Find" Style="{StaticResource ButtonStyle1}" x:Name="searchButtin" Width="auto"/>
+                </StackPanel>
+
 
             </StackPanel>
         </Grid>
-        <!--Timeline/category bar-->
+        
+        <!--SIDE FILTER BAR-->
+        <StackPanel BorderThickness="0 0 1 0" BorderBrush="{StaticResource TITLE_BAR_WHITE}" 
+                    HorizontalAlignment="Right" Padding="0 30 0 30"
+                    x:Name="FilterStack" Orientation="Vertical" 
+                    Grid.Row="1" Grid.Column="0" Spacing="10">
+            <ToggleButton Style="{StaticResource MyToggleButtonStyle}" Width="40" Height="100"/>
+            <ToggleButton Style="{StaticResource MyToggleButtonStyle}" Width="40" Height="100"/>
+            <ToggleButton Style="{StaticResource MyToggleButtonStyle}" Width="40" Height="100"/>
+        </StackPanel>
+        
+        <!--OVERVIEW CONTENT PANEL-->
+        <ListView x:Name="NoteListView" Grid.Row="1" Grid.Column="1"/>
+        <!--TODO: DATA TEMPLATE CUSTOM CONTROL-->
+
+
+
+
+        <!--Timeline/category bar--><!--
         <Grid Grid.Column="0" Grid.Row="1" >
             <ListView ScrollViewer.VerticalScrollBarVisibility="Hidden" x:Name="TimeListView" Padding="3 0" 
                       >
@@ -73,7 +101,7 @@
 
 
         </Grid>
-        <!--Phenotypes section-->
+        --><!--Phenotypes section--><!--
         <Grid Grid.Column="1" Grid.Row="1">
             <ListView ScrollViewer.VerticalScrollBarVisibility="Hidden" x:Name="PhenoListView" Padding="3 0" 
                       >
@@ -104,11 +132,11 @@
             </ListView>
 
         </Grid>
-        <!--Strokes Section-->
+        --><!--Strokes Section--><!--
         <Grid Grid.Column="2" Grid.Row="1" Background="LightGray" >
             <StackPanel x:Name="strokesGrid" Orientation="Vertical" Spacing="10"/>
 
-        </Grid>
+        </Grid>-->
 
     </Grid>
 </Page>

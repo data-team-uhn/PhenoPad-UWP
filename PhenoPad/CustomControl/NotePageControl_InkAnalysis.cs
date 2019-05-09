@@ -354,7 +354,7 @@ namespace PhenoPad.CustomControl
             curLineParentStack.Visibility = Visibility.Visible;
             curLineResultPanel.Visibility = Visibility.Visible;
             Canvas.SetLeft(curLineResultPanel, lastWordPoint.X);
-            Canvas.SetTop(curLineResultPanel, lastWordPoint.Y - LINE_HEIGHT);
+            Canvas.SetTop(curLineResultPanel, lastWordPoint.Y - LINE_HEIGHT - 15);
 
             // annotation and UI
             annotateCurrentLineAndUpdateUI(line);

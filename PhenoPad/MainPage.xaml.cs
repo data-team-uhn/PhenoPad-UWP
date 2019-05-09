@@ -29,6 +29,7 @@ using System.Threading;
 using Windows.Storage;
 using Microsoft.Toolkit.Uwp.UI.Animations;
 using PhenoPad.LogService;
+using Microsoft.Toolkit.Uwp.UI.Controls;
 
 namespace PhenoPad
 {
@@ -48,7 +49,6 @@ namespace PhenoPad
         //such as buttons, pointer movements and display notices.
         //Other parts of the logical controls including web socket/video/audio are moved to other partial class files.
         #region Attributes definitions
-
         public event PropertyChangedEventHandler PropertyChanged;
 
         private void NotifyPropertyChanged(string info)
@@ -150,7 +150,6 @@ namespace PhenoPad
             audioTimer.Tick += onAudioStarted;
 
             cancelService = new CancellationTokenSource();
-            
 
             //When user clicks X while in mainpage, auto-saves all current process and exits the program.
             Windows.UI.Core.Preview.SystemNavigationManagerPreview.GetForCurrentView().CloseRequested +=
@@ -1076,13 +1075,43 @@ namespace PhenoPad
             }
         }
 
+        private void ExpandButton_Click(object sender, RoutedEventArgs e) {
+
+            if (ExpandButton.IsChecked == true)
+            {
+                CandidateGrid.Width = this.Width - 120;
+                UpdateLayout();
+
+                Grid.SetRowSpan(CandidatePanelStackPanel, 1);
+                ScrollViewer.SetHorizontalScrollMode(candidatePhenoListView, ScrollMode.Enabled);
+                ScrollViewer.SetVerticalScrollMode(candidatePhenoListView, ScrollMode.Disabled);
+                //WrapPanel wp = new WrapPanel();
+                //wp.Orientation = Orientation.Horizontal;
+                //wp.FlowDirection = FlowDirection.LeftToRight;
+
+                //candidatePhenoListView.ItemsPanelRoot.SetValue(Width, 9999);
+            }
+            else {
+                CandidateGrid.Width = this.Width - 120;
+                UpdateLayout();
+
+                Grid.SetRowSpan(CandidatePanelStackPanel, 2);
+                ScrollViewer.SetHorizontalScrollMode(candidatePhenoListView, ScrollMode.Disabled);
+                ScrollViewer.SetVerticalScrollMode(candidatePhenoListView, ScrollMode.Enabled);
+            }
+        }
+
         private void OpenCandidate_Click(object sender, RoutedEventArgs e)
         {
+            CandidateGrid.Width = this.Width - 120;
+            UpdateLayout();
+
             if (OpenCandidatePanelButton.IsChecked == true)
             {
                 CandidatePanelStackPanel.Visibility = Visibility.Visible;
                 OpenCandidateIcon.Visibility = Visibility.Collapsed;
                 CloseCandidateIcon.Visibility = Visibility.Visible;
+                ExpandButton.Visibility = Visibility.Visible;
                 // OpenCandidatePanelButtonIcon.Glyph = "\uE8BB";
                 // OpenCandidatePanelButtonIcon.Foreground = new SolidColorBrush(Colors.DarkGray);
             }
@@ -1092,6 +1121,7 @@ namespace PhenoPad
                 // OpenCandidatePanelButtonIcon.Glyph = "\uE82F";
                 // OpenCandidatePanelButtonIcon.Foreground = new SolidColorBrush(Colors.Gold);
                 OpenCandidateIcon.Visibility = Visibility.Visible;
+                ExpandButton.Visibility = Visibility.Collapsed;
                 CloseCandidateIcon.Visibility = Visibility.Collapsed;
             }
 
@@ -1112,6 +1142,7 @@ namespace PhenoPad
                 // OpenCandidatePanelButtonIcon.Foreground = new SolidColorBrush(Colors.DarkGray);
                 // OpenCandidatePanelButtonIcon.Glyph = "\uE8BB";
                 candidatePhenoListView.ScrollIntoView(candidatePhenoListView.Items.ElementAt(0));
+                ExpandButton.Visibility = Visibility.Visible;
             }
         }
 
@@ -1121,6 +1152,10 @@ namespace PhenoPad
             OpenCandidatePanelButton.Visibility = Visibility.Visible;
             OpenCandidatePanelButton.IsChecked = false;
             CloseCandidateIcon.Visibility = Visibility.Collapsed;
+            if (ExpandButton.IsChecked == true)
+                ExpandButton_Click(null, null);
+            ExpandButton.Visibility = Visibility.Collapsed;
+
         }
 
         private void OverViewToggleButton_Click(object sender, RoutedEventArgs e)

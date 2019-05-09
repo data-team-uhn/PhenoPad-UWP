@@ -735,14 +735,17 @@
             <Grid Background="LightGray">
 
                 <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="40"/>
+                    <ColumnDefinition Width="40"/>
                     <ColumnDefinition Width="*"/>
+
                 </Grid.ColumnDefinitions>
 
                 <Grid.RowDefinitions>
                     <RowDefinition Height="*"/>
                 </Grid.RowDefinitions>
 
-                <ContentControl x:Name="PageHost"  HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch">
+                <ContentControl x:Name="PageHost" Grid.ColumnSpan="3"  HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch">
                     <ContentControl.ContentTransitions>
                         <TransitionCollection>
                             <PaneThemeTransition Edge="Bottom" x:Name="PageHostContentTrans"   />
@@ -751,7 +754,9 @@
                     </ContentControl.ContentTransitions>
                 </ContentControl>
 
-                <RelativePanel Grid.Row="0">
+                <Grid x:Name="placeHolderGrid" Grid.Column="2" />
+
+                <RelativePanel Grid.Row="0" Grid.ColumnSpan="3">
                     <!--Editing mode/ preview mode text block-->
                     <TextBlock Visibility="Visible" x:Name="modeTextBlock" Width="190" Height="30"
                                RelativePanel.AlignLeftWithPanel="True" 
@@ -813,7 +818,7 @@
                     </StackPanel>
                     
                     <!--NOTIFICATION PANEL-->
-                    <Grid RelativePanel.AlignTopWithPanel="True" RelativePanel.AlignHorizontalCenterWithPanel="True" >
+                    <Grid RelativePanel.AlignTopWith="CandidateGrid" Canvas.ZIndex="9999" RelativePanel.AlignHorizontalCenterWithPanel="True" >
                         <Border CornerRadius="10" x:Name="StatusBorder" Margin="0,50,0,0" 
                             RelativePanel.AlignTopWithPanel="True" RelativePanel.AlignHorizontalCenterWithPanel="True" 
                             MinWidth="500" Height="40">
@@ -828,16 +833,18 @@
                            RelativePanel.AlignTopWithPanel="True">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="40" />
+                            <ColumnDefinition Width="40" />
                             <ColumnDefinition Width="*" />
                         </Grid.ColumnDefinitions>
+                        
                         <Grid.RowDefinitions>
                             <RowDefinition Height="40" />
                             <RowDefinition Height="*"/>
                         </Grid.RowDefinitions>
 
                         <Grid Name="OpenCandidatePanelButtonGrid" Grid.Column="0">
-                            <ToggleButton HorizontalAlignment="Center" Background="Transparent" Style="{StaticResource MyToggleButtonStyle}" IsChecked="false" 
-                                          VerticalAlignment="Center"  Name="OpenCandidatePanelButton" Click="OpenCandidate_Click" Height="40">
+                            <ToggleButton HorizontalAlignment="Center" Grid.Column="0" Background="Transparent" Style="{StaticResource MyToggleButtonStyle}" IsChecked="false" 
+                                          VerticalAlignment="Center"  Name="OpenCandidatePanelButton" Click="OpenCandidate_Click" Width="40" Height="40">
                                 <Grid>
                                     <FontIcon Visibility="Collapsed" Name="OpenCandidatePanelButtonIcon" 
                                               Foreground="Gold" FontWeight="ExtraBlack"  FontFamily="Segoe MDL2 Assets" Glyph="&#xE82F;"/>
@@ -846,33 +853,46 @@
                                 </Grid>
                             </ToggleButton>
                         </Grid>
+                        <Grid Grid.Column="1">
+                            <ToggleButton HorizontalAlignment="Center" Background="WhiteSmoke" ToolTipService.ToolTip="Show All Candidates"
+                                          Style="{StaticResource MyToggleButtonStyle}" IsChecked="false" 
+                                          VerticalAlignment="Center"  x:Name="ExpandButton" Click="ExpandButton_Click" Width="40" Height="40">
+                                <Grid>
+                                    <FontIcon FontWeight="ExtraBlack"  FontFamily="Segoe MDL2 Assets" Glyph="&#xEA37;"/>
+                                </Grid>
+                            </ToggleButton>
 
-                        <StackPanel Orientation="Vertical" Grid.Column="1" 
-                                    Width="auto"
-                                    Name="CandidatePanelStackPanel" 
-                                    Padding="5 0 5 0"
-                                    HorizontalAlignment="Center"
-                                    VerticalAlignment="Center"
-                                    Background="WhiteSmoke" Visibility="Collapsed" >
-                            
+                        </Grid>
+
+                        <StackPanel Grid.Column="2" Grid.Row="0"                           
+                                Name="CandidatePanelStackPanel" 
+                                Padding="5 0 5 0"
+                                HorizontalAlignment="Center"
+                                VerticalAlignment="Top"
+                                Background="WhiteSmoke" Visibility="Collapsed" >
+
                             <ListView 
-                              ScrollViewer.HorizontalScrollMode="Enabled"
-                              ScrollViewer.VerticalScrollMode="Disabled"
-                              ScrollViewer.HorizontalScrollBarVisibility="Hidden"
-                              ScrollViewer.IsHorizontalRailEnabled="True"          
-                              x:Name="candidatePhenoListView" ItemsSource="{x:Bind PhenoMana.phenotypesCandidates, Mode=OneWay}">
+                            ScrollViewer.HorizontalScrollMode="Enabled"
+                            ScrollViewer.VerticalScrollMode="Disabled"
+                            ScrollViewer.HorizontalScrollBarVisibility="Hidden"
+                            ScrollViewer.VerticalScrollBarVisibility="Hidden"
+                            ScrollViewer.IsHorizontalRailEnabled="True"          
+                            x:Name="candidatePhenoListView" ItemsSource="{x:Bind PhenoMana.phenotypesCandidates, Mode=OneWay}">
                                 <ListView.ItemsPanel>
                                     <ItemsPanelTemplate>
-                                        <VirtualizingStackPanel  Orientation="Horizontal"/>
+                                        <controls:WrapPanel x:Name="wrappanel"
+                                                            FlowDirection="LeftToRight" 
+                                                            Width="{Binding ElementName=placeHolderGrid,Path=ActualWidth}"
+                                                            Orientation="Horizontal"/>
                                     </ItemsPanelTemplate>
                                 </ListView.ItemsPanel>
                                 <ListView.ItemTemplate>
                                     <DataTemplate x:DataType="phenotypeservice:Phenotype">
 
                                         <customcontrol:PhenotypeBriefControl 
-                                            VerticalAlignment="Center" phenotypeName="{x:Bind name}" 
-                                                                        phenotypeId="{x:Bind hpId}" phenotypeState="{x:Bind state}" 
-                                                                        sourceType="{x:Bind sourceType}" presentPosition="List" />
+                                        VerticalAlignment="Center" phenotypeName="{x:Bind name}" 
+                                                                    phenotypeId="{x:Bind hpId}" phenotypeState="{x:Bind state}" 
+                                                                    sourceType="{x:Bind sourceType}" presentPosition="List" />
                                     </DataTemplate>
                                 </ListView.ItemTemplate>
                                 <!--Defining the phenotype candidate tile style-->

@@ -807,6 +807,8 @@ namespace PhenoPad.CustomControl
                 if (!onlyView)
                 {// added from note page, need editing       
                  // Set supported input type to default using both moush and pen
+                    inkCan.Height = Height;
+                    inkCan.Width = Width;
 
                     inkCanvas.InkPresenter.InputDeviceTypes = Windows.UI.Core.CoreInputDeviceTypes.Pen;
                     // Set initial ink stroke attributes and updates

@@ -150,22 +150,22 @@ namespace PhenoPad
             }
         }
 
-        private async void ViewButton_Click(object sender, RoutedEventArgs e) {
+        private void ViewButton_Click(object sender, RoutedEventArgs e) {
 
-            var messageDialog = new MessageDialog("This function is still under development!");
-            messageDialog.Title = "PhenoPad";
-            messageDialog.Commands.Add(new UICommand("OK") { Id = 0 });
+            //var messageDialog = new MessageDialog("This function is still under development!");
+            //messageDialog.Title = "PhenoPad";
+            //messageDialog.Commands.Add(new UICommand("OK") { Id = 0 });
             // Set the command that will be invoked by default
-            messageDialog.DefaultCommandIndex = 0;
+            //messageDialog.DefaultCommandIndex = 0;
             // Set the command to be invoked when escape is pressed
-            messageDialog.CancelCommandIndex = 0;
+            //messageDialog.CancelCommandIndex = 0;
             // Show the message dialog
-            var result = await messageDialog.ShowAsync();
+            //var result = await messageDialog.ShowAsync();
 
-            //var notebookId = (sender as Button).Tag;
-            //LogService.MetroLogger.getSharedLogger().Info($"Viewing notebook ID { notebookId }");
-            //if (notebookId != null)
-            //    this.Frame.Navigate(typeof(NoteViewPage), notebookId);
+            var notebookId = (sender as Button).Tag;
+            LogService.MetroLogger.getSharedLogger().Info($"Viewing notebook ID { notebookId }");
+            if (notebookId != null)
+                this.Frame.Navigate(typeof(NoteViewPage), notebookId);
         }
 
         private async void UploadServerButton_Click(object sender, RoutedEventArgs e)
