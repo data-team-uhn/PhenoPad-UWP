@@ -62,7 +62,7 @@ namespace PhenoPad.CustomControl
         public double windowHeight;
         /***** configurable settings *****/
         // Distance between two neighboring note lines
-        public  float LINE_HEIGHT = 50;
+        public static float LINE_HEIGHT = 50;
         // Max hight for writing, those with hight exceeding this values will be deleted.
         public  float MAX_WRITING = (float)2.5 * 50;
         // Style of "unprocessed stroke" or right dragging stroke.

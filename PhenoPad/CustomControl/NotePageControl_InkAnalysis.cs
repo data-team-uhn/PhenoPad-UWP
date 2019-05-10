@@ -128,7 +128,8 @@ namespace PhenoPad.CustomControl
                         //here we need instant call to analyze ink for the specified line input
                         await analyzeInk(s,serverFlag:MainPage.Current.abbreviation_enabled);
                         RawStrokeTimer.Start();
-                        //OperationLogger.getOpLogger().Log(OperationType.Stroke, s.Id.ToString(), s.StrokeStartedTime.ToString(), s.StrokeDuration.ToString());
+
+                        OperationLogger.getOpLogger().Log(OperationType.Stroke, s.Id.ToString(),s.StrokeStartedTime.Value.ToString(), s.StrokeDuration.ToString(), getLineNumByRect(s.BoundingRect).ToString(),pageId.ToString());
                     }
                 }
 
@@ -922,13 +923,13 @@ namespace PhenoPad.CustomControl
             return count1 > count2 ? l1 : l2;
         }
 
-        private int getLineNumByRect(Rect rect)
+        public static int getLineNumByRect(Rect rect)
         {
             /// <summary>
             /// Get line number by using a rectangle object.
             /// </summary>
 
-            return (int)((rect.Y + rect.Height / 2) / (LINE_HEIGHT));
+            return (int)((rect.Y + rect.Height / 2) / (NotePageControl.LINE_HEIGHT));
         }
 
         private async Task<string> recognizeSelection()

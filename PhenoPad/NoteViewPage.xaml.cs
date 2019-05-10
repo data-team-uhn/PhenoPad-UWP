@@ -156,10 +156,10 @@ namespace PhenoPad
         protected async override void OnNavigatingFrom(NavigatingCancelEventArgs e)
         {
             //TODO
-            streamSocket.Close(0,"end");
-            streamSocket.Dispose();
-            streamSocket = null;
-            readTimer.Stop();
+            //streamSocket.Close(0,"end");
+            //streamSocket.Dispose();
+            //streamSocket = null;
+            //readTimer.Stop();
         }
 
         private async void LoadNotebook() {
@@ -169,10 +169,14 @@ namespace PhenoPad
                 //If notebook file exists, continues with loading...
                 notebookObject = await FileManager.getSharedFileManager().GetNotebookObjectFromXML(notebookId);
                 noteNameTextBox.Text = notebookObject.name;
+                List<NoteLineViewControl> logs = await OperationLogger.getOpLogger().ParseOperationItems(notebookObject);
+                logs = logs.OrderBy(x=>x.keyTime).ToList();
+                foreach (var l in logs)
+                    NoteLineStack.Children.Add(l);
+                UpdateLayout();
 
                 //Gets all stored pages and notebook object from the disk
                 //List<string> pageIds = await FileManager.getSharedFileManager().GetPageIdsByNotebook(notebookId);
-                //List<OperationItem> logs = await OperationLogger.getOpLogger().ParseOperationItems(notebookId);
                 //List<InkStroke> allstrokes = new List<InkStroke>();
 
                 //for (int i = 0; i < pageIds.Count; i++) {

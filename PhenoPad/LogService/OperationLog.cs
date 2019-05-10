@@ -7,8 +7,11 @@ using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Windows.Foundation;
 using Windows.UI.Core;
+using Windows.UI.Input.Inking;
 using Windows.UI.Xaml;
+using Windows.UI.Xaml.Controls;
 
 namespace PhenoPad.LogService
 {
@@ -22,7 +25,8 @@ namespace PhenoPad.LogService
         Stroke,
         Speech,
         ASR,
-        Recognition
+        HWR,
+        ADDIN
     }
     /// <summary>
     /// A class for logging note taking operations used for statistical purposes
@@ -86,14 +90,19 @@ namespace PhenoPad.LogService
             string log = "";
             switch (opType) {
                 case OperationType.Stroke:
-                    //args format= (args0:strokeID, args1: strokeaStarttime, args2: strokeDuration)
-                    Debug.Assert(args.Count() == 3);
-                    log = $"{args[0]}|Stroke| {args[0]} | {args[1]} | {args[2]}";
+                    //args format= (args0: strokeaStarttime, args1: strokeDuration, args2: lineIndex, args3: pageID)
+                    Debug.Assert(args.Count() == 5);
+                    log = $"{GetTimeStamp()}|Stroke| {args[0]} | {args[1]} | {args[2]} | {args[3]} | {args[4]}";
                     break;
-                case OperationType.Recognition:
+                case OperationType.HWR:
                     //args format= ( args0:recognized text, args1: {keyword:Phenotype}) 
                     Debug.Assert(args.Count() == 2);
-                    log = $"{GetTimeStamp()}|HWRRecognition| {args[0]} | {args[1]}";
+                    log = $"{GetTimeStamp()}|HWR| {args[0]} | {args[1]}";
+                    break;
+                case OperationType.ADDIN:
+                    //args format= ( args0:name, args1: {line #}) 
+                    Debug.Assert(args.Count() == 2);
+                    log = $"{GetTimeStamp()}|ADDIN| {args[0]} | {args[1]}";
                     break;
                 case OperationType.Speech:
                     //args format = ( args0:transcript, args1: {keyword:Phenotype}) 
@@ -208,67 +217,121 @@ namespace PhenoPad.LogService
         /// currently not all logs will be displayed
         /// </summary>
         /// <returns></returns>
-        public async Task<List<OperationItem>> ParseOperationItems(string notebookID) {
+        public async Task<List<NoteLineViewControl>> ParseOperationItems(Notebook notebook) {
 
-            List<OperationItem> opitems = new List<OperationItem>();
+            List<NoteLineViewControl> opitems = new List<NoteLineViewControl>();
 
             //Parsing information from speech conversation, need the time for matching detected phenotype
-            List<TextMessage> conversations = await FileManager.getSharedFileManager().GetSavedTranscriptsFromXML(notebookID);
+            //List<TextMessage> conversations = await FileManager.getSharedFileManager().GetSavedTranscriptsFromXML(notebookID);
 
             //Parsing information from log file
-            List<string> logs = await FileManager.getSharedFileManager().GetLogStrings(notebookID);
+            List<string> logs = await FileManager.getSharedFileManager().GetLogStrings(notebook.id);
 
-            List<Phenotype> savedPhenotypes = await FileManager.getSharedFileManager().GetSavedPhenotypeObjectsFromXML(notebookID);
+            //List<Phenotype> savedPhenotypes = await FileManager.getSharedFileManager().GetSavedPhenotypeObjectsFromXML(notebookID);
 
 
             if (logs != null)
             {
+                //Gets all stored pages and notebook object from the disk
+                List<string> pageIds = await FileManager.getSharedFileManager().GetPageIdsByNotebook(notebook.id);
+                List<InkStroke> allstrokes = new List<InkStroke>();
+                for (int i = 0; i < pageIds.Count; i++)
+                {
+                    InkCanvas tempCanvas = new InkCanvas();
+                    await FileManager.getSharedFileManager().LoadNotePageStroke(notebook.id, i.ToString(), null, tempCanvas);
+                    var strokes = tempCanvas.InkPresenter.StrokeContainer.GetStrokes();
+                    foreach (var s in strokes)
+                    {
+                        s.Selected = true;
+                        allstrokes.Add(s.Clone());
+                    }
+                }
+
                 //selective parse useful log for display
                 foreach (string line in logs) {
                     List<string> segment = line.Split('|').ToList();
                     DateTime time;
                     DateTime.TryParse(segment[0].Trim(), out time);
-                    //Debug.WriteLine(segment[1]);
                     //currently only interested in stroke and phenotypes
                     switch (segment[1]) {
                         case ("Stroke"):
-                            OperationItem lastStrokeGroup = opitems.Where(x => x.type == "Strokes").LastOrDefault();
-                            DateTime sStartTime;
-                            DateTime.TryParse(segment[3].Trim(), out sStartTime);
+
+                            int id;
+                            Int32.TryParse(segment[2].Trim(), out id);
+                            DateTimeOffset sStartTime;
+                            DateTimeOffset.TryParse(segment[3].Trim(), out sStartTime);
+
                             TimeSpan duration;
                             TimeSpan.TryParse(segment[4].Trim(), out duration);
-                            //new group of strokes
-                            if (lastStrokeGroup != null && sStartTime - lastStrokeGroup.timeEnd < TimeSpan.FromSeconds(2))
+                            int lineNum;
+                            Int32.TryParse(segment[5].Trim(), out lineNum);
+                            NoteLineViewControl sameLine = opitems.Where(x => x.type == "Stroke" && lineNum == x.keyLine).FirstOrDefault();
+                            List<InkStroke> s = allstrokes.Where(x => NotePageControl.getLineNumByRect(x.BoundingRect)== lineNum).ToList();
+                            if (sameLine == null)
                             {
-                                lastStrokeGroup.strokeID.Add((UInt32.Parse(segment[2].Trim())));
-                                lastStrokeGroup.timeEnd = sStartTime + duration + TimeSpan.FromSeconds(0.5);
-                                Debug.WriteLine($"parsing if: current number of stroke ids = {lastStrokeGroup.strokeID.Count}");
+                                NoteLineViewControl newLine = new NoteLineViewControl(time, lineNum, "Stroke");                               
+                                newLine.strokeCanvas.InkPresenter.IsInputEnabled = false;
+                                newLine.keyLine = lineNum;
+                                if (s != null)
+                                {
+                                    newLine.strokeCanvas.InkPresenter.StrokeContainer.AddStrokes(s);
+                                    foreach (var ss in newLine.strokeCanvas.InkPresenter.StrokeContainer.GetStrokes())
+                                        ss.Selected = true;
+                                    newLine.strokes = s;
+                                }
+                                newLine.UpdateUILayout();
+                                opitems.Add(newLine);
                             }
-                            else {
-                                OperationItem opitem = new OperationItem(notebookID, "", "Strokes", sStartTime);
-                                opitem.strokeID.Add((UInt32.Parse(segment[2].Trim())));
-                                Debug.WriteLine($"parsing else: current number of stroke ids = {opitem.strokeID.Count}");
-                                opitem.timeEnd = sStartTime + duration;
-                                opitems.Add(opitem);
+                            else { 
+                                sameLine.keyTime = sameLine.keyTime > time? sameLine.keyTime: time;
+                                sameLine.UpdateUILayout();
                             }
+
                             break;
-                        case ("Phenotype"):
-                            //check simuteneously if the certain phenotype is in saved phenotypes
-                            string name = segment[4].Trim();
-                            Phenotype match = savedPhenotypes.Where(x => x.name == name).FirstOrDefault();
-                            if (match != null) {
-                                match.time = time;
-                                //current problem: log may have multiple of same phenotypes
-                                Debug.WriteLine(match.name + "," + match.state);
-                                //PhenotypeControl phenocontrol = new PhenotypeControl();
-                                //phenocontrol.initByPhenotype(match);
-                                //phenocontrol.timespan = time;
-                                OperationItem opitem = new OperationItem(notebookID,"","Phenotype",time);
-                                opitem.phenotype = match;
-                                opitems.Add(opitem);
-                            }
-                            break;
+
+                            //new group of strokes
+                            //if (lastStrokeGroup != null && sStartTime - lastStrokeGroup.timeEnd < TimeSpan.FromSeconds(2))
+                            //{
+                            //    lastStrokeGroup.strokeID.Add((UInt32.Parse(segment[2].Trim())));
+                            //    lastStrokeGroup.timeEnd = sStartTime + duration + TimeSpan.FromSeconds(0.5);
+                            //    Debug.WriteLine($"parsing if: current number of stroke ids = {lastStrokeGroup.strokeID.Count}");
+                            //}
+                            //else {
+                            //    OperationItem opitem = new OperationItem(notebookID, "", "Strokes", sStartTime);
+                            //    opitem.strokeID.Add((UInt32.Parse(segment[2].Trim())));
+                            //    Debug.WriteLine($"parsing else: current number of stroke ids = {opitem.strokeID.Count}");
+                            //    opitem.timeEnd = sStartTime + duration;
+                            //    opitems.Add(opitem);
+                            //}
+
+                        //case ("Phenotype"):
+                        //    //check simuteneously if the certain phenotype is in saved phenotypes
+                        //    string name = segment[4].Trim();
+                        //    Phenotype match = savedPhenotypes.Where(x => x.name == name).FirstOrDefault();
+                        //    if (match != null) {
+                        //        match.time = time;
+                        //        //current problem: log may have multiple of same phenotypes
+                        //        Debug.WriteLine(match.name + "," + match.state);
+                        //        //PhenotypeControl phenocontrol = new PhenotypeControl();
+                        //        //phenocontrol.initByPhenotype(match);
+                        //        //phenocontrol.timespan = time;
+                        //        OperationItem opitem = new OperationItem(notebookID,"","Phenotype",time);
+                        //        opitem.phenotype = match;
+                        //        opitems.Add(opitem);
+                        //    }
+                        //    break;
                     }
+                }
+                Debug.WriteLine("===" + opitems.Count);
+                //TODO
+                //1. add word blocks for lines
+                foreach (var l in opitems.Where(x => x.type == "Stroke")) {
+                    Debug.WriteLine(l.strokeCanvas.InkPresenter.StrokeContainer.GetStrokes().Count);
+                    var rect = l.strokeCanvas.InkPresenter.StrokeContainer.BoundingRect;
+                    l.strokeCanvas.InkPresenter.StrokeContainer.MoveSelected(new Point(-rect.X, -rect.Y));
+                    l.strokeCanvas.Height = rect.Height;
+                    l.strokeCanvas.Width = rect.Width;
+
                 }
             }            
             return opitems;

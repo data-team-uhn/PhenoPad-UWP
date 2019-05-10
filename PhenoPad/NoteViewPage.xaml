@@ -65,7 +65,7 @@
         </StackPanel>
         
         <!--OVERVIEW CONTENT PANEL-->
-        <ListView x:Name="NoteListView" Grid.Row="1" Grid.Column="1"/>
+        <StackPanel Orientation="Vertical" x:Name="NoteLineStack" Grid.Row="1" Grid.Column="1"/>
         <!--TODO: DATA TEMPLATE CUSTOM CONTROL-->
 
 

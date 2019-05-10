@@ -864,7 +864,7 @@
 
                         </Grid>
 
-                        <StackPanel Grid.Column="2" Grid.Row="0"                           
+                        <StackPanel Grid.Column="2" Grid.Row="0"                            
                                 Name="CandidatePanelStackPanel" 
                                 Padding="5 0 5 0"
                                 HorizontalAlignment="Center"
@@ -882,6 +882,7 @@
                                     <ItemsPanelTemplate>
                                         <controls:WrapPanel x:Name="wrappanel"
                                                             FlowDirection="LeftToRight" 
+                                                            MaxHeight="150"
                                                             Width="{Binding ElementName=placeHolderGrid,Path=ActualWidth}"
                                                             Orientation="Horizontal"/>
                                     </ItemsPanelTemplate>
