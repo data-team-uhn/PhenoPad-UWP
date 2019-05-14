@@ -6,44 +6,33 @@ using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices.WindowsRuntime;
 using Windows.Foundation;
-using Windows.Foundation.Collections;
 using Windows.UI.Core;
 using Windows.UI.Input.Inking;
 using Windows.UI.Input.Inking.Analysis;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
-using Windows.UI.Xaml.Controls.Primitives;
-using Windows.UI.Xaml.Data;
 using Windows.UI.Xaml.Input;
 using Windows.UI.Xaml.Media;
-using Windows.UI.Xaml.Navigation;
 using Windows.UI.Xaml.Shapes;
 using PhenoPad.HWRService;
-using PhenoPad.Styles;
 using Windows.UI.Input.Inking.Core;
 using System.Diagnostics;
 using System.Threading.Tasks;
 using Windows.UI;
-using Windows.Media.Capture;
 using Windows.Storage;
 using Windows.Storage.Streams;
 using Windows.Graphics.Imaging;
 using Windows.UI.Xaml.Media.Imaging;
-using PhenoPad.PhotoVideoService;
 using Windows.UI.Notifications;
 using Windows.ApplicationModel.Core;
 using System.Threading;
-using System.Collections;
 using Windows.UI.Xaml.Documents;
 using Windows.UI.Text;
 using PhenoPad.FileService;
 using System.Numerics;
 using Windows.UI.Xaml.Hosting;
-using Windows.Graphics.Display;
 using PhenoPad.LogService;
 using MetroLog;
-using Microsoft.Toolkit.Uwp.UI.Animations;
-using Windows.UI.Xaml.Media.Animation;
 
 namespace PhenoPad.CustomControl
 {
@@ -994,14 +983,13 @@ namespace PhenoPad.CustomControl
             canvasAddIn.commentslideX = ia.slideX;
             canvasAddIn.commentslideY = ia.slideY;
             canvasAddIn.inkRatio = ia.inkRatio;
-                Canvas.SetTop(canvasAddIn, ia.canvasTop);
-
-                canvasAddIn.inDock = ia.inDock;
-                if (ia.inDock)               
-                    canvasAddIn.Visibility = Visibility.Collapsed;
-                Canvas.SetLeft(canvasAddIn, ia.canvasLeft);
-                canvasAddIn.viewFactor.ScaleX = ia.zoomFactorX;
-                canvasAddIn.viewFactor.ScaleY = ia.zoomFactorY;
+            Canvas.SetTop(canvasAddIn, ia.canvasTop);
+            canvasAddIn.inDock = ia.inDock;
+            if (ia.inDock)               
+                canvasAddIn.Visibility = Visibility.Collapsed;
+            Canvas.SetLeft(canvasAddIn, ia.canvasLeft);
+            canvasAddIn.viewFactor.ScaleX = ia.zoomFactorX;
+            canvasAddIn.viewFactor.ScaleY = ia.zoomFactorY;
 
             if (ehrPage == null)
             {
@@ -1102,8 +1090,7 @@ namespace PhenoPad.CustomControl
             //loading a photo from disk with editing option
             if (loadFromDisk)
                 canvasAddIn.InitializeFromDisk(false);
-            //if (wb != null)
-            //    canvasAddIn.InitializeFromImage(wb);
+            OperationLogger.getOpLogger().Log(OperationType.ADDIN, name, getLineNumByRect(new Rect(left,top,5,5)).ToString(), pageId);
         }
 
         public AddInControl NewEHRCommentControl(double left, double top, int commentID, AnnotationType type)

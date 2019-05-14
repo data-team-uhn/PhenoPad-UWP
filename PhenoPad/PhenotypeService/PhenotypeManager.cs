@@ -651,8 +651,8 @@ namespace PhenoPad.PhenotypeService
                 httpResponse = await httpClient.GetAsync(requestUri);
                 httpResponse.EnsureSuccessStatusCode();
                 httpResponseBody = await httpResponse.Content.ReadAsStringAsync();
-                var result = JsonConvert.DeserializeObject<NCRResult>(httpResponseBody);
 
+                var result = JsonConvert.DeserializeObject<NCRResult>(httpResponseBody);
                 Dictionary<string, Phenotype> returnResult = new Dictionary<string, Phenotype>();
                 foreach (var res in result.matches)
                 {
@@ -660,11 +660,11 @@ namespace PhenoPad.PhenotypeService
                     if (!returnResult.ContainsKey(keystr))
                     {
                         Phenotype pp = new Phenotype(res);
-                        pp.pageSource = MainPage.Current.curPageIndex;
+                        if (MainPage.Current != null)
+                            pp.pageSource = MainPage.Current.curPageIndex;
                         returnResult.Add(keystr, pp);
                     }
                 }
-              
                 return returnResult;
             }
             catch (Exception ex)

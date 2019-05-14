@@ -122,8 +122,10 @@ namespace PhenoPad.CustomControl
                 WordBlock.Text = abbr_current;
                 corrected = true;
             }
-            MainPage.Current.curPage.annotateCurrentLineAndUpdateUI(line_index: line_index);
+            if (MainPage.Current.curPage != null) 
+                MainPage.Current.curPage.annotateCurrentLineAndUpdateUI(line_index: line_index);
             MainPage.Current.NotifyUser($"Changed to {text}", NotifyType.StatusMessage, 1);
+
         }
 
 
@@ -137,7 +139,8 @@ namespace PhenoPad.CustomControl
                 MainPage.Current.curPage.annotateCurrentLineAndUpdateUI(line_index: line_index);
                 corrected = true;
                 MainPage.Current.NotifyUser($"Changed to {current}", NotifyType.StatusMessage, 1);
-                MainPage.Current.curPage.ClearSelectionAsync();
+                if (MainPage.Current.curPage != null)
+                    MainPage.Current.curPage.ClearSelectionAsync();
             }
         }
 
@@ -166,9 +169,12 @@ namespace PhenoPad.CustomControl
                
             }
             corrected = true;
-            MainPage.Current.curPage.annotateCurrentLineAndUpdateUI(line_index: line_index);
+            if (MainPage.Current.curPage != null) {
+                MainPage.Current.curPage.annotateCurrentLineAndUpdateUI(line_index: line_index);
+                MainPage.Current.curPage.ClearSelectionAsync();
+            }
+
             MainPage.Current.NotifyUser($"Changed to {current}", NotifyType.StatusMessage, 1);
-            MainPage.Current.curPage.ClearSelectionAsync();
             UpdateLayout();
         }
 
