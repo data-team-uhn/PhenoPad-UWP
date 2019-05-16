@@ -171,8 +171,9 @@ namespace PhenoPad
                 noteNameTextBox.Text = notebookObject.name;
                 List<NoteLineViewControl> logs = await OperationLogger.getOpLogger().ParseOperationItems(notebookObject);
                 logs = logs.OrderBy(x=>x.keyTime).ToList();
-                foreach (var l in logs)
-                    NoteLineStack.Children.Add(l);
+                //foreach (var l in logs)
+                //    NoteLineStack.Children.Add(l);
+                aaa.ItemsSource = logs;
                 UpdateLayout();
 
                 //Gets all stored pages and notebook object from the disk

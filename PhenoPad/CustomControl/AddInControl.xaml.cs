@@ -829,7 +829,7 @@ namespace PhenoPad.CustomControl
                     inkCanvas.InkPresenter.IsInputEnabled = false;
                     Grid.SetRow(contentGrid, 0);
                     Grid.SetRowSpan(contentGrid, 3);
-
+                    //TitleRelativePanel.Visibility = Visibility.Collapsed;
                     if (hasImage)
                     {//when loading an image, had to manually adjust dimension to display full size with no border
 

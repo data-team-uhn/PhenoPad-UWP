@@ -35,6 +35,8 @@ namespace PhenoPad.CustomControl
 
         public List<Phenotype> phenotypes;
         public List<TextMessage> chats;
+
+        public NoteLineViewControl() { }
             
         public NoteLineViewControl(DateTime time, int line, string type, List<RecognizedPhrases> phrase=null)
         {
@@ -49,6 +51,22 @@ namespace PhenoPad.CustomControl
 
         public void UpdateUILayout() {
             KeyTime.Text = keyTime.ToString();
+            if (addin != null)
+            {
+                AddInIcon.Child = addin;
+                addin.HorizontalAlignment = HorizontalAlignment.Center;
+                addin.VerticalAlignment = VerticalAlignment.Center;
+                strokeGrid.Visibility = Visibility.Collapsed;
+                addinGrid.Visibility = Visibility.Visible;
+            }
+            UpdateLayout();
+        }
+
+        public void SetChatList(List<TextMessage> texts) {
+            Debug.WriteLine(texts.Count + "-----");
+            this.chats = texts;
+            chatItem.ItemsSource = chats;
+            chatItem.UpdateLayout();
             UpdateLayout();
         }
 
@@ -64,6 +82,7 @@ namespace PhenoPad.CustomControl
                 candidates.Add(ph.candidate4);
                 candidates.Add(ph.candidate5);
                 WordBlockControl wb = new WordBlockControl(ph.line_index, ph.left, ph.word_index, ph.current, candidates);
+                wb.WordBlock.FontSize = 18;
                 wb.corrected = ph.is_corrected;
                 words.Add(wb);
             }
@@ -85,7 +104,7 @@ namespace PhenoPad.CustomControl
             canvasAddIn.Width = ia.width;
             canvasAddIn.widthOrigin = ia.widthOrigin;
             canvasAddIn.heightOrigin = ia.heightOrigin;
-            canvasAddIn.inkCan.Height = ia.heightOrigin - 48;
+            canvasAddIn.inkCan.Height = ia.heightOrigin;
             canvasAddIn.inkCan.Width = ia.widthOrigin;
             canvasAddIn.canvasLeft = ia.canvasLeft;
             canvasAddIn.canvasTop = ia.canvasTop;
@@ -95,12 +114,12 @@ namespace PhenoPad.CustomControl
             canvasAddIn.commentslideX = ia.slideX;
             canvasAddIn.commentslideY = ia.slideY;
             canvasAddIn.inkRatio = ia.inkRatio;
-            canvasAddIn.inDock = ia.inDock;
+            canvasAddIn.inDock = false;
             canvasAddIn.viewFactor.ScaleX = ia.zoomFactorX;
             canvasAddIn.viewFactor.ScaleY = ia.zoomFactorY;
             canvasAddIn.InitializeFromDisk(onlyView: true);
             this.addin = canvasAddIn;
-            addinGrid.Children.Add(this.addin);
+            UpdateLayout();
         }
 
         public async void LoadPhenotypes(List<Phenotype> savedPhenotypes) {

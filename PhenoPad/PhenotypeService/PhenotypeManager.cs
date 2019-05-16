@@ -149,18 +149,20 @@ namespace PhenoPad.PhenotypeService
                 Phenotype temp = null;
                 Phenotype tempInCand = phenotypesCandidates.Where(x => x == pheno).FirstOrDefault();
 
-                if (from == SourceType.Notes)
-                {
-                    temp = savedPhenotypes.Where(x => x == pheno).FirstOrDefault();
-                }
-
-                else if (from == SourceType.Speech)
-                    temp = phenotypesInSpeech.Where(x => x == pheno).FirstOrDefault();
-
+                temp = savedPhenotypes.Where(x => x == pheno).FirstOrDefault();
                 if (temp != null)
                     pp.state = temp.state;
                 else
                     pp.state = -1;
+
+
+                if (from == SourceType.Speech)
+                {
+                    temp = phenotypesInSpeech.Where(x => x == pheno).FirstOrDefault();
+                    if (temp != null)
+                        temp.state = pheno.state;
+                }
+
 
                 //phenotype is not saved and not in candidate list
                 if (temp == null && tempInCand == null)

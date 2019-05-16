@@ -223,6 +223,7 @@ namespace PhenoPad.LogService
             //Parsing information from speech conversation, need the time for matching detected phenotype
             List<TextMessage> conversations = await FileManager.getSharedFileManager().GetSavedTranscriptsFromXML(notebook.id);
 
+
             //Parsing information from log file
             List<string> logs = await FileManager.getSharedFileManager().GetLogStrings(notebook.id);
 
@@ -302,8 +303,10 @@ namespace PhenoPad.LogService
                             NoteLineViewControl newline = new NoteLineViewControl(time, lineNum, "ADDIN");
                             Int32.TryParse(segment[3].Trim(), out newline.pageID);
                             var ia = imageAndAnno.Where(x => x.name == name).FirstOrDefault();
-                            
-
+                            Debug.WriteLine(ia == null);
+                            newline.setAddin(ia);
+                            newline.UpdateUILayout();
+                            opitems.Add(newline);
                             break;
 
 
@@ -336,6 +339,22 @@ namespace PhenoPad.LogService
                     l.strokeCanvas.Height = rect.Height;
                     l.strokeCanvas.Width = rect.Width;
                 }
+                //parsing transcripts
+                foreach (var t in conversations)
+                {
+                    NoteLineViewControl line = opitems.Where(x=> x.keyTime >= t.DisplayTime.Add(TimeSpan.FromSeconds(1)*-1) && x.keyTime <= t.DisplayTime.Add(TimeSpan.FromSeconds(1))).FirstOrDefault();
+                    if (line == null)
+                    {
+                        line = new NoteLineViewControl(t.DisplayTime, -1, "SPEECH");
+                        opitems.Add(line);
+                        line.strokeGrid.Visibility = Visibility.Collapsed;
+                        line.chatGrid.Visibility = Visibility.Visible;
+                    }
+                    line.SetChatList(conversations.Where(x => x.Body == t.Body).ToList());
+                    line.UpdateUILayout();
+
+                }
+                Debug.WriteLine("done setting");
             }            
             return opitems;
         }

@@ -72,7 +72,7 @@ namespace PhenoPad
                 }
             }
         } //automation properties
-
+        public string BLUETOOTHSERVICEURI = "";
         private bool _audioOn;
         public bool AudioOn
         {
@@ -478,7 +478,7 @@ namespace PhenoPad
         public async void StartAudioAfterBluetooth() {
             if (speechEngineRunning == false)
             {
-                await BluetoothService.BluetoothService.getBluetoothService().sendBluetoothMessage("audio start manager_id=666");
+                await BluetoothService.BluetoothService.getBluetoothService().sendBluetoothMessage("audio start manager_id=666 ");
                 await SpeechManager.getSharedSpeechManager().ReceiveASRResults();
             } 
          }

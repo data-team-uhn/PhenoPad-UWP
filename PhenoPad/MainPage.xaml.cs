@@ -666,7 +666,7 @@ namespace PhenoPad
 
             CloseCandidate();
             PageHost.Content = curPage;
-
+            showAddIn(new List<ImageAndAnnotation>());
             setPageIndexText(curPageIndex);
 
             //addNoteIndex(curPageIndex);
