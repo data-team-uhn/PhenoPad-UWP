@@ -50,18 +50,27 @@ namespace PhenoPad
         private CancellationTokenSource cancelSource;
         private CancellationToken token;
         private List<byte> audioBuffer;
+        public static NoteViewPage Current;
+        public List<TextMessage> conversations;
 
 
         public NoteViewPage()
         {
             this.InitializeComponent();
+            Current = this;
             isReading = false;
             readTimer = new DispatcherTimer();
             readTimer.Interval = TimeSpan.FromSeconds(5);
             readTimer.Tick += EndAudioStream;
             cancelSource = new CancellationTokenSource();
+            conversations = new List<TextMessage>();
             token = cancelSource.Token;
             BackButton.PointerPressed += aaaa;
+
+            var style = new Style(typeof(FlyoutPresenter));
+            style.Setters.Add(new Setter(FlyoutPresenter.MinWidthProperty, 1200));
+            ChatRecordFlyout.SetValue(Flyout.FlyoutPresenterStyleProperty, style);
+
 
         }
 
@@ -162,14 +171,25 @@ namespace PhenoPad
             //readTimer.Stop();
         }
 
+        public void ShowAllChatAt(object sender, string textMessage) {
+            TextMessage mess = conversations.Where(x => x.Body == textMessage).FirstOrDefault();
+            AllChatView.ScrollIntoView(mess);
+            ChatRecordFlyout.ShowAt((FrameworkElement)sender);
+        }
+
         private async void LoadNotebook() {
             try
             {
 
                 //If notebook file exists, continues with loading...
                 notebookObject = await FileManager.getSharedFileManager().GetNotebookObjectFromXML(notebookId);
+                //Parsing information from speech conversation, need the time for matching detected phenotype
+                List<TextMessage> conversations = await FileManager.getSharedFileManager().GetSavedTranscriptsFromXML(notebookId);
+                this.conversations = conversations == null ? this.conversations : conversations;
+                AllChatView.ItemsSource = this.conversations;
+
                 noteNameTextBox.Text = notebookObject.name;
-                List<NoteLineViewControl> logs = await OperationLogger.getOpLogger().ParseOperationItems(notebookObject);
+                List<NoteLineViewControl> logs = await OperationLogger.getOpLogger().ParseOperationItems(notebookObject,conversations);
                 logs = logs.OrderBy(x=>x.keyTime).ToList();
                 //foreach (var l in logs)
                 //    NoteLineStack.Children.Add(l);

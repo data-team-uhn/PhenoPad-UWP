@@ -10,6 +10,73 @@
     xmlns:customcontrol="using:PhenoPad.CustomControl"
     mc:Ignorable="d">
     <Page.Resources>
+            <local:BackgroundColorConverter x:Key="bcConverter" />
+            <local:IntervalDisplayConverter x:Key="intervalConverter" />
+            <Flyout x:Name="ChatRecordFlyout" Placement="Left" >
+                <Grid>
+                    <local:ChatListView x:Name="AllChatView"
+                            IncrementalLoadingThreshold="2" Margin="10" 
+                            ScrollViewer.VerticalScrollBarVisibility="Hidden">
+                        <ListView.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <ItemsStackPanel ItemsUpdatingScrollMode="KeepLastItemInView"  VerticalAlignment="Bottom"/>
+                            </ItemsPanelTemplate>
+                        </ListView.ItemsPanel>
+
+                        <ListView.ItemContainerStyle>
+                            <Style TargetType="ListViewItem">
+                                <Setter Property="Padding" Value="0"/>
+                                <Setter Property="Margin" Value="0"/>
+                            </Style>
+                        </ListView.ItemContainerStyle>
+
+                        <ListView.ItemContainerTransitions>
+                            <TransitionCollection/>
+                        </ListView.ItemContainerTransitions>
+
+                        <ListView.ItemTemplate>
+                            <DataTemplate x:DataType="local:TextMessage">
+                                <Grid Margin="6">
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto" />
+                                    </Grid.RowDefinitions>
+
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+
+                                    <!--Finalized message color-->
+                                    <Grid Grid.Row="0" Grid.Column="{Binding TextColumn}"
+                                        MinWidth="200" MaxWidth="500" Visibility="{x:Bind Path=IsFinal}"
+                                        Background="{Binding Converter={StaticResource bcConverter}}"/>
+
+                                    <Grid Grid.Row="0" Grid.Column="{Binding TextColumn}">
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="Auto"/>
+                                            <RowDefinition Height="Auto"/>
+                                        </Grid.RowDefinitions>
+
+                                        <TextBlock Grid.Row="0"  Grid.Column="0"
+                                        Text="{x:Bind Body}" TextWrapping="Wrap"
+                                        MinWidth="200" MaxWidth="500"
+                                        FontSize="14" Padding="10" VerticalAlignment="Center"
+                                        Foreground="Black"/>
+
+                                        <Button Grid.Row="1" Background="Transparent" HorizontalAlignment="Stretch">
+                                            <TextBlock FontSize="14" TextWrapping="Wrap" Padding="3"
+                                            Text="{Binding Converter={StaticResource intervalConverter}}"                                
+                                            HorizontalAlignment="Left"
+                                            Foreground="Black"/>
+                                        </Button>
+                                    </Grid>
+                                </Grid>
+                            </DataTemplate>
+                        </ListView.ItemTemplate>
+                    </local:ChatListView>
+                </Grid>
+            </Flyout>
+
     </Page.Resources>
 
     <Grid x:Name="root" Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">

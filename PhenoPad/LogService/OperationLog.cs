@@ -216,12 +216,10 @@ namespace PhenoPad.LogService
         /// parses a log line to operationitem to be displayed in view mode,
         /// currently not all logs will be displayed
         /// </summary>
-        public async Task<List<NoteLineViewControl>> ParseOperationItems(Notebook notebook) {
+        public async Task<List<NoteLineViewControl>> ParseOperationItems(Notebook notebook, List<TextMessage>conversations) {
 
             List<NoteLineViewControl> opitems = new List<NoteLineViewControl>();
 
-            //Parsing information from speech conversation, need the time for matching detected phenotype
-            List<TextMessage> conversations = await FileManager.getSharedFileManager().GetSavedTranscriptsFromXML(notebook.id);
 
 
             //Parsing information from log file
@@ -229,6 +227,7 @@ namespace PhenoPad.LogService
 
             if (logs != null)
             {
+                
                 //Gets all stored pages and notebook object from the disk
                 List<string> pageIds = await FileManager.getSharedFileManager().GetPageIdsByNotebook(notebook.id);
                 List<Phenotype> savedPhenotypes = await FileManager.getSharedFileManager().GetSavedPhenotypeObjectsFromXML(notebook.id);
@@ -308,26 +307,6 @@ namespace PhenoPad.LogService
                             newline.UpdateUILayout();
                             opitems.Add(newline);
                             break;
-
-
-
-                        //case ("Phenotype"):
-                        //    //check simuteneously if the certain phenotype is in saved phenotypes
-                        //    string name = segment[4].Trim();
-                        //    Phenotype match = savedPhenotypes.Where(x => x.name == name).FirstOrDefault();
-                        //    if (match != null)
-                        //    {
-                        //        match.time = time;
-                        //        //current problem: log may have multiple of same phenotypes
-                        //        Debug.WriteLine(match.name + "," + match.state);
-                        //        //PhenotypeControl phenocontrol = new PhenotypeControl();
-                        //        //phenocontrol.initByPhenotype(match);
-                        //        //phenocontrol.timespan = time;
-                        //        OperationItem opitem = new OperationItem(notebookID, "", "Phenotype", time);
-                        //        opitem.phenotype = match;
-                        //        opitems.Add(opitem);
-                        //    }
-                        //    break;
                     }
                 }
                 //TODO
@@ -351,6 +330,7 @@ namespace PhenoPad.LogService
                         line.chatGrid.Visibility = Visibility.Visible;
                     }
                     line.SetChatList(conversations.Where(x => x.Body == t.Body).ToList());
+                    line.LoadPhenotypes(savedPhenotypes);
                     line.UpdateUILayout();
 
                 }

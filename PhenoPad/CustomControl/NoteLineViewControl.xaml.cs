@@ -65,6 +65,7 @@ namespace PhenoPad.CustomControl
         public void SetChatList(List<TextMessage> texts) {
             Debug.WriteLine(texts.Count + "-----");
             this.chats = texts;
+            this.text = this.chats.FirstOrDefault().Body;
             chatItem.ItemsSource = chats;
             chatItem.UpdateLayout();
             UpdateLayout();
@@ -122,6 +123,11 @@ namespace PhenoPad.CustomControl
             UpdateLayout();
         }
 
+        public void ChatBubble_Click(object sender, RoutedEventArgs args) {
+            Debug.WriteLine($"clicked = {this.text}");
+            NoteViewPage.Current.ShowAllChatAt(sender,this.text);
+        }
+
         public async void LoadPhenotypes(List<Phenotype> savedPhenotypes) {
             Debug.WriteLine($"loading...text={text}");
             Dictionary<string, Phenotype> annoResult = await PhenotypeManager.getSharedPhenotypeManager().annotateByNCRAsync(text);
@@ -134,11 +140,9 @@ namespace PhenoPad.CustomControl
                 if (saved != null)
                     phenotypes.Add(saved);
                 else
-                    phenotypes.Add(p);
-                        
-
+                    phenotypes.Add(p);                       
             }
-            Debug.WriteLine(phenotypes.Count);
+
             if (phenotypes.Count > 0) {
                 PhenoListView.ItemsSource = phenotypes;
                 PhenoListView.UpdateLayout();

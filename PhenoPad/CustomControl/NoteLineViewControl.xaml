@@ -15,10 +15,9 @@
     <UserControl.Resources>
         <local1:BackgroundColorConverter x:Key="bcConverter" />
         <local1:IntervalDisplayConverter x:Key="intervalConverter" />
-
         <Flyout x:Name="ChatRecordFlyout" Placement="Left" >
             <Grid>
-                <local1:ChatListView x:Name="chatView"
+                <local1:ChatListView x:Name="AllChatView"
                             IncrementalLoadingThreshold="2" Margin="10" 
                             BorderBrush="White" BorderThickness="2"
                             ScrollViewer.VerticalScrollBarVisibility="Hidden">
@@ -132,12 +131,10 @@
                         Orientation="Horizontal" Spacing="5" />
         </Grid>
 
-        <Grid x:Name="chatGrid" x:FieldModifier="public" Grid.Column="3" VerticalAlignment="Top" Background="Azure" Visibility="Collapsed" 
-              BorderThickness="2" CornerRadius="5" BorderBrush="Black" Padding="10">
-                <local1:ChatListView x:Name="chatItem"
-                                     
-                            IncrementalLoadingThreshold="2" Margin="10" 
-                            BorderBrush="White" BorderThickness="2"
+        <Grid x:Name="chatGrid" x:FieldModifier="public" Grid.Column="3" VerticalAlignment="Top" Visibility="Collapsed" 
+              BorderThickness="2" CornerRadius="5" BorderBrush="Black">
+                <local1:ChatListView x:Name="chatItem"                                    
+                            IncrementalLoadingThreshold="2" Margin="5" 
                             ScrollViewer.VerticalScrollBarVisibility="Hidden">
                     <ListView.ItemsPanel>
                         <ItemsPanelTemplate>
@@ -158,43 +155,39 @@
 
                     <ListView.ItemTemplate>
                         <DataTemplate x:DataType="local1:TextMessage">
-                            <Grid Margin="6">
+                            <Grid Margin="6" CornerRadius="10">
                                 <Grid.RowDefinitions>
-                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="*" />
                                 </Grid.RowDefinitions>
 
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="Auto"/>
-                                    <ColumnDefinition Width="Auto" />
-                                </Grid.ColumnDefinitions>
-
                                 <!--Finalized message color-->
-                                <Grid Grid.Row="0" Grid.Column="{Binding TextColumn}"
-                                        MinWidth="300" MaxWidth="600" Visibility="{x:Bind Path=IsFinal}"
+                                <Grid Grid.Row="0"
+                                        Visibility="{x:Bind Path=IsFinal}"
                                         Background="{Binding Converter={StaticResource bcConverter}}"/>
-
-                                <!--Not finalized message color-->
-                                <Grid Grid.Row="0" Grid.Column="{Binding TextColumn}"
-                                        Background="{StaticResource Background_Temp}"
-                                        Visibility="{x:Bind Path=IsNotFinal}"/>
-                                <Grid Grid.Row="0" Grid.Column="{Binding TextColumn}">
+                                <!--Finalized message text -->
+                                <Grid Grid.Row="0" >
+                                    
                                     <Grid.RowDefinitions>
                                         <RowDefinition Height="Auto"/>
                                         <RowDefinition Height="Auto"/>
                                     </Grid.RowDefinitions>
+                                    
+                                    <Button Grid.Row="0" Background="Transparent"
+                                            Style="{StaticResource ButtonStyle1}"
+                                            Click="ChatBubble_Click"
+                                            HorizontalAlignment="Left">
 
-                                    <TextBlock Grid.Row="0"  Grid.Column="0"
-                                        Text="{x:Bind Body}" TextWrapping="Wrap"
-                                        MinWidth="300" MaxWidth="500"
-                                        FontSize="18" Padding="10" VerticalAlignment="Center"
+                                        <TextBlock Grid.Row="0"  Grid.Column="0"
+                                        Text="{x:Bind Body}" TextWrapping="WrapWholeWords"
+                                        MaxWidth="600"
+                                        FontSize="14" Padding="5" VerticalAlignment="Center" HorizontalAlignment="Left"
                                         Foreground="Black"/>
-
-                                    <Button Grid.Row="1" Background="Transparent" HorizontalAlignment="Stretch">
-                                        <TextBlock FontSize="14" TextWrapping="Wrap" Padding="3"
+                                </Button>
+                                <TextBlock Grid.Row="1" FontSize="14" TextWrapping="WrapWholeWords" Padding="10"
                                             Text="{Binding Converter={StaticResource intervalConverter}}"                                
                                             HorizontalAlignment="Left"
                                             Foreground="Black"/>
-                                    </Button>
+                                    
                                 </Grid>
                             </Grid>
                         </DataTemplate>
