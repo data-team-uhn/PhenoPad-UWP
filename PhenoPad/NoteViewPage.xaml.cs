@@ -88,7 +88,7 @@ namespace PhenoPad
         /// <summary>
         /// Initializes the Notebook when user navigated to MainPage.
         /// </summary>
-        protected async override void OnNavigatedTo(NavigationEventArgs e)
+        protected override void OnNavigatedTo(NavigationEventArgs e)
         {
             var nid = e.Parameter as string;
             StorageFile file = e.Parameter as StorageFile;
