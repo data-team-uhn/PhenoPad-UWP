@@ -307,7 +307,8 @@
                 </Setter>
             </Style>
             <Style x:Key="ButtonStyle1" TargetType="Button">
-                <Setter Property="Background" Value="{ThemeResource ButtonBackground}"/>
+                <!--<Setter Property="Background" Value="{ThemeResource ButtonBackground}"/>-->
+                <Setter Property="Background" Value="WhiteSmoke"/>
                 <Setter Property="Foreground" Value="{ThemeResource ButtonForeground}"/>
                 <Setter Property="BorderBrush" Value="{ThemeResource ButtonBorderBrush}"/>
                 <Setter Property="BorderThickness" Value="{ThemeResource ButtonBorderThemeThickness}"/>

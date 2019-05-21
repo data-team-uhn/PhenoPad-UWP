@@ -193,6 +193,7 @@ namespace PhenoPad.CustomControl
                 //Debug.WriteLine("candidates does not contain current");
 
                 Button tb = new Button();
+                tb.Style = (Style)Application.Current.Resources["ButtonStyle1"];
                 tb.FontSize = 16;
                 tb.VerticalAlignment = VerticalAlignment.Center;
 
@@ -201,12 +202,13 @@ namespace PhenoPad.CustomControl
                 else
                     tb.Content = current;
                 lst.Add(tb);
-                tb.Click += CandidateList_Click;
+                tb.Tapped += CandidateList_Click;
             }
             foreach (string candidate in candidates)
             {
                 Button tb = new Button();
-                //tb.Style = (Style)this.Resources["candidateStyle"];
+                tb.Style = (Style)Application.Current.Resources["ButtonStyle1"];
+
                 tb.FontSize = 16;
                 tb.VerticalAlignment = VerticalAlignment.Center;
                 if (is_abbr && candidates.IndexOf(candidate) > 0)
@@ -214,7 +216,7 @@ namespace PhenoPad.CustomControl
                 else
                     tb.Content = candidate;
                 lst.Add(tb);
-                tb.Click += CandidateList_Click;
+                tb.Tapped += CandidateList_Click;
             }
             return lst;
 

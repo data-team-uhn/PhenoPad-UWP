@@ -121,7 +121,7 @@
                                 <Button Style="{StaticResource MyButtonStyle}" x:Name="ViewButton" Tag="{x:Bind id}"  
                                     Background="Transparent" Grid.Column="2" 
                                         Click="ViewButton_Click"
-                                    HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Visibility="Visible">
+                                    HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Visibility="Collapsed">
                                     <TextBlock Foreground="{StaticResource WORD_DARK}">View</TextBlock>
                                 </Button>
 
