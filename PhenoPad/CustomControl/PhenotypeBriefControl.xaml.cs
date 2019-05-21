@@ -49,7 +49,7 @@ namespace PhenoPad.CustomControl
                 SetValue(phenotypeStateProperty, value);
             }
         }
-
+        public Visibility DeleteBtnShowing = Visibility.Visible;
         public SourceType sourceType
         {
             get { return (SourceType)GetValue(sourceTypeProperty); }
@@ -102,6 +102,7 @@ namespace PhenoPad.CustomControl
          new PropertyMetadata(null)
        );
 
+
         private int localState;
 
         public PhenotypeBriefControl()
@@ -118,6 +119,7 @@ namespace PhenoPad.CustomControl
             sourceType = p.sourceType;
             setPhenotypeState(phenotypeState);
         }
+
 
         // Add a phenotype
         private void AddBtn_Click(object sender, RoutedEventArgs e)
@@ -213,6 +215,14 @@ namespace PhenoPad.CustomControl
         private void UserControl_Loaded(object sender, RoutedEventArgs e)
         {
             localState = phenotypeState;
+            //changes display style for view mode
+            if (MainPage.Current == null || MainPage.Current.curPage == null) {
+                DeleteBtn.Visibility = Visibility.Collapsed;
+                Grid.SetColumn(phenotypeNameTextBlock,0);
+                Grid.SetColumnSpan(phenotypeNameBtn, 2);
+                Grid.SetColumnSpan(phenotypeGrid, 2);
+                phenotypeNameBtn.Click -= phenotypeNameTextBlock_Tapped;
+            }
         }
     }
 }

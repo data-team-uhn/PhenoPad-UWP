@@ -19,6 +19,8 @@ namespace PhenoPad.FileService
         public double left;
         public int line_index;
 
+        public int pageId;
+
 
         /// <summary>
         /// Empty construtor for serialization.

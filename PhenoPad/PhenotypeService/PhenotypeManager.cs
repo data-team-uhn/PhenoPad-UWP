@@ -28,7 +28,8 @@ namespace PhenoPad.PhenotypeService
         public ObservableCollection<Phenotype> phenotypesInNote;
         public static string PHENOTYPEINFO_ADDR = "https://playground.phenotips.org/rest/vocabularies/hpo/";
         public static string DIFFERENTIAL_ADDR = "https://services.phenotips.org/get/PhenoTips/DiseasePredictService2?format=json&limit=15";
-        public static string SUGGESTION_ADDR = "https://playground.phenotips.org/get/PhenoTips/DiffDiagnosisService?format=json&limit=15";
+        //original https://playground.phenotips.org/get/PhenoTips/DiffDiagnosisService?format=json&limit=15
+        public static string SUGGESTION_ADDR = "https://services.phenotips.org/get/PhenoTips/DiffDiagnosisService?format=json&limit=15";
         public ObservableCollection<Phenotype> phenotypesInSpeech;
         public ObservableCollection<Phenotype> phenotypesSpeechCandidates;
 

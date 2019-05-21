@@ -236,7 +236,10 @@ namespace PhenoPad
                     //curPage.ehrPage.SlideCommentsToSide();
                 }
                 OperationLogger.getOpLogger().SetCurrentNoteID(notebookId);
-                PhenoMana.ShowPhenoCandAtPage(curPageIndex);
+                var count = PhenoMana.ShowPhenoCandAtPage(curPageIndex);
+                if (count <= 0)
+                    CloseCandidate();
+
                 MainPageInkBar.TargetInkCanvas = inkCanvas;
                 await Task.Delay(TimeSpan.FromSeconds(2));
                 LoadingPopup.IsOpen = false;

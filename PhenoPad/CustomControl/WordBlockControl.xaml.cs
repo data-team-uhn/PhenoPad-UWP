@@ -28,7 +28,7 @@ namespace PhenoPad.CustomControl
             ABBR
         }
         public int word_index;
-        public double phrase_index;
+        public double left;
         public int line_index;
         public int selected_index;
         public bool corrected;
@@ -46,10 +46,10 @@ namespace PhenoPad.CustomControl
         {
         }
 
-        public WordBlockControl(int line_index, double phrase_index, int word_index, string current, List<string>candidates) {
+        public WordBlockControl(int line_index, double left, int word_index, string current, List<string>candidates) {
             this.InitializeComponent();
             this.line_index = line_index;
-            this.phrase_index = phrase_index;
+            this.left = left;
             this.word_index = word_index;
             this.current = current;
             this.candidates = candidates;
@@ -122,9 +122,15 @@ namespace PhenoPad.CustomControl
                 WordBlock.Text = abbr_current;
                 corrected = true;
             }
-            if (MainPage.Current.curPage != null) 
+            if (MainPage.Current != null)
+            {
                 MainPage.Current.curPage.annotateCurrentLineAndUpdateUI(line_index: line_index);
-            MainPage.Current.NotifyUser($"Changed to {text}", NotifyType.StatusMessage, 1);
+                MainPage.Current.NotifyUser($"Changed to {text}", NotifyType.StatusMessage, 1);
+            }
+            //for view mode
+            else {
+                //nothing to do?
+            }
 
         }
 
@@ -169,12 +175,12 @@ namespace PhenoPad.CustomControl
                
             }
             corrected = true;
-            if (MainPage.Current.curPage != null) {
+            if (MainPage.Current != null) {
                 MainPage.Current.curPage.annotateCurrentLineAndUpdateUI(line_index: line_index);
                 MainPage.Current.curPage.ClearSelectionAsync();
+                MainPage.Current.NotifyUser($"Changed to {current}", NotifyType.StatusMessage, 1);
             }
 
-            MainPage.Current.NotifyUser($"Changed to {current}", NotifyType.StatusMessage, 1);
             UpdateLayout();
         }
 
@@ -200,6 +206,7 @@ namespace PhenoPad.CustomControl
             foreach (string candidate in candidates)
             {
                 Button tb = new Button();
+                //tb.Style = (Style)this.Resources["candidateStyle"];
                 tb.FontSize = 16;
                 tb.VerticalAlignment = VerticalAlignment.Center;
                 if (is_abbr && candidates.IndexOf(candidate) > 0)
@@ -229,6 +236,7 @@ namespace PhenoPad.CustomControl
             }
             WordBlock.Text = current;
             corrected = true;
+            //don't need to check for condition because this function will only be called from note editing mode
             MainPage.Current.curPage.RawStrokeTimer.Stop();
             MainPage.Current.curPage.annotateCurrentLineAndUpdateUI(line_index: line_index);
             MainPage.Current.curPage.HideCurLineStackPanel();

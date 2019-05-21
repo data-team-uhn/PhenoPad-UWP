@@ -409,7 +409,6 @@ namespace PhenoPad
                 curPageIndex = -1;
                 showAddIn(new List<ImageAndAnnotation>());
                 PhenotypeManager.getSharedPhenotypeManager().clearCache();
-
             });
         }
 

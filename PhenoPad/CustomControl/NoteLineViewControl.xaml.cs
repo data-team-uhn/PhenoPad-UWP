@@ -6,6 +6,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices.WindowsRuntime;
+using System.Threading.Tasks;
 using Windows.Foundation;
 using Windows.Foundation.Collections;
 using Windows.UI.Input.Inking;
@@ -27,6 +28,7 @@ namespace PhenoPad.CustomControl
         public int keyLine;
         public string type;
         public int pageID;
+        public double canvasLeft;
 
         public List<InkStroke> strokes;
         public AddInControl addin;
@@ -45,12 +47,13 @@ namespace PhenoPad.CustomControl
             keyLine = line;
             this.type = type;
             phenotypes = new List<Phenotype>();
-            if (phrase != null)
-                AddRecogPhrases(phrase);
+            //if (phrase != null)
+            //    AddRecogPhrases(phrase);
         }
 
         public void UpdateUILayout() {
             KeyTime.Text = keyTime.ToString();
+            KeyLine.Text = $"Page {pageID + 1}    Line {keyLine}";
             if (addin != null)
             {
                 AddInIcon.Child = addin;
@@ -63,6 +66,7 @@ namespace PhenoPad.CustomControl
         }
 
         public void SetChatList(List<TextMessage> texts) {
+
             Debug.WriteLine(texts.Count + "-----");
             this.chats = texts;
             this.text = this.chats.FirstOrDefault().Body;
@@ -83,6 +87,7 @@ namespace PhenoPad.CustomControl
                 candidates.Add(ph.candidate4);
                 candidates.Add(ph.candidate5);
                 WordBlockControl wb = new WordBlockControl(ph.line_index, ph.left, ph.word_index, ph.current, candidates);
+                Debug.WriteLine($"left={ph.left}");
                 wb.WordBlock.FontSize = 18;
                 wb.corrected = ph.is_corrected;
                 words.Add(wb);
@@ -125,14 +130,16 @@ namespace PhenoPad.CustomControl
 
         public void ChatBubble_Click(object sender, RoutedEventArgs args) {
             Debug.WriteLine($"clicked = {this.text}");
-            NoteViewPage.Current.ShowAllChatAt(sender,this.text);
+            TextMessage message = chats.FirstOrDefault();
+            NoteViewPage.Current.ShowAllChatAt(sender,message);
+            //NoteViewPage.Current.PlayMedia(message.start, message.end);
         }
 
-        public async void LoadPhenotypes(List<Phenotype> savedPhenotypes) {
+        public async Task<int> LoadPhenotypes(List<Phenotype> savedPhenotypes) {
             Debug.WriteLine($"loading...text={text}");
             Dictionary<string, Phenotype> annoResult = await PhenotypeManager.getSharedPhenotypeManager().annotateByNCRAsync(text);
             if (annoResult == null)
-                return;
+                return 0;
 
             var annoPhenos = annoResult.Values.ToList();
             foreach (var p in annoPhenos) {
@@ -147,6 +154,7 @@ namespace PhenoPad.CustomControl
                 PhenoListView.ItemsSource = phenotypes;
                 PhenoListView.UpdateLayout();
             }
+            return phenotypes.Count;
 
 
         }

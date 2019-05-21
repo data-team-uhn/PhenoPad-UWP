@@ -11,6 +11,7 @@ using System.Linq;
 using System.Runtime.InteropServices.WindowsRuntime;
 using System.Threading;
 using System.Threading.Tasks;
+using Windows.ApplicationModel.Core;
 using Windows.Foundation;
 using Windows.Foundation.Collections;
 using Windows.Media.Core;
@@ -43,6 +44,7 @@ namespace PhenoPad
         private Notebook notebookObject;
         public static string SERVER_ADDR = "137.135.117.253";
         public static string SERVER_PORT = "8080";
+        public int pageCount;
         public SpeechManager speechmana;
         private bool isReading; //flag for reading audio stream
         private DispatcherTimer readTimer;
@@ -52,6 +54,7 @@ namespace PhenoPad
         private List<byte> audioBuffer;
         public static NoteViewPage Current;
         public List<TextMessage> conversations;
+        public List<NoteLineViewControl> logs;
 
 
         public NoteViewPage()
@@ -64,6 +67,7 @@ namespace PhenoPad
             readTimer.Tick += EndAudioStream;
             cancelSource = new CancellationTokenSource();
             conversations = new List<TextMessage>();
+            logs = new List<NoteLineViewControl>();
             token = cancelSource.Token;
             BackButton.PointerPressed += aaaa;
 
@@ -108,7 +112,34 @@ namespace PhenoPad
             LoadNotebook();
         }
 
-        private async void PlayMedia()
+        public async Task<List<RecognizedPhrases>> GetAllRecognizedPhrases()
+        {
+            List<RecognizedPhrases> phrases = new List<RecognizedPhrases>();
+
+            await CoreApplication.MainView.CoreWindow.Dispatcher.RunAsync(CoreDispatcherPriority.Normal,
+            () =>
+            {
+                foreach (NoteLineViewControl noteline in logs )
+                {
+                    if (noteline.HWRs == null)
+                        continue;
+                    for (int i = 0; i < noteline.HWRs.Count; i++)
+                    {
+                        WordBlockControl wb = noteline.HWRs[i];
+                        //todo: figure out how to save canvasleft because wordblock has no canvas left property
+                        RecognizedPhrases ph = new RecognizedPhrases(noteline.keyLine, wb.left, i, wb.current, wb.candidates, wb.corrected);
+                        ph.pageId = noteline.pageID;
+                        phrases.Add(ph);
+                    }
+                }
+            }
+            );
+
+            return phrases;
+        }
+
+
+        public async void PlayMedia(double start, double end)
         {
             streamSocket = new StreamWebSocket();
             try
@@ -171,9 +202,13 @@ namespace PhenoPad
             //readTimer.Stop();
         }
 
-        public void ShowAllChatAt(object sender, string textMessage) {
-            TextMessage mess = conversations.Where(x => x.Body == textMessage).FirstOrDefault();
-            AllChatView.ScrollIntoView(mess);
+        public void ShowAllChatAt(object sender, TextMessage mess) {
+            //TextMessage mess = conversations.Where(x => x.Body == textMessage).FirstOrDefault();
+            int index = this.conversations.IndexOf(mess);
+            Debug.WriteLine(index+"kkkk");
+
+            AllChatView.ScrollIntoView(AllChatView.Items[index], ScrollIntoViewAlignment.Leading);
+
             ChatRecordFlyout.ShowAt((FrameworkElement)sender);
         }
 
@@ -189,63 +224,14 @@ namespace PhenoPad
                 AllChatView.ItemsSource = this.conversations;
 
                 noteNameTextBox.Text = notebookObject.name;
-                List<NoteLineViewControl> logs = await OperationLogger.getOpLogger().ParseOperationItems(notebookObject,conversations);
+                pageCount = notebookObject.notePages.Count;
+                Debug.WriteLine($"page count = {pageCount}");
+                logs = await OperationLogger.getOpLogger().ParseOperationItems(notebookObject,conversations);
                 logs = logs.OrderBy(x=>x.keyTime).ToList();
                 //foreach (var l in logs)
                 //    NoteLineStack.Children.Add(l);
                 aaa.ItemsSource = logs;
                 UpdateLayout();
-
-                //Gets all stored pages and notebook object from the disk
-                //List<string> pageIds = await FileManager.getSharedFileManager().GetPageIdsByNotebook(notebookId);
-                //List<InkStroke> allstrokes = new List<InkStroke>();
-
-                //for (int i = 0; i < pageIds.Count; i++) {
-                //    InkCanvas tempCanvas = new InkCanvas();
-                //    await FileManager.getSharedFileManager().LoadNotePageStroke(notebookId, i.ToString(), null, tempCanvas);
-                //    var strokes = tempCanvas.InkPresenter.StrokeContainer.GetStrokes();
-                //    allstrokes.AddRange(strokes.ToList());
-                //}
-
-                //TODO: separate operation items based on type, then order by timespan and rearrange
-                //List<OperationItem> phenotypes = logs.Where(x => x.type == "Phenotype").ToList();
-                //List<OperationItem> handwriting = logs.Where(x => x.type == "Strokes").ToList();
-                //List<Phenotype> saved = new List<Phenotype>();
-
-                //process saved phenotypes
-                //foreach (OperationItem op in phenotypes) {
-                //    if (saved.Contains(op.phenotype))
-                //        saved.Remove(op.phenotype);
-                //    saved.Add(op.phenotype);
-                //}
-                //process handwritings
-                //handwriting = handwriting.OrderBy(h => h.timestamp).ToList();
-                //foreach (OperationItem op in handwriting) {
-                //    DateTime start = op.timestamp;
-                //    DateTime end = op.timeEnd;
-                //    InkCanvas tempCanvas = new InkCanvas();
-                //    var strokes = allstrokes.Where(x => (x.StrokeStartedTime >= start && x.StrokeStartedTime <= end));
-                //    Debug.WriteLine($"all strokes added {strokes.Count()}.......");
-
-                //    foreach (var s in strokes)
-                //    {
-                //        var s_clone = s.Clone();
-                //        s_clone.Selected = true;
-                //        tempCanvas.InkPresenter.StrokeContainer.AddStroke(s_clone);
-                //    }
-                //    Rect bound = tempCanvas.InkPresenter.StrokeContainer.BoundingRect;
-                //    tempCanvas.InkPresenter.StrokeContainer.MoveSelected(new Point(-bound.Left, -bound.Top));
-                //    tempCanvas.Height = bound.Height;
-                //    tempCanvas.Width = bound.Width;
-
-                //    //strokesGrid.Children.Add(tempCanvas);
-                //}
-
-                //sorts the phenotypes in ascending timeline order
-                //saved = saved.OrderBy( p => p.time).ToList();
-                //PhenoListView.ItemsSource = saved;
-                //TimeListView.ItemsSource = saved;
-
             }
             catch (NullReferenceException ne)
             {
@@ -262,8 +248,20 @@ namespace PhenoPad
         }
 
         private void BackButton_Clicked(object sender, RoutedEventArgs e) {
+            //List<RecognizedPhrases> phrases = await GetAllRecognizedPhrases();
+            //var result = true;
+            //for(int i = 0; i< pageCount; i++) { 
+            //    string path = FileManager.getSharedFileManager().GetNoteFilePath(notebookId, i.ToString(), NoteFileType.RecognizedPhraseMeta);
+            //    var pagePhrases = phrases.Where(x=>x.pageId == i).ToList();
+            //    result &= await FileManager.getSharedFileManager().SaveObjectSerilization(path, pagePhrases, typeof(List<RecognizedPhrases>));
+            //}
+            //Debug.WriteLine($"phrase saving successful = {result}");
             Frame.Navigate(typeof(PageOverview));
         }
+
+
+
+
 
     }
 }

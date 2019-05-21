@@ -86,13 +86,13 @@
         </Flyout>
     </UserControl.Resources>
     
-    <Grid x:Name="rootGrid" Margin="0 10 0 10" Background="Transparent">
+    <Grid x:Name="rootGrid" Margin="0 10 0 10" MaxHeight="100" Background="Transparent">
 
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="200"/>
+            <ColumnDefinition Width="100"/>
             <ColumnDefinition Width="300"/>
-            <ColumnDefinition Width="4*"/>
-            <ColumnDefinition Width="5*"/>
+            <ColumnDefinition Width="500"/>
+            <ColumnDefinition Width="300"/>
         </Grid.ColumnDefinitions>
         <!--Key date / line #-->
         <Grid Grid.Column="0">
@@ -102,8 +102,8 @@
                 <RowDefinition Height="auto"/>
             </Grid.RowDefinitions>
 
-            <TextBlock x:Name="KeyTime" Grid.Row="0" FontSize="18" />
-            <TextBlock x:Name="KeyLine"  Visibility="Collapsed" FontSize="24" />
+            <TextBlock x:Name="KeyTime" Grid.Row="0" FontSize="8" />
+            <TextBlock x:Name="KeyLine" Grid.Row="1" FontSize="4" />
 
         </Grid>
         
@@ -119,20 +119,21 @@
                 <ColumnDefinition Width="auto" />
             </Grid.ColumnDefinitions>
 
-            <Grid x:Name="strokeGrid" x:FieldModifier="public" BorderThickness="2" CornerRadius="5" BorderBrush="Black" Padding="10">
+            <Grid x:Name="strokeGrid" x:FieldModifier="public" BorderThickness="0" Grid.Row="0" Grid.Column="0"
+                  CornerRadius="5" BorderBrush="Black" Padding="10">
                 <InkCanvas x:Name="strokeCanvas" x:FieldModifier="public"  />
             </Grid>
-            <Grid x:Name="addinGrid" x:FieldModifier="public" Background="Yellow" BorderThickness="2" CornerRadius="5" BorderBrush="Black" Grid.Row="0" Grid.Column="0" Grid.RowSpan="2" Grid.ColumnSpan="2"
-                   Width="300" Visibility="Collapsed">
-                <Viewbox Name="AddInIcon" Stretch="Fill" CanDrag="False"/>
+            <Grid x:Name="addinGrid" x:FieldModifier="public" BorderThickness="0" CornerRadius="5" BorderBrush="Black" 
+                  Grid.Row="0" Grid.Column="0" Grid.RowSpan="2" Grid.ColumnSpan="2">
+                <Viewbox Name="AddInIcon" Width="200" Height="200" CanDrag="False"/>
             </Grid>
 
             <StackPanel x:Name="recogPhraseStack" Grid.Column="0" Grid.Row="1"
                         Orientation="Horizontal" Spacing="5" />
         </Grid>
 
-        <Grid x:Name="chatGrid" x:FieldModifier="public" Grid.Column="3" VerticalAlignment="Top" Visibility="Collapsed" 
-              BorderThickness="2" CornerRadius="5" BorderBrush="Black">
+        <Grid x:Name="chatGrid" x:FieldModifier="public" Grid.Column="3" VerticalAlignment="Top"
+              BorderThickness="0" CornerRadius="5" BorderBrush="Black">
                 <local1:ChatListView x:Name="chatItem"                                    
                             IncrementalLoadingThreshold="2" Margin="5" 
                             ScrollViewer.VerticalScrollBarVisibility="Hidden">

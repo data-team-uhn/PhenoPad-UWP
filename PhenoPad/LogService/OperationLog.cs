@@ -5,7 +5,6 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 using Windows.Foundation;
 using Windows.UI.Core;
@@ -90,7 +89,7 @@ namespace PhenoPad.LogService
             string log = "";
             switch (opType) {
                 case OperationType.Stroke:
-                    //args format= (args0: strokeaStarttime, args1: strokeDuration, args2: lineIndex, args3: pageID)
+                    //args format= (args0: strokeID, args1: strokeaStarttime, args2: strokeDuration, args3: lineIndex, args4: pageID)
                     Debug.Assert(args.Count() == 5);
                     log = $"{GetTimeStamp()}|Stroke| {args[0]} | {args[1]} | {args[2]} | {args[3]} | {args[4]}";
                     break;
@@ -266,7 +265,6 @@ namespace PhenoPad.LogService
                             Int32.TryParse(segment[2].Trim(), out id);
                             DateTimeOffset sStartTime;
                             DateTimeOffset.TryParse(segment[3].Trim(), out sStartTime);
-
                             TimeSpan duration;
                             TimeSpan.TryParse(segment[4].Trim(), out duration);
                             Int32.TryParse(segment[5].Trim(), out lineNum);
@@ -276,6 +274,8 @@ namespace PhenoPad.LogService
                             {
                                 var phrase = recogPhrases.Where(x => x.line_index == lineNum).ToList();
                                 NoteLineViewControl newLine = new NoteLineViewControl(time, lineNum, "Stroke", phrase);
+                                Int32.TryParse(segment[6].Trim(), out newLine.pageID);
+
                                 newLine.UpdateUILayout();
 
                                 newLine.strokeCanvas.InkPresenter.IsInputEnabled = false;
@@ -287,11 +287,13 @@ namespace PhenoPad.LogService
                                         ss.Selected = true;
                                     newLine.strokes = s;
                                 }
+                                Debug.WriteLine("stroke, added new line");
                                 opitems.Add(newLine);
                             }
                             else { 
                                 sameLine.keyTime = sameLine.keyTime > time? sameLine.keyTime: time;
                                 sameLine.UpdateUILayout();
+                                Debug.WriteLine("stroke line already existing, updated timestamp");
                             }
 
                             break;
@@ -300,12 +302,14 @@ namespace PhenoPad.LogService
                             Debug.WriteLine(name);
                             Int32.TryParse(segment[3].Trim(), out lineNum);
                             NoteLineViewControl newline = new NoteLineViewControl(time, lineNum, "ADDIN");
-                            Int32.TryParse(segment[3].Trim(), out newline.pageID);
+                            Int32.TryParse(segment[4].Trim(), out newline.pageID);
                             var ia = imageAndAnno.Where(x => x.name == name).FirstOrDefault();
                             Debug.WriteLine(ia == null);
-                            newline.setAddin(ia);
-                            newline.UpdateUILayout();
-                            opitems.Add(newline);
+                            if (ia != null) {
+                                newline.setAddin(ia);
+                                newline.UpdateUILayout();
+                                opitems.Add(newline);
+                            }
                             break;
                     }
                 }
@@ -325,13 +329,17 @@ namespace PhenoPad.LogService
                     if (line == null)
                     {
                         line = new NoteLineViewControl(t.DisplayTime, -1, "SPEECH");
-                        opitems.Add(line);
-                        line.strokeGrid.Visibility = Visibility.Collapsed;
-                        line.chatGrid.Visibility = Visibility.Visible;
+                        //line.strokeGrid.Visibility = Visibility.Collapsed;
+                        //line.chatGrid.Visibility = Visibility.Visible;
                     }
                     line.SetChatList(conversations.Where(x => x.Body == t.Body).ToList());
-                    line.LoadPhenotypes(savedPhenotypes);
+                    int numLoaded = await line.LoadPhenotypes(savedPhenotypes);
                     line.UpdateUILayout();
+                    if (numLoaded > 0)
+                    {
+                        Debug.WriteLine("count greater than 1");
+                        opitems.Add(line);
+                    }
 
                 }
                 Debug.WriteLine("done setting");
