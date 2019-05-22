@@ -2001,7 +2001,7 @@ namespace PhenoPad.CustomControl
             if (pointer_pressing && y != -1)
             {
                 double offset = Math.Abs(e.GetCurrentPoint(scrollViewer).Position.Y - y);
-                Debug.WriteLine($"offset = {offset}");
+                //Debug.WriteLine($"offset = {offset}");
 
                 bool at_end = (scrollViewer.VerticalOffset + scrollViewer.ViewportHeight >= scrollViewer.ExtentHeight - 1) &&
                     (scrollViewer.VerticalOffset + scrollViewer.ViewportHeight <= scrollViewer.ExtentHeight + 1);

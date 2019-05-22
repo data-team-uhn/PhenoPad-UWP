@@ -132,7 +132,7 @@ namespace PhenoPad.LogService
             if (!CheckIfSameLog(log)) {
                 CacheLogs.Add(log);
                 lastHWRLog = log;
-                Debug.WriteLine(log);
+                //Debug.WriteLine(log);
             }
             await Windows.ApplicationModel.Core.CoreApplication.MainView.CoreWindow.Dispatcher.RunAsync(CoreDispatcherPriority.Normal,
                 () =>

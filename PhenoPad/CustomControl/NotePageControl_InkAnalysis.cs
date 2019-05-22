@@ -80,7 +80,9 @@ namespace PhenoPad.CustomControl
                 inkOperationAnalyzer.ClearDataForAllStrokes();
                 if (RawStrokeTimer.IsEnabled && Math.Floor(args.CurrentPoint.Position.Y / LINE_HEIGHT) != showingResultOfLine) {
                     Debug.WriteLine("started writing on new line,will tick timer");
-                    RawStrokeTimer_Tick();
+                    RawStrokeTimer.Stop();
+                    
+                    //RawStrokeTimer_Tick();
                 }
                 else
                     RawStrokeTimer.Stop();
@@ -152,24 +154,22 @@ namespace PhenoPad.CustomControl
         {
             EraseTimer.Stop();
             await inkAnalyzer.AnalyzeAsync();
+            //if the canvas is completely empty after erasing, just clear all HWR
             if (inkCan.InkPresenter.StrokeContainer.GetStrokes().Count == 0)
-            {
                 ClearAllParsedText();
-            }
+            //otherwise need to re-recognize for all lines that has been erased
             else {
                 foreach (int line in linesErased)
                 {
-                    List<HWRRecognizedText> updated = await RecognizeLine(line, wholeline: true);
-
-                    //while (updated == null)
-                    //{
-                    //    await Task.Delay(TimeSpan.FromSeconds(1));
-                    //    updated = await RecognizeLine(line, wholeline: true);
-                    //}
-                    NotePhraseControl npc = phrases.Where(x => x.Key == line).FirstOrDefault().Value;
-                    npc.UpdateRecognition(updated,false);
-                    Canvas.SetLeft(npc, lastStrokeBound.X);
-                    npc.SetPhrasePosition(lastStrokeBound.X, npc.canvasTop);
+                    var phrase = phrases.Where(x => x.Key == line).ToList();
+                    if (phrase.Count>0) {
+                        List<HWRRecognizedText> updated = await RecognizeLine(line, wholeline: true);
+                        NotePhraseControl npc = phrase.FirstOrDefault().Value;
+                        npc.UpdateRecognition(updated, fromServer:false);
+                        Canvas.SetLeft(npc, lastStrokeBound.X);
+                        npc.SetPhrasePosition(lastStrokeBound.X, npc.canvasTop);
+                        Debug.WriteLine("erased recognized");
+                    }
                 }
             }
             linesErased.Clear();
@@ -178,6 +178,7 @@ namespace PhenoPad.CustomControl
         private void RawStrokeTimer_Tick(object sender = null, object e = null)
         {
             RawStrokeTimer.Stop();
+
             recognizeAndSetUpUIForLine(curLineObject,timerFlag: true);                       
         }
 
@@ -363,9 +364,9 @@ namespace PhenoPad.CustomControl
             if (timerFlag)
             {
                 curLineWordsStackPanel.Children.Clear();
-                curLineParentStack.Visibility = Visibility.Collapsed;
-                if (curLineCandidatePheno.Count == 0)
-                    curWordPhenoControlGrid.Visibility = Visibility.Collapsed;
+                curLineResultPanel.Visibility = Visibility.Collapsed;
+                //if (curLineCandidatePheno.Count == 0)
+                //    curWordPhenoControlGrid.Visibility = Visibility.Collapsed;
             }
 
             if (indetails)
@@ -421,35 +422,39 @@ namespace PhenoPad.CustomControl
             {
                 // clear selection
                 foreach (var stroke in inkCanvas.InkPresenter.StrokeContainer.GetStrokes())
-                {
                     stroke.Selected = false;
-                }
                 //first setting lower/uppbound in case argument lineid refers to UI line (called from erase.tick)
                 double lowerbound = lineid * LINE_HEIGHT;
                 double upperbound = (lineid + 1) * LINE_HEIGHT;
                 // select storkes of this line
                 var allwords = inkAnalyzer.AnalysisRoot.FindNodes(InkAnalysisNodeKind.InkWord);
 
-                ////for microsoft HWR line.id
-                //exclusively for erased lines
                 var thisline = new List<IInkAnalysisNode>();
                 int line_index = 0;
                 if (wholeline)
                 {
+                    //trys to get all strokes at line 
                     thisline.AddRange(allwords.Where(x => x.BoundingRect.Y + (x.BoundingRect.Height / 5) >= lowerbound && x.BoundingRect.Y + (x.BoundingRect.Height / 5) <= upperbound).OrderByDescending(x => x.BoundingRect.X).ToList());
+                    if (thisline.Count <= 0) {
+                        //if no words just return
+                        return new List<HWRRecognizedText>();
+                    }
                     var temp = thisline.OrderBy(x => x.BoundingRect.X).ToList();
-                    lastStrokeBound = temp.Count == 0? lastStrokeBound: temp[0].BoundingRect;
+                    lastStrokeBound = temp[0].BoundingRect;
                 }
                 else {
-                    thisline.Add( allwords.Where(x => x.BoundingRect.Y + (x.BoundingRect.Height / 5) >= lowerbound && x.BoundingRect.Y + (x.BoundingRect.Height / 5) <= upperbound).FirstOrDefault());
-                    lastStrokeBound = thisline.Count == 0? lastStrokeBound: thisline[0].BoundingRect;
+                    //tries to get the first word at line
+                    var firstWord = allwords.Where(x => x.BoundingRect.Y + (x.BoundingRect.Height / 5) >= lowerbound && x.BoundingRect.Y + (x.BoundingRect.Height / 5) <= upperbound).FirstOrDefault();
+                    if (firstWord == null)
+                    {
+                        //if no words just return
+                        return new List<HWRRecognizedText>();
+                    }
+                    thisline.Add(firstWord);
+                    lastStrokeBound = thisline[0].BoundingRect;
                 }
                 //Debug.WriteLine($"first word is at x={lastStrokeBound.X}");
-                //Debug.WriteLine($"this line node count = {thisline.Count}");
-
-                //return empty recognized result if there's no strokes
-                if (thisline.Count == 0)
-                    return new List<HWRRecognizedText>();
+                Debug.WriteLine($"this line node count = {thisline.Count}");
 
                 line_index = getLineNumByRect(thisline[0].BoundingRect);
 
@@ -542,27 +547,6 @@ namespace PhenoPad.CustomControl
                         foreach (var b in wbc.GetCurWordCandidates()) {
                             curLineWordsStackPanel.Children.Add(b);
                         }
-                        //foreach (string alternative in wbc.candidates)
-                        //{
-                        //    Button alter = new Button();
-                        //    alter.VerticalAlignment = VerticalAlignment.Center;
-                        //    alter.FontSize = 16;
-                        //    alter.Content = alternative;
-                        //    alter.Click += (object sender, RoutedEventArgs e) =>
-                        //    {
-                        //        int ind = wbc.candidates.IndexOf((string)((Button)sender).Content);
-                        //        wbc.selected_index = ind;
-                        //        wbc.current = wbc.candidates[ind];
-                        //        wbc.WordBlock.Text = wbc.current;
-                        //        wbc.corrected = true;
-                        //        HideCurLineStackPanel();
-                        //        annotateCurrentLineAndUpdateUI(line_index: lineNum);
-                        //        MainPage.Current.NotifyUser($"Changed to {wbc.current}", NotifyType.StatusMessage, 1);
-                        //        ClearSelectionAsync();
-                        //        UpdateLayout();
-                        //    };
-                        //    curLineWordsStackPanel.Children.Add(alter);
-                        //}
                         TextBox tb = new TextBox();
                         tb.Width = 40;
                         tb.Height = curLineWordsStackPanel.ActualHeight * 0.7;
