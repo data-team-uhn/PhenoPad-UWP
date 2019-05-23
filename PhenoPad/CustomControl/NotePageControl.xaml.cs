@@ -287,14 +287,14 @@ namespace PhenoPad.CustomControl
             phrases = new Dictionary<int, NotePhraseControl>();
             lastWordCount = 0;
 
-            //for note-page switching event handlers
-            scrollViewer.PointerPressed += ScrollViewer_PointerPressed;
-            scrollViewer.PointerMoved += ScrollViewer_PointerMoved;
-            scrollViewer.PointerReleased += ScrollViewer_PointerReleased;
-            //outputGrid.ManipulationDelta += aaa;
-            EHRScrollViewer.PointerPressed += EHRScrollViewer_PointerPressed;
-            EHRScrollViewer.PointerMoved += EHRScrollViewer_PointerMoved;
-            EHRScrollViewer.PointerReleased += EHRScrollViewer_PointerReleased;
+            ////for note-page switching event handlers
+            //scrollViewer.PointerPressed += ScrollViewer_PointerPressed;
+            //scrollViewer.PointerMoved += ScrollViewer_PointerMoved;
+            //scrollViewer.PointerReleased += ScrollViewer_PointerReleased;
+            ////outputGrid.ManipulationDelta += aaa;
+            //EHRScrollViewer.PointerPressed += EHRScrollViewer_PointerPressed;
+            //EHRScrollViewer.PointerMoved += EHRScrollViewer_PointerMoved;
+            //EHRScrollViewer.PointerReleased += EHRScrollViewer_PointerReleased;
 
         }
 

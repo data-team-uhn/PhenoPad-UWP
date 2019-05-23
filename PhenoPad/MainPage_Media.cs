@@ -332,10 +332,11 @@ namespace PhenoPad
         private async void AudioStreamButton_Clicked(object sender = null, RoutedEventArgs e = null)
         {
             //Temporarily disables audio button for avoiding frequent requests
-            audioButton.IsEnabled = false;
+            DisableAudioButton();
 
             // using external microphone
-            if (ConfigService.ConfigService.getConfigService().IfUseExternalMicrophone()) {
+            if (ConfigService.ConfigService.getConfigService().IfUseExternalMicrophone())
+            {
                 if (!bluetoonOn)
                 {
                     NotifyUser("Bluetooth is not connected, cannot use External Microphone.", NotifyType.ErrorMessage, 2);
@@ -347,13 +348,16 @@ namespace PhenoPad
                     if (speechEngineRunning)
                         await SpeechManager.getSharedSpeechManager().StopASRResults();
                     //Bluetooth is connected, just start ASR
-                    else 
+                    else
                         StartAudioAfterBluetooth();
                 }
             }
             // using internal microphone
             else
-                changeSpeechEngineState();
+            {
+                var success = await changeSpeechEngineState();
+                ReEnableAudioButton();
+            }
         }
 
         public async Task RestartAudioOnException() {
@@ -366,9 +370,9 @@ namespace PhenoPad
             });
         }
 
-        public async void RestartBTOnException() {
-
-            Debug.WriteLine("==============================================line 372");
+        public async void RestartBTOnException()
+        {
+            //Handles DEXCEPTION received from raspberry pi, restarts bluetooth connection only
             uiClinet.disconnect();
             //stops speech service before closing bluetooth
             await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, async () => {
@@ -376,7 +380,6 @@ namespace PhenoPad
                 if (speechEngineRunning)
                     await SpeechManager.getSharedSpeechManager().StopASRResults();
 
-                Debug.WriteLine("stopped ASR RESULT \n");
                 bool result = bluetoothService.CloseConnection();
 
                 if (result)
@@ -389,38 +392,26 @@ namespace PhenoPad
                     Debug.WriteLine("Bluetooth Connection disconnected");
                 }
                 else
+                {
                     LogService.MetroLogger.getSharedLogger().Error("Bluetooth Connection failed to disconnect.");
+                }
 
             });
 
             await Task.Delay(TimeSpan.FromSeconds(5));
+            var success = await changeSpeechEngineState_BT();
+            if (!success) {
+                LogService.MetroLogger.getSharedLogger().Error("Bluetooth Connection failed to reconnect.");
+            }
 
-            Debug.WriteLine("after 5 sec, will try to re connect blue tooth");
 
-            await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, async () => {
-                //uiClinet = UIWebSocketClient.getSharedUIWebSocketClient();
-                //bool uiResult = await uiClinet.ConnectToServer();
-                //if (!uiResult)
-                //    LogService.MetroLogger.getSharedLogger().Error("UIClient failed to connect.");
-                //this.bluetoothService = BluetoothService.BluetoothService.getBluetoothService();
-                //Debug.WriteLine("==============================================line 381");
-                //await this.bluetoothService.Initialize();
-                changeSpeechEngineState_BT();               
-            });
-            await Task.Delay(TimeSpan.FromSeconds(5));
-            //Debug.WriteLine("after 5 sec, will try to re connect audio");
-
-            //await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, async () => {
-            //    AudioStreamButton_Clicked();
-            //});
-            Debug.WriteLine("END OF RESTART ON BT...\n\n");
         }
 
         /// <summary>
         /// Switch speech engine state for blue tooth devices
         /// </summary>
         /// <param name="state">current state of speech engine</param>
-        public async void changeSpeechEngineState_BT()
+        public async Task<bool> changeSpeechEngineState_BT()
         {
             try
             {
@@ -435,19 +426,22 @@ namespace PhenoPad
                     //=====
                     this.bluetoothService = BluetoothService.BluetoothService.getBluetoothService();
                     await this.bluetoothService.Initialize();
+                    return true;
                 }
 
                 else
                 {
                     uiClinet.disconnect();
+                    bool result = true;
                     //stops speech service before closing bluetooth
+
                     await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, async () => {
 
                         if (speechEngineRunning)
                             await SpeechManager.getSharedSpeechManager().StopASRResults();
 
                         Debug.WriteLine("stopped ASR RESULT \n");
-                        bool result = bluetoothService.CloseConnection();
+                        result = bluetoothService.CloseConnection();
 
                         if (result)
                         {
@@ -464,13 +458,14 @@ namespace PhenoPad
                         }
 
                     });
+                    return result;
+
                 }
-
-
             }
             catch (Exception e)
             {
                 LogService.MetroLogger.getSharedLogger().Error("Failed to start/stop bluetooth audio: " + e.Message);
+                return false;
             }
 
         }
@@ -486,38 +481,61 @@ namespace PhenoPad
         public void onAudioStarted(object sender, object e) {
             audioTimer.Stop();
             speechEngineRunning = true;
-            //ReEnableAudioButton();
             NotifyUser("Audio service started.", NotifyType.StatusMessage, 3);
             LogService.MetroLogger.getSharedLogger().Info("Audio started.");
-            audioButton.IsEnabled = true;
-            audioStatusText.Text = "ON";
-            audioButton.IsChecked = true;
+            ReEnableAudioButton();
         }
 
         public void onAudioEnded() {
             speechEngineRunning = false;
             NotifyUser("Audio service ended.", NotifyType.StatusMessage, 3);
             LogService.MetroLogger.getSharedLogger().Info("Audio stopped.");
-            audioStatusText.Text = "OFF";
             ReEnableAudioButton();
-            audioButton.IsChecked = false;
-            audioButton.IsEnabled = true;
         }
+
+        public void DisableAudioButton() {
+            audioButton.IsEnabled = false;
+            audioStatusText.Text = "...";
+        }
+
+        public async void ReEnableAudioButton(object sender = null, object e = null)
+        {
+            await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, async () => {
+                await Task.Delay(TimeSpan.FromSeconds(7));
+                audioButton.IsEnabled = true;
+                if (speechEngineRunning)
+                {
+                    audioStatusText.Text = "ON";
+                    audioButton.IsChecked = true;
+                }
+                else
+                {
+                    audioStatusText.Text = "OFF";
+                    audioButton.IsChecked = false;
+                }
+            });
+        }
+
 
         /// <summary>
         /// Switch speech engine state for plug-in devices
         /// </summary>
         /// <param name="state">current state of speech engine</param>
-        public async void changeSpeechEngineState()
+        public async Task<bool> changeSpeechEngineState()
         {
             try
             {
-                Debug.WriteLine("switching audio state....................");
+                var success = true;
                 if (speechEngineRunning == false)
-                    await SpeechManager.getSharedSpeechManager().StartAudio();
+                {
+                    NotifyUser("Starting Audio using internal microphone ...", NotifyType.StatusMessage, 7);
+                    success = await SpeechManager.getSharedSpeechManager().StartAudio();
+                }
                 else
-                    await SpeechManager.getSharedSpeechManager().EndAudio(notebookId);
-
+                {
+                    NotifyUser("Ending Audio ...", NotifyType.StatusMessage, 2);
+                    success = await SpeechManager.getSharedSpeechManager().EndAudio(notebookId);
+                }
                 //#region demo
                 ////FOR DEMO PURPOSES, COMMENT OUT FOR REAL USAGE
                 //if (speechEngineRunning == false)
@@ -525,11 +543,12 @@ namespace PhenoPad
                 //else
                 //    await SpeechManager.getSharedSpeechManager().EndAudioDemo(notebookId);
                 //#endregion
+                return success;
             }
             catch (Exception ex)
             {
                 LogService.MetroLogger.getSharedLogger().Error("Failed to start/stop audio: " + ex.Message);
-                ReEnableAudioButton();
+                return false;
             }
 
         }

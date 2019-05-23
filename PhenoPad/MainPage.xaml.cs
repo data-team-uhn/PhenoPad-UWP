@@ -140,9 +140,7 @@ namespace PhenoPad
             PhenoDetailAddr.Text = PhenotypeManager.PHENOTYPEINFO_ADDR;
 
             AbbreviationON_Checked(null, null);
-
-            //initializes bluetooth on first mainpage startup
-            changeSpeechEngineState_BT();
+            InitializeBTConnection();
 
             audioTimer = new DispatcherTimer();
             //waits 3 seconds before re-enabling microphone button
@@ -164,6 +162,10 @@ namespace PhenoPad
                 }
                 args.Handled = false;
             };
+        }
+
+        private async void InitializeBTConnection() {
+            var success = await changeSpeechEngineState_BT();
         }
 
         /// <summary>
@@ -628,13 +630,6 @@ namespace PhenoPad
             }
         }
 
-        public async void ReEnableAudioButton(object sender = null, object e = null)
-        {
-            await Task.Delay(TimeSpan.FromSeconds(1));
-            audioButton.IsEnabled = true;
-            audioButton.IsChecked = false;
-            audioStatusText.Text = "OFF";
-        }
 
         //=======================================SWITCHING NOTE PAGES========================================
         public void AddNewNotePage(string state = "") {

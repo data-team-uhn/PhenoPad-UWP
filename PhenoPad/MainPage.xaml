@@ -365,7 +365,7 @@
                             
                             <StackPanel>
                                 <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE720;" HorizontalAlignment="Left" Width="21"/>
-                                <TextBlock FontSize="12" Name="audioStatusText" Text="OFF"></TextBlock>
+                                <TextBlock HorizontalTextAlignment="Center" FontSize="12" Name="audioStatusText" Text="OFF"></TextBlock>
                             </StackPanel>
                         </ToggleButton>
 

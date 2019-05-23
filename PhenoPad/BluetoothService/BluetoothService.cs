@@ -122,8 +122,6 @@ namespace PhenoPad.BluetoothService
                         if (attempNum == 6)
                         {
                             //LogService.MetroLogger.getSharedLogger().Error("Bluetooth connection attempt exceeded 5, trying again later ...");
-                            rootPage.audioButton.IsEnabled = true;
-                            rootPage.audioButton.IsChecked = false;
                             rootPage.bluetoonOn = false;
                             return;
                         }
@@ -338,12 +336,12 @@ namespace PhenoPad.BluetoothService
         public async void HandleAudioException(string message) {
             if (message.Equals(RESTART_AUDIO_FLAG))
             {
-                Debug.WriteLine("BluetoothService=> Got EXCEPTION");
+                LogService.MetroLogger.getSharedLogger().Error("BluetoothService=> GOT EXCEPTION, will try to restart audio");
                 await MainPage.Current.RestartAudioOnException();
                 Debug.WriteLine("BluetoothService=> after line 344");
             }
             else if (message.Equals(RESTART_BLUETOOTH_FLAG)) {
-                Debug.WriteLine("BluetoothService=> Got DEXCEPTION");
+                LogService.MetroLogger.getSharedLogger().Error("BluetoothService=> GOT DEXCEPTION, will try to restart bluetooth");
                 MainPage.Current.RestartBTOnException();
             }
             return;

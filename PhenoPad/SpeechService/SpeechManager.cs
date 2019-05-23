@@ -186,7 +186,7 @@ namespace PhenoPad.SpeechService
                 }
                 else
                     succeed = await speechResultsSocket.ConnectToServer();
-            }
+            }//END OF CONNECTION LOOP
 
             MainPage.Current.audioTimer.Start();
             SpeechPage.Current.setSpeakerButtonEnabled(true);
@@ -194,8 +194,8 @@ namespace PhenoPad.SpeechService
             cancellationSource = new CancellationTokenSource();
             // need this to actually cancel reading from websocketS
 
+            //ENTERS MESSAGE RECEIVING LOOP
             CancellationToken cancellationToken = cancellationSource.Token;                 
-
             this.speechInterpreter.newConversation();
             OperationLogger.getOpLogger().Log(OperationType.ASR, "Started");
             await Task.Run(async () =>
@@ -308,7 +308,6 @@ namespace PhenoPad.SpeechService
                 MetroLogger.getSharedLogger().Error("ASR encountered some problem, will call StopASRRsults ...");
                 await StopASRResults(false);
             }
-
             return;
         }
 
@@ -338,7 +337,6 @@ namespace PhenoPad.SpeechService
             bool attemptConnection = true;
             bool succeed = false;
             int count = 1;
-            MainPage.Current.NotifyUser("Connecting to speech engine, please wait ...", NotifyType.StatusMessage, 7);
             while (attemptConnection)
             {
                 try
@@ -380,7 +378,6 @@ namespace PhenoPad.SpeechService
                         MainPage.Current.NotifyUser("Connection cancelled", NotifyType.ErrorMessage, 2);
                         attemptConnection = false;
                         MainPage.Current.ReEnableAudioButton();
-                        MainPage.Current.audioButton.IsChecked = false;
                         return false;
                     }
                 }                
@@ -424,7 +421,6 @@ namespace PhenoPad.SpeechService
             // need this to actually cancel reading from websocketS
             CancellationToken cancellationToken = cancellationSource.Token;
             this.speechInterpreter.newConversation();
-
             await Task.Run(async () =>
              {
                  // Weird issue but seems to be some buffer issue
@@ -548,7 +544,6 @@ namespace PhenoPad.SpeechService
             //await endSemaphoreSlim.WaitAsync();
             try
             {
-                MainPage.Current.NotifyUser("Disconnecting from speech engine ...", NotifyType.StatusMessage, 2);
                 if (graph != null && (fileInputNode != null || useFile == false))
                 {                   
                     //deviceInputNode.Stop();

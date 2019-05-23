@@ -109,6 +109,7 @@ namespace PhenoPad.CustomControl
                     //Process strokes that excess maximum height for shape recognition (addin control)
                     if (s.BoundingRect.Height > MAX_WRITING)
                     {
+                        MainPage.Current.NotifyUser("Stroke exceeded maximum writing",NotifyType.StatusMessage,1);
                         inkOperationAnalyzer.AddDataForStroke(s);
                         try
                         {
@@ -210,8 +211,14 @@ namespace PhenoPad.CustomControl
             //if user is still writing at the current line, update the server recognition
             if (line == showingResultOfLine) {
                 curLineWordsStackPanel.Children.Clear();
-                foreach (var b in words[lastWordIndex].GetCurWordCandidates())
-                    curLineWordsStackPanel.Children.Add(b);
+                //foreach (var b in words[lastWordIndex].GetCurWordCandidates())
+                //    curLineWordsStackPanel.Children.Add(b);
+                TextBlock sentence = new TextBlock();
+                sentence.FontSize = 24;
+                sentence.Text = phrases[line].GetString();
+                curLineWordsStackPanel.Children.Add(sentence);
+
+
             }
         }
 
@@ -348,15 +355,21 @@ namespace PhenoPad.CustomControl
                 return;
 
             curLineWordsStackPanel.Children.Clear();
-            foreach (var b in words[lastWordIndex].GetCurWordCandidates())
-                curLineWordsStackPanel.Children.Add(b);
+            //foreach (var b in words[lastWordIndex].GetCurWordCandidates())
+            //    curLineWordsStackPanel.Children.Add(b);
+
+            TextBlock sentence = new TextBlock();
+            sentence.FontSize = 24;
+            sentence.Text = phrases[lineNum].GetString();
+            curLineWordsStackPanel.Children.Add(sentence);
 
             loading.Visibility = Visibility.Collapsed;
             curLineWordsStackPanel.Visibility = Visibility.Visible;
             curLineParentStack.Visibility = Visibility.Visible;
             curLineResultPanel.Visibility = Visibility.Visible;
-            Canvas.SetLeft(curLineResultPanel, lastWordPoint.X);
-            Canvas.SetTop(curLineResultPanel, lastWordPoint.Y - LINE_HEIGHT - 15);
+            //Canvas.SetLeft(curLineResultPanel, lastWordPoint.X);
+            Canvas.SetLeft(curLineResultPanel, phrases[lineNum].canvasLeft);
+            Canvas.SetTop(curLineResultPanel, (showingResultOfLine - 1) * LINE_HEIGHT - 15);
 
             // annotation and UI
             annotateCurrentLineAndUpdateUI(line);
@@ -437,6 +450,7 @@ namespace PhenoPad.CustomControl
                     thisline.AddRange(allwords.Where(x => x.BoundingRect.Y + (x.BoundingRect.Height / 5) >= lowerbound && x.BoundingRect.Y + (x.BoundingRect.Height / 5) <= upperbound).OrderByDescending(x => x.BoundingRect.X).ToList());
                     if (thisline.Count <= 0) {
                         //if no words just return
+                        //MainPage.Current.NotifyUser("whole line no count", NotifyType.ErrorMessage, 1);
                         return new List<HWRRecognizedText>();
                     }
                     var temp = thisline.OrderBy(x => x.BoundingRect.X).ToList();
@@ -444,10 +458,12 @@ namespace PhenoPad.CustomControl
                 }
                 else {
                     //tries to get the first word at line
-                    var firstWord = allwords.Where(x => x.BoundingRect.Y + (x.BoundingRect.Height / 5) >= lowerbound && x.BoundingRect.Y + (x.BoundingRect.Height / 5) <= upperbound).FirstOrDefault();
+                    var firstWord = allwords.Where(x => x.BoundingRect.Y >= lowerbound - 10 && x.BoundingRect.Y + (x.BoundingRect.Height / 2) <= upperbound).FirstOrDefault();
                     if (firstWord == null)
                     {
                         //if no words just return
+                        //MainPage.Current.NotifyUser("whole line no count", NotifyType.ErrorMessage, 1);
+
                         return new List<HWRRecognizedText>();
                     }
                     thisline.Add(firstWord);
