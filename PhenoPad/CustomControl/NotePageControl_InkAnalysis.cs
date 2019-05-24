@@ -211,14 +211,12 @@ namespace PhenoPad.CustomControl
             //if user is still writing at the current line, update the server recognition
             if (line == showingResultOfLine) {
                 curLineWordsStackPanel.Children.Clear();
-                //foreach (var b in words[lastWordIndex].GetCurWordCandidates())
-                //    curLineWordsStackPanel.Children.Add(b);
-                TextBlock sentence = new TextBlock();
-                sentence.FontSize = 24;
-                sentence.Text = phrases[line].GetString();
-                curLineWordsStackPanel.Children.Add(sentence);
-
-
+                foreach (var tb in phrases[line].GetCurLineHWR())
+                    curLineWordsStackPanel.Children.Add(tb);
+                //TextBlock sentence = new TextBlock();
+                //sentence.FontSize = 24;
+                //sentence.Text = phrases[line].GetString();
+                //curLineWordsStackPanel.Children.Add(sentence);
             }
         }
 
@@ -355,13 +353,13 @@ namespace PhenoPad.CustomControl
                 return;
 
             curLineWordsStackPanel.Children.Clear();
-            //foreach (var b in words[lastWordIndex].GetCurWordCandidates())
-            //    curLineWordsStackPanel.Children.Add(b);
+            foreach (var txtblock in phrases[lineNum].GetCurLineHWR())
+                curLineWordsStackPanel.Children.Add(txtblock);
 
-            TextBlock sentence = new TextBlock();
-            sentence.FontSize = 24;
-            sentence.Text = phrases[lineNum].GetString();
-            curLineWordsStackPanel.Children.Add(sentence);
+            //TextBlock sentence = new TextBlock();
+            //sentence.FontSize = 24;
+            //sentence.Text = phrases[lineNum].GetString();
+            //curLineWordsStackPanel.Children.Add(sentence);
 
             loading.Visibility = Visibility.Collapsed;
             curLineWordsStackPanel.Visibility = Visibility.Visible;

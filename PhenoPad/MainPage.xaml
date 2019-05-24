@@ -225,7 +225,7 @@
                                             x:Name="BTConnectBtn"
                                             Tag="Full Screen" Click="BTConnectBtn_Click">
                                 <MenuFlyoutItem.Icon>
-                                    <SymbolIcon Symbol="DisconnectDrive"/>
+                                    <SymbolIcon Symbol="Sync"/>
                                 </MenuFlyoutItem.Icon>
                             </MenuFlyoutItem>
 

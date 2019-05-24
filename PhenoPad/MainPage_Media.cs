@@ -369,8 +369,10 @@ namespace PhenoPad
 
         private async void BTConnectBtn_Click(object sender, RoutedEventArgs e)
         {
-            var result = await changeSpeechEngineState_BT();
-            NotifyUser($"Bluetooth service is now {bluetoonOn == true}", NotifyType.StatusMessage, 1);
+            var result = true;
+            await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, async () => {
+                result = await changeSpeechEngineState_BT();
+            });
         }
 
         public async Task<bool> changeSpeechEngineState_BT()
@@ -391,7 +393,7 @@ namespace PhenoPad
                     //    LogService.MetroLogger.getSharedLogger().Error("UIClient failed to connect.");
                     //=====
                     bluetoothService = BluetoothService.BluetoothService.getBluetoothService();
-                    await bluetoothService.Initialize();
+                    await bluetoothService.Initialize();                   
                     return true;
                 }
                 catch (Exception e) {

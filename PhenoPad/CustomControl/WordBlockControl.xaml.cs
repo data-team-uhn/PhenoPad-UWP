@@ -227,7 +227,7 @@ namespace PhenoPad.CustomControl
             TextBlock tb = new TextBlock();
             tb.FontSize = 22;
             tb.Tapped += ShowWordCandidate;
-
+            tb.Text = current;
             if (is_abbr)
             {
                 tb.Foreground = new SolidColorBrush(Colors.Orange);
