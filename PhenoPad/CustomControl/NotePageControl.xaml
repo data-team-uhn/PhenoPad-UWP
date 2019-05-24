@@ -311,7 +311,6 @@
                                 <ProgressRing x:Name="loading" IsActive="True" Margin="10 0 10 0" Visibility="Collapsed"/>
                                 <StackPanel Name="curLineWordsStackPanel" Orientation="Horizontal" Spacing="5" HorizontalAlignment="Right"
                                             Height="45" Padding="10 0 10 0" />
-
                                 <ListView Visibility="Collapsed" Padding="5 0 0 0" Height="40"
                                   ScrollViewer.HorizontalScrollMode="Enabled"
                                   ScrollViewer.VerticalScrollMode="Disabled"
@@ -341,11 +340,6 @@
                                         </Style>
                                     </ListView.ItemContainerStyle>
                                 </ListView>
-                                <!--<Button Background="WhiteSmoke" Foreground="PaleVioletRed" Width="{x:Bind LINE_HEIGHT}" 
-                                        Height="45" Click="curLineResultButtonClick" Style="{StaticResource ButtonStyle1}"
-                                        RelativePanel.AlignRightWithPanel="True">
-                                    <SymbolIcon Symbol="Clear"/>
-                                </Button>-->
                             </StackPanel>
                         </Grid>
                     </Canvas>

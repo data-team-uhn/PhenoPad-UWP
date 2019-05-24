@@ -9,6 +9,7 @@ using System.Xml.Serialization;
 using PhenoPad.HWRService;
 using Windows.Foundation;
 using Windows.Foundation.Collections;
+using Windows.UI;
 using Windows.UI.Core;
 using Windows.UI.Input.Inking;
 using Windows.UI.Xaml;
@@ -268,6 +269,17 @@ namespace PhenoPad.CustomControl
                     new_index++;
                 }
             }
+        }
+
+        public List<TextBlock> GetCurLineHWR() {
+            List<TextBlock> result = new List<TextBlock>();
+            for (int i = 0; i < words.Count; i++) {
+                if (i == words.Count - 1) {
+                    words[i].GetCurWordTextBlock().Foreground = new SolidColorBrush(Colors.DarkBlue);
+                }
+                result.Add(words[i].GetCurWordTextBlock());
+            }
+            return result;
         }
 
 

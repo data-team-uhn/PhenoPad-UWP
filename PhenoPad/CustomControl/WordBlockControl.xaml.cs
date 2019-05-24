@@ -8,6 +8,7 @@ using System.Runtime.InteropServices.WindowsRuntime;
 using System.Xml.Serialization;
 using Windows.Foundation;
 using Windows.Foundation.Collections;
+using Windows.UI;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
 using Windows.UI.Xaml.Controls.Primitives;
@@ -220,6 +221,21 @@ namespace PhenoPad.CustomControl
             }
             return lst;
 
+        }
+
+        public TextBlock GetCurWordTextBlock() {
+            TextBlock tb = new TextBlock();
+            tb.FontSize = 22;
+            tb.Tapped += ShowWordCandidate;
+
+            if (is_abbr)
+            {
+                tb.Foreground = new SolidColorBrush(Colors.Orange);
+            }
+            else {
+                tb.Foreground = new SolidColorBrush(Colors.Black);
+            }
+            return tb;
         }
 
         private void CandidateList_Click(object sender, RoutedEventArgs args)

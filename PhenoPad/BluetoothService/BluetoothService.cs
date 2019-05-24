@@ -28,11 +28,10 @@ namespace PhenoPad.BluetoothService
         private BluetoothDevice bluetoothDevice = null;
         public static string RESTART_AUDIO_FLAG = "EXCEPTION";
         public static string RESTART_BLUETOOTH_FLAG = "DEXCEPTION";
-
+        public static BluetoothService sharedBluetoothService;
 
         public bool initialized = false;
 
-        public static BluetoothService sharedBluetoothService;
 
         public static BluetoothService getBluetoothService()
         {
@@ -51,6 +50,7 @@ namespace PhenoPad.BluetoothService
         {
             rootPage = MainPage.Current;
             bool blueConnected = await checkConnection();
+            Debug.WriteLine($"\n Initialize checkConnection returned = {blueConnected}");
             if (!blueConnected)
             {
                 rootPage.bluetoothprogress.Visibility = Windows.UI.Xaml.Visibility.Visible;
@@ -58,17 +58,15 @@ namespace PhenoPad.BluetoothService
                 await Windows.ApplicationModel.Core.CoreApplication.MainView.CoreWindow.Dispatcher.RunAsync(CoreDispatcherPriority.Normal, async () =>{
                     while (!initialized)
                     {
-                        Debug.WriteLine("Trying Bluetooth connection ...");
-                        await Task.Delay(TimeSpan.FromSeconds(3));
+                        //Debug.WriteLine("Trying Bluetooth connection ...");
+                        //await Task.Delay(TimeSpan.FromSeconds(3));
                         await InitiateConnection();
                     }
-                    rootPage.NotifyUser("Bluetooth is now connected.", NotifyType.StatusMessage, 2);
                 });
             }
             else
             {
-                rootPage.NotifyUser("Bluetooth is connected.", NotifyType.StatusMessage, 2);
-                rootPage.bluetoonOn = true;
+                rootPage.OnBTConnectSuccess();
             }
             return;
         }
@@ -82,7 +80,8 @@ namespace PhenoPad.BluetoothService
                 return;
 
             var serviceInfoCollection = await DeviceInformation.FindAllAsync(RfcommDeviceService.GetDeviceSelector(RfcommServiceId.SerialPort), new string[] { "System.Devices.AepService.AepId" });
-            //Debug.WriteLine("line 71");
+
+            Debug.WriteLine($"\n Before loop, blueservice null = {blueService == null}");
             foreach (var serviceInfo in serviceInfoCollection)
             {
                 var deviceInfo = await DeviceInformation.CreateFromIdAsync((string)serviceInfo.Properties["System.Devices.AepService.AepId"]);
@@ -100,12 +99,19 @@ namespace PhenoPad.BluetoothService
                         bluetoothDevice = await BluetoothDevice.FromIdAsync(deviceInfo.Id);
                         if (bluetoothDevice == null)
                         {
-                            LogService.MetroLogger.getSharedLogger().Error("Bluetooth Device returned null. Access Status = " + accessStatus.ToString());
+                            LogService.MetroLogger.getSharedLogger().Error($"Bluetooth could not find Raspberry Pi. Access Status = " + accessStatus.ToString());
                             return;
                         }
+
                         var attempNum = 1;
-                        for (; attempNum <= 5; attempNum++)
+                        for (; attempNum <= 6; attempNum++)
                         {
+                            //attempted 6 times and could not find available rfcommService
+                            if (attempNum == 6)
+                            {
+                                return;
+                            }
+
                             var rfcommServices = await bluetoothDevice.GetRfcommServicesForIdAsync(RfcommServiceId.FromUuid(Constants.RfcommChatServiceUuid), BluetoothCacheMode.Uncached);
 
                             if (rfcommServices.Services.Count > 0)
@@ -119,12 +125,6 @@ namespace PhenoPad.BluetoothService
                                 await Task.Delay(TimeSpan.FromSeconds(1));
                             }
                         }
-                        if (attempNum == 6)
-                        {
-                            //LogService.MetroLogger.getSharedLogger().Error("Bluetooth connection attempt exceeded 5, trying again later ...");
-                            rootPage.bluetoonOn = false;
-                            return;
-                        }
 
                     }
                     catch (Exception e)
@@ -134,13 +134,11 @@ namespace PhenoPad.BluetoothService
                     }
                 }
             }
+            Debug.WriteLine($"After loop, hostname={blueService.ConnectionHostName}, servicename={blueService.ConnectionServiceName}\n ");
+            //END OF RFCOMMSERVICE LOOP
 
-                    //========================================
-                    //StopWatcher();
             lock (this)
-            {
                 _socket = new StreamSocket();
-            }
             try
             {
                 await _socket.ConnectAsync(blueService.ConnectionHostName, blueService.ConnectionServiceName);
@@ -148,9 +146,10 @@ namespace PhenoPad.BluetoothService
             }
             catch (Exception ex) // ERROR_ELEMENT_NOT_FOUND
             {
-                LogService.MetroLogger.getSharedLogger().Error($"BluetoothService at line 141:{ex},{ex.Message}");
+                LogService.MetroLogger.getSharedLogger().Error($"BluetoothService at line 141:{ex.Message}");
                 return;
             }
+            Debug.WriteLine("_socket connectasync success===");
             // send hand shake
             try
             {
@@ -160,11 +159,7 @@ namespace PhenoPad.BluetoothService
                 Debug.WriteLine("Writing message " + temp.ToString() + " via Bluetooth");
                 await dataWriter.StoreAsync();
                 initialized = true;
-                rootPage.NotifyUser("Bluetooth Connected", NotifyType.StatusMessage, 1);
-                rootPage.bluetoonOn = true;
-                rootPage.bluetoothInitialized(true);
-                rootPage.bluetoothicon.Visibility = Windows.UI.Xaml.Visibility.Visible;
-                rootPage.bluetoothprogress.Visibility = Windows.UI.Xaml.Visibility.Collapsed;
+                rootPage.OnBTConnectSuccess();
             }
             catch (Exception ex) when ((uint)ex.HResult == 0x80072745)
             {
@@ -185,8 +180,12 @@ namespace PhenoPad.BluetoothService
                     // don't run again for 
                     await Task.Delay(500);
                     string result = await ReceiveMessageUsingStreamWebSocket();
-                    if (!string.IsNullOrEmpty(result))
+                    if (result == "CONNECTION_ERROR") {
+                        //do nothing
+                    }
+                    else if (!string.IsNullOrEmpty(result))
                     {
+                        HandleAudioException(result);
                         //LogService.MetroLogger.getSharedLogger().Info(result);
                         string[] temp = result.Split(' ');
                         if (temp[0] == "ip")
@@ -334,10 +333,10 @@ namespace PhenoPad.BluetoothService
         }
 
         public async void HandleAudioException(string message) {
-            if (message.Equals(RESTART_AUDIO_FLAG))
+            if (message.Equals(RESTART_AUDIO_FLAG) && MainPage.Current.speechManager.speechResultsSocket.streamSocket != null)
             {
                 LogService.MetroLogger.getSharedLogger().Error("BluetoothService=> GOT EXCEPTION, will try to restart audio");
-                await MainPage.Current.RestartAudioOnException();
+                await MainPage.Current.KillAudioService();
                 Debug.WriteLine("BluetoothService=> after line 344");
             }
             else if (message.Equals(RESTART_BLUETOOTH_FLAG)) {
@@ -394,12 +393,12 @@ namespace PhenoPad.BluetoothService
                 uint buffLen = readPacket.UnconsumedBufferLength;
                 returnMessage = readPacket.ReadString(buffLen);
                 if (returnMessage.Length > 0)
-                    Debug.WriteLine($"BLUETOOTH RETURN MESSAGE=>{returnMessage}\n");
-                HandleAudioException(returnMessage);
+                    Debug.WriteLine($"BLUETOOTH RETURN MESSAGE=>{returnMessage}\n");               
             }
             catch (Exception exp)
             {
                 LogService.MetroLogger.getSharedLogger().Info("failed to post a read failed with error:  " + exp.Message);
+                return "CONNECTION_ERROR";
             }
 
             return returnMessage;
@@ -461,7 +460,7 @@ namespace PhenoPad.BluetoothService
 
         }
 
-        public async Task sendBluetoothMessage(string message)
+        public async Task<bool> sendBluetoothMessage(string message)
         {
             //if bluetooth connection is not establiched,
             //initializes the connection first
@@ -472,16 +471,16 @@ namespace PhenoPad.BluetoothService
                 {
                     rootPage.NotifyUser("Unable to re-initialize Bluetooth device (should be raspberry pi)",
                     NotifyType.StatusMessage, 2);
-                    rootPage.ReEnableAudioButton();
                     // Later command should attemp to re-initialize
-                    return;
+                    return false;
                 }
             }     
             try
             {
                 dataWriter.WriteString(message);
                 Debug.WriteLine("Writing message " + message + " via Bluetooth");
-                await dataWriter.StoreAsync();              
+                await dataWriter.StoreAsync();
+                return true;
             }
             catch (Exception ex) when ((uint)ex.HResult == 0x80072745)
             {
@@ -490,31 +489,31 @@ namespace PhenoPad.BluetoothService
                     NotifyType.StatusMessage, 2);
                 // Later command should attemp to re-initialize
                 this.initialized = false;
-                return;
+                return false;
             }
         }
 
     }
 
-        /// <summary>
-        /// Class containing Attributes and UUIDs that will populate the SDP record.
-        /// </summary>
-        class Constants
-        {
-        // The Chat Server's custom service Uuid: 34B1CF4D-1069-4AD6-89B6-E161D79BE4D8
-        //public static readonly Guid RfcommChatServiceUuid = Guid.Parse("34B1CF4D-1069-4AD6-89B6-E161D79BE4D8");
-        public static readonly Guid RfcommChatServiceUuid = Guid.Parse("94f39d29-7d6d-437d-973b-fba39e49d4ee");
+    /// <summary>
+    /// Class containing Attributes and UUIDs that will populate the SDP record.
+    /// </summary>
+    class Constants
+    {
+    // The Chat Server's custom service Uuid: 34B1CF4D-1069-4AD6-89B6-E161D79BE4D8
+    //public static readonly Guid RfcommChatServiceUuid = Guid.Parse("34B1CF4D-1069-4AD6-89B6-E161D79BE4D8");
+    public static readonly Guid RfcommChatServiceUuid = Guid.Parse("94f39d29-7d6d-437d-973b-fba39e49d4ee");
 
-        // The Id of the Service Name SDP attribute
-        public const UInt16 SdpServiceNameAttributeId = 0x100;
+    // The Id of the Service Name SDP attribute
+    public const UInt16 SdpServiceNameAttributeId = 0x100;
 
-            // The SDP Type of the Service Name SDP attribute.
-            // The first byte in the SDP Attribute encodes the SDP Attribute Type as follows :
-            //    -  the Attribute Type size in the least significant 3 bits,
-            //    -  the SDP Attribute Type value in the most significant 5 bits.
-            public const byte SdpServiceNameAttributeType = (4 << 3) | 5;
+        // The SDP Type of the Service Name SDP attribute.
+        // The first byte in the SDP Attribute encodes the SDP Attribute Type as follows :
+        //    -  the Attribute Type size in the least significant 3 bits,
+        //    -  the SDP Attribute Type value in the most significant 5 bits.
+        public const byte SdpServiceNameAttributeType = (4 << 3) | 5;
 
-            // The value of the Service Name SDP attribute
-            public const string SdpServiceName = "Bluetooth Rfcomm Chat Service";
-        }
+        // The value of the Service Name SDP attribute
+        public const string SdpServiceName = "Bluetooth Rfcomm Chat Service";
+    }
 }

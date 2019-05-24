@@ -220,6 +220,15 @@
                                     <SymbolIcon Symbol="FullScreen"/>
                                 </MenuFlyoutItem.Icon>
                             </MenuFlyoutItem>
+                            <MenuFlyoutItem Text="Toogle Bluetooth" 
+                                            HorizontalAlignment="Stretch"
+                                            x:Name="BTConnectBtn"
+                                            Tag="Full Screen" Click="BTConnectBtn_Click">
+                                <MenuFlyoutItem.Icon>
+                                    <SymbolIcon Symbol="DisconnectDrive"/>
+                                </MenuFlyoutItem.Icon>
+                            </MenuFlyoutItem>
+
                             <MenuFlyoutItem Text="Settings" 
                                             HorizontalAlignment="Stretch"
                                             Tag="Change configurations" Click="Settings_Click">

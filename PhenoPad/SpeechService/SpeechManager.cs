@@ -148,47 +148,49 @@ namespace PhenoPad.SpeechService
         /// connect to client/speech/results
         /// only receive results without sending audio signals
         /// </summary>
-        public async Task ReceiveASRResults()
+        public async Task<bool> ReceiveASRResults()
         {
             MainPage.Current.NotifyUser("Connecting to speech result server...", NotifyType.StatusMessage, 1);
-            Debug.WriteLine($"starting ============={speechInterpreter.diarizationSmallSeg.Count()}");
+            Debug.WriteLine($"Connecting to speech result server...");
             bool succeed = false;
             try {
                 speechResultsSocket = new SpeechResultsSocket(this.serverAddress, this.serverPort);
                 succeed = await speechResultsSocket.ConnectToServer();
-            } catch (Exception e)
+                //looping this connection attempt until user prompts to cancel
+                while (!succeed)
+                {
+                    var messageDialog = new MessageDialog($"Failed to connect to ASR {serverAddress}:{serverPort}.\n Would you like to retry connection?");
+                    messageDialog.Title = "CONNECTION ERROR";
+                    messageDialog.Commands.Add(new UICommand("YES") { Id = 0 });
+                    messageDialog.Commands.Add(new UICommand("NO") { Id = 1 });
+                    // Set the command that will be invoked by default
+                    messageDialog.DefaultCommandIndex = 0;
+                    // Set the command to be invoked when escape is pressed
+                    messageDialog.CancelCommandIndex = 1;
+
+                    // Show the message dialog
+                    var result = await messageDialog.ShowAsync();
+
+                    if ((int)(result.Id) == 1)
+                    {
+                        MainPage.Current.NotifyUser("Connection cancelled", NotifyType.ErrorMessage, 2);
+                        //await BluetoothService.BluetoothService.getBluetoothService().sendBluetoothMessage("audio stop");
+                        MainPage.Current.ReEnableAudioButton();
+                        return false;
+                    }
+                    else if ((int)(result.Id) == 0)
+                        succeed = await speechResultsSocket.ConnectToServer();
+                }//END OF CONNECTION LOOP
+            }
+            catch (Exception e)
             {
                 //this is to handle some url problems
-                LogService.MetroLogger.getSharedLogger().Error("Failed to connect to speech result socket:" + e.Message);
+                MetroLogger.getSharedLogger().Error("Failed to connect to speech result socket:" + e.Message);
             }
-            //looping this connection attempt until user prompts to cancel
-            while (!succeed)
-            {
-                var messageDialog = new MessageDialog($"Failed to connect to ASR {serverAddress}:{serverPort}.\n Would you like to retry connection?");
-                messageDialog.Title = "CONNECTION ERROR";
-                messageDialog.Commands.Add(new UICommand("YES") { Id = 0 });
-                messageDialog.Commands.Add(new UICommand("NO") { Id = 1 });
-                // Set the command that will be invoked by default
-                messageDialog.DefaultCommandIndex = 0;
-                // Set the command to be invoked when escape is pressed
-                messageDialog.CancelCommandIndex = 1;
+            //END OF SPEECH RESULT CONNECTION
 
-                // Show the message dialog
-                var result = await messageDialog.ShowAsync();
 
-                if (!((int)result.Id == 0))
-                {
-                    MainPage.Current.NotifyUser("Connection cancelled", NotifyType.ErrorMessage, 2);
-                    await BluetoothService.BluetoothService.getBluetoothService().sendBluetoothMessage("audio stop");
-                    await Task.Delay(TimeSpan.FromSeconds(1));
-                    MainPage.Current.ReEnableAudioButton();
-                    return;
-                }
-                else
-                    succeed = await speechResultsSocket.ConnectToServer();
-            }//END OF CONNECTION LOOP
-
-            MainPage.Current.audioTimer.Start();
+            MainPage.Current.onAudioStarted(null, null);
             SpeechPage.Current.setSpeakerButtonEnabled(true);
             SpeechPage.Current.adjustSpeakerCount(2);
             cancellationSource = new CancellationTokenSource();
@@ -209,10 +211,14 @@ namespace PhenoPad.SpeechService
                     // don't run again for 
                     await Task.Delay(100);
                     // do the work in the loop
-                    string serverResult = await speechResultsSocket.ReceiveMessageUsingStreamWebSocket();
-
-
-                    if (serverResult.Trim('"').Equals(RESTART_AUIDO_SERVER)) {
+                    string serverResult = await speechResultsSocket.SpeechResultsSocket_ReceiveMessage();
+                    if (serverResult == "CONNECTION_ERROR")
+                    {
+                        MainPage.Current.NotifyUser("Speech Result Server error", NotifyType.ErrorMessage, 2);
+                    }
+                    else if (serverResult.Trim('"').Equals(RESTART_AUIDO_SERVER))
+                    {
+                        MainPage.Current.NotifyUser("Restarting audio service after error", NotifyType.ErrorMessage, 2);
                         Debug.WriteLine($"FROM SERVER=>{serverResult}");
                         NEED_RESTART_AUDIO = true;
                         break;
@@ -294,7 +300,8 @@ namespace PhenoPad.SpeechService
             if (cancellationToken.IsCancellationRequested)
             {
                 MetroLogger.getSharedLogger().Info("ASR connection requested cancellation from line 319");
-                
+                NEED_RESTART_AUDIO = false;
+
             }
             else if (NEED_RESTART_AUDIO) {
                 MetroLogger.getSharedLogger().Error("Server requested AUDIO restart ... will be restarting");
@@ -308,10 +315,10 @@ namespace PhenoPad.SpeechService
                 MetroLogger.getSharedLogger().Error("ASR encountered some problem, will call StopASRRsults ...");
                 await StopASRResults(false);
             }
-            return;
+            return true;
         }
 
-        public async Task StopASRResults(bool reload = true)
+        public async Task<bool> StopASRResults(bool reload = true)
         {
             try
             {               
@@ -320,16 +327,17 @@ namespace PhenoPad.SpeechService
                 await speechResultsSocket.CloseConnnction();
                 await SaveTranscriptions(reload);
                 SpeechPage.Current.setSpeakerButtonEnabled(false);
-                MainPage.Current.onAudioEnded();
                 OperationLogger.getOpLogger().Log(OperationType.ASR, "Ended");
-                Debug.WriteLine($"ENDING ============={speechInterpreter.diarizationSmallSeg.Count()}");
                 speechInterpreter = new SpeechEngineInterpreter(this.conversation, this.realtimeConversation);
+                MainPage.Current.onAudioEnded();
+
+                return true;
             }
             catch (Exception e)
             {
                 MetroLogger.getSharedLogger().Error($"Failed stopping bluetooth ASR:"+ e.Message);
             }
-            return;
+            return false;
         }
         // ================================== AUDIO START / STOP FOR USING INTERNAL MICROPHONE =============================
         public async Task<bool> StartAudio()
@@ -397,7 +405,7 @@ namespace PhenoPad.SpeechService
             SpeechPage.Current.setSpeakerButtonEnabled(true);           
             SpeechPage.Current.adjustSpeakerCount(2);
             //Triggers audio started event handler in Mainpage to switch necessary interface layout
-            MainPage.Current.audioTimer.Start();
+            MainPage.Current.onAudioStarted(null, null);
             OperationLogger.getOpLogger().Log(OperationType.ASR, "Started");
 
             startGraph();
@@ -432,7 +440,7 @@ namespace PhenoPad.SpeechService
                      // don't run again for 
                      await Task.Delay(500);
                      // do the work in the loop
-                     string serverResult = await speechStreamSocket.ReceiveMessageUsingStreamWebSocket();
+                     string serverResult = await speechStreamSocket.SpeechStreamSocket_ReceiveMessage();
 
                      if (serverResult.Trim('"').Equals(RESTART_AUIDO_SERVER))
                      {
@@ -527,7 +535,7 @@ namespace PhenoPad.SpeechService
             {
                 MetroLogger.getSharedLogger().Error("Server requested AUDIO restart ... will be restarting");
                 NEED_RESTART_AUDIO = false;
-                await MainPage.Current.RestartAudioOnException();
+                await MainPage.Current.KillAudioService();
                 return false;
             }
             //probably some error happened that disconnectes the ASR, stops ASR before processing

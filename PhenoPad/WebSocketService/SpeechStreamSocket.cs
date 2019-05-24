@@ -118,7 +118,7 @@ namespace PhenoPad.WebSocketService
             }
         }
 
-        public async Task<String> ReceiveMessageUsingStreamWebSocket()
+        public async Task<String> SpeechStreamSocket_ReceiveMessage()
         {
             string returnMessage = "";
             try
@@ -139,7 +139,10 @@ namespace PhenoPad.WebSocketService
             {
                 //This handles the case where we forse quit 
                 if (exp.HResult == (int)ERROR_INTERNET_OPERATION_CANCELLED)
+                {
                     LogService.MetroLogger.getSharedLogger().Info("ERROR_INTERNET_OPERATION_CANCELLED.");
+
+                }
                 else
                     LogService.MetroLogger.getSharedLogger().Error($"Speechstreamsocket: Issue receiving:{exp.Message}");
                 return returnMessage;
@@ -306,7 +309,7 @@ namespace PhenoPad.WebSocketService
         }
 
 
-        public async Task<String> ReceiveMessageUsingStreamWebSocket()
+        public async Task<String> SpeechResultsSocket_ReceiveMessage()
         {
             string returnMessage = String.Empty;
             try
@@ -328,13 +331,17 @@ namespace PhenoPad.WebSocketService
             {
                 //This handles the case where we forse quit 
                 if (exp.HResult == (int)ERROR_INTERNET_OPERATION_CANCELLED)
+                {
                     LogService.MetroLogger.getSharedLogger().Info("ERROR_INTERNET_OPERATION_CANCELLED.");
+                    return "CONNECTION_CANCELLED";
+                }
                 else
+                {
                     LogService.MetroLogger.getSharedLogger().Error($"Issue receiving:{exp.Message}");
-                //return SpeechService.SpeechManager.RESTART_AUIDO_SERVER;
-                return returnMessage;
+                    AbortConnection();
+                    return "CONNECTION_ERROR";
+                }
             }
-
         }
 
         public async Task CloseConnnction()
@@ -361,9 +368,19 @@ namespace PhenoPad.WebSocketService
             dataWriter.Dispose();
             streamSocket.Dispose();
             streamSocket = null;
+        }
+
+        public void AbortConnection() {
+            
+            if (dataWriter != null)
+                dataWriter.Dispose();
+            dataWriter = null;
+            if (streamSocket != null)
+                streamSocket.Dispose();
+            streamSocket = null;
 
         }
-        private void WebSocket_ClosedAsync(IWebSocket sender, WebSocketClosedEventArgs args)
+        private async void WebSocket_ClosedAsync(IWebSocket sender, WebSocketClosedEventArgs args)
         {
             LogService.MetroLogger.getSharedLogger().Info(
                 $"SpeechResultSocket closed: Code = {args.Code}, Reason = {args.Reason}, will dispose current stream socket...");
@@ -371,6 +388,9 @@ namespace PhenoPad.WebSocketService
             {
                 streamSocket.Dispose();
                 streamSocket = null;
+                if (MainPage.Current.speechEngineRunning) {
+                    await MainPage.Current.KillAudioService();
+                }
             }
         }
     }
