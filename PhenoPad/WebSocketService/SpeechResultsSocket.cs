@@ -13,32 +13,27 @@ using Windows.Storage.Streams;
 
 namespace PhenoPad.WebSocketService
 {
-    public class SpeechStreamSocket
+    public class SpeechResultsSocket
     {
         MainPage rootPage = MainPage.Current;
 
         // !!WARNING !! server address changes every time
-        //private string serverAddress = "phenopad.ccm.sickkids.ca";
-        //private string serverPort = "8888";
-        public string serverAddress = "137.135.117.253";
-        public string serverPort = "8080";
-
-        private uint ERROR_INTERNET_OPERATION_CANCELLED = 0x80072EFE;
+        private string serverAddress;
+        private string serverPort;
+        private uint ERROR_INTERNET_OPERATION_CANCELLED = 0x80072EF1;
         NetworkAdapter networkAdapter;
         public StreamWebSocket streamSocket;
         private DataWriter dataWriter;
         private DataReader dataReader;
-        public bool isClosed;
 
-        public SpeechStreamSocket()
+        public SpeechResultsSocket()
         {
             // Socket constructor does nothing :D
         }
-        public SpeechStreamSocket(string sAddress, string port)
+        public SpeechResultsSocket(string sAddress, string port)
         {
             this.serverAddress = sAddress;
             this.serverPort = port;
-            this.isClosed = true;
             this.streamSocket = null;
         }
 
@@ -52,7 +47,6 @@ namespace PhenoPad.WebSocketService
         {
             return this.serverAddress;
         }
-
 
         public async Task<bool> ConnectToServer()
         {
@@ -75,40 +69,43 @@ namespace PhenoPad.WebSocketService
             //socket.SetRequestHeader("content-type", "audio/x-raw");
             try
             {
+                Debug.WriteLine(serverAddress);
+                Debug.WriteLine(serverPort + Environment.NewLine);
 
-                Task connectTask = this.streamSocket.ConnectAsync(new Uri("ws://" + this.serverAddress + ":" + this.serverPort +
-                                            "/client/ws/speech?content-type=audio/x-raw," +
-                                            "+layout=(string)interleaved," +
-                                            "+rate=(int)16000," +
-                                            "+format=(string)F32LE," +
-                                            "+channels=(int)1")).AsTask();
+                Task connectTask = this.streamSocket.ConnectAsync(new Uri("ws://" + serverAddress + ":" + serverPort +
+                                           "/client/ws/speech_result" +
+                                           "?content-type=audio%2Fx-raw%2C+layout%3D%28string%29interleaved%2C+rate%3D%28int%2916000%2C+format%3D%28string%29S16LE%2C+channels%3D%28int%291&manager_id=666")).AsTask();
+                //Task connectTask = this.streamSocket.ConnectAsync(new Uri("ws://" + serverAddress + ":" + serverPort +
+                //           "/client/ws/speech_result")).AsTask();
 
                 await connectTask;
+                if (connectTask.Exception != null)
+                    LogService.MetroLogger.getSharedLogger().Error("connectTask.Exception:" + connectTask.Exception.Message);
                 dataWriter = new DataWriter(this.streamSocket.OutputStream);
 
                 return true;
             }
             catch (Exception e)
             {
-                LogService.MetroLogger.getSharedLogger().Error("Failed connect to speech stream socket:" + e.Message);
+                LogService.MetroLogger.getSharedLogger().Error("SpeechResultsSocket: " + e.Message);
                 streamSocket.Dispose();
                 streamSocket = null;
-                isClosed = true;
                 return false;
             }
 
         }
 
+
         public async Task<bool> SendBytesAsync(byte[] message)
         {
-            //don't send anything if the stream socket has nothing
             if (streamSocket == null)
+            {
                 return false;
+            }
             try
             {
                 dataWriter.WriteBytes(message);
                 await dataWriter.StoreAsync();
-
                 return true;
             }
             catch (Exception ex)
@@ -119,23 +116,24 @@ namespace PhenoPad.WebSocketService
             }
         }
 
-        public async Task<String> SpeechStreamSocket_ReceiveMessage()
+
+        public async Task<String> SpeechResultsSocket_ReceiveMessage()
         {
-            string returnMessage = "";
+            string returnMessage = String.Empty;
             try
             {
                 if (streamSocket != null)
                 {
                     uint length = 1000;     // Leave a large buffer
 
-                    var readBuf = new Windows.Storage.Streams.Buffer((uint)length);
+                    var readBuf = new Windows.Storage.Streams.Buffer(length);
                     var readOp = await streamSocket.InputStream.ReadAsync(readBuf, (uint)length, InputStreamOptions.Partial);
                     DataReader readPacket = DataReader.FromBuffer(readBuf);
                     uint buffLen = readPacket.UnconsumedBufferLength;
                     returnMessage = readPacket.ReadString(buffLen);
-
                 }
                 return returnMessage;
+
             }
             catch (Exception exp)
             {
@@ -143,32 +141,17 @@ namespace PhenoPad.WebSocketService
                 if (exp.HResult == (int)ERROR_INTERNET_OPERATION_CANCELLED)
                 {
                     LogService.MetroLogger.getSharedLogger().Info("ERROR_INTERNET_OPERATION_CANCELLED.");
-
+                    return "CONNECTION_CANCELLED";
                 }
                 else
-                    LogService.MetroLogger.getSharedLogger().Error($"Speechstreamsocket: Issue receiving:{exp.Message}");
-                return returnMessage;
+                {
+                    LogService.MetroLogger.getSharedLogger().Error($"Issue receiving:{exp.Message}");
+                    AbortConnection();
+                    return "CONNECTION_ERROR";
+                }
             }
         }
 
-        public async Task<bool> TrySendData()
-        {
-            try
-            {
-                Encoding ascii = Encoding.ASCII;
-                dataWriter.WriteBytes(ascii.GetBytes("Hello"));
-                await dataWriter.StoreAsync();
-                return true;
-            }
-            catch (Exception)
-            {
-                return false;
-            }
-        }
-
-        /// <summary>
-        /// Gets the current datas from stream socket and dispose for disconnection.
-        /// </summary>
         public async Task CloseConnnction()
         {
             if (streamSocket == null)
@@ -184,31 +167,42 @@ namespace PhenoPad.WebSocketService
                 //}
                 //Debug.WriteLine("Sending data using StreamWebSocket: " + message.Length.ToString() + " bytes");
             }
+
             catch (Exception ex)
             {
-                LogService.MetroLogger.getSharedLogger().Error("Failed to close speech stream socket:" + ex.Message);
-                //MainPage.Current.NotifyUser("Failed to close websocket.", NotifyType.ErrorMessage, 2);
+                LogService.MetroLogger.getSharedLogger().Error("Speech result closeconnection exception:" + ex + ex.Message);
             }
-            finally
-            {
-                streamSocket.Dispose();
-                streamSocket = null;
-            }
+
+            dataWriter.Dispose();
+            streamSocket.Dispose();
+            streamSocket = null;
         }
-        /// <summary>
-        /// Handles the event when the socket is closed by either client side or server side,
-        /// and will dispose the socket if not null
-        /// </summary>
-        private void WebSocket_ClosedAsync(IWebSocket sender, WebSocketClosedEventArgs args)
+
+        public void AbortConnection()
+        {
+
+            if (dataWriter != null)
+                dataWriter.Dispose();
+            dataWriter = null;
+            if (streamSocket != null)
+                streamSocket.Dispose();
+            streamSocket = null;
+
+        }
+        private async void WebSocket_ClosedAsync(IWebSocket sender, WebSocketClosedEventArgs args)
         {
             LogService.MetroLogger.getSharedLogger().Info(
-                $"SpeechStreamSocket closed: Code = {args.Code}, Reason = {args.Reason}, will dispose current stream socket...");
+                $"SpeechResultSocket closed: Code = {args.Code}, Reason = {args.Reason}, will dispose current stream socket...");
             if (streamSocket != null)
             {
                 streamSocket.Dispose();
                 streamSocket = null;
+                if (MainPage.Current.speechEngineRunning)
+                {
+                    await MainPage.Current.KillAudioService();
+                }
             }
         }
     }
-}
 
+}

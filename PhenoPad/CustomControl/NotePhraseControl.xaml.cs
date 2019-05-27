@@ -274,10 +274,13 @@ namespace PhenoPad.CustomControl
         public List<TextBlock> GetCurLineHWR() {
             List<TextBlock> result = new List<TextBlock>();
             for (int i = 0; i < words.Count; i++) {
+                var tb = words[i].GetCurWordTextBlock();
+
                 if (i == words.Count - 1) {
-                    words[i].GetCurWordTextBlock().Foreground = new SolidColorBrush(Colors.DarkBlue);
+                    tb.Foreground = new SolidColorBrush(Colors.SkyBlue);
+                    tb.UpdateLayout();                  
                 }
-                result.Add(words[i].GetCurWordTextBlock());
+                result.Add(tb);
             }
             return result;
         }

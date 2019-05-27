@@ -225,9 +225,10 @@ namespace PhenoPad.CustomControl
 
         public TextBlock GetCurWordTextBlock() {
             TextBlock tb = new TextBlock();
-            tb.FontSize = 22;
+            tb.FontSize = 18;
             tb.Tapped += ShowWordCandidate;
             tb.Text = current;
+            tb.VerticalAlignment = VerticalAlignment.Center;
             if (is_abbr)
             {
                 tb.Foreground = new SolidColorBrush(Colors.Orange);
@@ -236,6 +237,13 @@ namespace PhenoPad.CustomControl
                 tb.Foreground = new SolidColorBrush(Colors.Black);
             }
             return tb;
+        }
+
+        public Rect GetUIRect() {
+            var trans = this.TransformToVisual(MainPage.Current.curPage);
+            Rect bound = trans.TransformBounds(new Rect(0,0,20,20));
+            //Debug.WriteLine($"{current}'s rect: x={bound.X}, y={bound.Y}");
+            return bound;
         }
 
         private void CandidateList_Click(object sender, RoutedEventArgs args)

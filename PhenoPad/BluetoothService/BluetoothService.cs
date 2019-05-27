@@ -81,7 +81,7 @@ namespace PhenoPad.BluetoothService
 
             var serviceInfoCollection = await DeviceInformation.FindAllAsync(RfcommDeviceService.GetDeviceSelector(RfcommServiceId.SerialPort), new string[] { "System.Devices.AepService.AepId" });
 
-            Debug.WriteLine($"\n Before loop, blueservice null = {blueService == null}");
+            //Debug.WriteLine($"\n Before loop, blueservice null = {blueService == null}");
             foreach (var serviceInfo in serviceInfoCollection)
             {
                 var deviceInfo = await DeviceInformation.CreateFromIdAsync((string)serviceInfo.Properties["System.Devices.AepService.AepId"]);
@@ -134,7 +134,7 @@ namespace PhenoPad.BluetoothService
                     }
                 }
             }
-            Debug.WriteLine($"After loop, hostname={blueService.ConnectionHostName}, servicename={blueService.ConnectionServiceName}\n ");
+            //Debug.WriteLine($"After loop, hostname={blueService.ConnectionHostName}, servicename={blueService.ConnectionServiceName}\n ");
             //END OF RFCOMMSERVICE LOOP
 
             lock (this)
@@ -149,7 +149,7 @@ namespace PhenoPad.BluetoothService
                 LogService.MetroLogger.getSharedLogger().Error($"BluetoothService at line 141:{ex.Message}");
                 return;
             }
-            Debug.WriteLine("_socket connectasync success===");
+            //Debug.WriteLine("_socket connectasync success===");
             // send hand shake
             try
             {

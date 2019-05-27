@@ -206,6 +206,7 @@
     <Compile Include="SpeechService\SpeechEngineJSON.cs" />
     <Compile Include="SpeechService\SpeechRESTAPI.cs" />
     <Compile Include="Styles\MyColors.cs" />
+    <Compile Include="WebSocketService\SpeechResultsSocket.cs" />
     <Compile Include="WebSocketService\UIWebSocketClient.cs" />
     <Compile Include="WebSocketService\SpeechStreamSocket.cs" />
     <Compile Include="WobbrockLib\CircleR.cs" />

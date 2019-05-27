@@ -176,13 +176,11 @@ namespace PhenoPad.HWRService
                 if (response != "")
                 {
                     List<HWRRecognizedText> processed = UpdateResultFromServer(response);
+                    if (processed == null) {
+                        return;
+                    }
                     recogResults = processed.Count == 0 ? recogResults : processed;
                     lastServerRecog = processed.Count == 0 ? lastServerRecog : recogResults;
-                    //Debug.WriteLine("parsed response...");
-                    //foreach (var r in recogResults)
-                    //{
-                    //    Debug.WriteLine(r.selectedCandidate);
-                    //}
 
                     if (recogResults.Count > 0)
                     {
