@@ -24,24 +24,16 @@ namespace PhenoPad.CustomControl
     [Serializable]
     public sealed partial class WordBlockControl : UserControl
     {
-        public enum ShowingType {
-            WORD,
-            ABBR
-        }
         public int word_index;
         public double left;
         public int line_index;
         public int selected_index;
         public bool corrected;
-        public ShowingType showing;
 
         public bool is_abbr;
 
         public string current;
         public List<string> candidates;
-
-        public string abbr_current;
-        public List<string> abbr_candidates;
 
         public WordBlockControl()
         {
@@ -59,28 +51,8 @@ namespace PhenoPad.CustomControl
             corrected = false;
             AlternativeList.ItemsSource = candidates;
             //by default set abbreviation to false;
-            abbr_current = "";
-            abbr_candidates = new List<string>();
             is_abbr = false;
-            showing = ShowingType.WORD;
 
-        }
-
-        public void SetAbbreviation(List<string> abbr_alternatives) {
-
-            abbr_candidates.Clear();
-            foreach (string s in abbr_alternatives)
-                abbr_candidates.Add( "(" + s + ")");
-            abbr_current = abbr_candidates[0];
-            is_abbr = true;
-            AbbreviationBlock.Visibility = Visibility.Visible;
-        }
-
-        public void UnsetAbbreviation() {
-            is_abbr = false;
-            abbr_candidates.Clear();
-            abbr_current = "";
-            AbbreviationBlock.Visibility = Visibility.Collapsed;
         }
 
 
@@ -93,36 +65,23 @@ namespace PhenoPad.CustomControl
             AlternativeList.ItemsSource = candidates;
             Flyout f = (Flyout)this.Resources["AlternativeFlyout"];
             f.ShowAt(WordBlock);
-            showing = ShowingType.WORD;
-        }
-
-        private void ShowAbbrCandidate(object sender, RoutedEventArgs args)
-        {
-            AlternativeList.ItemsSource = abbr_candidates;
-            Flyout f = (Flyout)this.Resources["AlternativeFlyout"];
-            f.ShowAt(WordBlock);
-            showing = ShowingType.ABBR;
         }
 
         private void ReplaceAlternative(object sender, RoutedEventArgs args)
         {//replace current selected alternative with the custom input word
             string text = AlternativeInput.Text;
 
-            if (showing == ShowingType.WORD && text.Length > 0) {
+            if (text.Length > 0) {
                 current = text;
                 selected_index = -1;
                 WordBlock.Text = current;
                 corrected = true;
+                //since user manully chose the best choice, auto insert it into first place candidate and
+                //remove the last word
+                candidates.Insert(0, text);
+                candidates.RemoveAt(candidates.Count - 1);
             }
 
-            else if (showing == ShowingType.ABBR && text.Length > 0)
-            {
-                abbr_current = "(" + text.Trim() + ")";
-                selected_index = -1;
-                AbbreviationBlock.Text = abbr_current;
-                WordBlock.Text = abbr_current;
-                corrected = true;
-            }
             if (MainPage.Current != null)
             {
                 MainPage.Current.curPage.annotateCurrentLineAndUpdateUI(line_index: line_index);
@@ -155,26 +114,9 @@ namespace PhenoPad.CustomControl
         {//called when user clicks on the alternative from the flyout panel
 
             int ind = AlternativeList.Items.IndexOf((string)e.ClickedItem);
-
-            if (showing == ShowingType.WORD)
-            {
-                if (candidates[ind] == "None")
-                {
-                    current = "";
-                }
-                else {
-                    current = candidates[ind];
-                }
-                selected_index = ind;
-
-                WordBlock.Text = current;
-            }
-            else if (showing == ShowingType.ABBR) {
-
-                abbr_current = abbr_candidates[ind];
-                AbbreviationBlock.Text = abbr_current;
-               
-            }
+            current = candidates[ind];
+            selected_index = ind;
+            WordBlock.Text = current;
             corrected = true;
             if (MainPage.Current != null) {
                 MainPage.Current.curPage.annotateCurrentLineAndUpdateUI(line_index: line_index);
@@ -189,19 +131,17 @@ namespace PhenoPad.CustomControl
             //TODO HANDLE ABBR
             List<Button> lst = new List<Button>();
             //if user has manually added alternative from text input, add it to candidates as well
-            if (!candidates.Contains(current)) {
+            if (!candidates.Contains(current))
+            {
 
                 //Debug.WriteLine("candidates does not contain current");
 
                 Button tb = new Button();
                 tb.Style = (Style)Application.Current.Resources["ButtonStyle1"];
                 tb.FontSize = 16;
+                tb.Background = new SolidColorBrush(Colors.LightGray);
                 tb.VerticalAlignment = VerticalAlignment.Center;
-
-                if (is_abbr)
-                    tb.Content = "(" + current + ")";
-                else
-                    tb.Content = current;
+                tb.Content = current;
                 lst.Add(tb);
                 tb.Tapped += CandidateList_Click;
             }
@@ -209,14 +149,12 @@ namespace PhenoPad.CustomControl
             {
                 Button tb = new Button();
                 tb.Style = (Style)Application.Current.Resources["ButtonStyle1"];
-
+                tb.Background = current == candidate ? new SolidColorBrush(Colors.LightGray) : new SolidColorBrush(Colors.Transparent);
                 tb.FontSize = 16;
                 tb.VerticalAlignment = VerticalAlignment.Center;
-                if (is_abbr && candidates.IndexOf(candidate) > 0)
-                    tb.Content = "(" + candidate + ")";
-                else
-                    tb.Content = candidate;
+                tb.Content = candidate;
                 lst.Add(tb);
+
                 tb.Tapped += CandidateList_Click;
             }
             return lst;

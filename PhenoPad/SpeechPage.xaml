@@ -66,6 +66,13 @@
                 <Style TargetType="ListViewItem">
                     <Setter Property="Padding" Value="0"/>
                     <Setter Property="Margin" Value="0"/>
+                    <Setter Property="Template">
+                        <Setter.Value>
+                            <ControlTemplate>
+                                <ContentPresenter/>
+                            </ControlTemplate>
+                        </Setter.Value>
+                    </Setter>
                 </Style>
             </ListView.ItemContainerStyle>
 
@@ -91,12 +98,14 @@
                             Grid.Column="{Binding TextColumn}"
                             MinWidth="300"
                             MaxWidth="600"
+                            CornerRadius="10"
                             Background="{Binding Converter={StaticResource bcConverter}}"
                             Visibility="{x:Bind Path=IsFinal}"/>
 
                         <!--Not finalized message color-->
                             <Grid
                             Grid.Row="0"
+                            CornerRadius="10"
                             Grid.Column="{Binding TextColumn}"
                             Background="{StaticResource Background_Temp}"
                             Visibility="{x:Bind Path=IsNotFinal}"/>
@@ -117,12 +126,14 @@
                                 MaxWidth="500"
                                 FontSize="18"
                                 Padding="10"
+                                HorizontalAlignment="Left"
                                 VerticalAlignment="Center"
                                 Foreground="Black"/>
 
                             <Button Grid.Row="1" 
                                     Background="Transparent"
                                     HorizontalAlignment="Stretch"
+                                    Style="{StaticResource ButtonStyle1}"
                                     Click="MessageButtonClick">
                                 <TextBlock
                                     FontSize="14"

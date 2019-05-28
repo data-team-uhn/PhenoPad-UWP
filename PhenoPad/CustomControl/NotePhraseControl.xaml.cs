@@ -50,7 +50,7 @@ namespace PhenoPad.CustomControl
         public List<string> GetStringAsList() {
             List<string> str = new List<string>();
             foreach (WordBlockControl s in words)
-                str.Add(s.current);
+                str.Add(s.current.Trim('(').Trim(')'));
             return str;
         }
 
@@ -58,7 +58,7 @@ namespace PhenoPad.CustomControl
         {
             List<string> str = new List<string>();
             foreach (var s in updated)
-                str.Add(s.current);
+                str.Add(s.current.Trim('(').Trim(')'));
             return str;
         }
 
@@ -66,8 +66,6 @@ namespace PhenoPad.CustomControl
             string text = "";
             foreach (WordBlockControl s in words) {
                 text += s.current.Trim('(').Trim(')') + " ";
-                if (s.abbr_current != "")
-                    text += s.abbr_current.Trim('(').Trim(')')+" ";
             }
             return text;
         }
@@ -230,34 +228,22 @@ namespace PhenoPad.CustomControl
         {
             if (updated != null)
             {
-                //foreach (var r in updated)
-                //{
-                //    Debug.WriteLine(r.selectedCandidate);
-                //}
-
                 RecognizedPhrase.Children.Clear();
+
                 var dict = HWRManager.getSharedHWRManager().getDictionary();
                 List<WordBlockControl> new_w = new List<WordBlockControl>();
                 for (int i = 0; i < updated.Count; i++)
                 {
                     HWRRecognizedText recognized = updated[i];
-                    //not an abbreviation
-                    if (dict.ContainsKey(recognized.selectedCandidate.ToLower()) && fromServer)
+                    WordBlockControl wb = new WordBlockControl(lineIndex, this.canvasLeft, i, recognized.selectedCandidate, recognized.candidateList);
+
+                    //is an abbreviation term
+                    if (recognized.candidateList.Count > 5 && fromServer)
                     {
-                        var extended = updated[i + 1];
-                        extended.candidateList.Insert(0, recognized.selectedCandidate);
-                        //for (int j = 1; j < extended.candidateList.Count; j++)
-                        //    extended.candidateList[j] = "(" + extended.candidateList[j] + ")";
-                        WordBlockControl wb2 = new WordBlockControl(lineIndex, 0, i, extended.selectedCandidate, extended.candidateList);
-                        new_w.Add(wb2);
-                        wb2.is_abbr = true;
-                        i++;
+                        wb.is_abbr = true;
                     }
-                    else
-                    {
-                        WordBlockControl wb = new WordBlockControl(lineIndex, 0, i, recognized.selectedCandidate, recognized.candidateList);
-                        new_w.Add(wb);
-                    }
+                    new_w.Add(wb);
+
                 }
                 var merged_new = MergeNewResultToOld(new_w);
                 words.Clear();

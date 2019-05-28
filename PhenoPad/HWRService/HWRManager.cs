@@ -45,10 +45,13 @@ namespace PhenoPad.HWRService
         List <string> sentence;
         List<List<string>> alternatives;
         Stack<(int, List<HWRRecognizedText> result)> linesToUpdate;
-        
+        DispatcherTimer updateTimer;
         bool newRequest;
         int lastLine;
         Dictionary<string, List<string>> abbrDict;
+
+        //Dictionary<int, List<HWRRecognizedText>> updateQueue;
+
         List<HWRRecognizedText> lastServerRecog;
         //default Abbreviation detection IP Address
         Uri ipAddr = new Uri("http://137.135.117.253:8000/");
@@ -66,6 +69,9 @@ namespace PhenoPad.HWRService
             abbrDict = new Dictionary<string, List<string>>();
             lastServerRecog = new List<HWRRecognizedText>();
             linesToUpdate = new Stack<(int, List<HWRRecognizedText> result)>();
+            updateTimer = new DispatcherTimer();
+            updateTimer.Interval = TimeSpan.FromSeconds(2);
+            updateTimer.Tick += TriggerUpdateOnMainPage;
         }
 
 
@@ -140,7 +146,8 @@ namespace PhenoPad.HWRService
                     //triggers server side abbreviation detection
                     if (MainPage.Current.abbreviation_enabled && !fromEHR)
                     {
-                        TriggerServerRecognition(sentence, alternatives);
+                        var server = await TriggerServerRecognition(lineNum, sentence, alternatives, recogResults);
+                        recogResults = server == null ? recogResults : server;
                     }
                     //recogResults = CompareAndUpdateWithServer(recogResults);
                     //lastServerRecog = recogResults;
@@ -155,7 +162,7 @@ namespace PhenoPad.HWRService
             {
                 //MessageDialog dialog = new MessageDialog("No storke selected.");
                 //var cmd = await dialog.ShowAsync();
-                LogService.MetroLogger.getSharedLogger().Error("HWR error: " + e + e.Message);
+                LogService.MetroLogger.getSharedLogger().Error("HWR error: " + e.Message);
                 return null;
             }
         }
@@ -166,35 +173,196 @@ namespace PhenoPad.HWRService
             sentence.Clear();
         }
 
-        public async void TriggerServerRecognition(List<string> sentence, List<List<string>> alternatives ) {
+        private void TriggerUpdateOnMainPage(object sender, object e)
+        {
+            updateTimer.Stop();
+            lock (linesToUpdate) {
+                while (linesToUpdate.Count > 0) {
+                    var line = linesToUpdate.Pop();
+                    MainPage.Current.curPage.UpdateRecognition(line.Item1,line.result);
+                }
+            }
+            Debug.WriteLine("stack cleared");
+        }
+
+        public async Task<List<HWRRecognizedText>> TriggerServerRecognition(int lineNum, List<string> sentence, List<List<string>> alternatives, List<HWRRecognizedText>original ) {
             try
-            {
+            {               
                 List<HWRRecognizedText> recogResults = new List<HWRRecognizedText>();
                 string fullsentence = listToString(sentence);
                 HTTPRequest request = new HTTPRequest(fullsentence, alternatives, newRequest.ToString());
                 string response = await GetServerRecognition(request);
-                if (response != "")
+                if (response.Length > 0)
                 {
-                    List<HWRRecognizedText> processed = UpdateResultFromServer(response);
-                    if (processed == null) {
-                        return;
-                    }
-                    recogResults = processed.Count == 0 ? recogResults : processed;
-                    lastServerRecog = processed.Count == 0 ? lastServerRecog : recogResults;
-
+                    List<HWRRecognizedText> processed = UpdateResultFromServer(response,original);
+                    recogResults = processed.Count > 0 ? processed : original;                   
+                    //lastServerRecog = processed.Count == 0 ? lastServerRecog : recogResults;
                     if (recogResults.Count > 0)
                     {
-                        MainPage.Current.curPage.UpdateRecognition(lastLine, recogResults);
-                        //Debug.WriteLine("updated from server...");
+                        //MainPage.Current.curPage.UpdateRecognition(lineNum, recogResults);
+                        return recogResults;
                     }
                 }
             }
             catch (Exception e) {
-                Debug.WriteLine(e + e.Message);
+                LogService.MetroLogger.getSharedLogger().Error(e.Message);
             }
+            return null;
         }
 
 
+
+        public string listToString(List<string> lst)
+        {
+            string sentence = "";
+            foreach (string word in lst)
+                sentence += word + " ";
+            //taking off last space char
+            sentence = sentence.Substring(0, sentence.Length - 1);
+            return sentence;
+        }
+
+        public async Task<string> GetServerRecognition(HTTPRequest rawdata) {
+            try
+            {
+                //Create an HTTP client object
+                HttpClient httpClient = new HttpClient();
+                //Add a user-agent header to the GET request. 
+                var headers = httpClient.DefaultRequestHeaders;
+                //The safe way to add a header value is to use the TryParseAdd method and verify the return value is true,
+                //especially if the header value is coming from user input.
+                string header = "ie";
+                if (!headers.UserAgent.TryParseAdd(header))
+                {
+                    throw new Exception("Invalid header value: " + header);
+                }
+                header = "Mozilla/5.0 (compatible; MSIE 10.0; Windows NT 6.2; WOW64; Trident/6.0)";
+                if (!headers.UserAgent.TryParseAdd(header))
+                {
+                    throw new Exception("Invalid header value: " + header);
+                }
+
+                Uri requestUri = ipAddr;
+
+                //Send the GET request asynchronously and retrieve the response as a string.
+                HttpResponseMessage httpResponse = new HttpResponseMessage();
+                string httpResponseBody = "";
+
+                string rawdatastr = JsonConvert.SerializeObject(rawdata);
+                HttpStringContent data = new HttpStringContent(rawdatastr, UnicodeEncoding.Utf8, "application/json");
+                //Debug.WriteLine(data);
+                httpResponse = await httpClient.PostAsync(requestUri, data);
+                httpResponse.EnsureSuccessStatusCode();
+                httpResponseBody = await httpResponse.Content.ReadAsStringAsync();
+                //Debug.WriteLine(httpResponseBody);
+                return httpResponseBody;
+
+            }
+            catch (System.Net.Http.HttpRequestException he)
+            {
+                LogService.MetroLogger.getSharedLogger().Error($"HWR connection: \n {he.Message}");
+            }
+            catch (Exception e)
+            {
+                LogService.MetroLogger.getSharedLogger().Error($"HTTP response: \n {e.Message}");
+            }
+            return "";
+        }
+
+        public List<HWRRecognizedText> UpdateResultFromServer(string httpResponse,List<HWRRecognizedText> original)
+        {
+            List<List<string>> processedAlter = new List<List<string>>();
+
+            HTTPResponse result = JsonConvert.DeserializeObject<HTTPResponse>(httpResponse);
+            sentence = result.result.Split(" ").ToList();
+
+            List<HWRRecognizedText> recogResults = new List<HWRRecognizedText>();
+            recogResults = processAlternative(result.alternatives);
+            //if server don't have any alternatives, process abbreviation using microsoft's result
+            if (recogResults == null || recogResults.Count == 0) 
+                recogResults = processAbbr(result.abbreviations, original);
+            //if server has updated alternatives, use server's result to process abbreviation
+            else
+                recogResults = processAbbr(result.abbreviations, recogResults);
+
+            return recogResults;           
+        }
+        public List<HWRRecognizedText> processAbbr(List<Abbreviation> abbrs, List<HWRRecognizedText> original)
+        {
+            //05/28/2019 revised version of processAbbr, instead of adding both shortform and extended form, add abbr alternatives to candidate List of shortform and return updated list of HWRs
+            List<HWRRecognizedText> recogAb = new List<HWRRecognizedText>();
+            recogAb.AddRange(original);
+            foreach (Abbreviation ab in abbrs)
+            {
+                //the word index that has abbreviations
+                int index = Convert.ToInt32(ab.word_pos);
+                HWRRecognizedText word = recogAb[index];
+                List<string> res = ab.abbr_list;
+
+                //replacing extended form with bracketed format
+                for (int i = 0; i < res.Count; i++)
+                {
+                    res[i] = "(" + res[i] + ")";
+                }
+                word.candidateList.AddRange(res);
+                word.selectedIndex = 0;
+                word.selectedCandidate = res.ElementAt(0);
+
+                //updates abbreviation dictionary
+                if (abbrDict.ContainsKey($"{sentence[index].ToLower()}"))
+                    abbrDict[$"{sentence[index].ToLower()}"] = ab.abbr_list;
+                else
+                    abbrDict.Add($"{sentence[index].ToLower()}", ab.abbr_list);
+            }
+            return recogAb;
+        }
+
+        //public List<HWRRecognizedText> processAbbr(List<Abbreviation> abbrs, List<HWRRecognizedText> recog)
+        //{
+        //    int offset = 0;
+        //    List<HWRRecognizedText> recogAb = recog;
+        //    foreach (Abbreviation ab in abbrs) {
+        //        int index = Convert.ToInt32(ab.word_pos);
+        //        HWRRecognizedText rt = new HWRRecognizedText();
+        //        List<string> res = ab.abbr_list;
+        //        rt.candidateList = res;
+        //        rt.selectedIndex = 0;
+        //        rt.selectedCandidate = res.ElementAt(0);
+        //        //only insert the extended form if there's no previously inserted abbreviations
+        //        if ((index + offset + 1 == recog.Count) || 
+        //            (index +offset+1 <= recog.Count && recogAb[index+offset+1].selectedCandidate != rt.selectedCandidate))
+        //            recogAb.Insert(index + offset + 1, rt);
+        //        if (abbrDict.ContainsKey($"{sentence[index].ToLower()}"))
+        //        {
+        //            abbrDict[$"{sentence[index].ToLower()}"] = ab.abbr_list;
+        //        }
+        //        else {
+        //            abbrDict.Add($"{sentence[index].ToLower()}", ab.abbr_list);
+        //            //Debug.WriteLine($"added key {sentence[index].ToLower()} to abbr.dict");
+        //        }
+        //        offset++;
+        //    }
+        //    return recogAb;
+        //}
+        public List<HWRRecognizedText> processAlternative(List<List<string>> alter)
+        {
+            if (alter == null)
+                return null;
+
+            List<HWRRecognizedText> recogResults = new List<HWRRecognizedText>();
+
+            foreach (List<string> lst in alter)
+            {
+                HWRRecognizedText rt = new HWRRecognizedText();
+                List<string> res = lst;
+                rt.candidateList = res;
+                rt.selectedIndex = 0;
+                rt.selectedCandidate = res.ElementAt(0);
+                recogResults.Add(rt);
+            }
+            return recogResults;
+
+        }
         /// <summary>
         /// Compares the current HWR result with last server retrieved result and updates words
         /// </summary>
@@ -264,136 +432,12 @@ namespace PhenoPad.HWRService
             //Debug.WriteLine($"current recog count={recogResults.Count},index={indexNew}");
             if (indexServer == lastServerRecog.Count)
             {//only care if there are new words to be added from new recog result
-                for (int i = indexNew; i < recogResults.Count; i++) {
+                for (int i = indexNew; i < recogResults.Count; i++)
+                {
                     newRecog.Add(recogResults[i]);
                 }
             }
             return newRecog;
-        }
-
-        public string listToString(List<string> lst)
-        {
-            string sentence = "";
-            foreach (string word in lst)
-                sentence += word + " ";
-            //taking off last space char
-            sentence = sentence.Substring(0, sentence.Length - 1);
-            return sentence;
-        }
-
-        public async Task<string> GetServerRecognition(HTTPRequest rawdata) {
-            //Create an HTTP client object
-            HttpClient httpClient = new HttpClient();
-            //Add a user-agent header to the GET request. 
-            var headers = httpClient.DefaultRequestHeaders;
-            //The safe way to add a header value is to use the TryParseAdd method and verify the return value is true,
-            //especially if the header value is coming from user input.
-            string header = "ie";
-            if (!headers.UserAgent.TryParseAdd(header))
-            {
-                throw new Exception("Invalid header value: " + header);
-            }
-            header = "Mozilla/5.0 (compatible; MSIE 10.0; Windows NT 6.2; WOW64; Trident/6.0)";
-            if (!headers.UserAgent.TryParseAdd(header))
-            {
-                throw new Exception("Invalid header value: " + header);
-            }
-
-            Uri requestUri = ipAddr;
-
-            //Send the GET request asynchronously and retrieve the response as a string.
-            HttpResponseMessage httpResponse = new HttpResponseMessage();
-            string httpResponseBody = "";
-
-            try
-            {
-                string rawdatastr = JsonConvert.SerializeObject(rawdata);
-                HttpStringContent data = new HttpStringContent(rawdatastr, UnicodeEncoding.Utf8, "application/json");
-                //Debug.WriteLine(data);
-                httpResponse = await httpClient.PostAsync(requestUri, data);
-                httpResponse.EnsureSuccessStatusCode();
-                httpResponseBody = await httpResponse.Content.ReadAsStringAsync();
-                //Debug.WriteLine(httpResponseBody);
-                return httpResponseBody;
-
-            }
-            catch (System.Net.Http.HttpRequestException he)
-            {
-                MainPage.Current.NotifyUser("HWR Server connection error", NotifyType.ErrorMessage, 3);
-                LogService.MetroLogger.getSharedLogger().Error($"HWR connection:{he}+{he.Message},\nBody={httpResponse.Content.ReadAsStringAsync()}");
-            }
-            catch (Exception e)
-            {
-                LogService.MetroLogger.getSharedLogger().Error($"{e + e.Message},\nBody={httpResponse.Content.ReadAsStringAsync()}");
-            }
-            return "";
-        }
-
-        public List<HWRRecognizedText> UpdateResultFromServer(string httpResponse,List<HWRRecognizedText> old=null)
-        {
-            List<List<string>> processedAlter = new List<List<string>>();
-
-            HTTPResponse result = JsonConvert.DeserializeObject<HTTPResponse>(httpResponse);
-            sentence = result.result.Split(" ").ToList();
-            List<HWRRecognizedText> recogResults = new List<HWRRecognizedText>();
-
-            recogResults = processAlternative(result.alternatives);
-
-            if ((recogResults == null || recogResults.Count == 0) && old != null) {
-                recogResults = processAbbr(result.abbreviations, old);
-            }
-            else
-                recogResults = processAbbr(result.abbreviations, recogResults);
-
-
-            return recogResults;
-            
-        }
-
-        public List<HWRRecognizedText> processAbbr(List<Abbreviation> abbrs, List<HWRRecognizedText> recog)
-        {
-            int offset = 0;
-            List<HWRRecognizedText> recogAb = recog;
-            foreach (Abbreviation ab in abbrs) {
-                int index = Convert.ToInt32(ab.word_pos);
-                HWRRecognizedText rt = new HWRRecognizedText();
-                List<string> res = ab.abbr_list;
-                rt.candidateList = res;
-                rt.selectedIndex = 0;
-                rt.selectedCandidate = res.ElementAt(0);
-                //only insert the extended form if there's no previously inserted abbreviations
-                if ((index + offset + 1 == recog.Count) || 
-                    (index +offset+1 <= recog.Count && recogAb[index+offset+1].selectedCandidate != rt.selectedCandidate))
-                    recogAb.Insert(index + offset + 1, rt);
-                if (abbrDict.ContainsKey($"{sentence[index].ToLower()}"))
-                {
-                    abbrDict[$"{sentence[index].ToLower()}"] = ab.abbr_list;
-                }
-                else {
-                    abbrDict.Add($"{sentence[index].ToLower()}", ab.abbr_list);
-                    //Debug.WriteLine($"added key {sentence[index].ToLower()} to abbr.dict");
-                }
-                offset++;
-            }
-            return recogAb;
-        }
-        public List<HWRRecognizedText> processAlternative(List<List<string>> alter)
-        {
-            if (alter == null)
-                return null;
-            List<HWRRecognizedText> recogResults = new List<HWRRecognizedText>();
-
-            foreach (List<string> lst in alter)
-            {
-                HWRRecognizedText rt = new HWRRecognizedText();
-                List<string> res = lst;
-                rt.candidateList = res;
-                rt.selectedIndex = 0;
-                rt.selectedCandidate = res.ElementAt(0);
-                recogResults.Add(rt);
-            }
-            return recogResults;
-
         }
 
     }

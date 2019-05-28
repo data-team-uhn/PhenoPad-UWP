@@ -50,7 +50,7 @@ namespace PhenoPad
                 EnteredBackground += AppEnteredBackground;
                 LeavingBackground += AppLeavingBackground;
                 Suspending += OnSuspending;
-                Current.UnhandledException += OnUnhandledExceptionUI;
+                UnhandledException += OnUnhandledExceptionUI;
                 TaskScheduler.UnobservedTaskException += OnUnobservedException;
             }
 
@@ -65,6 +65,7 @@ namespace PhenoPad
         private void AppEnteredBackground(object sender, EnteredBackgroundEventArgs e)
         {
             MetroLogger.getSharedLogger().Info("App entered background.");
+
             _isinBackground = true;
         }
 
@@ -81,9 +82,14 @@ namespace PhenoPad
         /// <summary>
         /// Invoked when Application receives an unhandled exception
         /// </summary>
-        private static void OnUnhandledExceptionUI(object sender, Windows.UI.Xaml.UnhandledExceptionEventArgs e)
+        private async static void OnUnhandledExceptionUI(object sender, Windows.UI.Xaml.UnhandledExceptionEventArgs e)
         {
             MetroLogger.getSharedLogger().Error($"APP has handled an Unhandled exception:{e.Exception}\n");
+            if (MainPage.Current != null)
+            {
+                await MainPage.Current.saveNoteToDisk();
+                await MainPage.Current.KillAudioService();
+            }
             e.Handled = true;
         }
 

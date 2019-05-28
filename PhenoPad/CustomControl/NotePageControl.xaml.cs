@@ -183,6 +183,7 @@ namespace PhenoPad.CustomControl
             notebookId = notebookid;
             pageId = pageid;
             ehrPage = null;
+            curStroke = null;
 
 
             UNPROCESSED_COLOR = new SolidColorBrush(UNPROCESSED_COLOR.Color);
@@ -240,7 +241,7 @@ namespace PhenoPad.CustomControl
             unprocessedDispatcherTimer.Interval = TimeSpan.FromMilliseconds(100);
             recognizeTimer.Interval = TimeSpan.FromSeconds(0.25);// recognize through server side every 3 seconds
             autosaveDispatcherTimer.Interval = TimeSpan.FromSeconds(1); //setting stroke auto save interval to be 1 sec
-            RawStrokeTimer.Interval = TimeSpan.FromSeconds(10);
+            RawStrokeTimer.Interval = TimeSpan.FromSeconds(1);
             EraseTimer.Interval = TimeSpan.FromSeconds(1);
 
             linesToUpdate = new Queue<int>();
@@ -1643,17 +1644,19 @@ namespace PhenoPad.CustomControl
                     stroke.Selected = true;
                     SetSelectedStrokeStyle(stroke);
                 }
-                //by default uses the stroke's preanalyzed recognition for annotation
+                //by default uses the stroke's pre-analyzed recognition for annotation
                 int lineNum = getLineNumByRect(line.BoundingRect);
                 var phrasewords = phrases[lineNum].words;
                 //var hitwords = FindHitWordsInLine(line);
                 string text = "";
-                foreach (var word in phrasewords) {
+                foreach (var word in phrasewords)
+                {
                     var bound = word.GetUIRect();
                     //Debug.WriteLine($"{bound.X}, {bound.Y},{bound.Width},{bound.Height}");
                     //Debug.WriteLine($"{boundingRect.X},{boundingRect.Y},{boundingRect.Width},{boundingRect.Height}");
                     bool intersects = bound.X >= boundingRect.X && bound.X + bound.Width <= boundingRect.Right;
-                    if (intersects) {
+                    if (intersects)
+                    {
                         //Debug.WriteLine($"word {word.current} intersects");
                         text += word.current + " ";
                     }

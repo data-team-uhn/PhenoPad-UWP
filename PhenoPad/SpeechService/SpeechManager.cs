@@ -46,9 +46,9 @@ namespace PhenoPad.SpeechService
     public class SpeechManager
     {
         //private string serverAddress = "54.226.217.30";
-        private string serverAddress = "phenopad.ccm.sickkids.ca";
+        private string serverAddress = "speechengine.ccm.sickkids.ca";
         private string serverPort = "8888";
-        public static string DEFAULT_SERVER = "phenopad.ccm.sickkids.ca";
+        public static string DEFAULT_SERVER = "speechengine.ccm.sickkids.ca";
         public static string DEFAULT_PORT = "8888";
         public static string RESTART_AUIDO_SERVER = "TIMEOUTEXIT";
         public static bool NEED_RESTART_AUDIO = false;
