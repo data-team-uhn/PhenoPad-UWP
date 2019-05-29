@@ -67,7 +67,7 @@ namespace PhenoPad.CustomControl
             foreach (WordBlockControl s in words) {
                 text += s.current.Trim('(').Trim(')') + " ";
             }
-            return text;
+            return text.Trim();
         }
 
         public void SetPhrasePosition(double left, double top) {
@@ -238,7 +238,7 @@ namespace PhenoPad.CustomControl
                     WordBlockControl wb = new WordBlockControl(lineIndex, this.canvasLeft, i, recognized.selectedCandidate, recognized.candidateList);
 
                     //is an abbreviation term
-                    if (recognized.candidateList.Count > 5 && fromServer)
+                    if ( recognized.candidateList.Count > 5 && fromServer)
                     {
                         wb.is_abbr = true;
                     }
@@ -254,6 +254,11 @@ namespace PhenoPad.CustomControl
                     AddWord(w);
                     new_index++;
                 }
+                if (MainPage.Current != null)
+                {
+                    MainPage.Current.curPage.annotateCurrentLineAndUpdateUI(line_index: lineIndex);
+                }
+
             }
         }
 

@@ -902,28 +902,22 @@ namespace PhenoPad.CustomControl
         }
 
         public async Task<List<RecognizedPhrases>> GetAllRecognizedPhrases() {
-            List<RecognizedPhrases> phrases = new List<RecognizedPhrases>();
+            List<RecognizedPhrases> wordPhrases = new List<RecognizedPhrases>();
 
-            await CoreApplication.MainView.CoreWindow.Dispatcher.RunAsync(CoreDispatcherPriority.Normal,
-            () =>
-            {
-                foreach (var c in recognizedCanvas.Children)
+            await CoreApplication.MainView.CoreWindow.Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () =>{
+                foreach (var key in phrases.Keys)
                 {
-                    if (c.GetType() == typeof(NotePhraseControl))
+                    NotePhraseControl npc = phrases[key];
+                    for (int i = 0; i < npc.words.Count; i++)
                     {
-                        NotePhraseControl npc = (NotePhraseControl)c;
-                        //temoporarily setting phrase index 0, will update later when implementing stroke-text place matching
-                        for (int i = 0; i < npc.words.Count; i++) {
-                            WordBlockControl wb = npc.words[i];
-                            RecognizedPhrases ph = new RecognizedPhrases(npc.lineIndex, npc.canvasLeft, i, wb.current, wb.candidates,wb.corrected);
-                            phrases.Add(ph);
-                        }
+                        WordBlockControl wb = npc.words[i];
+                        RecognizedPhrases ph = new RecognizedPhrases(notebookId, pageId, wb.line_index, wb.left, i, wb.current, wb.candidates, wb.corrected, wb.is_abbr);
+                        wordPhrases.Add(ph);
                     }
                 }
-            }
-            );
+            });
 
-            return phrases;
+            return wordPhrases;
         }
 
         public async void addImageAndAnnotationControlFromBitmapImage(string imageString)
@@ -1024,28 +1018,24 @@ namespace PhenoPad.CustomControl
         internal void loadRecognizedPhrases(List<RecognizedPhrases> recogPhrases)
         {
             recogPhrases = recogPhrases.OrderBy(x => x.line_index).ThenBy(z => z.word_index).ToList();
-            int last_line = recogPhrases[0].line_index;
+            int last_line = recogPhrases.FirstOrDefault().line_index;
             List<WordBlockControl> words = new List<WordBlockControl>();
 
             foreach (RecognizedPhrases ph in recogPhrases) {
                 if (ph.line_index > last_line) {
                     NotePhraseControl npc = new NotePhraseControl(last_line, words);
                     phrases[last_line] = npc;
-                    npc.SetPhrasePosition(ph.left, npc.lineIndex * LINE_HEIGHT);
+                    npc.SetPhrasePosition(words.FirstOrDefault().left, npc.lineIndex * LINE_HEIGHT);
                     recognizedCanvas.Children.Add(npc);
-                    Canvas.SetLeft(npc, ph.left);
+                    Canvas.SetLeft(npc, words.FirstOrDefault().left);
                     Canvas.SetTop(npc, npc.lineIndex * LINE_HEIGHT);
                     npc.UpdateLayout();
                     words = new List<WordBlockControl>();
                     last_line = ph.line_index;
                 }
-                List<string> candidates = new List<string>();
-                candidates.Add(ph.current);
-                candidates.Add(ph.candidate2);
-                candidates.Add(ph.candidate3);
-                candidates.Add(ph.candidate4);
-                candidates.Add(ph.candidate5);
-                WordBlockControl wb = new WordBlockControl(ph.line_index, ph.left, ph.word_index, ph.current, candidates);
+                List<string> candidates = ph.candidate_list;
+                WordBlockControl wb = new WordBlockControl(ph.line_index, ph.canvasLeft, ph.word_index, ph.current, candidates);
+                wb.is_abbr = ph.is_abbr;
                 wb.corrected = ph.is_corrected;
                 words.Add(wb);
             }
@@ -1053,11 +1043,11 @@ namespace PhenoPad.CustomControl
             if (words.Count > 0) {
                 NotePhraseControl npc = new NotePhraseControl(last_line, words);
                 phrases[last_line] = npc;
-                double left = recogPhrases.Count == 1 ? recogPhrases[0].left : recogPhrases[recogPhrases.Count-1].left;
-                npc.SetPhrasePosition(left, npc.lineIndex * LINE_HEIGHT);
-                recognizedCanvas.Children.Add(npc);
-                Canvas.SetLeft(npc, left);
+                //double left = recogPhrases.Count == 1 ? recogPhrases[0].canvasLeft : recogPhrases[recogPhrases.Count-1].canvasLeft;
+                npc.SetPhrasePosition(words.FirstOrDefault().left, npc.lineIndex * LINE_HEIGHT);
+                Canvas.SetLeft(npc, words.FirstOrDefault().left);
                 Canvas.SetTop(npc, npc.lineIndex * LINE_HEIGHT);
+                recognizedCanvas.Children.Add(npc);
                 npc.UpdateLayout();
             }
             //Debug.WriteLine("done loading phrases");

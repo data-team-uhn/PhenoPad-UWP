@@ -938,6 +938,14 @@ namespace PhenoPad
             AppSetting.Visibility = Visibility.Visible;
         }
 
+        private async void ClearRecogBtn_Click(object sender, RoutedEventArgs e) {
+            LoadingPopup.IsOpen = true;
+            LoadingPopup.Visibility = Visibility.Visible;
+            await Current.curPage.ClearAndRecognizePage();
+            await Task.Delay(TimeSpan.FromSeconds(2));
+
+        }
+
         private void ChangeServerHWR_Click(object sender, RoutedEventArgs e) {
             string newAddr = HWRAddrInput.Text;
             HWRService.HWRManager.getSharedHWRManager().setIPAddr(new Uri(newAddr));

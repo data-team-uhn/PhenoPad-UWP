@@ -7,6 +7,7 @@
     xmlns:customcontrol="using:PhenoPad.CustomControl"
     xmlns:phenotypeservice="using:PhenoPad.PhenotypeService"
     xmlns:local="using:PhenoPad.CustomControl"
+    xmlns:Control="using:Microsoft.Toolkit.Uwp.UI.Controls"
     mc:Ignorable="d"
     VerticalAlignment="Stretch" 
     HorizontalAlignment="Stretch"
@@ -310,7 +311,7 @@
                                 <!-- recongtion result of current line -->
                                 <ProgressRing x:Name="loading" IsActive="True" Margin="10 0 10 0" Visibility="Collapsed"/>
                                 <StackPanel Name="curLineWordsStackPanel" Orientation="Horizontal" Spacing="5" HorizontalAlignment="Right"
-                                            Height="45" Padding="10 0 10 0" />
+                                            MinHeight="45" Padding="10 0 10 0" />
                                 <ListView Visibility="Collapsed" Padding="5 0 0 0" Height="40"
                                   ScrollViewer.HorizontalScrollMode="Enabled"
                                   ScrollViewer.VerticalScrollMode="Disabled"

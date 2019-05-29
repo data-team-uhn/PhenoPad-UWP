@@ -80,14 +80,8 @@ namespace PhenoPad.CustomControl
             List<WordBlockControl> words = new List<WordBlockControl>();
             int line_index = recogPhrase.FirstOrDefault().line_index;
             foreach (var ph in recogPhrase) {
-                List<string> candidates = new List<string>();
-                candidates.Add(ph.current);
-                candidates.Add(ph.candidate2);
-                candidates.Add(ph.candidate3);
-                candidates.Add(ph.candidate4);
-                candidates.Add(ph.candidate5);
-                WordBlockControl wb = new WordBlockControl(ph.line_index, ph.left, ph.word_index, ph.current, candidates);
-                Debug.WriteLine($"left={ph.left}");
+                List<string> candidates = ph.candidate_list;
+                WordBlockControl wb = new WordBlockControl(ph.line_index, ph.canvasLeft, ph.word_index, ph.current, candidates);
                 wb.WordBlock.FontSize = 18;
                 wb.corrected = ph.is_corrected;
                 words.Add(wb);
@@ -95,10 +89,10 @@ namespace PhenoPad.CustomControl
             //this handles the case when there's only one line of note on the page
             if (words.Count > 0)
             {
-                    NotePhraseControl npc = new NotePhraseControl(line_index, words);
-                    text = npc.GetString();
-                    recogPhraseStack.Children.Add(npc);
-                    npc.UpdateLayout();
+                NotePhraseControl npc = new NotePhraseControl(line_index, words);
+                text = npc.GetString();
+                recogPhraseStack.Children.Add(npc);
+                npc.UpdateLayout();
             }
 
         }

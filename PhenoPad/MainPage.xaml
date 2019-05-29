@@ -223,9 +223,19 @@
                             <MenuFlyoutItem Text="Toogle Bluetooth" 
                                             HorizontalAlignment="Stretch"
                                             x:Name="BTConnectBtn"
-                                            Tag="Full Screen" Click="BTConnectBtn_Click">
+                                            Tag="Bluetooth" Click="BTConnectBtn_Click">
                                 <MenuFlyoutItem.Icon>
-                                    <SymbolIcon Symbol="Sync"/>
+                                    <SymbolIcon Symbol="Globe"/>
+                                </MenuFlyoutItem.Icon>
+                            </MenuFlyoutItem>
+                            
+                            <MenuFlyoutItem Text="Re-recognize Page" 
+                                            HorizontalAlignment="Stretch"
+                                            x:Name="ClearRecogBtn"
+                                            ToolTipService.ToolTip="Clear and re-recognize current page"
+                                            Tag="Clear" Click="ClearRecogBtn_Click">
+                                <MenuFlyoutItem.Icon>
+                                    <SymbolIcon Symbol="Refresh"/>
                                 </MenuFlyoutItem.Icon>
                             </MenuFlyoutItem>
 
@@ -947,34 +957,6 @@
                                 <ColumnDefinition Width="*"/>
                             </Grid.ColumnDefinitions>
 
-                            <!--<TextBlock Text="Microphone" Grid.Row="1" Grid.Column="0" FontWeight="Bold"
-                           VerticalAlignment="Center" HorizontalAlignment="Left"/>
-                            <Button Grid.Row="1" Grid.Column="1" HorizontalAlignment="Right" Style="{StaticResource MyButtonStyle}" Background="Transparent" Foreground="Gray" Height="30" VerticalAlignment="Top" Width="30" Padding="0"
-                                    Click="MultimediaClose_Click">
-                                <SymbolIcon Symbol="Clear" Height="20" Width="20"></SymbolIcon>
-                            </Button>
-                            <StackPanel Grid.Row="2" Grid.ColumnSpan="2">
-                                
-                            </StackPanel>
-                            <TextBlock Text="Swith microphone:" Grid.Row="2" Grid.Column="0"
-                           VerticalAlignment="Center" HorizontalAlignment="Right"/>
-                            <StackPanel Orientation="Horizontal" Grid.Row="2" Grid.Column="1" Spacing="10" HorizontalAlignment="Center">
-                                <RadioButton Content="Surface Microphone" Tag="Surface Microphone" Name="SurfaceMicRadioBtn" GroupName="MicSwitcher" Checked="SurfaceMicRadioButton_Checked"/>
-                                <RadioButton Content="External Microphone" Tag="External Microphone" Name="ExternalMicRadioBtn" GroupName="MicSwitcher" Checked="ExterMicRadioButton_Checked"/>
-                            </StackPanel>
-                            <TextBlock Text="ASR server:" Grid.Row="3" Grid.Column="0"
-                           VerticalAlignment="Center" HorizontalAlignment="Right"/>
-                            <StackPanel Orientation="Horizontal" Grid.Row="3" Grid.Column="1" Spacing="10" HorizontalAlignment="Center">
-                                <TextBox x:Name="ASRAddrInput" PlaceholderText="Server Address:Port" Width="220" Margin="5" />
-                                <Button Content="Change server" Click="ChangeServerASR_Click"/>
-                            </StackPanel>
-                            <TextBlock Text="HWR server:" Grid.Row="4" Grid.Column="0"
-                           VerticalAlignment="Center" HorizontalAlignment="Right"/>
-                            <StackPanel Orientation="Horizontal" Grid.Row="4" Grid.Column="1" Spacing="10" HorizontalAlignment="Center">
-                                <TextBox x:Name="HWRAddrInput" PlaceholderText="Server Address:Port" Width="220" Margin="5" />
-                                <Button Content="Change server" Click="ChangeServerHWR_Click"/>
-                            </StackPanel>-->
-
                             <TextBlock Text="Video" Grid.Row="5" Grid.Column="0" FontWeight="Bold"
                            VerticalAlignment="Top" HorizontalAlignment="Left"/>
 
@@ -987,17 +969,6 @@
                               Click="CameraButton_Click" IsEnabled="True"/>
 
                             </StackPanel>
-                            <!--
-                We have made Bluetooth connection automatic
-                <TextBlock Text="Bluetooh" Grid.Row="3" Grid.Column="0"
-                           VerticalAlignment="Center" HorizontalAlignment="Center"/>
-                <Button Name="bluetoothButton"
-                        Margin="1" FlowDirection="LeftToRight"
-                        Content="Connect"
-                        Grid.Row="3" Grid.Column="1" RequestedTheme="Default"
-                        VerticalAlignment="Center" HorizontalAlignment="Center"
-                              Click="BluetoothButton_Click"  IsEnabled="True"/>
-                -->                        
 
                             <Image Name="StreamImageView" Width="300" Height="200" 
                           Grid.Column="1" Grid.Row="5" HorizontalAlignment="Center" VerticalAlignment="Center"

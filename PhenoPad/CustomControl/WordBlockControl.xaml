@@ -24,6 +24,7 @@
                         </Style>
                     </ListView.ItemContainerStyle>
                 </ListView>
+                <StackPanel x:Name="AlternativeStack" Orientation="Vertical"/>
                 <TextBox x:Name="AlternativeInput" MinHeight="40" LostFocus="ReplaceAlternative" />
             </StackPanel>
         </Flyout>
@@ -31,7 +32,6 @@
 
     <Grid Background="Transparent">
         <TextBlock x:Name="WordBlock" Text="{x:Bind current}" x:FieldModifier="public" FontSize="26" Tapped="ShowWordCandidate" />
-        <TextBlock x:Name="AbbreviationBlock" Text="" x:FieldModifier="public" FontSize="26" Tapped="ShowAbbrCandidate" Visibility="Collapsed" />
         <Button Visibility="Collapsed" Style="{StaticResource ButtonStyle1}"/>
     </Grid>
 </UserControl>

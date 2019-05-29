@@ -146,8 +146,8 @@ namespace PhenoPad.HWRService
                     //triggers server side abbreviation detection
                     if (MainPage.Current.abbreviation_enabled && !fromEHR)
                     {
-                        var server = await TriggerServerRecognition(lineNum, sentence, alternatives, recogResults);
-                        recogResults = server == null ? recogResults : server;
+                        TriggerServerRecognition(lineNum, sentence, alternatives, recogResults);
+                        //recogResults = server == null ? recogResults : server;
                     }
                     //recogResults = CompareAndUpdateWithServer(recogResults);
                     //lastServerRecog = recogResults;
@@ -185,7 +185,7 @@ namespace PhenoPad.HWRService
             Debug.WriteLine("stack cleared");
         }
 
-        public async Task<List<HWRRecognizedText>> TriggerServerRecognition(int lineNum, List<string> sentence, List<List<string>> alternatives, List<HWRRecognizedText>original ) {
+        public async void TriggerServerRecognition(int lineNum, List<string> sentence, List<List<string>> alternatives, List<HWRRecognizedText>original ) {
             try
             {               
                 List<HWRRecognizedText> recogResults = new List<HWRRecognizedText>();
@@ -199,15 +199,15 @@ namespace PhenoPad.HWRService
                     //lastServerRecog = processed.Count == 0 ? lastServerRecog : recogResults;
                     if (recogResults.Count > 0)
                     {
-                        //MainPage.Current.curPage.UpdateRecognition(lineNum, recogResults);
-                        return recogResults;
+                        MainPage.Current.curPage.UpdateRecognition(lineNum, recogResults);
+                        //return recogResults;
                     }
                 }
             }
             catch (Exception e) {
                 LogService.MetroLogger.getSharedLogger().Error(e.Message);
             }
-            return null;
+            //return null;
         }
 
 

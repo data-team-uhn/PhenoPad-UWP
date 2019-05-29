@@ -1,25 +1,27 @@
 ﻿using System.Collections.Generic;
+using System.Xml.Serialization;
 
 namespace PhenoPad.FileService
 {
     /// <summary>
     /// Represents a recognized phrase in the note
     /// </summary>
+    /// 
     public class RecognizedPhrases
     {
         public string current;//selected candidate
-        public string candidate2;
-        public string candidate3;
-        public string candidate4;
-        public string candidate5;
+
+        [XmlArray("alternatives")]
+        [XmlArrayItem("candidate")]
+        public List<string> candidate_list;
 
         public bool is_corrected;
-
         public int word_index;
-        public double left;
         public int line_index;
-
-        public int pageId;
+        public double canvasLeft;
+        public string pageId;
+        public string noteId;
+        public bool is_abbr;
 
 
         /// <summary>
@@ -28,39 +30,16 @@ namespace PhenoPad.FileService
         public RecognizedPhrases()
         {
             current = "";
-            candidate2 = "";
-            candidate3 = "";
-            candidate4 = "";
-            candidate5 = "";
-
+            candidate_list = new List<string>();
         }
-
-        public RecognizedPhrases(int lineNum, double left, int index, string selected,List<string>candidates, bool isCorrected) {
+        public RecognizedPhrases(string noteId, string pageId,int lineNum, double canvasLeft, int index, string selected,List<string>candidates, bool isCorrected,bool isAbbr) {
             line_index = lineNum;
-            this.left = left;
+            this.canvasLeft = canvasLeft;
             word_index = index;
-            current = "";
-            candidate2 = "";
-            candidate3 = "";
-            candidate4 = "";
-            candidate5 = "";
-
             is_corrected = isCorrected;
-
+            is_abbr = isAbbr;
             current = selected;
-            if (candidates.Contains(selected))
-                candidates.Remove(selected);
-
-            foreach (var s in candidates) {
-                if (candidate2.Length == 0)
-                    candidate2 = s;
-                else if (candidate3.Length == 0)
-                    candidate3 = s;
-                else if (candidate4.Length == 0)
-                    candidate4 = s;
-                else if (candidate5.Length == 0)
-                    candidate5 = s;
-            }
+            candidate_list = candidates;
         }
     }
 }

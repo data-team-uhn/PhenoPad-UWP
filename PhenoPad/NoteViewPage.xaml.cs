@@ -127,9 +127,9 @@ namespace PhenoPad
                     {
                         WordBlockControl wb = noteline.HWRs[i];
                         //todo: figure out how to save canvasleft because wordblock has no canvas left property
-                        RecognizedPhrases ph = new RecognizedPhrases(noteline.keyLine, wb.left, i, wb.current, wb.candidates, wb.corrected);
-                        ph.pageId = noteline.pageID;
-                        phrases.Add(ph);
+                        //RecognizedPhrases ph = new RecognizedPhrases(noteline.keyLine, wb.left, i, wb.current, wb.candidates, wb.corrected);
+                        //ph.pageId = noteline.pageID;
+                        //phrases.Add(ph);
                     }
                 }
             }

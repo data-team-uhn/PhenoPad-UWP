@@ -27,7 +27,6 @@ namespace PhenoPad.CustomControl
         public int word_index;
         public double left;
         public int line_index;
-        public int selected_index;
         public bool corrected;
 
         public bool is_abbr;
@@ -46,7 +45,6 @@ namespace PhenoPad.CustomControl
             this.word_index = word_index;
             this.current = current;
             this.candidates = candidates;
-            selected_index = 0;
             WordBlock.Text = current;
             corrected = false;
             AlternativeList.ItemsSource = candidates;
@@ -62,7 +60,9 @@ namespace PhenoPad.CustomControl
         }
 
         private void ShowWordCandidate(object sender, RoutedEventArgs args) {
-            AlternativeList.ItemsSource = candidates;
+            //AlternativeList.ItemsSource = candidates;
+            foreach (var b in GetCurWordCandidates())
+                AlternativeStack.Children.Add(b);
             Flyout f = (Flyout)this.Resources["AlternativeFlyout"];
             f.ShowAt(WordBlock);
         }
@@ -73,20 +73,19 @@ namespace PhenoPad.CustomControl
 
             if (text.Length > 0) {
                 current = text;
-                selected_index = -1;
                 WordBlock.Text = current;
                 corrected = true;
                 //since user manully chose the best choice, auto insert it into first place candidate and
                 //remove the last word
                 candidates.Insert(0, text);
                 candidates.RemoveAt(candidates.Count - 1);
+                if (MainPage.Current != null)
+                {
+                    MainPage.Current.curPage.annotateCurrentLineAndUpdateUI(line_index: line_index);
+                    MainPage.Current.NotifyUser($"Changed to {text}", NotifyType.StatusMessage, 1);
+                }
             }
 
-            if (MainPage.Current != null)
-            {
-                MainPage.Current.curPage.annotateCurrentLineAndUpdateUI(line_index: line_index);
-                MainPage.Current.NotifyUser($"Changed to {text}", NotifyType.StatusMessage, 1);
-            }
             //for view mode
             else {
                 //nothing to do?
@@ -100,7 +99,6 @@ namespace PhenoPad.CustomControl
             if (word.Length > 0)
             {
                 current = word;
-                selected_index = -1;
                 WordBlock.Text = current;
                 MainPage.Current.curPage.annotateCurrentLineAndUpdateUI(line_index: line_index);
                 corrected = true;
@@ -113,9 +111,8 @@ namespace PhenoPad.CustomControl
         private void AlternativeList_Click(object sender, ItemClickEventArgs e)
         {//called when user clicks on the alternative from the flyout panel
 
-            int ind = AlternativeList.Items.IndexOf((string)e.ClickedItem);
+            int ind = candidates.IndexOf((string)e.ClickedItem);
             current = candidates[ind];
-            selected_index = ind;
             WordBlock.Text = current;
             corrected = true;
             if (MainPage.Current != null) {
@@ -123,42 +120,41 @@ namespace PhenoPad.CustomControl
                 MainPage.Current.curPage.ClearSelectionAsync();
                 MainPage.Current.NotifyUser($"Changed to {current}", NotifyType.StatusMessage, 1);
             }
-
             UpdateLayout();
         }
 
         public List<Button> GetCurWordCandidates() {
-            //TODO HANDLE ABBR
             List<Button> lst = new List<Button>();
             //if user has manually added alternative from text input, add it to candidates as well
-            if (!candidates.Contains(current))
-            {
 
-                //Debug.WriteLine("candidates does not contain current");
+            for (int i = 0; i < candidates.Count; i++) {
 
                 Button tb = new Button();
                 tb.Style = (Style)Application.Current.Resources["ButtonStyle1"];
-                tb.FontSize = 16;
-                tb.Background = new SolidColorBrush(Colors.LightGray);
-                tb.VerticalAlignment = VerticalAlignment.Center;
-                tb.Content = current;
-                lst.Add(tb);
-                tb.Tapped += CandidateList_Click;
-            }
-            foreach (string candidate in candidates)
-            {
-                Button tb = new Button();
-                tb.Style = (Style)Application.Current.Resources["ButtonStyle1"];
-                tb.Background = current == candidate ? new SolidColorBrush(Colors.LightGray) : new SolidColorBrush(Colors.Transparent);
+                tb.Background = current == candidates[i] ? new SolidColorBrush(Colors.LightGray) : new SolidColorBrush(Colors.Transparent);
                 tb.FontSize = 16;
                 tb.VerticalAlignment = VerticalAlignment.Center;
-                tb.Content = candidate;
+                tb.Content = candidates[i];
                 lst.Add(tb);
-
+                if (candidates[i].Contains("(") && candidates[i].Contains(")") && is_abbr)
+                {
+                    //parse all extended forms of abbreviation as one button with flyout and returns directly
+                    tb.Background = candidates.GetRange(i,candidates.Count-i).Contains(current) ? 
+                        new SolidColorBrush(Colors.LightGray) : new SolidColorBrush(Colors.Transparent);
+                    tb.Tapped += ShowAbbrCandidatesOnFlyout;
+                    return lst;
+                }
                 tb.Tapped += CandidateList_Click;
             }
             return lst;
+        }
 
+        public void ShowAbbrCandidatesOnFlyout(object sender, TappedRoutedEventArgs e) {
+            var allAlters = candidates.Where(x => x.Contains("(") && x.Contains(")")).ToList();
+            AlternativeList.ItemsSource = allAlters;
+            Flyout fo = (Flyout)this.Resources["AlternativeFlyout"];
+            fo.Placement = FlyoutPlacementMode.Top;
+            fo.ShowAt((FrameworkElement)sender);
         }
 
         public TextBlock GetCurWordTextBlock() {
@@ -195,7 +191,6 @@ namespace PhenoPad.CustomControl
                 current = content;
             }
             else {
-                selected_index = ind;
                 current = candidates[ind];
             }
             WordBlock.Text = current;
@@ -206,7 +201,6 @@ namespace PhenoPad.CustomControl
             MainPage.Current.curPage.HideCurLineStackPanel();
             MainPage.Current.NotifyUser($"Changed to {current}", NotifyType.StatusMessage, 1);
             MainPage.Current.curPage.ClearSelectionAsync();
-
             UpdateLayout();
         }
 
