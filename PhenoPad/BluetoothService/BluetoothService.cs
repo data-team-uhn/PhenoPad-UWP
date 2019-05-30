@@ -50,7 +50,7 @@ namespace PhenoPad.BluetoothService
         {
             rootPage = MainPage.Current;
             bool blueConnected = await checkConnection();
-            Debug.WriteLine($"\n Initialize checkConnection returned = {blueConnected}");
+            Debug.WriteLine($"\nInitialize checkConnection returned = {blueConnected}");
             if (!blueConnected)
             {
                 rootPage.bluetoothprogress.Visibility = Windows.UI.Xaml.Visibility.Visible;
@@ -60,7 +60,10 @@ namespace PhenoPad.BluetoothService
                     {
                         //Debug.WriteLine("Trying Bluetooth connection ...");
                         //await Task.Delay(TimeSpan.FromSeconds(3));
+                        await MainPage.Current.InitBTConnectionSemaphore.WaitAsync();
                         await InitiateConnection();
+                        MainPage.Current.InitBTConnectionSemaphore.Release();
+
                     }
                 });
             }
@@ -76,9 +79,10 @@ namespace PhenoPad.BluetoothService
         /// </summary>
         private async Task InitiateConnection()
         {
+            //only one thread allowed to initlize at a time
+
             if (initialized)
                 return;
-
             var serviceInfoCollection = await DeviceInformation.FindAllAsync(RfcommDeviceService.GetDeviceSelector(RfcommServiceId.SerialPort), new string[] { "System.Devices.AepService.AepId" });
 
             //Debug.WriteLine($"\n Before loop, blueservice null = {blueService == null}");
@@ -114,9 +118,9 @@ namespace PhenoPad.BluetoothService
 
                             var rfcommServices = await bluetoothDevice.GetRfcommServicesForIdAsync(RfcommServiceId.FromUuid(Constants.RfcommChatServiceUuid), BluetoothCacheMode.Uncached);
 
-                            if (rfcommServices.Services.Count > 0)
+                            if (rfcommServices.Services.Count > 0 && blueService == null && _socket==null)
                             {
-                                LogService.MetroLogger.getSharedLogger().Info("Found rfcommService.");
+                                Debug.WriteLine("Found RFCommService");
                                 blueService = rfcommServices.Services[0];
                                 break;
                             }
@@ -134,11 +138,11 @@ namespace PhenoPad.BluetoothService
                     }
                 }
             }
-            //Debug.WriteLine($"After loop, hostname={blueService.ConnectionHostName}, servicename={blueService.ConnectionServiceName}\n ");
+
             //END OF RFCOMMSERVICE LOOP
 
-            lock (this)
-                _socket = new StreamSocket();
+            //lock (this)
+            _socket = _socket == null?  new StreamSocket():_socket;
             try
             {
                 await _socket.ConnectAsync(blueService.ConnectionHostName, blueService.ConnectionServiceName);
@@ -147,6 +151,8 @@ namespace PhenoPad.BluetoothService
             catch (Exception ex) // ERROR_ELEMENT_NOT_FOUND
             {
                 LogService.MetroLogger.getSharedLogger().Error($"BluetoothService at line 141:{ex.Message}");
+                initialized = false;
+                
                 return;
             }
             //Debug.WriteLine("_socket connectasync success===");
@@ -171,6 +177,8 @@ namespace PhenoPad.BluetoothService
             // keep receiving data 
             if (cancellationSource != null)
                 cancellationSource.Cancel();
+
+
             cancellationSource = new CancellationTokenSource();
             CancellationToken cancellationToken = cancellationSource.Token;
             await Task.Run(async () =>
@@ -179,6 +187,7 @@ namespace PhenoPad.BluetoothService
                 {
                     // don't run again for 
                     await Task.Delay(500);
+                    Debug.WriteLine($"BT initialized={this.initialized}, mainpage speech ={MainPage.Current.speechEngineRunning}\nmainpage bt={MainPage.Current.bluetoonOn}");
                     string result = await ReceiveMessageUsingStreamWebSocket();
                     if (result == "CONNECTION_ERROR") {
                         //do nothing

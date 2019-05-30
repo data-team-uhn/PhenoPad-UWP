@@ -5,6 +5,7 @@ using System;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using Windows.ApplicationModel.Core;
 using Windows.Globalization;
@@ -64,6 +65,8 @@ namespace PhenoPad
         private int doctor = 0;
         public bool speechEngineRunning = false;
         public DispatcherTimer audioTimer = new DispatcherTimer();
+        public SemaphoreSlim InitBTConnectionSemaphore; 
+
 
 
         public SpeechManager speechManager = SpeechManager.getSharedSpeechManager();
@@ -380,54 +383,60 @@ namespace PhenoPad
             /// <summary>
             /// Switch speech engine state for blue tooth devices
             /// </summary>
-
-            if (!bluetoonOn)
-            {
-                try
+            bool result = true;
+            await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, async () => {
+                if (!bluetoonOn)
                 {
-                    //temporarily disables for debugging reseasons
-                    //=====
-                    //uiClinet = UIWebSocketClient.getSharedUIWebSocketClient();
-                    //bool uiResult = await uiClinet.ConnectToServer();
-                    //if (!uiResult)
-                    //    LogService.MetroLogger.getSharedLogger().Error("UIClient failed to connect.");
-                    //=====
-                    bluetoothService = BluetoothService.BluetoothService.getBluetoothService();
-                    await bluetoothService.Initialize();                   
-                    return true;
-                }
-                catch (Exception e) {
-                    LogService.MetroLogger.getSharedLogger().Error($"Failed to turn on BT: {e.Message}");
-                    return false;
-                }
-            }
-            else
-            {
-                try
-                {
-                    //uiClinet.disconnect();
-                    //stops speech service before closing bluetooth
-                    if (speechEngineRunning)
-                        await SpeechManager.getSharedSpeechManager().StopASRResults();
-                    Debug.WriteLine("stopped ASR RESULT \n");
-                    bool result = bluetoothService.CloseConnection();
-                    if (result)
+                    try
                     {
-                        bluetoothService = null;
-                        bluetoonOn = false;
-                        //bluetoothInitialized(false);
-                        bluetoothicon.Visibility = Visibility.Collapsed;
-                        Debug.WriteLine("Bluetooth Connection disconnected");
-                        return true;
+                        //temporarily disables for debugging reseasons
+                        //=====
+                        //uiClinet = UIWebSocketClient.getSharedUIWebSocketClient();
+                        //bool uiResult = await uiClinet.ConnectToServer();
+                        //if (!uiResult)
+                        //    LogService.MetroLogger.getSharedLogger().Error("UIClient failed to connect.");
+                        //=====
+                        bluetoothService = bluetoothService==null? BluetoothService.BluetoothService.getBluetoothService():bluetoothService;
+                        await bluetoothService.Initialize();
+                        result = true;
                     }
+                    catch (Exception e)
+                    {
+                        LogService.MetroLogger.getSharedLogger().Error($"Failed to turn on BT: {e.Message}");
+                        result = false;
+                    }
+                }
+                else
+                {
+                    try
+                    {
+                        //uiClinet.disconnect();
+                        //stops speech service before closing bluetooth
+                        if (speechEngineRunning)
+                            await SpeechManager.getSharedSpeechManager().StopASRResults();
+                        Debug.WriteLine("stopped ASR RESULT \n");
+                        result = bluetoothService.CloseConnection();
+                        if (result)
+                        {
+                            //bluetoothService = null;
+                            bluetoonOn = false;
+                            //bluetoothInitialized(false);
+                            bluetoothicon.Visibility = Visibility.Collapsed;
+                            Debug.WriteLine("Bluetooth Connection disconnected");
+                            result = true;
+                        }
+
+                    }
+                    catch (Exception e)
+                    {
+                        LogService.MetroLogger.getSharedLogger().Error($"Failed to turn off BT: {e.Message}");
+                    }
+                    result = false;
 
                 }
-                catch (Exception e) {
-                    LogService.MetroLogger.getSharedLogger().Error($"Failed to turn off BT: {e.Message}");
-                }
-                return false;
-            
-            }
+
+            });
+            return result;
         }
 
         public void OnBTConnectSuccess() {
@@ -442,7 +451,7 @@ namespace PhenoPad
             var success = false;
             if (speechEngineRunning == false)
             {
-                success = await BluetoothService.BluetoothService.getBluetoothService().sendBluetoothMessage("audio start manager_id=666 ");
+                success = await bluetoothService.sendBluetoothMessage("audio start manager_id=666 ");
                 if (!success)
                 {
                     LogService.MetroLogger.getSharedLogger().Error("failed to send audio start message to raspi");

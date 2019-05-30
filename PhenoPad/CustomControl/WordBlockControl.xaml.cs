@@ -94,12 +94,14 @@ namespace PhenoPad.CustomControl
         }
 
 
-        public void ChangeAlterFromStroke(string word)
+        public void ChangeAlterFromTextInput(string word)
         {
             if (word.Length > 0)
             {
                 current = word;
                 WordBlock.Text = current;
+                candidates.RemoveAt(candidates.Count - 1);
+                candidates.Insert(0, current);
                 MainPage.Current.curPage.annotateCurrentLineAndUpdateUI(line_index: line_index);
                 corrected = true;
                 MainPage.Current.NotifyUser($"Changed to {current}", NotifyType.StatusMessage, 1);

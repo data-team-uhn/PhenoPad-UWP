@@ -321,11 +321,12 @@ namespace PhenoPad.SpeechService
         public async Task<bool> StopASRResults(bool reload = true)
         {
             try
-            {               
+            {
                 cancellationSource.Cancel();
+                await SaveTranscriptions(reload);
+
                 await BluetoothService.BluetoothService.getBluetoothService().sendBluetoothMessage("audio stop");
                 await speechResultsSocket.CloseConnnction();
-                await SaveTranscriptions(reload);
                 SpeechPage.Current.setSpeakerButtonEnabled(false);
                 OperationLogger.getOpLogger().Log(OperationType.ASR, "Ended");
                 speechInterpreter = new SpeechEngineInterpreter(this.conversation, this.realtimeConversation);
@@ -550,55 +551,63 @@ namespace PhenoPad.SpeechService
         public async Task<bool> EndAudio(string notebookid)
         {
             //await endSemaphoreSlim.WaitAsync();
-            try
-            {
-                if (graph != null && (fileInputNode != null || useFile == false))
-                {                   
-                    //deviceInputNode.Stop();
-                    cancellationSource.Cancel();
+            bool result = true;
 
-                    if (useFile)
-                        fileInputNode.Stop();
-
-                    graph.Stop();
-                    await speechStreamSocket.CloseConnnction();
-                    // await BluetoothService.BluetoothService.getBluetoothService().sendBluetoothMessage("audio end");
-                    /**
-
-                    TranscodeFailureReason finalizeResult = await fileOutputNode.FinalizeAsync();
-                    if (finalizeResult != TranscodeFailureReason.None)
+            await Windows.ApplicationModel.Core.CoreApplication.MainView.CoreWindow.Dispatcher.RunAsync(CoreDispatcherPriority.Normal,
+            async () =>{
+                try
+                {
+                    if (graph != null && (fileInputNode != null || useFile == false))
                     {
-                        // Finalization of file failed. Check result code to see why
-                        rootPage.NotifyUser(String.Format("Finalization of file failed because {0}", finalizeResult.ToString()), NotifyType.ErrorMessage, 2);
-                        //fileButton.Background = new SolidColorBrush(Colors.Red);
-                        return;
-                    }
+                        if (notebookid != "")
+                        {
+                            this.writeToFile(notebookid);
+                            await this.SaveTranscriptions(reload: true);
+                        }
 
-                    //recordStopButton.Content = "Record";
-                    rootPage.NotifyUser("Recording to file completed successfully!", NotifyType.StatusMessage, 1);
-                    **/
-                    if (graph != null)
+                        //deviceInputNode.Stop();
+                        cancellationSource.Cancel();
+
+                        if (useFile)
+                            fileInputNode.Stop();
+
+                        graph.Stop();
                         graph.Dispose();
 
-                    if (notebookid != "")
-                    {
-                        this.writeToFile(notebookid);
-                        await this.SaveTranscriptions();
+
+                        await speechStreamSocket.CloseConnnction();
+                        // await BluetoothService.BluetoothService.getBluetoothService().sendBluetoothMessage("audio end");
+                        /**
+
+                        TranscodeFailureReason finalizeResult = await fileOutputNode.FinalizeAsync();
+                        if (finalizeResult != TranscodeFailureReason.None)
+                        {
+                            // Finalization of file failed. Check result code to see why
+                            rootPage.NotifyUser(String.Format("Finalization of file failed because {0}", finalizeResult.ToString()), NotifyType.ErrorMessage, 2);
+                            //fileButton.Background = new SolidColorBrush(Colors.Red);
+                            return;
+                        }
+
+                        //recordStopButton.Content = "Record";
+                        rootPage.NotifyUser("Recording to file completed successfully!", NotifyType.StatusMessage, 1);
+                        **/
+
+
+                        SpeechPage.Current.setSpeakerButtonEnabled(false);
+                        //Triggers audio started event handler in Mainpage to switch necessary interface layout
                     }
-
-                    SpeechPage.Current.setSpeakerButtonEnabled(false);
-                    //Triggers audio started event handler in Mainpage to switch necessary interface layout
+                    MainPage.Current.onAudioEnded();
+                    OperationLogger.getOpLogger().Log(OperationType.ASR, "Ended");
                 }
-                MainPage.Current.onAudioEnded();
-                OperationLogger.getOpLogger().Log(OperationType.ASR, "Ended");
-                return true;
-            }
-            catch (Exception e) {
-                LogService.MetroLogger.getSharedLogger().Error("Error while ending audio:"+e.Message);
-                MainPage.Current.onAudioEnded();
+                catch (Exception e)
+                {
+                    LogService.MetroLogger.getSharedLogger().Error("Error while ending audio:" + e.Message);
+                    MainPage.Current.onAudioEnded();
+                    result = false;
+                }
+            });
+            return result;
 
-                return false;
-            }
         }
 
         //==================FOR DEMO PURPOSES===================================

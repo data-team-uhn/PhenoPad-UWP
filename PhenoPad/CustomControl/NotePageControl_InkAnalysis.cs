@@ -50,7 +50,7 @@ namespace PhenoPad.CustomControl
                     curLineResultPanel.Visibility = Visibility.Collapsed;
                     curLineWordsStackPanel.Children.Clear();
 
-                    linesErased.Clear();
+                    //linesErased.Clear();
                     foreach (var stroke in args.Strokes)
                     {
                         inkAnalyzer.RemoveDataForStroke(stroke.Id);
@@ -181,7 +181,7 @@ namespace PhenoPad.CustomControl
                         npc.UpdateRecognition(updated, fromServer:false);
                         Canvas.SetLeft(npc, lastStrokeBound.X);
                         npc.SetPhrasePosition(lastStrokeBound.X, line * LINE_HEIGHT);
-                        Debug.WriteLine("erased recognized");
+                        Debug.WriteLine("Updated erased line");
                     }
                 }
             }
@@ -253,7 +253,8 @@ namespace PhenoPad.CustomControl
             }
 
             var result = await inkAnalyzer.AnalyzeAsync();
-            if (result.Status == InkAnalysisStatus.Updated)
+            Debug.WriteLineIf(result.Status == InkAnalysisStatus.Unchanged, "result unchanged.................................................");
+            if (result.Status == InkAnalysisStatus.Updated || result.Status == InkAnalysisStatus.Unchanged)
             {
                 //analyze whole line of stroke based on last written stroke
                 if (lastStroke != null)
@@ -334,6 +335,8 @@ namespace PhenoPad.CustomControl
                     phenoCtrlSlide.Y = 0;
                     showingResultOfLine = lineNum;
                     //curLineObject = line;
+                    UpdateLayout();
+
                 }
                 //writing on an existing line
                 if (phrases.ContainsKey(lineNum))
@@ -522,7 +525,10 @@ namespace PhenoPad.CustomControl
                 Rect wordRect = new Rect(w.BoundingRect.X, lineNum * LINE_HEIGHT, w.BoundingRect.Width, LINE_HEIGHT);
                 if (wordRect.Contains(pos))
                 {
-                    WordBlockControl wbc = phrases.Where(x => x.Key == lineNum).FirstOrDefault().Value.words.Where(x => x.word_index == i).FirstOrDefault();
+                    var phrase = phrases.Where(x => x.Key == lineNum).ToList();
+                    if (phrase.Count==0)
+                        return;
+                    WordBlockControl wbc = phrase.FirstOrDefault().Value.words.Where(x => x.word_index == i).FirstOrDefault();
                     if (wbc != null)
                     {
                         foreach (var sid in w.GetStrokeIds()) {
@@ -539,16 +545,16 @@ namespace PhenoPad.CustomControl
                         TextBox tb = new TextBox();
                         tb.Width = 40;
                         tb.Height = curLineWordsStackPanel.ActualHeight * 0.7;
-                        tb.KeyDown += (object sender, KeyRoutedEventArgs e) => {
+                        tb.KeyDown += (object sender, KeyRoutedEventArgs e) =>
+                        {
                             if (e.Key.Equals(VirtualKey.Enter))
                             {
-                                wbc.ChangeAlterFromStroke(tb.Text);
-                                HideCurLineStackPanel();
+                                this.Focus(FocusState.Programmatic);
                             }
                         };
                         tb.LostFocus += (object sender, RoutedEventArgs e) => {
                             if (tb.Text.Length > 0) {
-                                wbc.ChangeAlterFromStroke(tb.Text);
+                                wbc.ChangeAlterFromTextInput(tb.Text);
                             }
                             HideCurLineStackPanel();
                         };
@@ -568,8 +574,6 @@ namespace PhenoPad.CustomControl
             }
             if (!hovering)
                 HideCurLineStackPanel();
-
-
         }
 
         public void ShowAbbreviationAlter(WordBlockControl wbc, List<string> alter)
@@ -750,8 +754,15 @@ namespace PhenoPad.CustomControl
         public async Task ClearAndRecognizePage() {
 
             try {
+                //clears all caches and re-initiate inkanalyzer
                 recognizedCanvas.Children.Clear();
                 phrases.Clear();
+                inkAnalyzer = new InkAnalyzer();
+
+                foreach (var s in inkCan.InkPresenter.StrokeContainer.GetStrokes()) {
+                    inkAnalyzer.AddDataForStroke(s);
+                    inkAnalyzer.SetStrokeDataKind(s.Id, InkAnalysisStrokeKind.Writing);
+                }
 
                 await inkAnalyzer.AnalyzeAsync();
                 var allLines = inkAnalyzer.AnalysisRoot.FindNodes(InkAnalysisNodeKind.Line).ToList();
@@ -1253,10 +1264,11 @@ namespace PhenoPad.CustomControl
         private InkAnalysisLine FindHitLine(Point pt)
         {
             // Find line by hitting position
-
             var lines = inkAnalyzer.AnalysisRoot.FindNodes(InkAnalysisNodeKind.Line);
+
             foreach (var line in lines)
             {
+
                 // To support ink written with angle, RotatedBoundingRect should be used in hit testing.
                 var xFrom = line.BoundingRect.X;
                 var xTo = xFrom + line.BoundingRect.Width;
@@ -1265,7 +1277,7 @@ namespace PhenoPad.CustomControl
                 //if (RectHelper.Contains(line.BoundingRect, pt))
                 if (pt.X > xFrom && pt.X < xTo && pt.Y > yFrom && pt.Y < yTo)
                 {
-                    return (InkAnalysisLine)line;
+                    return ((InkAnalysisLine)line);
                 }
             }
             return null;

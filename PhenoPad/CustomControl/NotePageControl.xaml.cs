@@ -242,7 +242,7 @@ namespace PhenoPad.CustomControl
             recognizeTimer.Interval = TimeSpan.FromSeconds(0.25);// recognize through server side every 3 seconds
             autosaveDispatcherTimer.Interval = TimeSpan.FromSeconds(1); //setting stroke auto save interval to be 1 sec
             RawStrokeTimer.Interval = TimeSpan.FromSeconds(1);
-            EraseTimer.Interval = TimeSpan.FromSeconds(1);
+            EraseTimer.Interval = TimeSpan.FromSeconds(2);
 
             linesToUpdate = new Queue<int>();
             lineAnalysisDispatcherTimer = new DispatcherTimer();
@@ -1369,7 +1369,7 @@ namespace PhenoPad.CustomControl
         {
             dispatcherTimer.Stop();
             Debug.WriteLine("ink analysis tick, will analyze ink ...");
-            await analyzeInk();
+            await analyzeInk(curStroke,serverFlag:MainPage.Current.abbreviation_enabled);
         }
         #endregion
 
@@ -1620,6 +1620,15 @@ namespace PhenoPad.CustomControl
             var position = e.GetPosition(inkCanvas);
             ClearSelectionAsync();
 
+            int count = inkCan.InkPresenter.StrokeContainer.GetStrokes().Count;
+            var lines = inkAnalyzer.AnalysisRoot.FindNodes(InkAnalysisNodeKind.Line);
+            int allLineCount = 0;
+            foreach (var l in lines) {
+                allLineCount += l.GetStrokeIds().Count;
+            }
+            
+            MainPage.Current.NotifyUser($"{count - allLineCount}", NotifyType.StatusMessage, 1);
+
             var line = FindHitLine(position);
             if (line != null)
             {
@@ -1629,8 +1638,9 @@ namespace PhenoPad.CustomControl
                 IReadOnlyList<uint> strokeIds = line.GetStrokeIds();
 
                 foreach (var strokeId in strokeIds)
-                {
+                {                    
                     var stroke = inkCanvas.InkPresenter.StrokeContainer.GetStrokeById(strokeId);
+                    Debug.WriteLine(stroke.Recognized);
                     stroke.Selected = true;
                     SetSelectedStrokeStyle(stroke);
                 }

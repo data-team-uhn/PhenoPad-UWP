@@ -140,6 +140,7 @@ namespace PhenoPad
             PhenoDetailAddr.Text = PhenotypeManager.PHENOTYPEINFO_ADDR;
 
             AbbreviationON_Checked(null, null);
+            InitBTConnectionSemaphore = new SemaphoreSlim(1);
             InitializeBTConnection();
 
             audioTimer = new DispatcherTimer();
@@ -194,8 +195,13 @@ namespace PhenoPad
                 //only saves the notes if in editing stage
                 if (notebookId != null)
                 {
-                    MetroLogger.getSharedLogger().Info("Saving ...");
-                    saved = await saveNoteToDisk();
+                    await Dispatcher.RunAsync(CoreDispatcherPriority.High, async () =>{
+                        MetroLogger.getSharedLogger().Info("Saving ...");
+                        saved = await saveNoteToDisk();
+                        if (speechEngineRunning)
+                            await KillAudioService();
+                    });
+                    await Task.Delay(TimeSpan.FromSeconds(2));
                 }
                 if (saved)
                     return true;
