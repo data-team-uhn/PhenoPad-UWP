@@ -219,14 +219,12 @@ namespace PhenoPad.CustomControl
             textNoteDispatcherTimer = new DispatcherTimer();
             autosaveDispatcherTimer = new DispatcherTimer();
             RawStrokeTimer = new DispatcherTimer();
-            recognizeTimer = new DispatcherTimer();
             EraseTimer = new DispatcherTimer();
 
             dispatcherTimer.Tick += InkAnalysisDispatcherTimer_Tick;  // Ink Analysis time tick
             autosaveDispatcherTimer.Tick += on_stroke_changed; // When timer ticks after user input, auto saves stroke
             operationDispathcerTimer.Tick += OperationDispatcherTimer_Tick;
             textNoteDispatcherTimer.Tick += TextNoteDispatcherTimer_Tick;
-            recognizeTimer.Tick += TriggerRecogServer;
             RawStrokeTimer.Tick += RawStrokeTimer_Tick;
             EraseTimer.Tick += EraseTimer_Tick;
 
@@ -239,7 +237,6 @@ namespace PhenoPad.CustomControl
             textNoteDispatcherTimer.Interval = TimeSpan.FromSeconds(0.1);
             operationDispathcerTimer.Interval = TimeSpan.FromMilliseconds(500);
             unprocessedDispatcherTimer.Interval = TimeSpan.FromMilliseconds(100);
-            recognizeTimer.Interval = TimeSpan.FromSeconds(0.25);// recognize through server side every 3 seconds
             autosaveDispatcherTimer.Interval = TimeSpan.FromSeconds(1); //setting stroke auto save interval to be 1 sec
             RawStrokeTimer.Interval = TimeSpan.FromSeconds(1);
             EraseTimer.Interval = TimeSpan.FromSeconds(2);
@@ -1362,15 +1359,6 @@ namespace PhenoPad.CustomControl
             //}
         }
 
-        /// <summary>
-        /// Called after strokes are collected to recoginze words and shapes
-        /// </summary>
-        private async void InkAnalysisDispatcherTimer_Tick(object sender, object e)
-        {
-            dispatcherTimer.Stop();
-            Debug.WriteLine("ink analysis tick, will analyze ink ...");
-            await analyzeInk(curStroke,serverFlag:MainPage.Current.abbreviation_enabled);
-        }
         #endregion
 
         #region Save Events
@@ -1612,7 +1600,7 @@ namespace PhenoPad.CustomControl
         {
             ClearSelectionAsync();
             Point pos = e.GetPosition(inkCanvas);
-            ShowAlterOnHover(pos);
+            ShowAlterOnTapped(pos);
         }
 
         private void InkCanvas_DoubleTapped(object sender, DoubleTappedRoutedEventArgs e)
@@ -1621,13 +1609,12 @@ namespace PhenoPad.CustomControl
             ClearSelectionAsync();
 
             int count = inkCan.InkPresenter.StrokeContainer.GetStrokes().Count;
-            var lines = inkAnalyzer.AnalysisRoot.FindNodes(InkAnalysisNodeKind.Line);
+            var lines = inkAnalyzer.AnalysisRoot.FindNodes(InkAnalysisNodeKind.InkWord);
             int allLineCount = 0;
             foreach (var l in lines) {
                 allLineCount += l.GetStrokeIds().Count;
-            }
-            
-            MainPage.Current.NotifyUser($"{count - allLineCount}", NotifyType.StatusMessage, 1);
+            }           
+            Debug.WriteLine($"allstrokes-inkwordstrokes difference count = {count - allLineCount}");
 
             var line = FindHitLine(position);
             if (line != null)
@@ -1640,7 +1627,6 @@ namespace PhenoPad.CustomControl
                 foreach (var strokeId in strokeIds)
                 {                    
                     var stroke = inkCanvas.InkPresenter.StrokeContainer.GetStrokeById(strokeId);
-                    Debug.WriteLine(stroke.Recognized);
                     stroke.Selected = true;
                     SetSelectedStrokeStyle(stroke);
                 }

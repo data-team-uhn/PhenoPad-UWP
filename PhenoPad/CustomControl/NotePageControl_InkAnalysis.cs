@@ -23,7 +23,6 @@ namespace PhenoPad.CustomControl
 {
     public sealed partial class NotePageControl : UserControl
     {
-        DispatcherTimer recognizeTimer;
         public DispatcherTimer RawStrokeTimer;
         DispatcherTimer EraseTimer;
         List<InkStroke> RawStrokes;
@@ -69,45 +68,30 @@ namespace PhenoPad.CustomControl
             );
         }
 
-        private async void StrokeInput_StrokeStarted(InkStrokeInput sender, PointerEventArgs args)
+        private void StrokeInput_StrokeStarted(InkStrokeInput sender, PointerEventArgs args)
         {
             if (!leftLasso && curStroke != null)
             {
                 RawStrokeTimer.Stop();
-
-                //ClearSelection();
+                ClearSelectionAsync();
                 // dispatcherTimer.Stop();
                 //operationDispathcerTimer.Stop();
                 inkOperationAnalyzer.ClearDataForAllStrokes();
                 var newLine = (int)Math.Floor(args.CurrentPoint.Position.Y / LINE_HEIGHT);
                 if (newLine != showingResultOfLine)
                 {
-                    Debug.WriteLine($"\nstarted writing on new line,will recognize line {showingResultOfLine},curstroke is at line={getLineNumByRect(curStroke.BoundingRect)}\n");
                     curLineWordsStackPanel.Children.Clear();
                     curLineResultPanel.Visibility = Visibility.Collapsed;
-                    //MainPage.Current.NotifyUser("newline", NotifyType.StatusMessage, 1);
-                    //recognizeAndSetUpUIForLine(line: null, lineInd: showingResultOfLine, serverRecog: MainPage.Current.abbreviation_enabled);
-                    //var result = await analyzeInk(curStroke, serverFlag: MainPage.Current.abbreviation_enabled);
-                   // Debug.WriteLine(result);
-                }
-                else {
-                    bool lineExists = phrases[newLine] != null;
-                    if (lineExists && Math.Floor(args.CurrentPoint.Position.X) < phrases[newLine].canvasLeft) {
-                        //await analyzeInk(curStroke, serverFlag: MainPage.Current.abbreviation_enabled);
-                    }
-
                 }
                 RawStrokeTimer.Start();
 
             }
             autosaveDispatcherTimer.Stop();
-            recognizeTimer.Stop();
         }
 
         private void StrokeInput_StrokeEnded(InkStrokeInput sender, PointerEventArgs args)
         {
             autosaveDispatcherTimer.Start();
-            recognizeTimer.Start();
             //lastStrokePoint = new Point(args.CurrentPoint.Position.X, args.CurrentPoint.Position.Y);
         }
 
@@ -166,6 +150,10 @@ namespace PhenoPad.CustomControl
         private async void EraseTimer_Tick(object sender = null, object e = null)
         {
             EraseTimer.Stop();
+            if (inkAnalyzer.IsAnalyzing) {               
+                EraseTimer.Start();
+                return;
+            }
             await inkAnalyzer.AnalyzeAsync();
             //if the canvas is completely empty after erasing, just clear all HWR
             if (inkCan.InkPresenter.StrokeContainer.GetStrokes().Count == 0)
@@ -176,12 +164,11 @@ namespace PhenoPad.CustomControl
                 {
                     var phrase = phrases.Where(x => x.Key == line).ToList();
                     if (phrase.Count>0) {
-                        List<HWRRecognizedText> updated = await RecognizeLine(line, wholeline: true);
+                        List<HWRRecognizedText> updated = await RecognizeLine(line);
                         NotePhraseControl npc = phrase.FirstOrDefault().Value;
                         npc.UpdateRecognition(updated, fromServer:false);
                         Canvas.SetLeft(npc, lastStrokeBound.X);
                         npc.SetPhrasePosition(lastStrokeBound.X, line * LINE_HEIGHT);
-                        Debug.WriteLine("Updated erased line");
                     }
                 }
             }
@@ -238,6 +225,15 @@ namespace PhenoPad.CustomControl
         #endregion
 
         #region stroke recognition/analyze/UIsettings
+        /// <summary>
+        /// Called after strokes are collected to recoginze words and shapes
+        /// </summary>
+        private async void InkAnalysisDispatcherTimer_Tick(object sender, object e)
+        {
+            dispatcherTimer.Stop();
+            Debug.WriteLine("ink analysis tick, will analyze ink ...");
+            await analyzeInk(curStroke, serverFlag: MainPage.Current.abbreviation_enabled);
+        }
 
         private async Task<bool> analyzeInk(InkStroke lastStroke = null, bool serverFlag = false)
         {
@@ -253,8 +249,7 @@ namespace PhenoPad.CustomControl
             }
 
             var result = await inkAnalyzer.AnalyzeAsync();
-            Debug.WriteLineIf(result.Status == InkAnalysisStatus.Unchanged, "result unchanged.................................................");
-            if (result.Status == InkAnalysisStatus.Updated || result.Status == InkAnalysisStatus.Unchanged)
+            if (result.Status == InkAnalysisStatus.Updated)
             {
                 //analyze whole line of stroke based on last written stroke
                 if (lastStroke != null)
@@ -343,7 +338,7 @@ namespace PhenoPad.CustomControl
                 {
                     NotePhraseControl phrase = phrases[lineNum];
                     lastWordCount = phrase.words.Count == 0 ? 1 : phrase.words.Count;
-                    List<HWRRecognizedText> results = await RecognizeLine(lineNum, wholeline: true);
+                    List<HWRRecognizedText> results = await RecognizeLine(lineNum);
                     phrase.UpdateRecognition(results,false);
                     Canvas.SetLeft(phrase, lastStrokeBound.X);
                     phrase.SetPhrasePosition(lastStrokeBound.X, phrase.lineIndex * LINE_HEIGHT);
@@ -356,8 +351,6 @@ namespace PhenoPad.CustomControl
                     NotePhraseControl phrase = new NotePhraseControl(lineNum);
                     phrases[lineNum] = phrase;
                     recognizedCanvas.Children.Add(phrase);
-                    List<HWRRecognizedText> results = await RecognizeLine(lineNum, wholeline: true);
-                    phrase.UpdateRecognition(results, false);
                     Canvas.SetLeft(phrase, lastStrokeBound.X);
                     Canvas.SetTop(phrase, lineNum * LINE_HEIGHT);
                     phrase.SetPhrasePosition(lastStrokeBound.X, lineNum * LINE_HEIGHT);
@@ -427,7 +420,7 @@ namespace PhenoPad.CustomControl
             }
         }
 
-        private async Task<List<HWRRecognizedText>> RecognizeLine(int lineid, bool wholeline = false)
+        private async Task<List<HWRRecognizedText>> RecognizeLine(int lineid)
         {
             /// <summary>
             /// select and recognize a line by its corresponding line id
@@ -438,6 +431,7 @@ namespace PhenoPad.CustomControl
             List<HWRRecognizedText> result = new List<HWRRecognizedText>();
             try
             {
+
                 // clear selection
                 foreach (var stroke in inkCanvas.InkPresenter.StrokeContainer.GetStrokes())
                     stroke.Selected = false;
@@ -445,40 +439,35 @@ namespace PhenoPad.CustomControl
                 double lowerbound = lineid * LINE_HEIGHT;
                 double upperbound = (lineid + 1) * LINE_HEIGHT;
                 // select storkes of this line
-                var allwords = inkAnalyzer.AnalysisRoot.FindNodes(InkAnalysisNodeKind.InkWord).ToList();               
-                var unclassified = inkAnalyzer.AnalysisRoot.FindNodes(InkAnalysisNodeKind.UnclassifiedInk);
-                allwords.AddRange(unclassified);
-                Debug.WriteLine($"\nunclassified strokes = {unclassified.Count}\n");
-                //allwords.AddRange(inkAnalyzer.AnalysisRoot.FindNodes(InkAnalysisNodeKind.WritingRegion));
-                //allwords.AddRange(inkAnalyzer.AnalysisRoot.FindNodes(InkAnalysisNodeKind.Line));
+                //var allwords = inkAnalyzer.AnalysisRoot.FindNodes(InkAnalysisNodeKind.Line).ToList();
+
+                var allwords = inkCan.InkPresenter.StrokeContainer.GetStrokes().ToList();
 
                 var inLine = allwords.Where(x => x.BoundingRect.Y + (x.BoundingRect.Height / 5) >= lowerbound && x.BoundingRect.Y + (x.BoundingRect.Height / 5) <= upperbound).OrderBy(x => x.BoundingRect.X).ToList();
                 if (inLine.Count == 0)
                 {
-                    MainPage.Current.NotifyUser("whole line no count", NotifyType.ErrorMessage, 1);
+                    Debug.WriteLine($"line {lineid} has no strokes");
                     return new List<HWRRecognizedText>();
                 }
 
-                lastWordPoint = new Point(inLine.LastOrDefault().BoundingRect.X, lineid * LINE_HEIGHT);
-                lastWordIndex = inLine.Count - 1;
-
-                if (wholeline)
-                {
-                    //trys to get all strokes at line 
-                    lastStrokeBound = inLine.FirstOrDefault().BoundingRect;
-                }
-                else {
-                    //tries to get the last word at line
-                    lastStrokeBound = inLine.LastOrDefault().BoundingRect;
-                }
-                //Debug.WriteLine($"first word is at x={lastStrokeBound.X}");
-                //Debug.WriteLine($"line {lineid} node count = {inLine.Count}");
-
                 foreach (var x in inLine)
                 {
-                    foreach (var sid in x.GetStrokeIds())
-                        inkCanvas.InkPresenter.StrokeContainer.GetStrokeById(sid).Selected = true;
+                    x.Selected = true;
+                    //foreach (var sid in x.GetStrokeIds())
+                    //    inkCanvas.InkPresenter.StrokeContainer.GetStrokeById(sid).Selected = true;
                 }
+
+                var thisLine = inkAnalyzer.AnalysisRoot.FindNodes(InkAnalysisNodeKind.Line);
+                //finding the overal bounding rect for setting up UI
+                thisLine = thisLine.Where(x => x.BoundingRect.Y + (x.BoundingRect.Height / 5) >= lowerbound && x.BoundingRect.Y + (x.BoundingRect.Height / 5) <= upperbound).OrderBy(x => x.BoundingRect.X).ToList();
+                if ( thisLine.Count > 0) {
+                    lastWordPoint = new Point(thisLine.LastOrDefault().BoundingRect.X, lineid * LINE_HEIGHT);
+
+                    //trys to get all strokes at line 
+                    lastStrokeBound = inLine.FirstOrDefault().BoundingRect;
+
+                }
+
                 //recognize selection
                 result = await HWRManager.getSharedHWRManager().OnRecognizeAsync(inkCanvas.InkPresenter.StrokeContainer,InkRecognitionTarget.Selected, lineid);
 
@@ -496,6 +485,7 @@ namespace PhenoPad.CustomControl
 
         public void ClearAllParsedText() {
             recognizedCanvas.Children.Clear();
+            inkAnalyzer.ClearDataForAllStrokes();
             phrases.Clear();
         }
 
@@ -504,12 +494,31 @@ namespace PhenoPad.CustomControl
 
         //}
 
-        private void ShowAlterOnHover(Point pos)
+        private List<uint> GetUnrecognizedFromNode(IInkAnalysisNode wordNode, IInkAnalysisNode line) {
+            //wordNode is assumed to be the first word of line
+            List<uint> ids = new List<uint>();
+            foreach (var sid in line.GetStrokeIds()) {
+                var stroke = inkCan.InkPresenter.StrokeContainer.GetStrokeById(sid);
+                if (stroke.BoundingRect.X + stroke.BoundingRect.Width <= wordNode.BoundingRect.X + wordNode.BoundingRect.Width &&
+                    !wordNode.GetStrokeIds().Contains(sid))
+                {
+                    ids.Add(sid);
+                }
+                else if (stroke.BoundingRect.X >= wordNode.BoundingRect.X)
+                    return ids;
+            }
+            return ids;
+        }
+
+        private async void ShowAlterOnTapped(Point pos)
         {            
             foreach (var s in inkCan.InkPresenter.StrokeContainer.GetStrokes())
             {
                 SetDefaultStrokeStyle(s);
             }
+
+            await inkAnalyzer.AnalyzeAsync();
+
             Rect pointerRec = new Rect(pos.X, pos.Y, 1, 1);
             int lineNum = getLineNumByRect(pointerRec);
             var words = inkAnalyzer.AnalysisRoot.FindNodes(InkAnalysisNodeKind.InkWord).ToList();
@@ -531,7 +540,18 @@ namespace PhenoPad.CustomControl
                     WordBlockControl wbc = phrase.FirstOrDefault().Value.words.Where(x => x.word_index == i).FirstOrDefault();
                     if (wbc != null)
                     {
-                        foreach (var sid in w.GetStrokeIds()) {
+                        List<uint> strokeIDs = w.GetStrokeIds().ToList();
+
+                        //for manuallying handling first few strokes of a line that are missed by inkAnalyzer as a word
+                        if (i == 0) {
+                            var lines = inkAnalyzer.AnalysisRoot.FindNodes(InkAnalysisNodeKind.Line);
+                            var line = lines.Where(x => x.BoundingRect.Y + x.BoundingRect.Height / 5 >= lowerbound && x.BoundingRect.Y + x.BoundingRect.Height / 5 <= upperbound).OrderBy(x => x.BoundingRect.X).FirstOrDefault();
+                            var ids = GetUnrecognizedFromNode(w, line);
+                            strokeIDs.AddRange(ids);
+                            Debug.WriteLine($"manually added {ids.Count} strokes to this word");                         
+                        }
+
+                        foreach (var sid in strokeIDs) {
                             var s = inkCan.InkPresenter.StrokeContainer.GetStrokeById(sid);
                             SetSelectedStrokeStyle(s);
                         }
@@ -771,7 +791,7 @@ namespace PhenoPad.CustomControl
                     await Dispatcher.RunAsync(CoreDispatcherPriority.High, async () =>
                     {
                         int lineNum = getLineNumByRect(line.BoundingRect);
-                        List<HWRRecognizedText> result = await RecognizeLine(lineNum, wholeline: true);
+                        List<HWRRecognizedText> result = await RecognizeLine(lineNum);
                         List<WordBlockControl> wbs = new List<WordBlockControl>();
                         for (int i = 0; i < result.Count; i++)
                         {
@@ -1066,46 +1086,46 @@ namespace PhenoPad.CustomControl
             curLineResultPanel.Visibility = Visibility.Collapsed;
         }
 
-        private async void TriggerRecogServer(object sender, object e)
-        {
-            /// <summary>
-            /// After timer ticks, trigger server side HWR for abbreviation detection
-            /// note this method will be sending with request type = new.
-            /// </summary>
+        //private async void TriggerRecogServer(object sender, object e)
+        //{
+        //    /// <summary>
+        //    /// After timer ticks, trigger server side HWR for abbreviation detection
+        //    /// note this method will be sending with request type = new.
+        //    /// </summary>
 
-            //Debug.WriteLine("\n TRIGGER TICKED, WILL ANALYZE THROUGH SERVER...\n");
+        //    //Debug.WriteLine("\n TRIGGER TICKED, WILL ANALYZE THROUGH SERVER...\n");
 
-            recognizeTimer.Stop();
-            if (inkAnalyzer.IsAnalyzing)
-            {
-                //Debug.WriteLine("ink still analyzing-trigger");
-                // inkAnalyzer is being used 
-                // try again after some time by dispatcherTimer 
-                recognizeTimer.Start();
-                return;
-            }
-            // analyze 
-            var result = await inkAnalyzer.AnalyzeAsync();
+        //    recognizeTimer.Stop();
+        //    if (inkAnalyzer.IsAnalyzing)
+        //    {
+        //        //Debug.WriteLine("ink still analyzing-trigger");
+        //        // inkAnalyzer is being used 
+        //        // try again after some time by dispatcherTimer 
+        //        recognizeTimer.Start();
+        //        return;
+        //    }
+        //    // analyze 
+        //    var result = await inkAnalyzer.AnalyzeAsync();
 
-            if (result.Status == InkAnalysisStatus.Updated)
-            {
-                //int line = linesToAnnotate.Dequeue();
-                IReadOnlyList<IInkAnalysisNode> lineNodes = inkAnalyzer.AnalysisRoot.FindNodes(InkAnalysisNodeKind.Line);
+        //    if (result.Status == InkAnalysisStatus.Updated)
+        //    {
+        //        //int line = linesToAnnotate.Dequeue();
+        //        IReadOnlyList<IInkAnalysisNode> lineNodes = inkAnalyzer.AnalysisRoot.FindNodes(InkAnalysisNodeKind.Line);
 
-                foreach (InkAnalysisLine line in lineNodes)
-                {
-                    // current line
-                    if (curStroke != null && line.GetStrokeIds().Contains(curStroke.Id))
-                    {
-                        //Debug.WriteLine("\nfound line.");
-                        // set up for current line
-                        HWRManager.getSharedHWRManager().setRequestType(true);
-                        recognizeAndSetUpUIForLine(line, timerFlag:false, serverRecog: true);
-                    }
+        //        foreach (InkAnalysisLine line in lineNodes)
+        //        {
+        //            // current line
+        //            if (curStroke != null && line.GetStrokeIds().Contains(curStroke.Id))
+        //            {
+        //                //Debug.WriteLine("\nfound line.");
+        //                // set up for current line
+        //                HWRManager.getSharedHWRManager().setRequestType(true);
+        //                recognizeAndSetUpUIForLine(line, timerFlag:false, serverRecog: true);
+        //            }
 
-                }
-            }
-        }
+        //        }
+        //    }
+        //}
 
         private async Task<int> RecognizeInkOperation()
         {
@@ -1126,7 +1146,6 @@ namespace PhenoPad.CustomControl
                     //user has drawn a square/rectangle for adding an add-in
                     if (drawNode.DrawingKind == InkAnalysisDrawingKind.Rectangle || drawNode.DrawingKind == InkAnalysisDrawingKind.Square)
                     {
-                        recognizeTimer.Stop();
                         foreach (var dstroke in drawNode.GetStrokeIds())
                         {
                             var stroke = inkCanvas.InkPresenter.StrokeContainer.GetStrokeById(dstroke);

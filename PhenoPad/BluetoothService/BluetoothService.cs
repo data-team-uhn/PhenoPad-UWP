@@ -344,12 +344,12 @@ namespace PhenoPad.BluetoothService
         public async void HandleAudioException(string message) {
             if (message.Equals(RESTART_AUDIO_FLAG) && MainPage.Current.speechManager.speechResultsSocket.streamSocket != null)
             {
-                LogService.MetroLogger.getSharedLogger().Error("BluetoothService=> GOT EXCEPTION, will try to restart audio");
+                LogService.MetroLogger.getSharedLogger().Error("\nBluetoothService=> GOT EXCEPTION, will try to restart audio\n");
                 await MainPage.Current.KillAudioService();
                 Debug.WriteLine("BluetoothService=> after line 344");
             }
             else if (message.Equals(RESTART_BLUETOOTH_FLAG)) {
-                LogService.MetroLogger.getSharedLogger().Error("BluetoothService=> GOT DEXCEPTION, will try to restart bluetooth");
+                LogService.MetroLogger.getSharedLogger().Error("\nBluetoothService=> GOT DEXCEPTION, will try to restart bluetooth\n");
                 MainPage.Current.RestartBTOnException();
             }
             return;
@@ -447,6 +447,11 @@ namespace PhenoPad.BluetoothService
                     _service.Dispose();
                     _service = null;
                 }
+                if (blueService != null) {
+                    blueService.Dispose();
+                    blueService = null;
+                }
+
                 lock (this)
                 {
                     if (_socket != null)
@@ -455,10 +460,9 @@ namespace PhenoPad.BluetoothService
                         _socket = null;
                     }
                 }
-                //StopWatcher();
+                StopWatcher();
+                initialized = false;
                 //sharedBluetoothService = null;
-                sharedBluetoothService = null;
-                blueService = null;
                 return true;
 
             }

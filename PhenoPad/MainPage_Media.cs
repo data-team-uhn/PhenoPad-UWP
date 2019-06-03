@@ -65,7 +65,7 @@ namespace PhenoPad
         private int doctor = 0;
         public bool speechEngineRunning = false;
         public DispatcherTimer audioTimer = new DispatcherTimer();
-        public SemaphoreSlim InitBTConnectionSemaphore; 
+        public SemaphoreSlim InitBTConnectionSemaphore;
 
 
 
@@ -348,7 +348,7 @@ namespace PhenoPad
 
                 if (result)
                 {
-                    //bluetoothService = null;
+                    bluetoothService = null;
                     bluetoonOn = false;
                     bluetoothInitialized(false);
                     bluetoothicon.Visibility = Visibility.Collapsed;
@@ -362,7 +362,16 @@ namespace PhenoPad
             });
 
             await Task.Delay(TimeSpan.FromSeconds(5));
+            //var success = await SetBluetoothON();
             var success = await changeSpeechEngineState_BT();
+            if (success)
+            {
+                await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, async () => {
+                    await Task.Delay(TimeSpan.FromSeconds(5));
+                    var result = await StartAudioAfterBluetooth();
+                });
+            }
+
             if (!success) {
                 LogService.MetroLogger.getSharedLogger().Error("Bluetooth Connection failed to reconnect.");
             }
@@ -376,6 +385,24 @@ namespace PhenoPad
             await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, async () => {
                 result = await changeSpeechEngineState_BT();
             });
+        }
+
+        public async Task<bool> SetBluetoothON() {
+            Debug.WriteLine("\nManually setting bluetooth ON...");
+            bool result = true;
+            await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, async () => {
+                try
+                {
+                    bluetoothService = BluetoothService.BluetoothService.getBluetoothService();
+                    await bluetoothService.Initialize();
+                }
+                catch (Exception e)
+                {
+                    LogService.MetroLogger.getSharedLogger().Error(e.Message);
+                    result = false;
+                }
+            });
+            return result;
         }
 
         public async Task<bool> changeSpeechEngineState_BT()
@@ -396,7 +423,7 @@ namespace PhenoPad
                         //if (!uiResult)
                         //    LogService.MetroLogger.getSharedLogger().Error("UIClient failed to connect.");
                         //=====
-                        bluetoothService = bluetoothService==null? BluetoothService.BluetoothService.getBluetoothService():bluetoothService;
+                        bluetoothService = BluetoothService.BluetoothService.getBluetoothService();
                         await bluetoothService.Initialize();
                         result = true;
                     }
@@ -418,9 +445,9 @@ namespace PhenoPad
                         result = bluetoothService.CloseConnection();
                         if (result)
                         {
-                            //bluetoothService = null;
+                            bluetoothService = null;
                             bluetoonOn = false;
-                            //bluetoothInitialized(false);
+                            bluetoothInitialized(false);
                             bluetoothicon.Visibility = Visibility.Collapsed;
                             Debug.WriteLine("Bluetooth Connection disconnected");
                             result = true;
