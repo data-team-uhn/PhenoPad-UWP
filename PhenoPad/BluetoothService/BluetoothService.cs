@@ -50,26 +50,22 @@ namespace PhenoPad.BluetoothService
         {
             rootPage = MainPage.Current;
             bool blueConnected = await checkConnection();
-            Debug.WriteLine($"\nInitialize checkConnection returned = {blueConnected}");
             if (!blueConnected)
             {
-                rootPage.bluetoothprogress.Visibility = Windows.UI.Xaml.Visibility.Visible;
-                rootPage.bluetoothicon.Visibility = Windows.UI.Xaml.Visibility.Collapsed;
+                rootPage.SetBTUIOnInit(blueConnected);
                 await Windows.ApplicationModel.Core.CoreApplication.MainView.CoreWindow.Dispatcher.RunAsync(CoreDispatcherPriority.Normal, async () =>{
                     while (!initialized)
                     {
-                        //Debug.WriteLine("Trying Bluetooth connection ...");
-                        //await Task.Delay(TimeSpan.FromSeconds(3));
+                        //only one thread allowed to initlize at a time
                         await MainPage.Current.InitBTConnectionSemaphore.WaitAsync();
                         await InitiateConnection();
                         MainPage.Current.InitBTConnectionSemaphore.Release();
-
                     }
                 });
             }
             else
             {
-                rootPage.OnBTConnectSuccess();
+                MainPage.Current.SetBTUIOnInit(initialized);
             }
             return;
         }
@@ -79,13 +75,11 @@ namespace PhenoPad.BluetoothService
         /// </summary>
         private async Task InitiateConnection()
         {
-            //only one thread allowed to initlize at a time
 
             if (initialized)
                 return;
-            var serviceInfoCollection = await DeviceInformation.FindAllAsync(RfcommDeviceService.GetDeviceSelector(RfcommServiceId.SerialPort), new string[] { "System.Devices.AepService.AepId" });
 
-            //Debug.WriteLine($"\n Before loop, blueservice null = {blueService == null}");
+            var serviceInfoCollection = await DeviceInformation.FindAllAsync(RfcommDeviceService.GetDeviceSelector(RfcommServiceId.SerialPort), new string[] { "System.Devices.AepService.AepId" });
             foreach (var serviceInfo in serviceInfoCollection)
             {
                 var deviceInfo = await DeviceInformation.CreateFromIdAsync((string)serviceInfo.Properties["System.Devices.AepService.AepId"]);
@@ -142,30 +136,31 @@ namespace PhenoPad.BluetoothService
             //END OF RFCOMMSERVICE LOOP
 
             //lock (this)
-            _socket = _socket == null?  new StreamSocket():_socket;
             try
             {
+                _socket = _socket == null ? new StreamSocket() : _socket;
                 await _socket.ConnectAsync(blueService.ConnectionHostName, blueService.ConnectionServiceName);
                 dataWriter = new DataWriter(_socket.OutputStream);
             }
             catch (Exception ex) // ERROR_ELEMENT_NOT_FOUND
             {
                 LogService.MetroLogger.getSharedLogger().Error($"BluetoothService at line 141:{ex.Message}");
-                initialized = false;
-                
+                initialized = false;                
                 return;
             }
-            //Debug.WriteLine("_socket connectasync success===");
+
+            //END OF SOCKET CONNECTION
+
+
             // send hand shake
             try
             {
                 string temp = "HAND_SHAKE";
-                //dataWriter.WriteUInt32((uint)temp.Length);
                 dataWriter.WriteString(temp);
                 Debug.WriteLine("Writing message " + temp.ToString() + " via Bluetooth");
                 await dataWriter.StoreAsync();
                 initialized = true;
-                rootPage.OnBTConnectSuccess();
+                MainPage.Current.SetBTUIOnInit(initialized);
             }
             catch (Exception ex) when ((uint)ex.HResult == 0x80072745)
             {
@@ -177,8 +172,6 @@ namespace PhenoPad.BluetoothService
             // keep receiving data 
             if (cancellationSource != null)
                 cancellationSource.Cancel();
-
-
             cancellationSource = new CancellationTokenSource();
             CancellationToken cancellationToken = cancellationSource.Token;
             await Task.Run(async () =>
@@ -187,7 +180,7 @@ namespace PhenoPad.BluetoothService
                 {
                     // don't run again for 
                     await Task.Delay(500);
-                    Debug.WriteLine($"BT initialized={this.initialized}, mainpage speech ={MainPage.Current.speechEngineRunning}\nmainpage bt={MainPage.Current.bluetoonOn}");
+                    Debug.WriteLine($"BT_initialized={this.initialized}, speechEngineON ={MainPage.Current.speechEngineRunning}, btON={MainPage.Current.bluetoonOn}");
                     string result = await ReceiveMessageUsingStreamWebSocket();
                     if (result == "CONNECTION_ERROR") {
                         //do nothing
@@ -195,7 +188,6 @@ namespace PhenoPad.BluetoothService
                     else if (!string.IsNullOrEmpty(result))
                     {
                         HandleAudioException(result);
-                        //LogService.MetroLogger.getSharedLogger().Info(result);
                         string[] temp = result.Split(' ');
                         if (temp[0] == "ip")
                             rpi_ipaddr = temp[1];
@@ -344,9 +336,8 @@ namespace PhenoPad.BluetoothService
         public async void HandleAudioException(string message) {
             if (message.Equals(RESTART_AUDIO_FLAG) && MainPage.Current.speechManager.speechResultsSocket.streamSocket != null)
             {
-                LogService.MetroLogger.getSharedLogger().Error("\nBluetoothService=> GOT EXCEPTION, will try to restart audio\n");
+                LogService.MetroLogger.getSharedLogger().Error("\nBluetoothService=> GOT EXCEPTION, will try to kill audio\n");
                 await MainPage.Current.KillAudioService();
-                Debug.WriteLine("BluetoothService=> after line 344");
             }
             else if (message.Equals(RESTART_BLUETOOTH_FLAG)) {
                 LogService.MetroLogger.getSharedLogger().Error("\nBluetoothService=> GOT DEXCEPTION, will try to restart bluetooth\n");

@@ -56,7 +56,6 @@ namespace PhenoPad
                 }
             }
         } //automation properties
-
         public bool bluetoonOn;
 
         public string RPI_ADDRESS = "http://192.168.137.32:8000";
@@ -66,44 +65,269 @@ namespace PhenoPad
         public bool speechEngineRunning = false;
         public DispatcherTimer audioTimer = new DispatcherTimer();
         public SemaphoreSlim InitBTConnectionSemaphore;
-
-
-
         public SpeechManager speechManager = SpeechManager.getSharedSpeechManager();
-        /// <summary>
         /// The speech recognizer used throughout this sample.
-        /// </summary>
         private SpeechRecognizer speechRecognizer;
-
         private PhenotypeManager PhenoMana = PhenotypeManager.getSharedPhenotypeManager();
-        /// <summary>
         ///Keep track of existing text that we've accepted in ContinuousRecognitionSession_ResultGenerated(), so
         ///that we can combine it and Hypothesized results to show in-progress dictation mid-sentence.
-        /// </summary>
         private StringBuilder dictatedTextBuilder;
-
-        /// <summary>
         /// This HResult represents the scenario where a user is prompted to allow in-app speech, but 
         /// declines. This should only happen on a Phone device, where speech is enabled for the entire device,
         /// not per-app.
-        /// </summary>
         private static uint HResultPrivacyStatementDeclined = 0x80045509;
-
-        /// <summary>
         /// Keep track of whether the continuous recognizer is currently running, so it can be cleaned up appropriately.
-        /// </summary>
         private bool isListening;
 
         #endregion
         //======================================== START OF METHODS =======================================/
 
-        /// <summary>
-        /// Initialize Speech Recognizer and compile constraints.
-        /// </summary>
-        /// <param name="recognizerLanguage">Language to use for the speech recognizer</param>
-        /// <returns>Awaitable task.</returns>
+        private async Task videoStreamStatusUpdateAsync(bool desiredStatus)
+        {
+            /// <summary>
+            /// Updates the bluetooth video camera stream status 
+            /// </summary>
+
+            if (this.bluetoothService == null)
+            {
+                NotifyUser("Could not reach Bluetooth device, try to connect again",
+                                   NotifyType.ErrorMessage, 2);
+                this.VideoOn = false;
+
+                //this.bluetoothInitialized(false);
+                this.StreamButton.IsChecked = false;
+                return;
+            }
+
+            Debug.WriteLine("Sending message");
+
+            if (desiredStatus)
+            {
+                await this.bluetoothService.sendBluetoothMessage("camera start");
+            }
+            else
+            {
+                await this.bluetoothService.sendBluetoothMessage("camera stop");
+            }
+            //this.videoSwitch.IsOn = desiredStatus;
+            //this.StreamButton.IsChecked = desiredStatus;
+
+            Debug.WriteLine("Setting status value to " + (this.bluetoothService.initialized && desiredStatus).ToString());
+            this.VideoOn = this.bluetoothService.initialized && desiredStatus;
+        }
+
+        private async void OnChatViewContainerContentChanging(ListViewBase sender, ContainerContentChangingEventArgs args)
+        {
+            /// <summary>
+            /// Handles chat view container change event and displays the message on chat view container 
+            /// </summary>
+
+            if (args.InRecycleQueue) return;
+            TextMessage message = (TextMessage)args.Item;
+
+            // Only display message on the right when speaker index = 0
+            //args.ItemContainer.HorizontalAlignment = (message.Speaker == 0) ? Windows.UI.Xaml.HorizontalAlignment.Right : Windows.UI.Xaml.HorizontalAlignment.Left;
+
+            if (message.IsNotFinal)
+            {
+                args.ItemContainer.HorizontalAlignment = HorizontalAlignment.Right;
+            }
+            else
+            {
+                args.ItemContainer.HorizontalAlignment = (message.Speaker == doctor) ? HorizontalAlignment.Right : HorizontalAlignment.Left;
+                //Need this dispatcher in-order to avoid threading errors
+                await CoreApplication.MainView.CoreWindow.Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () => {
+                    chatView.UpdateLayout();
+                    chatView.ScrollIntoView(chatView.Items[chatView.Items.Count - 1]);
+                });
+            }
+        }
+
+        private async void PreviewMultiMedia()
+        {
+            // initialize microphone choice
+            if (ConfigService.ConfigService.getConfigService().IfUseExternalMicrophone())
+                ExternalMicRadioBtn.IsChecked = true;
+            else
+                SurfaceMicRadioBtn.IsChecked = true;
+
+            // steaming video
+            string RPI_IP_ADDRESS = BluetoothService.BluetoothService.getBluetoothService().GetPiIP();
+            RPI_ADDRESS = "http://" + RPI_IP_ADDRESS + ":8000";
+            // this.StreamView.Navigate(new Uri(RPI_ADDRESS));
+
+            this.videoStreamWebSocket = new Windows.Networking.Sockets.MessageWebSocket();
+            // In this example, we send/receive a string, so we need to set the MessageType to Utf8.
+            this.videoStreamWebSocket.Control.MessageType = Windows.Networking.Sockets.SocketMessageType.Utf8;
+            this.videoStreamWebSocket.Closed += WebSocket_Closed;
+            this.videoStreamWebSocket.MessageReceived += WebSocket_MessageReceived;
+
+            try
+            {
+                videoStreamCancellationToken = videoCancellationSource.Token;
+                Task connectTask = this.videoStreamWebSocket.ConnectAsync(new Uri("ws://" + RPI_IP_ADDRESS + ":8000/websocket")).AsTask();
+                await connectTask.ContinueWith(_ => this.SendMessageUsingMessageWebSocketAsync("read_camera"));
+                //Task.Run(() => this.WebSocket_MessageReceived());
+                //Task.Run(() => this.SendMessageUsingStreamWebSocket(Encoding.UTF8.GetBytes("read_camera")));
+
+            }
+            catch (Exception ex)
+            {
+                Windows.Web.WebErrorStatus webErrorStatus = Windows.Networking.Sockets.WebSocketError.GetStatus(ex.GetBaseException().HResult);
+                // Add additional code here to handle exceptions.
+            }
+        }
+
+        #region BLUETOOTH RELATED
+
+        public async void RestartBTOnException()
+        {
+            //Handles DEXCEPTION received from raspberry pi, restarts bluetooth connection only
+            //uiClinet.disconnect();
+            //stops speech service before closing bluetooth
+            await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, async () => {
+
+                if (speechEngineRunning)
+                    await SpeechManager.getSharedSpeechManager().StopASRResults();
+
+                bool result = bluetoothService.CloseConnection();
+
+                if (result)
+                {
+                    SetBTUIOnInit(bluetoothService.initialized);
+                    Debug.WriteLine("Bluetooth Connection disconnected");
+                }
+                else
+                {
+                    LogService.MetroLogger.getSharedLogger().Error("Bluetooth Connection failed to disconnect.");
+                }
+
+            });
+
+            await Task.Delay(TimeSpan.FromSeconds(5));
+            //var success = await SetBluetoothON();
+            var success = await changeSpeechEngineState_BT();
+            if (success)
+            {
+                await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, async () => {
+                    await Task.Delay(TimeSpan.FromSeconds(5));
+                    var result = await StartAudioAfterBluetooth();
+                });
+            }
+
+            if (!success) {
+                LogService.MetroLogger.getSharedLogger().Error("Bluetooth Connection failed to reconnect.");
+            }
+
+
+        }
+
+        private async void BTConnectBtn_Click(object sender, RoutedEventArgs e)
+        {
+            var result = true;
+            await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, async () => {
+                result = await changeSpeechEngineState_BT();
+            });
+        }
+
+        public async Task<bool> changeSpeechEngineState_BT()
+        {
+            /// <summary>
+            /// Switch speech engine state for blue tooth devices
+            /// </summary>
+            bool result = true;
+            await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, async () => {
+                if (!bluetoonOn)
+                {
+                    try
+                    {
+                        //temporarily disables for debugging reseasons
+                        //=====
+                        //uiClinet = UIWebSocketClient.getSharedUIWebSocketClient();
+                        //bool uiResult = await uiClinet.ConnectToServer();
+                        //if (!uiResult)
+                        //    LogService.MetroLogger.getSharedLogger().Error("UIClient failed to connect.");
+                        //=====
+                        bluetoothService = BluetoothService.BluetoothService.getBluetoothService();
+                        await bluetoothService.Initialize();
+                        SetBTUIOnInit(bluetoothService.initialized);
+                        result = bluetoothService.initialized;
+                    }
+                    catch (Exception e)
+                    {
+                        LogService.MetroLogger.getSharedLogger().Error($"Failed to turn on BT: {e.Message}");
+                        result = false;
+                    }
+                }
+                else
+                {
+                    try
+                    {
+                        //uiClinet.disconnect();
+                        //stops speech service before closing bluetooth
+                        if (speechEngineRunning)
+                            await SpeechManager.getSharedSpeechManager().StopASRResults();
+                        Debug.WriteLine("stopped ASR RESULT \n");
+                        result = bluetoothService.CloseConnection();
+                        if (result)
+                        {
+                            SetBTUIOnInit(bluetoothService.initialized);
+                            Debug.WriteLine("Bluetooth Connection disconnected");
+                            result = true;
+                        }
+
+                    }
+                    catch (Exception e)
+                    {
+                        LogService.MetroLogger.getSharedLogger().Error($"Failed to turn off BT: {e.Message}");
+                    }
+                    result = false;
+
+                }
+
+            });
+            return result;
+        }
+
+        public async Task<bool> StartAudioAfterBluetooth() {
+            var success = false;
+            DisableAudioButton();
+
+            if (speechEngineRunning == false)
+            {
+                success = await bluetoothService.sendBluetoothMessage("audio start manager_id=666 ");
+                if (!success)
+                {
+                    LogService.MetroLogger.getSharedLogger().Error("failed to send audio start message to raspi");
+                    return false;
+                }
+                success &= await SpeechManager.getSharedSpeechManager().ReceiveASRResults();
+            }
+            return success;
+         }
+
+        public void SetBTUIOnInit(bool initialized)
+        {
+            /// Initialize bluetooth stream input status
+
+            StreamButton.IsEnabled = initialized;
+            shutterButton.IsEnabled = initialized;
+            audioButton.IsEnabled = initialized;
+            bluetoothicon.Visibility = initialized ? Visibility.Visible : Visibility.Collapsed;
+            bluetoonOn = initialized;
+        }
+
+        #endregion
+
+        #region Speech Recognizer
         private async Task InitializeRecognizer(Language recognizerLanguage)
         {
+            /// <summary>
+            /// Initialize Speech Recognizer and compile constraints.
+            /// </summary>
+            /// <param name="recognizerLanguage">Language to use for the speech recognizer</param>
+            /// <returns>Awaitable task.</returns>
+
             if (speechRecognizer != null)
             {
                 // cleanup prior to re-initializing this scenario.
@@ -141,14 +365,15 @@ namespace PhenoPad
             speechRecognizer.HypothesisGenerated += SpeechRecognizer_HypothesisGenerated;
         }
 
-        /// <summary>
-        /// Handle events fired when error conditions occur, such as the microphone becoming unavailable, or if
-        /// some transient issues occur.
-        /// </summary>
-        /// <param name="sender">The continuous recognition session</param>
-        /// <param name="args">The state of the recognizer</param>
         private async void ContinuousRecognitionSession_Completed(SpeechContinuousRecognitionSession sender, SpeechContinuousRecognitionCompletedEventArgs args)
         {
+            /// <summary>
+            /// Handle events fired when error conditions occur, such as the microphone becoming unavailable, or if
+            /// some transient issues occur.
+            /// </summary>
+            /// <param name="sender">The continuous recognition session</param>
+            /// <param name="args">The state of the recognizer</param>
+
             if (args.Status != SpeechRecognitionResultStatus.Success)
             {
                 // If TimeoutExceeded occurs, the user has been silent for too long. We can use this to 
@@ -179,13 +404,14 @@ namespace PhenoPad
 
         }
 
-        /// <summary>
-        /// While the user is speaking, update the textbox with the partial sentence of what's being said for user feedback.
-        /// </summary>
-        /// <param name="sender">The recognizer that has generated the hypothesis</param>
-        /// <param name="args">The hypothesis formed</param>
         private async void SpeechRecognizer_HypothesisGenerated(SpeechRecognizer sender, SpeechRecognitionHypothesisGeneratedEventArgs args)
         {
+            /// <summary>
+            /// While the user is speaking, update the textbox with the partial sentence of what's being said for user feedback.
+            /// </summary>
+            /// <param name="sender">The recognizer that has generated the hypothesis</param>
+            /// <param name="args">The hypothesis formed</param>
+
             string hypothesis = args.Hypothesis.Text;
 
             // Update the textbox with the currently confirmed text, and the hypothesis combined.
@@ -198,15 +424,16 @@ namespace PhenoPad
 
         }
 
-        /// <summary>
-        /// Handle events fired when a result is generated. Check for high to medium confidence, and then append the
-        /// string to the end of the stringbuffer, and replace the content of the textbox with the string buffer, to
-        /// remove any hypothesis text that may be present.
-        /// </summary>
-        /// <param name="sender">The Recognition session that generated this result</param>
-        /// <param name="args">Details about the recognized speech</param>
         private async void ContinuousRecognitionSession_ResultGenerated(SpeechContinuousRecognitionSession sender, SpeechContinuousRecognitionResultGeneratedEventArgs args)
         {
+            /// <summary>
+            /// Handle events fired when a result is generated. Check for high to medium confidence, and then append the
+            /// string to the end of the stringbuffer, and replace the content of the textbox with the string buffer, to
+            /// remove any hypothesis text that may be present.
+            /// </summary>
+            /// <param name="sender">The Recognition session that generated this result</param>
+            /// <param name="args">Details about the recognized speech</param>
+
             // We may choose to discard content that has low confidence, as that could indicate that we're picking up
             // noise via the microphone, or someone could be talking out of earshot.
             if (args.Result.Confidence == SpeechRecognitionConfidence.Medium ||
@@ -266,8 +493,6 @@ namespace PhenoPad
             }
         }
 
-
-
         private async void SpeechRecognizer_StateChanged(SpeechRecognizer sender, SpeechRecognizerStateChangedEventArgs args)
         {
             /// <summary>
@@ -293,13 +518,15 @@ namespace PhenoPad
             throw new NotImplementedException();
         }
 
+        #endregion
 
-        /// <summary>
-        /// Invoked when user presses the Microphone button on sidebar, requests speech engine connection
-        /// as well as connection to remote server for speech recognition
-        /// </summary>
         private async void AudioStreamButton_Clicked(object sender = null, RoutedEventArgs e = null)
         {
+            /// <summary>
+            /// Invoked when user presses the Microphone button on sidebar, requests speech engine connection
+            /// as well as connection to remote server for speech recognition
+            /// </summary>
+
             //Temporarily disables audio button for avoiding frequent requests
             DisableAudioButton();
 
@@ -334,206 +561,9 @@ namespace PhenoPad
             }
         }
 
-        public async void RestartBTOnException()
-        {
-            //Handles DEXCEPTION received from raspberry pi, restarts bluetooth connection only
-            //uiClinet.disconnect();
-            //stops speech service before closing bluetooth
-            await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, async () => {
-
-                if (speechEngineRunning)
-                    await SpeechManager.getSharedSpeechManager().StopASRResults();
-
-                bool result = bluetoothService.CloseConnection();
-
-                if (result)
-                {
-                    bluetoothService = null;
-                    bluetoonOn = false;
-                    bluetoothInitialized(false);
-                    bluetoothicon.Visibility = Visibility.Collapsed;
-                    Debug.WriteLine("Bluetooth Connection disconnected");
-                }
-                else
-                {
-                    LogService.MetroLogger.getSharedLogger().Error("Bluetooth Connection failed to disconnect.");
-                }
-
-            });
-
-            await Task.Delay(TimeSpan.FromSeconds(5));
-            //var success = await SetBluetoothON();
-            var success = await changeSpeechEngineState_BT();
-            if (success)
-            {
-                await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, async () => {
-                    await Task.Delay(TimeSpan.FromSeconds(5));
-                    var result = await StartAudioAfterBluetooth();
-                });
-            }
-
-            if (!success) {
-                LogService.MetroLogger.getSharedLogger().Error("Bluetooth Connection failed to reconnect.");
-            }
-
-
-        }
-
-        private async void BTConnectBtn_Click(object sender, RoutedEventArgs e)
-        {
-            var result = true;
-            await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, async () => {
-                result = await changeSpeechEngineState_BT();
-            });
-        }
-
-        public async Task<bool> SetBluetoothON() {
-            Debug.WriteLine("\nManually setting bluetooth ON...");
-            bool result = true;
-            await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, async () => {
-                try
-                {
-                    bluetoothService = BluetoothService.BluetoothService.getBluetoothService();
-                    await bluetoothService.Initialize();
-                }
-                catch (Exception e)
-                {
-                    LogService.MetroLogger.getSharedLogger().Error(e.Message);
-                    result = false;
-                }
-            });
-            return result;
-        }
-
-        public async Task<bool> changeSpeechEngineState_BT()
-        {
-            /// <summary>
-            /// Switch speech engine state for blue tooth devices
-            /// </summary>
-            bool result = true;
-            await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, async () => {
-                if (!bluetoonOn)
-                {
-                    try
-                    {
-                        //temporarily disables for debugging reseasons
-                        //=====
-                        //uiClinet = UIWebSocketClient.getSharedUIWebSocketClient();
-                        //bool uiResult = await uiClinet.ConnectToServer();
-                        //if (!uiResult)
-                        //    LogService.MetroLogger.getSharedLogger().Error("UIClient failed to connect.");
-                        //=====
-                        bluetoothService = BluetoothService.BluetoothService.getBluetoothService();
-                        await bluetoothService.Initialize();
-                        result = true;
-                    }
-                    catch (Exception e)
-                    {
-                        LogService.MetroLogger.getSharedLogger().Error($"Failed to turn on BT: {e.Message}");
-                        result = false;
-                    }
-                }
-                else
-                {
-                    try
-                    {
-                        //uiClinet.disconnect();
-                        //stops speech service before closing bluetooth
-                        if (speechEngineRunning)
-                            await SpeechManager.getSharedSpeechManager().StopASRResults();
-                        Debug.WriteLine("stopped ASR RESULT \n");
-                        result = bluetoothService.CloseConnection();
-                        if (result)
-                        {
-                            bluetoothService = null;
-                            bluetoonOn = false;
-                            bluetoothInitialized(false);
-                            bluetoothicon.Visibility = Visibility.Collapsed;
-                            Debug.WriteLine("Bluetooth Connection disconnected");
-                            result = true;
-                        }
-
-                    }
-                    catch (Exception e)
-                    {
-                        LogService.MetroLogger.getSharedLogger().Error($"Failed to turn off BT: {e.Message}");
-                    }
-                    result = false;
-
-                }
-
-            });
-            return result;
-        }
-
-        public void OnBTConnectSuccess() {
-            NotifyUser("Bluetooth Connected", NotifyType.StatusMessage, 1);
-            bluetoonOn = true;
-            bluetoothInitialized(true);
-            bluetoothicon.Visibility = Visibility.Visible;
-            bluetoothprogress.Visibility = Visibility.Collapsed;
-        }
-
-        public async Task<bool> StartAudioAfterBluetooth() {
-            var success = false;
-            if (speechEngineRunning == false)
-            {
-                success = await bluetoothService.sendBluetoothMessage("audio start manager_id=666 ");
-                if (!success)
-                {
-                    LogService.MetroLogger.getSharedLogger().Error("failed to send audio start message to raspi");
-                    return false;
-                }
-                success &= await SpeechManager.getSharedSpeechManager().ReceiveASRResults();
-            }
-            return success;
-         }
-
-        public void onAudioStarted(object sender, object e) {
-            audioTimer.Stop();
-            speechEngineRunning = true;
-            NotifyUser("Audio service started.", NotifyType.StatusMessage, 3);
-            LogService.MetroLogger.getSharedLogger().Info("Audio started.");
-            ReEnableAudioButton();
-        }
-
-        public void onAudioEnded() {
-            speechEngineRunning = false;
-            NotifyUser("Audio service ended.", NotifyType.StatusMessage, 3);
-            LogService.MetroLogger.getSharedLogger().Info("Audio stopped.");
-            ReEnableAudioButton();
-        }
-
-        public void DisableAudioButton() {
-            audioButton.IsEnabled = false;
-            audioStatusText.Text = "...";
-        }
-
-        public async void ReEnableAudioButton(object sender = null, object e = null)
-        {
-            await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, async () => {
-                await Task.Delay(TimeSpan.FromSeconds(7));
-                audioButton.IsEnabled = true;
-                if (speechEngineRunning)
-                {
-                    audioStatusText.Text = "ON";
-                    audioButton.IsChecked = true;
-                }
-                else
-                {
-                    audioStatusText.Text = "OFF";
-                    audioButton.IsChecked = false;
-                }
-            });
-        }
-
-
-        /// <summary>
-        /// Switch speech engine state for plug-in devices
-        /// </summary>
-        /// <param name="state">current state of speech engine</param>
         public async Task<bool> changeSpeechEngineState()
         {
+            /// Switch speech engine state for plug-in devices
             try
             {
                 var success = true;
@@ -564,6 +594,45 @@ namespace PhenoPad
 
         }
 
+
+        public void onAudioStarted(object sender, object e) {
+            audioTimer.Stop();
+            speechEngineRunning = true;
+            NotifyUser("Audio service started.", NotifyType.StatusMessage, 1);
+            LogService.MetroLogger.getSharedLogger().Info("Audio started.");
+            ReEnableAudioButton();
+        }
+
+        public void onAudioEnded() {
+            speechEngineRunning = false;
+            NotifyUser("Audio service ended.", NotifyType.StatusMessage, 1);
+            LogService.MetroLogger.getSharedLogger().Info("Audio stopped.");
+            ReEnableAudioButton();
+        }
+
+        public void DisableAudioButton() {
+            audioButton.IsEnabled = false;
+            audioStatusText.Text = "...";
+        }
+
+        public async void ReEnableAudioButton(object sender = null, object e = null)
+        {
+            await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, async () => {
+                await Task.Delay(TimeSpan.FromSeconds(7));
+                audioButton.IsEnabled = true;
+                if (speechEngineRunning)
+                {
+                    audioStatusText.Text = "ON";
+                    audioButton.IsChecked = true;
+                }
+                else
+                {
+                    audioStatusText.Text = "OFF";
+                    audioButton.IsChecked = false;
+                }
+            });
+        }
+
         public async Task KillAudioService() {
             await Dispatcher.RunAsync(CoreDispatcherPriority.High, async () => {
                 if (speechEngineRunning)
@@ -573,129 +642,10 @@ namespace PhenoPad
                         AudioStreamButton_Clicked();
                     });
                     await Task.Delay(TimeSpan.FromSeconds(7));
-
-                    //if (bluetoonOn)
-                    //{
-                    //    Debug.WriteLine("disconnecting audio before leaving bluetooth");
-                    //    //await BluetoothService.BluetoothService.getBluetoothService().sendBluetoothMessage("audio stop");
-                    //    await SpeechManager.getSharedSpeechManager().StopASRResults(false);
-                    //}
-                    //else
-                    //{
-                    //    Debug.WriteLine("disconnecting audio before leaving internal microphone");
-                    //    AudioStreamButton_Clicked();
-                    //    //bool result = await SpeechManager.getSharedSpeechManager().EndAudio(notebookId);
-                    //    //Debug.WriteLine(result);
-                    //}
-
                 }
             });
             return;
         }
 
-        /// <summary>
-        /// Initialize bluetooth stream input status
-        /// </summary>
-        /// <param name="val">indicates whether bluetooth is initialized</param>
-        public void bluetoothInitialized(bool val)
-        {
-            this.StreamButton.IsEnabled = val;
-            this.shutterButton.IsEnabled = val;
-            this.audioButton.IsEnabled = val;
-        }
-
-        /// <summary>
-        /// Updates the bluetooth video camera stream status 
-        /// </summary>
-        private async Task videoStreamStatusUpdateAsync(bool desiredStatus)
-        {
-            if (this.bluetoothService == null)
-            {
-                NotifyUser("Could not reach Bluetooth device, try to connect again",
-                                   NotifyType.ErrorMessage, 2);
-                this.VideoOn = false;
-
-                //this.bluetoothInitialized(false);
-                this.StreamButton.IsChecked = false;
-                return;
-            }
-
-            Debug.WriteLine("Sending message");
-
-            if (desiredStatus)
-            {
-                await this.bluetoothService.sendBluetoothMessage("camera start");
-            }
-            else
-            {
-                await this.bluetoothService.sendBluetoothMessage("camera stop");
-            }
-            //this.videoSwitch.IsOn = desiredStatus;
-            //this.StreamButton.IsChecked = desiredStatus;
-
-            Debug.WriteLine("Setting status value to " + (this.bluetoothService.initialized && desiredStatus).ToString());
-            this.VideoOn = this.bluetoothService.initialized && desiredStatus;
-        }
-
-        /// <summary>
-        /// Handles chat view container change event and displays the message on chat view container 
-        /// </summary>
-        private async void OnChatViewContainerContentChanging(ListViewBase sender, ContainerContentChangingEventArgs args)
-        {
-            if (args.InRecycleQueue) return;
-            TextMessage message = (TextMessage)args.Item;
-
-            // Only display message on the right when speaker index = 0
-            //args.ItemContainer.HorizontalAlignment = (message.Speaker == 0) ? Windows.UI.Xaml.HorizontalAlignment.Right : Windows.UI.Xaml.HorizontalAlignment.Left;
-
-            if (message.IsNotFinal)
-            {
-                args.ItemContainer.HorizontalAlignment = HorizontalAlignment.Right;
-            }
-            else
-            {
-                args.ItemContainer.HorizontalAlignment = (message.Speaker == doctor) ? HorizontalAlignment.Right : HorizontalAlignment.Left;
-                //Need this dispatcher in-order to avoid threading errors
-                await CoreApplication.MainView.CoreWindow.Dispatcher.RunAsync(CoreDispatcherPriority.Normal,() =>{
-                    chatView.UpdateLayout();
-                    chatView.ScrollIntoView(chatView.Items[chatView.Items.Count - 1]);
-                });
-            }
-        }
-
-        private async void PreviewMultiMedia()
-        {
-            // initialize microphone choice
-            if (ConfigService.ConfigService.getConfigService().IfUseExternalMicrophone())
-                ExternalMicRadioBtn.IsChecked = true;
-            else
-                SurfaceMicRadioBtn.IsChecked = true;
-
-            // steaming video
-            string RPI_IP_ADDRESS = BluetoothService.BluetoothService.getBluetoothService().GetPiIP();
-            RPI_ADDRESS = "http://" + RPI_IP_ADDRESS + ":8000";
-            // this.StreamView.Navigate(new Uri(RPI_ADDRESS));
-
-            this.videoStreamWebSocket = new Windows.Networking.Sockets.MessageWebSocket();
-            // In this example, we send/receive a string, so we need to set the MessageType to Utf8.
-            this.videoStreamWebSocket.Control.MessageType = Windows.Networking.Sockets.SocketMessageType.Utf8;
-            this.videoStreamWebSocket.Closed += WebSocket_Closed;
-            this.videoStreamWebSocket.MessageReceived += WebSocket_MessageReceived;
-
-            try
-            {
-                videoStreamCancellationToken = videoCancellationSource.Token;
-                Task connectTask = this.videoStreamWebSocket.ConnectAsync(new Uri("ws://" + RPI_IP_ADDRESS + ":8000/websocket")).AsTask();
-                await connectTask.ContinueWith(_ => this.SendMessageUsingMessageWebSocketAsync("read_camera"));
-                //Task.Run(() => this.WebSocket_MessageReceived());
-                //Task.Run(() => this.SendMessageUsingStreamWebSocket(Encoding.UTF8.GetBytes("read_camera")));
-
-            }
-            catch (Exception ex)
-            {
-                Windows.Web.WebErrorStatus webErrorStatus = Windows.Networking.Sockets.WebSocketError.GetStatus(ex.GetBaseException().HResult);
-                // Add additional code here to handle exceptions.
-            }
-        }
     }
 }

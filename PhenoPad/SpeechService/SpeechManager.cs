@@ -248,12 +248,12 @@ namespace PhenoPad.SpeechService
                                 speechInterpreter.processJSON(parsedSpeech);
 
                                 // TODO Find a more legitimate way to fire an UI change?
-                                //await Windows.ApplicationModel.Core.CoreApplication.MainView.CoreWindow.Dispatcher.RunAsync(CoreDispatcherPriority.High,
-                                //   () =>
-                                //   {
-                                //       EngineHasResult.Invoke(this, speechInterpreter);
-                                //   }
-                                //   );
+                                await Windows.ApplicationModel.Core.CoreApplication.MainView.CoreWindow.Dispatcher.RunAsync(CoreDispatcherPriority.High,
+                                   () =>
+                                   {
+                                       EngineHasResult.Invoke(this, speechInterpreter);
+                                   }
+                                   );
 
                                 continue;
 

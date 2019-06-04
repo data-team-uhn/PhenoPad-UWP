@@ -1421,7 +1421,6 @@ namespace PhenoPad
             curPage.ClearAllParsedText();
             PhenotypeManager.getSharedPhenotypeManager().phenotypesCandidates.Clear();
             //more clearing caches
-
         }
 
 

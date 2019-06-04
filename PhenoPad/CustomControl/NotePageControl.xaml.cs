@@ -1596,62 +1596,6 @@ namespace PhenoPad.CustomControl
 
         }
 
-        private void InkCanvas_Tapped(object sender, TappedRoutedEventArgs e)
-        {
-            ClearSelectionAsync();
-            Point pos = e.GetPosition(inkCanvas);
-            ShowAlterOnTapped(pos);
-        }
-
-        private void InkCanvas_DoubleTapped(object sender, DoubleTappedRoutedEventArgs e)
-        {
-            var position = e.GetPosition(inkCanvas);
-            ClearSelectionAsync();
-
-            int count = inkCan.InkPresenter.StrokeContainer.GetStrokes().Count;
-            var lines = inkAnalyzer.AnalysisRoot.FindNodes(InkAnalysisNodeKind.InkWord);
-            int allLineCount = 0;
-            foreach (var l in lines) {
-                allLineCount += l.GetStrokeIds().Count;
-            }           
-            Debug.WriteLine($"allstrokes-inkwordstrokes difference count = {count - allLineCount}");
-
-            var line = FindHitLine(position);
-            if (line != null)
-            {
-                // Show the selection rect at the paragraph's bounding rect.
-                //boundingRect.Union(line.BoundingRect);
-                boundingRect = line.BoundingRect;
-                IReadOnlyList<uint> strokeIds = line.GetStrokeIds();
-
-                foreach (var strokeId in strokeIds)
-                {                    
-                    var stroke = inkCanvas.InkPresenter.StrokeContainer.GetStrokeById(strokeId);
-                    stroke.Selected = true;
-                    SetSelectedStrokeStyle(stroke);
-                }
-                //by default uses the stroke's pre-analyzed recognition for annotation
-                int lineNum = getLineNumByRect(line.BoundingRect);
-                var phrasewords = phrases[lineNum].words;
-                //var hitwords = FindHitWordsInLine(line);
-                string text = "";
-                foreach (var word in phrasewords)
-                {
-                    var bound = word.GetUIRect();
-                    //Debug.WriteLine($"{bound.X}, {bound.Y},{bound.Width},{bound.Height}");
-                    //Debug.WriteLine($"{boundingRect.X},{boundingRect.Y},{boundingRect.Width},{boundingRect.Height}");
-                    bool intersects = bound.X >= boundingRect.X && bound.X + bound.Width <= boundingRect.Right;
-                    if (intersects)
-                    {
-                        //Debug.WriteLine($"word {word.current} intersects");
-                        text += word.current + " ";
-                    }
-                }
-                RecognizeSelection(text);
-            }
-
-
-        }
 
         private void MoreSymbolIcon_Click(object sender, RoutedEventArgs e)
         {
