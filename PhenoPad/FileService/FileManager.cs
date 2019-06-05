@@ -410,7 +410,8 @@ namespace PhenoPad.FileService
                     filename = PHENOTYPECANDIDATE_FILE_NAME;
                     break;
                 case NoteFileType.Audio:
-                    filename = name + ".wav";
+                    if (name != "")
+                        filename = name + ".wav";
                     break;
                 case NoteFileType.Transcriptions:
                     filename = name + ".xml";
@@ -522,6 +523,31 @@ namespace PhenoPad.FileService
             }
         }
 
+        public async Task<List<AudioFile>> GetAllAudioFileObjects(string notebookId)
+        {
+            try
+            {
+               
+                List<AudioFile> result = new List<AudioFile>();
+                string path = String.Format(@"{0}\Audio\", notebookId);
+                //Debug.WriteLine($"audio path = {path}");
+                StorageFolder audioFolder = await ROOT_FOLDER.GetFolderAsync(path);
+                var audios = await audioFolder.GetFilesAsync();
+                foreach (var audio in audios) {
+                    AudioFile a = new AudioFile(notebookId, audio);
+                    result.Add(a);
+                }
+                return result;
+
+            }
+            catch (Exception e)
+            {
+                LogService.MetroLogger.getSharedLogger().Error($"{notebookId}:{e}:{e.Message}");
+                return new List<AudioFile>();
+            }
+        }
+
+
         /// <summary>
         /// Returns all NotePage objects of the given Notebook ID from root file, returns null if failed.
         /// </summary>
@@ -547,7 +573,7 @@ namespace PhenoPad.FileService
 
         }
         #endregion
-
+        
         #region CREATE/SAVE methods
 
         /// <summary>

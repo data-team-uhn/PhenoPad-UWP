@@ -70,7 +70,16 @@ namespace PhenoPad
             this.Frame.Navigate(typeof(MainPage));
         }
 
-  
+        private void AudioGridView_ItemClick(object sender, ItemClickEventArgs e)
+        {
+            //Frame rootFrame = Window.Current.Content as Frame;
+            var clickAudio = e.ClickedItem as AudioFile;
+            MediaPlayerElement player = new MediaPlayerElement();
+            player.MediaPlayer.Source = clickAudio.source;
+            player.MediaPlayer.Play();
+
+        }
+
         private void CreateButton_Click(object sender, RoutedEventArgs e)
         {
             LogService.MetroLogger.getSharedLogger().Info("Creating a new note...");
@@ -134,9 +143,23 @@ namespace PhenoPad
             {
                 ImageAnnotationGridView.ItemsSource = new List<ImageAndAnnotation>();
                 ImageAnnotationGridView.Visibility = Visibility.Collapsed;
-
                 ImageAnnotationPlaceHoder.Visibility = Visibility.Visible;
             }
+
+            List<AudioFile> audios = await FileManager.getSharedFileManager().GetAllAudioFileObjects(clickNotebook.id);
+            if (audios.Count > 0)
+            {
+                AudioGridView.Visibility = Visibility.Visible;
+                AudioPlaceHoder.Visibility = Visibility.Collapsed;
+                AudioGridView.ItemsSource = audios;
+            }
+            else
+            {
+                AudioGridView.ItemsSource = new List<AudioFile>();
+                AudioGridView.Visibility = Visibility.Collapsed;
+                AudioPlaceHoder.Visibility = Visibility.Visible;
+            }
+
             UpdateLayout();
         }
 

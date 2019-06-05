@@ -151,6 +151,7 @@
     <Compile Include="CustomControl\WordBlockControl.xaml.cs">
       <DependentUpon>WordBlockControl.xaml</DependentUpon>
     </Compile>
+    <Compile Include="FileService\AudioFile.cs" />
     <Compile Include="FileService\EHRFormats.cs" />
     <Compile Include="FileService\FileManager.cs" />
     <Compile Include="FileService\FileServerClient.cs" />

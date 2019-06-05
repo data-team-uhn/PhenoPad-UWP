@@ -33,6 +33,7 @@ using System.Runtime.CompilerServices;
 using Windows.Media.Core;
 using Windows.UI.Core;
 using System.Xml.Serialization;
+using PhenoPad.FileService;
 
 namespace PhenoPad
 {
@@ -528,6 +529,7 @@ namespace PhenoPad
         private int doctor = 0;
         private int curSpeakerCount = 2;
         private string loadedMedia = String.Empty;
+        private List<AudioFile> savedAudio;
 
 
         //=================================METHODS==============================================
@@ -540,13 +542,31 @@ namespace PhenoPad
             //chatView.ItemsSource = SpeechManager.getSharedSpeechManager().conversation;
             chatView.ContainerContentChanging += OnChatViewContainerContentChanging;
             //realtimeChatView.Children.Add(MainPage.Current.speechQuickView.c);
-
+            savedAudio = new List<AudioFile>();
             SpeechManager.getSharedSpeechManager().EngineHasResult += SpeechPage_EngineHasResult;
             SpeechManager.getSharedSpeechManager().RecordingCreated += SpeechPage_RecordingCreated;
         }
 
+        public async void LoadSavedAudio() {
+            savedAudio = await FileManager.getSharedFileManager().GetAllAudioFileObjects(MainPage.Current.notebookId);
+            List<string> audioNames = new List<string>();
+            foreach (var a in savedAudio) {
+                audioNames.Add(a.name);
+            }
+            AudioDropdownList.ItemsSource = audioNames;
+            //by default sets the first audio file to be the first of the list
+            if (audioNames.Count > 0)
+            {
+                AudioDropdownList.SelectedItem = audioNames[0];
+                _mediaPlayerElement.Source = savedAudio[0].source;
+                _mediaPlayerElement.Visibility = Visibility.Visible;
+            }
+            UpdateLayout();
+        }
+
         public void updateChat() {
             chatView.ItemsSource = MainPage.Current.conversations;
+            LoadSavedAudio();
         }
 
         private void SpeechPage_RecordingCreated(SpeechManager sender, Windows.Storage.StorageFile args)
@@ -662,8 +682,8 @@ namespace PhenoPad
                         "", 
                         FileService.NoteFileType.Audio, 
                         "audio_" + m.ConversationIndex);
-                    
-                if (savedFile.Name != this.loadedMedia)
+
+                if (savedFile != null && savedFile.Name != this.loadedMedia)
                 {
                     this._mediaPlayerElement.Source = MediaSource.CreateFromStorageFile(savedFile);
                     this.loadedMedia = savedFile.Name;
@@ -673,14 +693,16 @@ namespace PhenoPad
                 // Overloaded constructor takes the arguments days, hours, minutes, seconds, miniseconds.
                 // Create a TimeSpan with miliseconds equal to the slider value.
 
-                double actual_start = Math.Max(0, m.Interval.start - 5);
+                double actual_start = Math.Max(0, m.start);
                 int start_second = (int)(actual_start);
                 int start_minute = start_second / 60;
                 start_second = start_second - 60 * start_minute;
                 int start_mili = (int)(100 * (actual_start - 60 * start_minute - start_second));
 
                 TimeSpan ts = new TimeSpan(0, 0, start_minute, start_second, start_mili);
+                Debug.WriteLine(ts);
                 this._mediaPlayerElement.MediaPlayer.Position = ts;
+                this._mediaPlayerElement.MediaPlayer.Play();
             }
         }
 
@@ -810,6 +832,19 @@ namespace PhenoPad
                         this.speakerBox.SelectedIndex--;
                     }
                     this.speakerBox.Items.RemoveAt(this.speakerBox.Items.Count - 1);
+                }
+            }
+        }
+
+        private void AudioDropdownList_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (e.AddedItems.Count > 0) {
+                string audioName = e.AddedItems[0].ToString();
+                AudioFile audioFile = savedAudio.Find(x => x.name == audioName);
+                if (audioFile.source != _mediaPlayerElement.Source)
+                {
+                    _mediaPlayerElement.Source = audioFile.source;
+                    _mediaPlayerElement.Visibility = Visibility.Visible;
                 }
             }
         }

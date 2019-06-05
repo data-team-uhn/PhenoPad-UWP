@@ -28,7 +28,6 @@ namespace PhenoPad.CustomControl
     {
         public double canvasLeft;
         public double canvasTop;
-        public double width;
         public int lineIndex;
         public float LINE_HEIGHT = 50;
         public List<WordBlockControl> words;
@@ -37,7 +36,6 @@ namespace PhenoPad.CustomControl
         {
             InitializeComponent();
             lineIndex = lineNum;
-            this.width = width;
             this.words = new List<WordBlockControl>();
             canvasLeft = left;
             if (words != null)

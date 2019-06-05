@@ -180,7 +180,6 @@ namespace PhenoPad.BluetoothService
                 {
                     // don't run again for 
                     await Task.Delay(500);
-                    Debug.WriteLine($"BT_initialized={this.initialized}, speechEngineON ={MainPage.Current.speechEngineRunning}, btON={MainPage.Current.bluetoonOn}");
                     string result = await ReceiveMessageUsingStreamWebSocket();
                     if (result == "CONNECTION_ERROR") {
                         //do nothing
@@ -383,12 +382,9 @@ namespace PhenoPad.BluetoothService
             try
             {
                 uint length = 100;     // Leave a large buffer
-
                 var readBuf = new Windows.Storage.Streams.Buffer((uint)length);
                 var readOp = await this._socket.InputStream.ReadAsync(readBuf, (uint)length, InputStreamOptions.Partial);
-
                 //await readOp;   // Don't move on until we have finished reading from server
-
                 DataReader readPacket = DataReader.FromBuffer(readBuf);
                 uint buffLen = readPacket.UnconsumedBufferLength;
                 returnMessage = readPacket.ReadString(buffLen);

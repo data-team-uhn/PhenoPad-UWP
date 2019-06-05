@@ -49,8 +49,6 @@
         <!--<StackPanel Grid.Row="0">
             <TextBlock Text="Speech:" Style="{StaticResource SampleHeaderTextStyle}"/>
         </StackPanel>-->
-
-
         <local:ChatListView x:Name="chatView" Grid.Row="0" Grid.Column="0"
                             IncrementalLoadingThreshold="2" Margin="10" 
                             BorderBrush="White" BorderThickness="2"
@@ -240,7 +238,6 @@
                             Points="0,0 18,0 18,18"
                             Visibility="Visible"
                             Margin="0,0,10,0"/>-->
-
                             <!--Message color--><!--
                             <Grid
                             Grid.Row="0"
@@ -337,7 +334,8 @@
                 <TextBlock x:Name="mediaText"  Text="Recorded Audio" 
                     Margin="5" 
                     Padding="5,5,5,1"
-                           Visibility="Collapsed"/>
+                    Visibility="Collapsed"/>
+                <ComboBox x:Name="AudioDropdownList" Header="Recorded Audio" SelectionChanged="AudioDropdownList_SelectionChanged"/>
                 <MediaPlayerElement x:Name="_mediaPlayerElement" 
                                     AreTransportControlsEnabled="True" 
                                     Margin="5"

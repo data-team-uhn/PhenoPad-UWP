@@ -24,12 +24,12 @@ namespace PhenoPad.CustomControl
     [Serializable]
     public sealed partial class WordBlockControl : UserControl
     {
-        public int word_index;
-        public double left;
+        public int word_index;//The word index within a phrase
+        public double left;//The leading canvasLeft coordinate of a phrase, all words of the same phrase will have the same left value
         public int line_index;
-        public bool corrected;
+        public bool corrected;//Whether this word has been manually corrected
 
-        public bool is_abbr;
+        public bool is_abbr;//whether this word is detected as an abbreviation
 
         public string current;
         public List<string> candidates;

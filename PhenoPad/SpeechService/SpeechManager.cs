@@ -240,7 +240,7 @@ namespace PhenoPad.SpeechService
                         {
                             try
                             {                               
-                                Debug.WriteLine("Result from speech: " + json);
+                                //Debug.WriteLine("Result from speech: " + json);
                                 var parsedSpeech = JsonConvert.DeserializeObject<SpeechEngineJSON>(json);
                                 parsedSpeech.original = json;
                                 //{'diarization': [{'start': 7.328, 'speaker': 0, 'end': 9.168000000000001, 'angle': 152.97781134625265}], 'diarization_incremental': True} 
@@ -804,7 +804,7 @@ namespace PhenoPad.SpeechService
             if (result.Status != AudioGraphCreationStatus.Success)
             {
                 // Cannot create graph
-                //rootPage.NotifyUser(String.Format("AudioGraph Creation Error because {0}", result.Status.ToString()), NotifyType.ErrorMessage);
+                LogService.MetroLogger.getSharedLogger().Error($"AudioGraph Creation Error because {result.Status.ToString()}");
                 return;
             }
 
