@@ -106,8 +106,8 @@ namespace PhenoPad
             var coreTitleBar = CoreApplication.GetCurrentView().TitleBar;
             coreTitleBar.ExtendViewIntoTitleBar = false;
             ApplicationViewTitleBar titleBar = ApplicationView.GetForCurrentView().TitleBar;
-            titleBar.ButtonBackgroundColor = Colors.Black;
-            titleBar.ButtonInactiveBackgroundColor = Colors.Black;
+            //titleBar.ButtonBackgroundColor = Colors.Black;
+            //titleBar.ButtonInactiveBackgroundColor = Colors.Black;
 
 
             // We want to react whenever speech engine has new results
@@ -340,11 +340,9 @@ namespace PhenoPad
             });
         }
 
-        /// <summary>
-        /// Initializes the Notebook when user navigated to MainPage.
-        /// </summary>
         protected async override void OnNavigatedTo(NavigationEventArgs e)
         {
+            /// Initializes the Notebook when user navigated to MainPage.
 
             LoadingPopup.IsOpen = true;
 
@@ -374,31 +372,22 @@ namespace PhenoPad
             return;                
         }
 
-        /// <summary>
-        /// Clearing all cache and index records before leaving MainPage.
-        /// </summary>
         protected async override void OnNavigatingFrom(NavigatingCancelEventArgs e)
         {
+            /// Clearing all cache and index records before leaving MainPage.
 
             await Dispatcher.RunAsync(CoreDispatcherPriority.High, async ()=> {
 
                 if (speechEngineRunning)
                 {//close all audio services before navigating
-                    Debug.WriteLine("on leaving mainpage");
                     if (bluetoonOn)
                     {
-                        Debug.WriteLine("disconnecting audio before leaving bluetooth");
-
-                        //await BluetoothService.BluetoothService.getBluetoothService().sendBluetoothMessage("audio stop");
                         //becaise we are no longer in mainpage, does not need to reload past conversation
                         await SpeechManager.getSharedSpeechManager().StopASRResults(false);
                     }
                     else
                     {
-                        Debug.WriteLine("disconnecting audio before leaving internal microphone");
                         AudioStreamButton_Clicked();
-                        //bool result = await SpeechManager.getSharedSpeechManager().EndAudio(notebookId);
-                        //Debug.WriteLine(result);
                     }
 
                 }

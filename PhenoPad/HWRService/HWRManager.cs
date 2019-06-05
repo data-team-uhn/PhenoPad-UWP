@@ -45,7 +45,6 @@ namespace PhenoPad.HWRService
         List <string> sentence;
         List<List<string>> alternatives;
         Stack<(int, List<HWRRecognizedText> result)> linesToUpdate;
-        DispatcherTimer updateTimer;
         bool newRequest;
         int lastLine;
         Dictionary<string, List<string>> abbrDict;
@@ -69,9 +68,6 @@ namespace PhenoPad.HWRService
             abbrDict = new Dictionary<string, List<string>>();
             lastServerRecog = new List<HWRRecognizedText>();
             linesToUpdate = new Stack<(int, List<HWRRecognizedText> result)>();
-            updateTimer = new DispatcherTimer();
-            updateTimer.Interval = TimeSpan.FromSeconds(2);
-            updateTimer.Tick += TriggerUpdateOnMainPage;
         }
 
 
@@ -108,7 +104,7 @@ namespace PhenoPad.HWRService
         /// <summary>
         /// Gets the components in InkStrokeContainer and tries to recognize and return text, returns null if no text is recognized.
         /// </summary>
-        public async Task<List<HWRRecognizedText>> OnRecognizeAsync(InkStrokeContainer container, InkRecognitionTarget target, int lineNum = -1, bool fromEHR = false)
+        public async Task<List<HWRRecognizedText>> OnRecognizeAsync(InkStrokeContainer container, InkRecognitionTarget target, int lineNum = -1, double left = 0,bool fromEHR = false)
         {
             try
             {
@@ -171,18 +167,6 @@ namespace PhenoPad.HWRService
             lastServerRecog.Clear();
             abbrDict.Clear();
             sentence.Clear();
-        }
-
-        private void TriggerUpdateOnMainPage(object sender, object e)
-        {
-            updateTimer.Stop();
-            lock (linesToUpdate) {
-                while (linesToUpdate.Count > 0) {
-                    var line = linesToUpdate.Pop();
-                    MainPage.Current.curPage.UpdateRecognition(line.Item1,line.result);
-                }
-            }
-            Debug.WriteLine("stack cleared");
         }
 
         public async void TriggerServerRecognition(int lineNum, List<string> sentence, List<List<string>> alternatives, List<HWRRecognizedText>original ) {

@@ -280,7 +280,6 @@ namespace PhenoPad.CustomControl
             //selectionRectangle.ManipulationCompleted += SelectionRectangle_ManipulationCompleted;   
 
             //lastStrokePoint = new Point(0,0);
-            lastWordPoint = new Point(0, 0);
             lastWordIndex = 0;
             phrases = new Dictionary<int, NotePhraseControl>();
             lastWordCount = 0;
@@ -899,6 +898,7 @@ namespace PhenoPad.CustomControl
         }
 
         public async Task<List<RecognizedPhrases>> GetAllRecognizedPhrases() {
+
             List<RecognizedPhrases> wordPhrases = new List<RecognizedPhrases>();
 
             await CoreApplication.MainView.CoreWindow.Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () =>{
@@ -1020,13 +1020,12 @@ namespace PhenoPad.CustomControl
 
             foreach (RecognizedPhrases ph in recogPhrases) {
                 if (ph.line_index > last_line) {
+                    Debug.WriteLine("new");
                     NotePhraseControl npc = new NotePhraseControl(last_line, words);
                     phrases[last_line] = npc;
-                    npc.SetPhrasePosition(words.FirstOrDefault().left, npc.lineIndex * LINE_HEIGHT);
                     recognizedCanvas.Children.Add(npc);
-                    Canvas.SetLeft(npc, words.FirstOrDefault().left);
+                    Canvas.SetLeft(npc, 0);
                     Canvas.SetTop(npc, npc.lineIndex * LINE_HEIGHT);
-                    npc.UpdateLayout();
                     words = new List<WordBlockControl>();
                     last_line = ph.line_index;
                 }
@@ -1035,19 +1034,19 @@ namespace PhenoPad.CustomControl
                 wb.is_abbr = ph.is_abbr;
                 wb.corrected = ph.is_corrected;
                 words.Add(wb);
+                Debug.WriteLine("added");
             }
             //this handles the case when there's only one line of note on the page
             if (words.Count > 0) {
                 NotePhraseControl npc = new NotePhraseControl(last_line, words);
+                Debug.WriteLine("1042");
+
                 phrases[last_line] = npc;
-                //double left = recogPhrases.Count == 1 ? recogPhrases[0].canvasLeft : recogPhrases[recogPhrases.Count-1].canvasLeft;
-                npc.SetPhrasePosition(words.FirstOrDefault().left, npc.lineIndex * LINE_HEIGHT);
-                Canvas.SetLeft(npc, words.FirstOrDefault().left);
+                Canvas.SetLeft(npc, 0);
                 Canvas.SetTop(npc, npc.lineIndex * LINE_HEIGHT);
                 recognizedCanvas.Children.Add(npc);
-                npc.UpdateLayout();
             }
-            //Debug.WriteLine("done loading phrases");
+            Debug.WriteLine("done loading phrases");
         }
 
         /// <summary>

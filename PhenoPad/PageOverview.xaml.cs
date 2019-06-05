@@ -13,6 +13,7 @@ using Windows.UI.Xaml.Controls;
 using Windows.UI.Xaml.Navigation;
 using Windows.Storage.Pickers;
 using Windows.UI.Popups;
+using System.Threading.Tasks;
 
 // The Blank Page item template is documented at https://go.microsoft.com/fwlink/?LinkId=234238
 
@@ -31,22 +32,8 @@ namespace PhenoPad
 
             this.InitializeComponent();
             CoreApplication.GetCurrentView().TitleBar.ExtendViewIntoTitleBar = false;
-
             LoadAllNotes();
-
-            //hide_titlebar();
-
             // https://stackoverflow.com/questions/43699256/how-to-use-acrylic-accent-in-windows-10-creators-update/43711413#43711413
-        }
-
-        private void hide_titlebar() {
-            //draw into the title bar
-            CoreApplication.GetCurrentView().TitleBar.ExtendViewIntoTitleBar = true;
-
-            //remove the solid-colored backgrounds behind the caption controls and system back button
-            ApplicationViewTitleBar titleBar = ApplicationView.GetForCurrentView().TitleBar;
-            titleBar.ButtonBackgroundColor = Colors.Transparent;
-            titleBar.ButtonInactiveBackgroundColor = Colors.Transparent;
         }
 
         #region note loading
@@ -55,7 +42,7 @@ namespace PhenoPad
         {
             reloadNotebookList();
         }
-        public async void reloadNotebookList()
+        public async Task reloadNotebookList()
         {
             notebooks = await FileManager.getSharedFileManager().GetAllNotebookObjects();
             if (notebooks != null)
@@ -250,16 +237,15 @@ namespace PhenoPad
         #region navigation handlers
         protected override async void OnNavigatedTo(NavigationEventArgs e)
         {
-            await Dispatcher.RunAsync(CoreDispatcherPriority.High, () =>
+            await Dispatcher.RunAsync(CoreDispatcherPriority.High, async () =>
             {
-                CoreApplication.GetCurrentView().TitleBar.ExtendViewIntoTitleBar = false;
-                //Changes the background color of title bar back to default
-                ApplicationViewTitleBar titleBar = ApplicationView.GetForCurrentView().TitleBar;
-                titleBar.ButtonBackgroundColor = Colors.Black;
-                titleBar.ButtonInactiveBackgroundColor = Colors.Black;
+                await reloadNotebookList();
             });
-            //await Dispatcher.RunAsync(CoreDispatcherPriority.High, hide_titlebar);
-            reloadNotebookList();    
+            CoreApplication.GetCurrentView().TitleBar.ExtendViewIntoTitleBar = false;
+            //Changes the background color of title bar back to default
+            ApplicationViewTitleBar titleBar = ApplicationView.GetForCurrentView().TitleBar;
+            titleBar.ButtonBackgroundColor = Colors.Transparent;
+            titleBar.ButtonInactiveBackgroundColor = Colors.Transparent;
         }
         protected override void OnNavigatedFrom(NavigationEventArgs e)
         {

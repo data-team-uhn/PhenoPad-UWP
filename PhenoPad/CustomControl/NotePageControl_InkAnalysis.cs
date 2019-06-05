@@ -29,7 +29,6 @@ namespace PhenoPad.CustomControl
         InkAnalyzer strokeAnalyzer;
         int lastWordCount;
         int lastWordIndex;
-        Point lastWordPoint;
         Rect lastStrokeBound;
         List<int> linesErased = new List<int>();
         private Dictionary<int, NotePhraseControl> phrases = new Dictionary<int, NotePhraseControl>();
@@ -229,6 +228,7 @@ namespace PhenoPad.CustomControl
                 var newLine = (int)Math.Floor(args.CurrentPoint.Position.Y / LINE_HEIGHT);
                 if (newLine != showingResultOfLine)
                 {
+                    Debug.WriteLine("differnt line");
                     curLineWordsStackPanel.Children.Clear();
                     curLineResultPanel.Visibility = Visibility.Collapsed;
                 }
@@ -313,11 +313,10 @@ namespace PhenoPad.CustomControl
                 {
                     var phrase = phrases.Where(x => x.Key == line).ToList();
                     if (phrase.Count>0) {
-                        List<HWRRecognizedText> updated = await RecognizeLine(line);
+                        List<WordBlockControl> updated = await RecognizeLineWBC(line);
                         NotePhraseControl npc = phrase.FirstOrDefault().Value;
                         npc.UpdateRecognition(updated, fromServer:false);
-                        Canvas.SetLeft(npc, lastStrokeBound.X);
-                        npc.SetPhrasePosition(lastStrokeBound.X, line * LINE_HEIGHT);
+                        Canvas.SetLeft(npc, 0);
                     }
                 }
             }
@@ -349,11 +348,29 @@ namespace PhenoPad.CustomControl
 
         public async void UpdateRecognition(int lineNum, List<HWRRecognizedText> result) {
             await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () => {
-                if (!phrases.ContainsKey(lineNum))
+                if (!phrases.ContainsKey(lineNum) || result == null || result.Count ==0)
                     return;
 
+                var dict = GetPhrasesOnLine(lineNum);
+
+                List<WordBlockControl> wbs = new List<WordBlockControl>();
+                for (int i = 0; i < result.Count; i++)
+                {
+                    HWRRecognizedText recognized = result[i];
+                    int ind = i;
+                    //this handles some weird error when dict count != HWR count, by default will count this word as last phrase
+                    if (i >= dict.Count)
+                        ind = dict.Count - 1;
+                    WordBlockControl wb = new WordBlockControl(lineNum, dict[ind], i, recognized.selectedCandidate, recognized.candidateList);
+                    //just an intuitive way to check for abbreviation
+                    if (recognized.candidateList.Count > 5)
+                        wb.is_abbr = true;
+                    wbs.Add(wb);
+                }
+
+
                 NotePhraseControl npc = phrases[lineNum];
-                npc.UpdateRecognition(result, fromServer: true);
+                npc.UpdateRecognition(wbs, fromServer: true);
 
                 //refresh current line result with the server result
                 var words = npc.words;
@@ -487,10 +504,9 @@ namespace PhenoPad.CustomControl
                 {
                     NotePhraseControl phrase = phrases[lineNum];
                     lastWordCount = phrase.words.Count == 0 ? 1 : phrase.words.Count;
-                    List<HWRRecognizedText> results = await RecognizeLine(lineNum);
-                    phrase.UpdateRecognition(results,false);
-                    Canvas.SetLeft(phrase, lastStrokeBound.X);
-                    phrase.SetPhrasePosition(lastStrokeBound.X, phrase.lineIndex * LINE_HEIGHT);
+                    List<WordBlockControl> results = await RecognizeLineWBC(lineNum);
+                    phrase.UpdateRecognition(results, fromServer:false);
+                    //Canvas.SetLeft(phrase, lastStrokeBound.X);
                 }
                 //writing on a new line 
                 else
@@ -500,9 +516,8 @@ namespace PhenoPad.CustomControl
                     NotePhraseControl phrase = new NotePhraseControl(lineNum);
                     phrases[lineNum] = phrase;
                     recognizedCanvas.Children.Add(phrase);
-                    Canvas.SetLeft(phrase, lastStrokeBound.X);
+                    Canvas.SetLeft(phrase, 0);
                     Canvas.SetTop(phrase, lineNum * LINE_HEIGHT);
-                    phrase.SetPhrasePosition(lastStrokeBound.X, lineNum * LINE_HEIGHT);
                 }
                 //OperationLogger.getOpLogger().Log(OperationType.StrokeRecognition, line.RecognizedText);
             }
@@ -521,8 +536,7 @@ namespace PhenoPad.CustomControl
             curLineWordsStackPanel.Visibility = Visibility.Visible;
             curLineParentStack.Visibility = Visibility.Visible;
             curLineResultPanel.Visibility = Visibility.Visible;
-            //Canvas.SetLeft(curLineResultPanel, lastWordPoint.X);
-            Canvas.SetLeft(curLineResultPanel, phrases[lineNum].canvasLeft);
+            Canvas.SetLeft(curLineResultPanel, lastStrokeBound.X);
             Canvas.SetTop(curLineResultPanel, (showingResultOfLine - 1) * LINE_HEIGHT - 15);
 
             // annotation and UI
@@ -569,57 +583,84 @@ namespace PhenoPad.CustomControl
             }
         }
 
-        private async Task<List<HWRRecognizedText>> RecognizeLine(int lineid)
-        {
-            /// <summary>
-            /// select and recognize a line by its corresponding line id
-            /// </summary>
+        private List<double> GetPhrasesOnLine(int lineid) {
 
+            //Manually check for number of words within an inkanalysis line and returns a dictionary matching <key=phrase left, value=number of words matched>
+
+            List<double> lst = new List<double>();
+
+            double lowerbound = lineid * LINE_HEIGHT;
+            double upperbound = (lineid + 1) * LINE_HEIGHT;
+            var allLines = inkAnalyzer.AnalysisRoot.FindNodes(InkAnalysisNodeKind.Line).ToList();
+            var allWords = inkAnalyzer.AnalysisRoot.FindNodes(InkAnalysisNodeKind.InkWord).ToList();
+            var inLine = allLines.Where(x => x.BoundingRect.Y + (x.BoundingRect.Height / 5) >= lowerbound && x.BoundingRect.Y + (x.BoundingRect.Height / 5) <= upperbound).OrderBy(x => x.BoundingRect.X).ToList();
+            var inWords = allWords.Where(x => x.BoundingRect.Y + (x.BoundingRect.Height / 5) >= lowerbound && x.BoundingRect.Y + (x.BoundingRect.Height / 5) <= upperbound).OrderBy(x => x.BoundingRect.X).ToList();
+
+            foreach (var phrase in inLine) {
+                Debug.WriteLine(phrase.Id);
+                double start = phrase.BoundingRect.X;
+                double end = phrase.BoundingRect.X + phrase.BoundingRect.Width;
+                var hitWords = inWords.Where(x => x.BoundingRect.X >= start && x.BoundingRect.X + x.BoundingRect.Width <= end).ToList();
+                foreach (var w in hitWords)
+                    lst.Add(start);
+            }
+            return lst;
+        }
+
+        private async Task<List<WordBlockControl>> RecognizeLineWBC(int lineid)
+        {
             // only one thread is allowed to use select and recognize
             await selectAndRecognizeSemaphoreSlim.WaitAsync();
-            List<HWRRecognizedText> result = new List<HWRRecognizedText>();
+            List<WordBlockControl> result = new List<WordBlockControl>();
             try
             {
-
                 // clear selection
-                foreach (var stroke in inkCanvas.InkPresenter.StrokeContainer.GetStrokes())
+                var allStrokes = inkCanvas.InkPresenter.StrokeContainer.GetStrokes();
+                foreach (var stroke in allStrokes)
                     stroke.Selected = false;
-                //first setting lower/uppbound in case argument lineid refers to UI line (called from erase.tick)
+
                 double lowerbound = lineid * LINE_HEIGHT;
                 double upperbound = (lineid + 1) * LINE_HEIGHT;
-                // select storkes of this line
-                //var allwords = inkAnalyzer.AnalysisRoot.FindNodes(InkAnalysisNodeKind.Line).ToList();
+                var strokeInLine = allStrokes.Where(x => x.BoundingRect.Y + (x.BoundingRect.Height / 5) >= lowerbound && x.BoundingRect.Y + (x.BoundingRect.Height / 5) <= upperbound).OrderBy(x => x.BoundingRect.X).ToList();
 
-                var allwords = inkCan.InkPresenter.StrokeContainer.GetStrokes().ToList();
+                var dict = GetPhrasesOnLine(lineid);
 
-                var inLine = allwords.Where(x => x.BoundingRect.Y + (x.BoundingRect.Height / 5) >= lowerbound && x.BoundingRect.Y + (x.BoundingRect.Height / 5) <= upperbound).OrderBy(x => x.BoundingRect.X).ToList();
-                if (inLine.Count == 0)
+                if (strokeInLine.Count == 0)
                 {
                     Debug.WriteLine($"line {lineid} has no strokes");
-                    return new List<HWRRecognizedText>();
+                    return new List<WordBlockControl>();
                 }
 
-                foreach (var x in inLine)
+                lastStrokeBound = strokeInLine.FirstOrDefault().BoundingRect;
+
+                foreach (var s in strokeInLine)
                 {
-                    x.Selected = true;
-                    //foreach (var sid in x.GetStrokeIds())
-                    //    inkCanvas.InkPresenter.StrokeContainer.GetStrokeById(sid).Selected = true;
+                    s.Selected = true;
+                }
+                //recognize selected line phrase and parse each word as a WordBlockControl
+                var HWRresult = await HWRManager.getSharedHWRManager().OnRecognizeAsync(inkCanvas.InkPresenter.StrokeContainer, InkRecognitionTarget.Selected, lineid);
+
+                if (dict.Count != HWRresult.Count)
+                {
+                    Debug.WriteLine($"dict count = {dict.Count}, HWRresult count = {HWRresult.Count}");
+                    return new List<WordBlockControl>();
                 }
 
-                var thisLine = inkAnalyzer.AnalysisRoot.FindNodes(InkAnalysisNodeKind.Line);
-                //finding the overal bounding rect for setting up UI
-                thisLine = thisLine.Where(x => x.BoundingRect.Y + (x.BoundingRect.Height / 5) >= lowerbound && x.BoundingRect.Y + (x.BoundingRect.Height / 5) <= upperbound).OrderBy(x => x.BoundingRect.X).ToList();
-                if ( thisLine.Count > 0) {
-                    lastWordPoint = new Point(thisLine.LastOrDefault().BoundingRect.X, lineid * LINE_HEIGHT);
-
-                    //trys to get all strokes at line 
-                    lastStrokeBound = inLine.FirstOrDefault().BoundingRect;
-
+                for (int i = 0; i < HWRresult.Count; i++)
+                {
+                    HWRRecognizedText recognized = HWRresult[i];
+                    int ind = i;
+                    //this handles some weird error when dict count != HWR count, by default will count this word as last phrase
+                    if (i >= dict.Count)
+                        ind = dict.Count - 1;
+                    WordBlockControl wb = new WordBlockControl(lineid, dict[ind], i, recognized.selectedCandidate, recognized.candidateList);
+                    //just an intuitive way to check for abbreviation
+                    if (recognized.candidateList.Count > 5)
+                        wb.is_abbr = true;
+                    result.Add(wb);
                 }
-
-                //recognize selection
-                result = await HWRManager.getSharedHWRManager().OnRecognizeAsync(inkCanvas.InkPresenter.StrokeContainer,InkRecognitionTarget.Selected, lineid);
-
+                
+                
             }
             catch (Exception ex)
             {
@@ -631,6 +672,69 @@ namespace PhenoPad.CustomControl
             }
             return result;
         }
+
+        //private async Task<List<HWRRecognizedText>> RecognizeLine(int lineid)
+        //{
+        //    /// <summary>
+        //    /// select and recognize a line by its corresponding line id
+        //    /// </summary>
+
+        //    // only one thread is allowed to use select and recognize
+        //    await selectAndRecognizeSemaphoreSlim.WaitAsync();
+        //    List<HWRRecognizedText> result = new List<HWRRecognizedText>();
+        //    try
+        //    {
+
+        //        // clear selection
+        //        foreach (var stroke in inkCanvas.InkPresenter.StrokeContainer.GetStrokes())
+        //            stroke.Selected = false;
+        //        //first setting lower/uppbound in case argument lineid refers to UI line (called from erase.tick)
+        //        double lowerbound = lineid * LINE_HEIGHT;
+        //        double upperbound = (lineid + 1) * LINE_HEIGHT;
+        //        // select storkes of this line
+        //        //var allwords = inkAnalyzer.AnalysisRoot.FindNodes(InkAnalysisNodeKind.Line).ToList();
+
+        //        var allwords = inkCan.InkPresenter.StrokeContainer.GetStrokes().ToList();
+
+        //        var inLine = allwords.Where(x => x.BoundingRect.Y + (x.BoundingRect.Height / 5) >= lowerbound && x.BoundingRect.Y + (x.BoundingRect.Height / 5) <= upperbound).OrderBy(x => x.BoundingRect.X).ToList();
+        //        if (inLine.Count == 0)
+        //        {
+        //            Debug.WriteLine($"line {lineid} has no strokes");
+        //            return new List<HWRRecognizedText>();
+        //        }
+
+        //        foreach (var x in inLine)
+        //        {
+        //            x.Selected = true;
+        //            //foreach (var sid in x.GetStrokeIds())
+        //            //    inkCanvas.InkPresenter.StrokeContainer.GetStrokeById(sid).Selected = true;
+        //        }
+
+        //        var thisLine = inkAnalyzer.AnalysisRoot.FindNodes(InkAnalysisNodeKind.Line);
+        //        //finding the overal bounding rect for setting up UI
+        //        thisLine = thisLine.Where(x => x.BoundingRect.Y + (x.BoundingRect.Height / 5) >= lowerbound && x.BoundingRect.Y + (x.BoundingRect.Height / 5) <= upperbound).OrderBy(x => x.BoundingRect.X).ToList();
+        //        if ( thisLine.Count > 0) {
+        //            lastWordPoint = new Point(thisLine.LastOrDefault().BoundingRect.X, lineid * LINE_HEIGHT);
+
+        //            //trys to get all strokes at line 
+        //            lastStrokeBound = inLine.FirstOrDefault().BoundingRect;
+
+        //        }
+
+        //        //recognize selection
+        //        result = await HWRManager.getSharedHWRManager().OnRecognizeAsync(inkCanvas.InkPresenter.StrokeContainer,InkRecognitionTarget.Selected, lineid);
+
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        MetroLogger.getSharedLogger().Error($"Failed to recognize line ({lineid}):\n{ex.Message}");
+        //    }
+        //    finally
+        //    {
+        //        selectAndRecognizeSemaphoreSlim.Release();
+        //    }
+        //    return result;
+        //}
 
         public void ClearAllParsedText() {
             recognizedCanvas.Children.Clear();
@@ -855,19 +959,10 @@ namespace PhenoPad.CustomControl
                     await Dispatcher.RunAsync(CoreDispatcherPriority.High, async () =>
                     {
                         int lineNum = getLineNumByRect(line.BoundingRect);
-                        List<HWRRecognizedText> result = await RecognizeLine(lineNum);
-                        List<WordBlockControl> wbs = new List<WordBlockControl>();
-                        for (int i = 0; i < result.Count; i++)
-                        {
-                            WordBlockControl wb = new WordBlockControl(lineNum, line.BoundingRect.X, i, result[i].selectedCandidate, result[i].candidateList);
-                            if (result[i].candidateList.Count > 5)
-                                wb.is_abbr = true;
-                            wbs.Add(wb);
-                        }
-                        NotePhraseControl npc = new NotePhraseControl(lineNum, wbs, left: line.BoundingRect.X);
-                        Canvas.SetLeft(npc, line.BoundingRect.X);
+                        List<WordBlockControl> result = await RecognizeLineWBC(lineNum);
+                        NotePhraseControl npc = new NotePhraseControl(lineNum, result);
+                        Canvas.SetLeft(npc, 0);
                         Canvas.SetTop(npc, lineNum * LINE_HEIGHT);
-                        npc.SetPhrasePosition(line.BoundingRect.X, lineNum * LINE_HEIGHT);
                         phrases[lineNum] = npc;
                         recognizedCanvas.Children.Add(npc);                   
                     });

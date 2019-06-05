@@ -26,23 +26,65 @@ namespace PhenoPad.CustomControl
 {
     public sealed partial class NotePhraseControl : UserControl
     {
-        public double canvasLeft;
-        public double canvasTop;
         public int lineIndex;
+        public int phraseIndex;
         public float LINE_HEIGHT = 50;
         public List<WordBlockControl> words;
 
-        public NotePhraseControl(int lineNum, List<WordBlockControl> words = null, double left = 0,double width = 0)
+        public NotePhraseControl(int lineNum, List<WordBlockControl> words = null)
         {
             InitializeComponent();
             lineIndex = lineNum;
             this.words = new List<WordBlockControl>();
-            canvasLeft = left;
             if (words != null)
-            {
-                foreach (WordBlockControl wb in words)
-                    AddWord(wb);
+                this.words = words;
+            UpdatePhraseLayout();
+        }
+
+        public void UpdatePhraseLayout() {
+            //this guarantees list will have at least one word
+            if (words.Count == 0)
+                return;
+
+            PhraseCanvas.Children.Clear();
+            words = words.OrderBy(w => w.left).ToList();
+            StackPanel sp = InitNewBlockPanel();
+            sp.Children.Add(words[0]);
+            Debug.WriteLine($"WBC left = {words[0].left}");
+
+            for (int i = 1; i < words.Count; i++) {
+                Debug.WriteLine($"WBC left = {words[i].left}");
+                //same block
+                if ( words[i].left == words[i - 1].left ) {
+                    sp.Children.Add(words[i]);
+                }
+                //new block
+                else if(words[i].left > words[i - 1].left)
+                {
+                    PhraseCanvas.Children.Add(sp);
+                    Canvas.SetLeft(sp, words[i - 1].left);
+                    Canvas.SetTop(sp, 0);
+                    Debug.WriteLine($"========================X={words[i - 1].left}");
+                    sp = InitNewBlockPanel();
+                    sp.Children.Add(words[i]);
+                }
             }
+            if (sp.Children.Count > 0) {
+                PhraseCanvas.Children.Add(sp);
+                Canvas.SetLeft(sp, words[words.Count - 1].left);
+                Canvas.SetTop(sp, 0);
+            }
+
+            Debug.WriteLine("phrase layout updated");
+            UpdateLayout();
+        }
+
+        public StackPanel InitNewBlockPanel() {
+            StackPanel sp = new StackPanel();
+            sp.Orientation = Orientation.Horizontal;
+            sp.Spacing = 10;
+            sp.Height = LINE_HEIGHT;
+            return sp;
         }
 
         public List<string> GetStringAsList() {
@@ -66,16 +108,6 @@ namespace PhenoPad.CustomControl
                 text += s.current.Trim('(').Trim(')') + " ";
             }
             return text.Trim();
-        }
-
-        public void SetPhrasePosition(double left, double top) {
-            canvasLeft = left;
-            canvasTop = top;
-        }
-
-        public void AddWord(WordBlockControl word) {
-            words.Add(word);
-            RecognizedPhrase.Children.Add(word);
         }
 
         internal List<WordBlockControl> MergeNewResultToOld(List<WordBlockControl> updated) {
@@ -111,14 +143,15 @@ namespace PhenoPad.CustomControl
             return merged;
         }
 
-        /// <summary>
-        /// Dynamic programming for caluculating best alignment of two string list
-        /// http://www.biorecipes.com/DynProgBasic/code.html
-        /// </summary>
-        /// <param name="newList"></param>
-        /// <param name="oldList"></param>
         private (List<int>, List<int>) alignTwoStringList(List<string> newList, List<string> oldList)
         {
+            /// <summary>
+            /// Dynamic programming for caluculating best alignment of two string list
+            /// http://www.biorecipes.com/DynProgBasic/code.html
+            /// </summary>
+            /// <param name="newList"></param>
+            /// <param name="oldList"></param>
+
             // score matrix
             int gap_score = 0;
             int mismatch_score = 0;
@@ -222,41 +255,30 @@ namespace PhenoPad.CustomControl
 
         }
 
-        internal void UpdateRecognition(List<HWRRecognizedText> updated, bool fromServer)
+        internal void UpdateRecognition(List<WordBlockControl> new_w, bool fromServer = false)
         {
-            if (updated != null)
+            if (new_w != null && new_w.Count > 0)
             {
-                RecognizedPhrase.Children.Clear();
 
                 var dict = HWRManager.getSharedHWRManager().getDictionary();
-                List<WordBlockControl> new_w = new List<WordBlockControl>();
-                for (int i = 0; i < updated.Count; i++)
-                {
-                    HWRRecognizedText recognized = updated[i];
-                    WordBlockControl wb = new WordBlockControl(lineIndex, this.canvasLeft, i, recognized.selectedCandidate, recognized.candidateList);
 
-                    //is an abbreviation term
-                    if ( recognized.candidateList.Count > 5 && fromServer)
-                    {
-                        wb.is_abbr = true;
-                    }
-                    new_w.Add(wb);
-
-                }
                 var merged_new = MergeNewResultToOld(new_w);
                 words.Clear();
                 int new_index = 0;
                 foreach (var w in merged_new)
                 {
                     w.word_index = new_index;
-                    AddWord(w);
+                    words.Add(w);
                     new_index++;
                 }
+
+                UpdatePhraseLayout();
                 if (MainPage.Current != null)
                 {
                     MainPage.Current.curPage.annotateCurrentLineAndUpdateUI(line_index: lineIndex);
                 }
-
+                Debug.WriteLine("updated HWR, current word count " + words.Count);
+                UpdateLayout();
             }
         }
 
