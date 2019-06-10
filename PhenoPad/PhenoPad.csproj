@@ -111,9 +111,6 @@
     <Compile Include="AppConfigurations.cs" />
     <Compile Include="SpeechService\AudioCapturePermissions.cs" />
     <Compile Include="BluetoothService\BluetoothService.cs" />
-    <Compile Include="BrowsePage.xaml.cs">
-      <DependentUpon>BrowsePage.xaml</DependentUpon>
-    </Compile>
     <Compile Include="ConfigService\ConfigService.cs" />
     <Compile Include="CustomControl\AddInAnnotationControl.cs" />
     <Compile Include="CustomControl\AddInImageControl.xaml.cs">
@@ -164,7 +161,7 @@
     <Compile Include="Gestures\ProgressEvent.cs" />
     <Compile Include="Gestures\Recognizer.cs" />
     <Compile Include="Gestures\Unistroke.cs" />
-    <Compile Include="HelperFunctions.cs" />
+    <Compile Include="resources\HelperFunctions.cs" />
     <Compile Include="HWRService\HWRManager.cs" />
     <Compile Include="LogService\FileLoggingSessionScenario.cs" />
     <Compile Include="LogService\MetroLogger.cs" />
@@ -259,10 +256,6 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
-    <Page Include="BrowsePage.xaml">
-      <SubType>Designer</SubType>
-      <Generator>MSBuild:Compile</Generator>
-    </Page>
     <Page Include="CustomControl\AddInImageControl.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>

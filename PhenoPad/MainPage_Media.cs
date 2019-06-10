@@ -295,7 +295,10 @@ namespace PhenoPad
 
             if (speechEngineRunning == false)
             {
-                success = await bluetoothService.sendBluetoothMessage("audio start manager_id=666 ");
+                string uri = ASRAddrInput.Text.Trim();
+                string audioName = "placeholder";
+                Debug.WriteLine($"start BT Audio, addr = {uri}");
+                success = await bluetoothService.sendBluetoothMessage($"audio start manager_id=666 server_uri={uri} audiofile_name={audioName}");
                 if (!success)
                 {
                     LogService.MetroLogger.getSharedLogger().Error("failed to send audio start message to raspi");

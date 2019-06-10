@@ -34,10 +34,10 @@ namespace PhenoPad.CustomControl
             words = words.OrderBy(w => w.left).ToList();
             StackPanel sp = InitNewBlockPanel();
             sp.Children.Add(words[0]);
-            Debug.WriteLine($"WBC left = {words[0].left}");
+            //Debug.WriteLine($"WBC left = {words[0].left}");
 
             for (int i = 1; i < words.Count; i++) {
-                Debug.WriteLine($"WBC left = {words[i].left}");
+                //Debug.WriteLine($"WBC left = {words[i].left}");
                 //same block
                 if ( words[i].left == words[i - 1].left ) {
                     sp.Children.Add(words[i]);
@@ -48,7 +48,6 @@ namespace PhenoPad.CustomControl
                     PhraseCanvas.Children.Add(sp);
                     Canvas.SetLeft(sp, words[i - 1].left);
                     Canvas.SetTop(sp, 0);
-                    Debug.WriteLine($"========================X={words[i - 1].left}");
                     sp = InitNewBlockPanel();
                     sp.Children.Add(words[i]);
                 }
@@ -59,7 +58,7 @@ namespace PhenoPad.CustomControl
                 Canvas.SetTop(sp, 0);
             }
 
-            Debug.WriteLine("phrase layout updated");
+            //Debug.WriteLine("phrase layout updated");
             UpdateLayout();
         }
 
@@ -243,9 +242,6 @@ namespace PhenoPad.CustomControl
         {
             if (new_w != null && new_w.Count > 0)
             {
-
-                var dict = HWRManager.getSharedHWRManager().getDictionary();
-
                 var merged_new = MergeNewResultToOld(new_w);
                 words.Clear();
                 int new_index = 0;
@@ -261,7 +257,7 @@ namespace PhenoPad.CustomControl
                 {
                     MainPage.Current.curPage.annotateCurrentLineAndUpdateUI(line_index: lineIndex);
                 }
-                Debug.WriteLine("updated HWR, current word count " + words.Count);
+                Debug.WriteLine($"====== updated line {lineIndex}, server {fromServer}, word count={words.Count} ");
                 UpdateLayout();
             }
         }

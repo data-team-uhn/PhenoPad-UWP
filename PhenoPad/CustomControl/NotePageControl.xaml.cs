@@ -203,7 +203,7 @@ namespace PhenoPad.CustomControl
             inkCanvas.InkPresenter.UnprocessedInput.PointerMoved += UnprocessedInput_PointerMoved;
             inkCanvas.InkPresenter.UnprocessedInput.PointerReleased += UnprocessedInput_PointerReleased;
 
-            inkCanvas.PointerMoved += inkCanvas_PointerMoved;
+            //inkCanvas.PointerMoved += inkCanvas_PointerMoved;
            
             inkCanvas.Tapped += InkCanvas_Tapped;
             inkCanvas.DoubleTapped += InkCanvas_DoubleTapped;
@@ -243,9 +243,9 @@ namespace PhenoPad.CustomControl
             EraseTimer.Interval = TimeSpan.FromSeconds(2);
 
             linesToUpdate = new Queue<int>();
-            lineAnalysisDispatcherTimer = new DispatcherTimer();
-            lineAnalysisDispatcherTimer.Tick += LineAnalysisDispatcherTimer_Tick;
-            lineAnalysisDispatcherTimer.Interval = TimeSpan.FromMilliseconds(100);
+            //lineAnalysisDispatcherTimer = new DispatcherTimer();
+            //lineAnalysisDispatcherTimer.Tick += LineAnalysisDispatcherTimer_Tick;
+            //lineAnalysisDispatcherTimer.Interval = TimeSpan.FromMilliseconds(100);
             //lineAnalysisDispatcherTimer.Start();
 
             // hovering event
@@ -285,23 +285,7 @@ namespace PhenoPad.CustomControl
             phrases = new Dictionary<int, NotePhraseControl>();
             lastWordCount = 0;
 
-            ////for note-page switching event handlers
-            //scrollViewer.PointerPressed += ScrollViewer_PointerPressed;
-            //scrollViewer.PointerMoved += ScrollViewer_PointerMoved;
-            //scrollViewer.PointerReleased += ScrollViewer_PointerReleased;
-            ////outputGrid.ManipulationDelta += aaa;
-            //EHRScrollViewer.PointerPressed += EHRScrollViewer_PointerPressed;
-            //EHRScrollViewer.PointerMoved += EHRScrollViewer_PointerMoved;
-            //EHRScrollViewer.PointerReleased += EHRScrollViewer_PointerReleased;
-
         }
-
-        private void aaa(object sender, ManipulationDeltaRoutedEventArgs e)
-        {
-            Debug.WriteLine("manipulation deltaaaa");
-            scrollViewer.ChangeView(0, e.Position.Y, scrollViewer.ZoomFactor, true);
-        }
-
 
 
 
@@ -1589,11 +1573,6 @@ namespace PhenoPad.CustomControl
             {
                 // rootPage.NotifyUser("Cannot paste from clipboard.", NotifyType.ErrorMessage);
             }
-        }
-
-        private void inkCanvas_PointerMoved(object sender, PointerRoutedEventArgs e)
-        {
-
         }
 
 

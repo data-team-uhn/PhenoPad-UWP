@@ -6,6 +6,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Net;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Windows.Storage.Streams;
 using Windows.UI.Input.Inking;
@@ -126,16 +127,16 @@ namespace PhenoPad.HWRService
                     int ind = 0;
                     foreach (var r in recognitionResults)
                     {
-                        List<string> unprocessedRes = new List<string>(r.GetTextCandidates());
-                        alternatives.Add(unprocessedRes);
+                        List<string> parsedRes = StripSymbols(r.GetTextCandidates().ToList());
+                        alternatives.Add(parsedRes);
                         //by default selects the most match candidate word 
-                        sentence.Add(unprocessedRes.ElementAt(0));
+                        sentence.Add(parsedRes.ElementAt(0));
                         HWRRecognizedText rt = new HWRRecognizedText();
-                        List<string> res = new List<string>();
-                        res = new List<String>(r.GetTextCandidates());
-                        rt.candidateList = res;
+                        //List<string> res = parsedRes;
+                        //res = new List<String>(r.GetTextCandidates());
+                        rt.candidateList = parsedRes;
                         rt.selectedIndex = 0;
-                        rt.selectedCandidate = res.ElementAt(0);
+                        rt.selectedCandidate = parsedRes.ElementAt(0);
                         recogResults.Add(rt);
                         ind++;
                     }
@@ -163,6 +164,18 @@ namespace PhenoPad.HWRService
             }
         }
 
+        public List<String> StripSymbols(List<String> unprocessed) {
+
+            List<String> parsed = new List<string>();
+            Regex rgx = new Regex("[^a-zA-Z0-9 -]");
+            foreach (string word in unprocessed) {
+                var newWord = rgx.Replace(word, "");
+                if (newWord.Length > 0)                  
+                    parsed.Add(newWord);
+            }
+            return parsed;
+        }
+
         public void clearCache() {
             lastServerRecog.Clear();
             abbrDict.Clear();
@@ -184,7 +197,6 @@ namespace PhenoPad.HWRService
                     if (recogResults.Count > 0)
                     {
                         MainPage.Current.curPage.UpdateRecognition(lineNum, recogResults);
-                        //return recogResults;
                     }
                 }
             }
@@ -234,11 +246,11 @@ namespace PhenoPad.HWRService
 
                 string rawdatastr = JsonConvert.SerializeObject(rawdata);
                 HttpStringContent data = new HttpStringContent(rawdatastr, UnicodeEncoding.Utf8, "application/json");
-                //Debug.WriteLine(data);
+                Debug.WriteLine(data);
                 httpResponse = await httpClient.PostAsync(requestUri, data);
                 httpResponse.EnsureSuccessStatusCode();
                 httpResponseBody = await httpResponse.Content.ReadAsStringAsync();
-                //Debug.WriteLine(httpResponseBody);
+                Debug.WriteLine(httpResponseBody);
                 return httpResponseBody;
 
             }
