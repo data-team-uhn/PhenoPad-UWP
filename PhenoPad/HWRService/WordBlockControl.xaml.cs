@@ -206,6 +206,15 @@ namespace PhenoPad.CustomControl
             UpdateLayout();
         }
 
+        public HWRRecognizedText ConvertToHWRRecognizedText()
+        {
+            HWRRecognizedText txt = new HWRRecognizedText();
+            txt.candidateList = candidates;
+            txt.selectedCandidate = current;
+            txt.selectedIndex = candidates.IndexOf(current);
+            return txt;
+        }
+
 
     }
 }

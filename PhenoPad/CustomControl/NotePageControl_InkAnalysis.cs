@@ -164,15 +164,16 @@ namespace PhenoPad.CustomControl
                 var phrasewords = phrases[lineNum].words;
                 //var hitwords = FindHitWordsInLine(line);
                 string text = "";
+                recognizedText.Clear();
+
                 foreach (var word in phrasewords)
                 {
                     var bound = word.GetUIRect();
-                    //Debug.WriteLine($"{bound.X}, {bound.Y},{bound.Width},{bound.Height}");
-                    //Debug.WriteLine($"{boundingRect.X},{boundingRect.Y},{boundingRect.Width},{boundingRect.Height}");
                     bool intersects = bound.X >= boundingRect.X && bound.X + bound.Width <= boundingRect.Right;
                     if (intersects)
                     {
                         //Debug.WriteLine($"word {word.current} intersects");
+                        recognizedText.Add(word.ConvertToHWRRecognizedText());
                         text += word.current + " ";
                     }
                 }
@@ -1199,8 +1200,6 @@ namespace PhenoPad.CustomControl
                 selectionRectangle.Height = boundingRect.Height;
                 //selectionRectangleTranform = new TranslateTransform();
                 //selectionRectangle.RenderTransform = this.selectionRectangleTranform;
-
-
 
                 if (ehrPage != null)
                 {

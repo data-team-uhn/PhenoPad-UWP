@@ -33,6 +33,7 @@ using System.Numerics;
 using Windows.UI.Xaml.Hosting;
 using PhenoPad.LogService;
 using MetroLog;
+using Windows.UI.Xaml.Data;
 
 namespace PhenoPad.CustomControl
 {
@@ -137,7 +138,7 @@ namespace PhenoPad.CustomControl
             }
         }
 
-        private Dictionary<uint, NoteLine> idToNoteLine = new Dictionary<uint, NoteLine>();
+        //private Dictionary<uint, NoteLine> idToNoteLine = new Dictionary<uint, NoteLine>();
         private int showingResultOfLine;
         private InkAnalysisLine curLineObject;
 
@@ -1892,10 +1893,12 @@ namespace PhenoPad.CustomControl
 
         private void curLineWordsListView_ItemClick(object sender, ItemClickEventArgs e)
         {
-            var citem = (string) e.ClickedItem;
+            var citem = (string)e.ClickedItem;
             int ind = curLineWordsListView.Items.IndexOf(citem);
             var alterFlyout = (Flyout)this.Resources["ChangeAlternativeFlyout"];
-            alternativeListView.ItemsSource = idToNoteLine[(uint)showingResultOfLine].HwrResult[ind].candidateList;
+            var cand = phrases[showingResultOfLine].words[ind].candidates;
+            //alternativeListView.ItemsSource = idToNoteLine[(uint)showingResultOfLine].HwrResult[ind].candidateList;
+            alternativeListView.ItemsSource = cand;
             alterFlyout.ShowAt((FrameworkElement)sender);
         }
 
@@ -1913,23 +1916,25 @@ namespace PhenoPad.CustomControl
                 ind += rr.Text.Length;
                 wordInd++;
             }
-            if (wordInd < idToNoteLine[(uint)showingResultOfLine].HwrResult.Count)
+            var words = phrases[showingResultOfLine].words;
+
+            if (wordInd < words.Count)
             {
                 var alterFlyout = (Flyout)this.Resources["ChangeAlternativeFlyout"];
-                alternativeListView.ItemsSource = idToNoteLine[(uint)showingResultOfLine].HwrResult[wordInd].candidateList;
+                alternativeListView.ItemsSource = words[wordInd].candidates;
                 alterFlyout.ShowAt((FrameworkElement)sender);
             }
         }
 
-        private void curLineResultTextBlock_GotFocus(object sender, RoutedEventArgs e)
-        {
+        //private void curLineResultTextBlock_GotFocus(object sender, RoutedEventArgs e)
+        //{
 
-        }
+        //}
 
-        private void curLineResultTextBlock_KeyDown(object sender, KeyRoutedEventArgs e)
-        {
+        //private void curLineResultTextBlock_KeyDown(object sender, KeyRoutedEventArgs e)
+        //{
 
-        }
+        //}
 
 
         #region Note Page Switching
@@ -2046,5 +2051,293 @@ namespace PhenoPad.CustomControl
 
     }
 
+    public class NoopConverter : IValueConverter
+    {
+        public object Convert(object value, Type targetType, object parameter, string language)
+        {
+            return value;
+        }
+
+        public object ConvertBack(object value, Type targetType, object parameter, string language)
+        {
+            return value;
+        }
+    }
+
+    //public class NoteWord
+    //{
+    //    public uint id;
+    //    public List<uint> strokeIds;
+    //    public string text;
+    //    public List<string> alternatives;
+    //    public NoteWord(InkAnalysisInkWord word)
+    //    {
+    //        this.id = word.Id;
+    //        this.strokeIds = new List<uint>(word.GetStrokeIds());
+    //        this.text = word.RecognizedText;
+    //        this.alternatives = new List<string>(word.TextAlternates);
+    //    }
+    //}
+
+    //public class NoteLine
+    //{
+    //    public uint id;
+    //    public List<uint> strokeIds;
+    //    public List<Phenotype> annotatedPhenotypes;
+    //    private string _text;
+    //    public string Text
+    //    {
+    //        get
+    //        {
+    //            return _text;
+    //        }
+    //        private set
+    //        {
+    //            _text = value;
+    //        }
+    //    }
+    //    private List<List<string>> _alternatives;
+    //    public List<List<string>> Alternatives
+    //    {
+    //        get
+    //        {
+    //            return _alternatives;
+    //        }
+    //    }
+    //    // public List<NoteWord> words;
+    //    private List<string> _wordStrings;
+    //    public List<String> WordStrings
+    //    {
+    //        get
+    //        {
+    //            return _wordStrings;
+    //        }
+
+    //    }
+    //    public List<NCRPhenotype> annotations;
+    //    public List<Phenotype> phenotypes;
+
+    //    private List<HWRRecognizedText> _hwrResult;
+
+    //    public List<HWRRecognizedText> HwrResult
+    //    {
+    //        get
+    //        {
+    //            return _hwrResult;
+    //        }
+    //        set
+    //        {
+    //            if (value == null)
+    //                return;
+    //            int i = 0;
+    //            for (; i < value.Count() && i < _hwrResult.Count(); ++i)
+    //            {
+    //                // if hwr results of a word not change, restore the candidate selection info
+    //                if (_hwrResult[i].candidateList.Count() == value[i].candidateList.Count()
+    //                    && _hwrResult[i].candidateList.All(value[i].candidateList.Contains))
+    //                {
+    //                    //if the selected candidate has changed, update result
+    //                    if (_hwrResult[i].selectedCandidate != value[i].selectedCandidate)
+    //                    {
+    //                        _hwrResult[i] = value[i];
+    //                    }
+    //                    // do nothing
+    //                }
+    //                else
+    //                {
+    //                    // update result
+    //                    _hwrResult[i] = value[i];
+    //                }
+    //            }
+    //            // we still have some result to add
+    //            while (i < value.Count())
+    //            {
+    //                _hwrResult.Add(value[i]);
+    //                i++;
+    //            }
+    //            // the new result is shorter, delete extral stored results
+    //            if (i < _hwrResult.Count())
+    //            {
+    //                _hwrResult.RemoveRange(i, _hwrResult.Count() - i);
+    //            }
+
+
+    //            // update 
+    //            _wordStrings = new List<string>();
+    //            _alternatives = new List<List<string>>();
+    //            _text = "";
+    //            foreach (var res in _hwrResult)
+    //            {
+    //                _wordStrings.Add(res.selectedCandidate);
+    //                _alternatives.Add(res.candidateList);
+    //            }
+    //            _text = String.Join(" ", _wordStrings);
+    //        }
+    //    }
+
+    //    public NoteLine(InkAnalysisLine line)
+    //    {
+    //        this.id = line.Id;
+    //        this.strokeIds = new List<uint>(line.GetStrokeIds());
+    //        this._text = "";
+    //        this._hwrResult = new List<HWRRecognizedText>();
+    //        annotatedPhenotypes = new List<Phenotype>();
+    //        // words = new List<NoteWord>();
+    //        _wordStrings = new List<string>();
+    //        _alternatives = new List<List<string>>();
+    //        annotations = new List<NCRPhenotype>();
+    //        phenotypes = new List<Phenotype>();
+    //    }
+
+    //    public void addAnnotations(List<NCRPhenotype> result)
+    //    {
+    //        bool updated = false;
+    //        int i = 0;
+
+    //        if (annotations.Count() <= result.Count())
+    //        {
+    //            for (; i < annotations.Count(); ++i)
+    //            {
+    //                if (annotations[i] != result[i])
+    //                {
+    //                    updated = true;
+    //                    break;
+    //                }
+    //            }
+    //        }
+
+    //        if (updated)
+    //        {
+    //            reSetAnnotations(result);
+    //        }
+    //        else
+    //        {
+    //            // append extral result
+    //            while (i < result.Count)
+    //            {
+    //                addOneAnnotation(result[i]);
+    //                ++i;
+    //            }
+    //        }
+    //    }
+
+    //    private void reSetAnnotations(List<NCRPhenotype> result)
+    //    {
+    //        annotations = result;
+    //        // update phenotypes 
+    //        phenotypes = new List<Phenotype>();
+    //        foreach (var ann in annotations)
+    //        {
+    //            Phenotype p = new Phenotype(ann);
+    //            p.sourceType = SourceType.Notes;
+    //            p.pageSource = MainPage.Current.curPageIndex;
+    //            p.state = PhenotypeManager.getSharedPhenotypeManager().getStateByHpid(p.hpId);
+    //            phenotypes.Add(p);
+    //            //var windex = convertStringIndexToWordIndex(ann.start, ann.end);
+    //        }
+
+
+    //    }
+
+    //    public void refreshWordList() {
+    //        _wordStrings.Clear();
+    //        foreach (HWRRecognizedText rt in _hwrResult) {
+    //            _wordStrings.Add(rt.selectedCandidate);
+    //            Debug.WriteLine($"refreshing,new word={rt.selectedCandidate}");
+    //        }
+    //        _text = String.Join(" ", _wordStrings);
+    //    }
+
+    //    private void addOneAnnotation(NCRPhenotype ncr)
+    //    {
+    //        annotations.Add(ncr);
+    //        // update annotations by word
+    //        Phenotype p = new Phenotype(ncr);
+    //        p.sourceType = SourceType.Notes;
+    //        p.pageSource = MainPage.Current.curPageIndex;
+    //        // update saved phenotypes
+    //        phenotypes.Add(p);
+    //        p.state = PhenotypeManager.getSharedPhenotypeManager().getStateByHpid(p.hpId);
+    //        // var windex = convertStringIndexToWordIndex(ncr.start, ncr.end);
+    //        // annotationByWord.Add(Tuple.Create(p, windex.Item1, windex.Item2));
+    //    }
+
+    //    public void updateHwrResult(int wordind, int selectind, string previous = "")
+    //    {
+    //        Dictionary<string, List<string>> dict = HWRManager.getSharedHWRManager().getDictionary();
+    //        _hwrResult[wordind].selectedIndex = selectind;
+    //        //Updating an alternative of an abbreviation
+    //        if (previous != "")
+    //        {
+    //            //string previous = this.HwrResult[wordind].candidateList[previousInd];//previously selected alternative
+    //            //Debug.WriteLine($"previous key: {(HwrResult[wordind - 1].selectedCandidate).ToLower()}");
+    //            int index = dict[_hwrResult[wordind-1].selectedCandidate.ToLower()].IndexOf(previous);
+    //            if (index != -1)
+    //            {
+    //                string selected = _hwrResult[wordind].candidateList[selectind]; //currently selected alternative
+    //                _hwrResult[wordind].selectedCandidate = selected;
+    //                //Debug.WriteLine($"\n new alter:{this.HwrResult[wordind].selectedCandidate}");
+    //                // update 
+    //                _wordStrings[wordind] = _hwrResult[wordind].selectedCandidate;
+    //                _text = String.Join(" ", _wordStrings);
+    //            }
+    //        }
+    //        //Updating a normal word or the short form of abbreviation
+    //        else {
+    //            string selected = _hwrResult[wordind].candidateList[selectind]; //currently selected alternative
+    //            //if currently selected an abbreviation short form, need to delete the previous abbreviation.
+    //            if (wordind + 1 != _hwrResult.Count && dict.ContainsKey(_hwrResult[wordind].selectedCandidate.ToLower())) {
+    //                Debug.WriteLine("will delete the nxt phrase");
+    //                _hwrResult.RemoveAt(wordind + 1);
+    //                _wordStrings.RemoveAt(wordind + 1);
+    //            }
+
+    //            _hwrResult[wordind].selectedCandidate = selected;
+    //            _wordStrings[wordind] = _hwrResult[wordind].selectedCandidate;
+    //            _text = String.Join(" ", _wordStrings);
+    //            Debug.WriteLine($"new line = {Text}");
+    //        }
+    //        return;
+    //    }
+
+    //    private (int, int) convertStringIndexToWordIndex(int start, int end)
+    //    {
+    //        int i = 0;
+    //        var result = (-1, -1);
+    //        int wordStart = 0;
+    //        foreach (var word in _wordStrings)
+    //        {
+    //            if (start >= wordStart && start < wordStart + word.Length)
+    //                result.Item1 = i;
+    //            if (end >= wordStart && end - 1 < wordStart + word.Length)
+    //            {
+    //                result.Item2 = i;
+    //                break;
+    //            }
+    //            i++;
+    //            wordStart += word.Length + 1; // blank
+    //        }
+    //        return result;
+    //    }
+
+    //    /// <summary>
+    //    /// Check whether a line has been updated
+    //    /// </summary>
+    //    /// <param name="line"></param>
+    //    /// <returns></returns>
+    //    public bool hasUpdated(InkAnalysisLine line)
+    //    {
+    //        return !line.RecognizedText.Equals(this._text);
+    //        /**
+    //        // if number of strokes inside a line has changed, this line has been updated
+    //        if(line.GetStrokeIds().Count() != this.strokeIds.Count())
+    //            return true;
+    //        // if strokes ids inside it have changed, this line has been updated
+    //        if (!this.strokeIds.All(line.GetStrokeIds().Contains))
+    //            return true;
+    //        return false;
+    //        **/
+    //    }
+    //}
 
 }
