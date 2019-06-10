@@ -602,6 +602,9 @@ namespace PhenoPad.CustomControl
             var allWords = inkAnalyzer.AnalysisRoot.FindNodes(InkAnalysisNodeKind.InkWord).ToList();
             var inLine = allLines.Where(x => x.BoundingRect.Y + (x.BoundingRect.Height / 5) >= lowerbound && x.BoundingRect.Y + (x.BoundingRect.Height / 5) <= upperbound).OrderBy(x => x.BoundingRect.X).ToList();
             var inWords = allWords.Where(x => x.BoundingRect.Y + (x.BoundingRect.Height / 5) >= lowerbound && x.BoundingRect.Y + (x.BoundingRect.Height / 5) <= upperbound).OrderBy(x => x.BoundingRect.X).ToList();
+            var allStrokes = inkCanvas.InkPresenter.StrokeContainer.GetStrokes();
+            var strokeInLine = allStrokes.Where(x => x.BoundingRect.Y + (x.BoundingRect.Height / 5) >= lowerbound && x.BoundingRect.Y + (x.BoundingRect.Height / 5) <= upperbound).OrderBy(x => x.BoundingRect.X).ToList();
+
 
             foreach (var phrase in inLine) {
                 Debug.WriteLine(phrase.Id);
@@ -611,6 +614,11 @@ namespace PhenoPad.CustomControl
                 foreach (var w in hitWords)
                     lst.Add(start);
             }
+            //handling mistakes and manually add first stroke bound
+            if (lst.Count == 0 && strokeInLine.Count > 0) {
+                lst.Add(strokeInLine.FirstOrDefault().BoundingRect.X);
+            }
+
             return lst;
         }
 
@@ -650,16 +658,7 @@ namespace PhenoPad.CustomControl
                 if (dict.Count != HWRresult.Count && dict.Count != 0)
                 {
                     Debug.WriteLine($"dict count = {dict.Count}, HWRresult count = {HWRresult.Count}");
-                    result = new List<WordBlockControl>();
-
-                    if (dict.Count == 0 && HWRresult.Count == 1) {
-
-                        WordBlockControl wb = new WordBlockControl(lineid, lastStrokeBound.X, 0, HWRresult[0].selectedCandidate, HWRresult[0].candidateList);
-                        result.Add(wb);
-                        return result;
-
-                    }
-                    return result;
+                    //return new List<WordBlockControl>();
                 }
 
                 for (int i = 0; i < HWRresult.Count; i++)
@@ -975,18 +974,20 @@ namespace PhenoPad.CustomControl
                 }
 
                 await inkAnalyzer.AnalyzeAsync();
-                var allLines = inkAnalyzer.AnalysisRoot.FindNodes(InkAnalysisNodeKind.Line).ToList();
-                foreach (InkAnalysisLine line in allLines)
-                {
+
+                for (int i = 1; i < PAGE_HEIGHT / LINE_HEIGHT; i++) {
                     await Dispatcher.RunAsync(CoreDispatcherPriority.High, async () =>
                     {
-                        int lineNum = getLineNumByRect(line.BoundingRect);
+                        int lineNum = i;
                         List<WordBlockControl> result = await RecognizeLineWBC(lineNum);
-                        NotePhraseControl npc = new NotePhraseControl(lineNum, result);
-                        Canvas.SetLeft(npc, 0);
-                        Canvas.SetTop(npc, lineNum * LINE_HEIGHT);
-                        phrases[lineNum] = npc;
-                        recognizedCanvas.Children.Add(npc);                   
+                        if (result.Count > 0)
+                        {
+                            NotePhraseControl npc = new NotePhraseControl(lineNum, result);
+                            Canvas.SetLeft(npc, 0);
+                            Canvas.SetTop(npc, lineNum * LINE_HEIGHT);
+                            phrases[lineNum] = npc;
+                            recognizedCanvas.Children.Add(npc);
+                        }
                     });
                 }
                 MainPage.Current.NotifyUser("Page cleared and re-recognized", NotifyType.StatusMessage, 1);
@@ -1122,6 +1123,18 @@ namespace PhenoPad.CustomControl
         //        deleteSemaphoreSlim.Release();
         //    }
         //}
+
+        public double GetLeftOfLine(int lineid) {
+            var allStrokes = inkCanvas.InkPresenter.StrokeContainer.GetStrokes();
+            foreach (var stroke in allStrokes)
+                stroke.Selected = false;
+
+            double lowerbound = lineid * LINE_HEIGHT;
+            double upperbound = (lineid + 1) * LINE_HEIGHT;
+            var strokeInLine = allStrokes.Where(x => x.BoundingRect.Y + (x.BoundingRect.Height / 5) >= lowerbound && x.BoundingRect.Y + (x.BoundingRect.Height / 5) <= upperbound).OrderBy(x => x.BoundingRect.X).ToList();
+            return strokeInLine.FirstOrDefault().BoundingRect.X;
+
+        }
 
         private int getLineNumOfLine(IInkAnalysisNode node)
         {
