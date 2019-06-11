@@ -917,8 +917,8 @@ namespace PhenoPad.SpeechService
                     DisplayTime = DateTime.Now,
                     IsFinal = false,
                     Speaker = speaker,
-                    Interval = new TimeInterval(start, start + duration)
-
+                    Interval = new TimeInterval(start, start + duration),
+                    AudioFile = currentAudioName
                 });
             }
         }

@@ -101,6 +101,7 @@ namespace PhenoPad
         }
         public int ConversationIndex { get; set; }
         public DateTime DisplayTime;
+        public string AudioFile;
 
         //public string DisplayTime { get; set; }
 
@@ -279,6 +280,7 @@ namespace PhenoPad
                 {
                     Body = $"{messageCount}: {CreateRandomMessage()}",
                     Speaker = (messageCount++) % 2,
+                    AudioFile = SpeechManager.getSharedSpeechManager().GetAudioName(),
                     //DisplayTime = DateTime.Now.ToString(),
                     IsFinal = true
                 });
@@ -691,28 +693,28 @@ namespace PhenoPad
                 int start_mili = (int)(100 * (actual_start - 60 * start_minute - start_second));
 
                 // check for current source
-                var savedFile = await FileManager.getSharedFileManager().GetNoteFile(MainPage.Current.notebookId,"",NoteFileType.Audio,"audio_" + m.ConversationIndex);
+                //var savedFile = await FileManager.getSharedFileManager().GetNoteFile(MainPage.Current.notebookId,"",NoteFileType.Audio,"audio_" + m.ConversationIndex);
+                var savedFile = await FileManager.getSharedFileManager().GetNoteFile(MainPage.Current.notebookId, "", NoteFileType.Audio, m.AudioFile);
 
+
+                //gets the local audio file and plays based on saved interval
                 if (savedFile != null && savedFile.Name != this.loadedMedia)
                 {
                     this._mediaPlayerElement.Source = MediaSource.CreateFromStorageFile(savedFile);
                     this.loadedMedia = savedFile.Name;
                     this.mediaText.Text = savedFile.Name;
+                    TimeSpan ts = new TimeSpan(0, 0, start_minute, start_second, start_mili);
+                    Debug.WriteLine(ts);
+                    this._mediaPlayerElement.MediaPlayer.Position = ts;
+                    this._mediaPlayerElement.MediaPlayer.Play();
                 }
-                else if (savedFile == null) {
+                //tries to get file from server and plays
+                else{
+                    Debug.WriteLine("requesting from server");
                     int ind = m.ConversationIndex;
-                    int start = (int)(actual_start);
-                    int end = (int)(actual_end);
-                    string name = MainPage.Current.SavedAudios[ind];
-                    string request = $"{name} {start} {end}";
-                    await BluetoothService.BluetoothService.getBluetoothService().sendBluetoothMessage(request);
+                    MainPage.Current.PlayMedia(m.AudioFile, actual_start, actual_end);
                 }
 
-
-                TimeSpan ts = new TimeSpan(0, 0, start_minute, start_second, start_mili);
-                Debug.WriteLine(ts);
-                this._mediaPlayerElement.MediaPlayer.Position = ts;
-                this._mediaPlayerElement.MediaPlayer.Play();
             }
         }
 

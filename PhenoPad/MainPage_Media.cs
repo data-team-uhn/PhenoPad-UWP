@@ -683,24 +683,26 @@ namespace PhenoPad
             speechManager.ClearCurAudioName();
         }
 
-        public async void PlayMedia(int index,double start, double end)
+        public async void PlayMedia(string audioFileName,double start, double end)
         {
             StreamWebSocket streamSocket = new StreamWebSocket();
             try
             {
-                string audioName = $"666_{notebookId}_{SavedAudios[index]} {start} {end}";
-                Uri serverUri = new Uri("ws://" + SERVER_ADDR + ":" + SERVER_PORT + "/client/ws/file_request" +
-                                           "?content-type=audio%2Fx-raw%2C+layout%3D%28string%29interleaved%2C+rate%3D%28int%2916000%2C+format%3D%28string%29S16LE%2C+channels%3D%28int%291&manager_id=666");
+                string audioName = $"666_{notebookId}_{audioFileName} {start} {end}";
+                Debug.WriteLine(audioName + " &&&");
+                //Uri serverUri = new Uri("ws://" + SERVER_ADDR + ":" + SERVER_PORT + "/client/ws/file_request" +
+                //                           "?content-type=audio%2Fx-raw%2C+layout%3D%28string%29interleaved%2C+rate%3D%28int%2916000%2C+format%3D%28string%29S16LE%2C+channels%3D%28int%291&manager_id=666");
 
+                Uri serverUri = new Uri("ws://" + SERVER_ADDR + ":" + SERVER_PORT + "/client/ws/file_request");
                 Task connectTask = streamSocket.ConnectAsync(serverUri).AsTask();
                 await connectTask;
                 if (connectTask.Exception != null)
                     MetroLogger.getSharedLogger().Error("connectTask.Exception:" + connectTask.Exception.Message);
-                Debug.WriteLine("connected, will begin receiving data");
-                //StorageFolder storageFolder = ApplicationData.Current.LocalFolder;
-                //StorageFile storageFile = await storageFolder.CreateFileAsync(
-                //  "audio.wav", CreationCollisionOption.GenerateUniqueName);
-                //=============================
+
+                //sends the requested audio name to server through buffer
+                var bytes = Encoding.UTF8.GetBytes(audioName);
+                await streamSocket.OutputStream.WriteAsync(bytes.AsBuffer());
+
                 uint length = 1000000;     // Leave a large buffer
                 audioBuffer = new List<Byte>();
                 isReading = true;
@@ -708,18 +710,18 @@ namespace PhenoPad
                 token = cancelSource.Token;
                 while (isReading)
                 {
-                    //readTimer.Start();
+                    readTimer.Start();
                     IBuffer op = await streamSocket.InputStream.ReadAsync(new Windows.Storage.Streams.Buffer(length), length, InputStreamOptions.Partial).AsTask(token);
                     if (op.Length > 0)
                         audioBuffer.AddRange(op.ToArray());
                     Debug.WriteLine("------------------" + audioBuffer.Count + "----------------");
-                    //readTimer.Stop();
+                    readTimer.Stop();
                 }
             }
             catch (TaskCanceledException)
             {
                 //Plays the audio received from server
-                //readTimer.Stop();
+                readTimer.Stop();
                 Debug.WriteLine("done receiving +++++++++++++++++++++++++");
                 MemoryStream mem = new MemoryStream(audioBuffer.ToArray());
                 MediaPlayer player = new MediaPlayer();

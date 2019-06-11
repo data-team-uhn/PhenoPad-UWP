@@ -554,7 +554,9 @@ namespace PhenoPad.SpeechService
                         DisplayTime = DateTime.Now,
                         Interval = new TimeInterval(prevStart, words[wordIndex - 1].interval.end),
                         IsFinal = true,
-                        ConversationIndex = this.conversationIndex
+                        ConversationIndex = this.conversationIndex,
+                        AudioFile = SpeechManager.getSharedSpeechManager().GetAudioName()
+                        
                     };
                     messages.Add(message);
                     prevSpeaker = wordProposedSpeaker;
@@ -579,7 +581,9 @@ namespace PhenoPad.SpeechService
                     Interval = new TimeInterval(prevStart, speechEnd),
                     IsFinal = true,
                     DisplayTime = DateTime.Now,
-                    ConversationIndex = this.conversationIndex
+                    ConversationIndex = this.conversationIndex,
+                    AudioFile = SpeechManager.getSharedSpeechManager().GetAudioName()
+
                 };
                 messages.Add(m);
             }
@@ -623,8 +627,6 @@ namespace PhenoPad.SpeechService
                     {
                         Body = sentence,
                         Speaker = (uint)99,
-                        //DisplayTime = DateTime.Now,
-                        
                         IsFinal = false,
                         ConversationIndex = this.conversationIndex
                     };
