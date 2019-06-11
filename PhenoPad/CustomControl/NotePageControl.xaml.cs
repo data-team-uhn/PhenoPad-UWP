@@ -792,15 +792,17 @@ namespace PhenoPad.CustomControl
 
         }
         
-        public void ClearSelectionAsync()
+        public async Task ClearSelectionAsync()
         {
-            var strokes = inkCanvas.InkPresenter.StrokeContainer.GetStrokes();
-            foreach (var stroke in strokes)
-            {
-                stroke.Selected = false;
-                SetDefaultStrokeStyle(stroke);
-            }         
-            ClearDrawnBoundingRect();
+            await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () => {
+                var strokes = inkCanvas.InkPresenter.StrokeContainer.GetStrokes();
+                foreach (var stroke in strokes)
+                {
+                    stroke.Selected = false;
+                    SetDefaultStrokeStyle(stroke);
+                }
+                ClearDrawnBoundingRect();
+            });
             UpdateLayout();
         }
 

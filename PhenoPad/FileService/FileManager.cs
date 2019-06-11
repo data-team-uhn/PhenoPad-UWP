@@ -33,6 +33,7 @@ namespace PhenoPad.FileService
         Phenotypes,
         PhenotypeCandidates,
         Audio,
+        AudioMeta,
         Transcriptions,
         Video,
         Meta,
@@ -60,6 +61,7 @@ namespace PhenoPad.FileService
         private string PHENOTYPECANDIDATE_FILE_NAME = "phenotype_candidates.txt";
         private string NOTENOOK_NAME_PREFIX = "note_";
         private string NOTE_META_FILE = "meta.xml";
+        private string AUDIO_META_FILE = "AudioMeta.xml";
         private string NOTE_TEXT_FILE = "text.txt";
         public string currentNoteboookId = "";
         //setting application data root folder as the default disk access location
@@ -258,6 +260,34 @@ namespace PhenoPad.FileService
             }
         }
 
+        public async Task<List<string>> GetSavedAudioNamesFromXML(string notebookId) {
+            try
+            {
+                // meta data
+                var file = await GetNoteFile(notebookId, "", NoteFileType.AudioMeta);
+                object obj = await LoadObjectFromSerilization(file, typeof(List<string>));
+                if (obj != null)
+                    return obj as List<string>;
+            }
+            catch (Exception e)
+            {
+                LogService.MetroLogger.getSharedLogger().Error(e.Message);          
+            }
+            return null;
+        }
+
+        public async Task<bool> SaveAudioNamesToXML(string notebookId, List<string>names) {
+            try {
+                var path = GetNoteFilePath(notebookId, "", NoteFileType.AudioMeta);
+                bool result = await SaveObjectSerilization(path, names, typeof(List<string>));
+                return result;
+            }
+            catch (Exception e) {
+                LogService.MetroLogger.getSharedLogger().Error(e.Message);
+                return false;
+            }
+        }
+
         /// <summary>
         /// Gets the operation log file under local folder, if such file does not exist, creates a new one and returns it
         /// </summary>
@@ -350,6 +380,9 @@ namespace PhenoPad.FileService
                 case NoteFileType.Meta:
                     foldername = String.Format(@"{0}\", notebookId);
                     break;
+                case NoteFileType.AudioMeta:
+                    foldername = String.Format(@"{0}\", notebookId);
+                    break;
                 case NoteFileType.ImageAnnotation:
                     foldername += @"ImagesWithAnnotations\";
                     break;
@@ -387,6 +420,9 @@ namespace PhenoPad.FileService
             {
                 case NoteFileType.Meta:
                     filename = NOTE_META_FILE;
+                    break;
+                case NoteFileType.AudioMeta:
+                    filename = AUDIO_META_FILE;
                     break;
                 case NoteFileType.ImageAnnotation:
                     filename = name + ".gif";
@@ -546,7 +582,6 @@ namespace PhenoPad.FileService
                 return new List<AudioFile>();
             }
         }
-
 
         /// <summary>
         /// Returns all NotePage objects of the given Notebook ID from root file, returns null if failed.

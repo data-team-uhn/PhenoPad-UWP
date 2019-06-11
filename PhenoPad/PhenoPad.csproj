@@ -109,6 +109,7 @@
       <DependentUpon>App.xaml</DependentUpon>
     </Compile>
     <Compile Include="AppConfigurations.cs" />
+    <Compile Include="FileService\AudioMeta.cs" />
     <Compile Include="SpeechService\AudioCapturePermissions.cs" />
     <Compile Include="BluetoothService\BluetoothService.cs" />
     <Compile Include="ConfigService\ConfigService.cs" />

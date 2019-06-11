@@ -142,11 +142,19 @@ namespace PhenoPad
             AbbreviationON_Checked(null, null);
             InitBTConnectionSemaphore = new SemaphoreSlim(1);
             InitializeBTConnection();
+            this.SavedAudios = new List<string>();
+
 
             audioTimer = new DispatcherTimer();
             //waits 3 seconds before re-enabling microphone button
             audioTimer.Interval = TimeSpan.FromSeconds(3);
             audioTimer.Tick += onAudioStarted;
+
+            isReading = false;
+            readTimer = new DispatcherTimer();
+            readTimer.Interval = TimeSpan.FromSeconds(5);
+            readTimer.Tick += EndAudioStream;
+
 
             cancelService = new CancellationTokenSource();
 

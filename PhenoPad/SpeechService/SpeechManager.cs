@@ -28,6 +28,7 @@ using Windows.UI.Popups;
 using Windows.Storage.Streams;
 using PhenoPad.LogService;
 using PhenoPad.BluetoothService;
+using System.Xml.Serialization;
 //using Newtonsoft.Json.Linq;   // Seems like we only need JSON parsing
 
 namespace PhenoPad.SpeechService
@@ -53,6 +54,8 @@ namespace PhenoPad.SpeechService
         public static string RESTART_AUIDO_SERVER = "TIMEOUTEXIT";
         public static bool NEED_RESTART_AUDIO = false;
         public static SpeechManager sharedSpeechManager;
+        private static string currentAudioName;
+
         
         public Conversation conversation = new Conversation();
         public Conversation realtimeConversation = new Conversation();
@@ -135,11 +138,19 @@ namespace PhenoPad.SpeechService
         {
             return this.speechInterpreter.conversationIndex;
         }
+        public string GetAudioName()
+        {
+            return currentAudioName;
+        }
+        public void ClearCurAudioName() {
+            currentAudioName = "";
+        }
         public void cleanUp()
         {
             this.conversation.Clear();
             this.realtimeConversation.Clear();
             this.speechInterpreter = new SpeechEngineInterpreter(this.conversation, this.realtimeConversation);
+            currentAudioName = "";
         }
 
 
@@ -193,6 +204,7 @@ namespace PhenoPad.SpeechService
             MainPage.Current.onAudioStarted(null, null);
             SpeechPage.Current.setSpeakerButtonEnabled(true);
             SpeechPage.Current.adjustSpeakerCount(2);
+
             cancellationSource = new CancellationTokenSource();
             // need this to actually cancel reading from websocketS
 
@@ -324,12 +336,14 @@ namespace PhenoPad.SpeechService
             {
                 cancellationSource.Cancel();
                 await SaveTranscriptions(reload);
+                MainPage.Current.SaveNewAudioName(currentAudioName);
 
                 await BluetoothService.BluetoothService.getBluetoothService().sendBluetoothMessage("audio stop");
                 await speechResultsSocket.CloseConnnction();
                 SpeechPage.Current.setSpeakerButtonEnabled(false);
                 OperationLogger.getOpLogger().Log(OperationType.ASR, "Ended");
                 speechInterpreter = new SpeechEngineInterpreter(this.conversation, this.realtimeConversation);
+                
                 MainPage.Current.onAudioEnded();
 
                 return true;
@@ -408,7 +422,7 @@ namespace PhenoPad.SpeechService
             //Triggers audio started event handler in Mainpage to switch necessary interface layout
             MainPage.Current.onAudioStarted(null, null);
             OperationLogger.getOpLogger().Log(OperationType.ASR, "Started");
-
+            CreateNewAudioName();
             startGraph();
             if (useFile)
             {
@@ -724,7 +738,7 @@ namespace PhenoPad.SpeechService
             MainPage.Current.NotifyUser("Saving conversation audio", NotifyType.StatusMessage, 2);
 
             //string datestring = System.DateTime.Now.ToString("dd-MM-yyyy-HH-mm-ss");
-            savedFile = await FileService.FileManager.getSharedFileManager().GetNoteFile(notebookid, "", FileService.NoteFileType.Audio, "audio_" + this.speechInterpreter.conversationIndex);
+            savedFile = await FileService.FileManager.getSharedFileManager().GetNoteFile(notebookid, "", FileService.NoteFileType.Audio, currentAudioName);
             // await storageFolder.CreateFileAsync("sample_" + this.speechInterpreter.conversationIndex + ".wav", Windows.Storage.CreationCollisionOption.ReplaceExisting);
 
             Debug.WriteLine("Output file to " + savedFile.Path.ToString());
@@ -789,7 +803,8 @@ namespace PhenoPad.SpeechService
                 await outputStream.FlushAsync();
                 RecordingCreated.Invoke(this, savedFile);
             }
-
+            MainPage.Current.SaveNewAudioName(currentAudioName);
+            
         }
 
         private async Task CreateAudioGraph()
@@ -1121,6 +1136,19 @@ namespace PhenoPad.SpeechService
 
             });
         }
+
+        public void CreateNewAudioName() {
+            var time = DateTime.Now;
+            currentAudioName = $"{time.Year}_{time.Month}_{time.Day}_{time.Hour}_{time.Minute}";
+        }
+
+        public string GetAudioNameForServer() {
+            string noteName = MainPage.Current.notebookId;
+            int workerID = 666;
+
+            return $"{workerID}_{noteName}_{currentAudioName}";
+        }
+
 
     }
     

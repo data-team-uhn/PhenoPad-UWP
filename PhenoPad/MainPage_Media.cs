@@ -1,18 +1,27 @@
-﻿using PhenoPad.PhenotypeService;
+﻿using PhenoPad.LogService;
+using PhenoPad.PhenotypeService;
 using PhenoPad.SpeechService;
 using PhenoPad.WebSocketService;
 using System;
+using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
+using System.IO;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Xml.Serialization;
 using Windows.ApplicationModel.Core;
 using Windows.Globalization;
+using Windows.Media.Playback;
 using Windows.Media.SpeechRecognition;
+using Windows.Networking.Sockets;
 using Windows.UI.Core;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
+using Windows.Storage;
+using Windows.Storage.Streams;
+using System.Runtime.InteropServices.WindowsRuntime;
 
 namespace PhenoPad
 {
@@ -58,7 +67,13 @@ namespace PhenoPad
         } //automation properties
         public bool bluetoonOn;
 
+        [XmlArray("Audios")]
+        [XmlArrayItem("name")]
+        public List<string> SavedAudios;
+
+
         public string RPI_ADDRESS = "http://192.168.137.32:8000";
+
         public BluetoothService.BluetoothService bluetoothService = null;
         public UIWebSocketClient uiClinet = null;
         private int doctor = 0;
@@ -78,6 +93,17 @@ namespace PhenoPad
         private static uint HResultPrivacyStatementDeclined = 0x80045509;
         /// Keep track of whether the continuous recognizer is currently running, so it can be cleaned up appropriately.
         private bool isListening;
+
+        private bool isReading; //flag for reading audio stream
+        private DispatcherTimer readTimer;
+        private StreamWebSocket streamSocket;
+        private CancellationTokenSource cancelSource;
+        private CancellationToken token;
+        private List<byte> audioBuffer;
+        public static string SERVER_ADDR = "137.135.117.253";
+        public static string SERVER_PORT = "8080";
+
+
 
         #endregion
         //======================================== START OF METHODS =======================================/
@@ -296,7 +322,8 @@ namespace PhenoPad
             if (speechEngineRunning == false)
             {
                 string uri = ASRAddrInput.Text.Trim();
-                string audioName = "placeholder";
+                speechManager.CreateNewAudioName();
+                string audioName = speechManager.GetAudioNameForServer();
                 Debug.WriteLine($"start BT Audio, addr = {uri}");
                 success = await bluetoothService.sendBluetoothMessage($"audio start manager_id=666 server_uri={uri} audiofile_name={audioName}");
                 if (!success)
@@ -649,6 +676,74 @@ namespace PhenoPad
             });
             return;
         }
+
+        public async void SaveNewAudioName(string name) {
+            this.SavedAudios.Add(name);
+            await FileService.FileManager.getSharedFileManager().SaveAudioNamesToXML(notebookId, SavedAudios);
+            speechManager.ClearCurAudioName();
+        }
+
+        public async void PlayMedia(int index,double start, double end)
+        {
+            StreamWebSocket streamSocket = new StreamWebSocket();
+            try
+            {
+                string audioName = $"666_{notebookId}_{SavedAudios[index]} {start} {end}";
+                Uri serverUri = new Uri("ws://" + SERVER_ADDR + ":" + SERVER_PORT + "/client/ws/file_request" +
+                                           "?content-type=audio%2Fx-raw%2C+layout%3D%28string%29interleaved%2C+rate%3D%28int%2916000%2C+format%3D%28string%29S16LE%2C+channels%3D%28int%291&manager_id=666");
+
+                Task connectTask = streamSocket.ConnectAsync(serverUri).AsTask();
+                await connectTask;
+                if (connectTask.Exception != null)
+                    MetroLogger.getSharedLogger().Error("connectTask.Exception:" + connectTask.Exception.Message);
+                Debug.WriteLine("connected, will begin receiving data");
+                //StorageFolder storageFolder = ApplicationData.Current.LocalFolder;
+                //StorageFile storageFile = await storageFolder.CreateFileAsync(
+                //  "audio.wav", CreationCollisionOption.GenerateUniqueName);
+                //=============================
+                uint length = 1000000;     // Leave a large buffer
+                audioBuffer = new List<Byte>();
+                isReading = true;
+                cancelSource = new CancellationTokenSource();
+                token = cancelSource.Token;
+                while (isReading)
+                {
+                    //readTimer.Start();
+                    IBuffer op = await streamSocket.InputStream.ReadAsync(new Windows.Storage.Streams.Buffer(length), length, InputStreamOptions.Partial).AsTask(token);
+                    if (op.Length > 0)
+                        audioBuffer.AddRange(op.ToArray());
+                    Debug.WriteLine("------------------" + audioBuffer.Count + "----------------");
+                    //readTimer.Stop();
+                }
+            }
+            catch (TaskCanceledException)
+            {
+                //Plays the audio received from server
+                //readTimer.Stop();
+                Debug.WriteLine("done receiving +++++++++++++++++++++++++");
+                MemoryStream mem = new MemoryStream(audioBuffer.ToArray());
+                MediaPlayer player = new MediaPlayer();
+                player.SetStreamSource(mem.AsRandomAccessStream());
+                player.Play();
+                Debug.WriteLine("done");
+            }
+            catch (Exception ex)
+            {
+                LogService.MetroLogger.getSharedLogger().Error("file result:" + ex + ex.Message);
+                streamSocket.Dispose();
+                streamSocket = null;
+            }
+
+
+        }
+        private void EndAudioStream(object sender, object e)
+        {
+            isReading = false;
+            cancelSource.Cancel();
+            Debug.WriteLine("Timer tick, will stop reading");
+        }
+
+
 
     }
 }

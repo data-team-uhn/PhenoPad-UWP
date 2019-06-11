@@ -676,12 +676,22 @@ namespace PhenoPad
                 var m = (TextMessage)srcButton.DataContext;
                 Debug.WriteLine(m.Body);
 
+                // Overloaded constructor takes the arguments days, hours, minutes, seconds, miniseconds.
+                // Create a TimeSpan with miliseconds equal to the slider value.
+
+                double actual_start = Math.Max(0, m.start);
+                //by default set playback length to 1 second
+                double actual_end = Math.Max(m.start + 1, m.end);
+
+                int start_second = (int)(actual_start);
+                int end_second = (int)(actual_end);
+
+                int start_minute = start_second / 60;
+                start_second = start_second - 60 * start_minute;
+                int start_mili = (int)(100 * (actual_start - 60 * start_minute - start_second));
+
                 // check for current source
-                var savedFile = await FileService.FileManager.getSharedFileManager().GetNoteFile(
-                        FileService.FileManager.getSharedFileManager().currentNoteboookId,
-                        "", 
-                        FileService.NoteFileType.Audio, 
-                        "audio_" + m.ConversationIndex);
+                var savedFile = await FileManager.getSharedFileManager().GetNoteFile(MainPage.Current.notebookId,"",NoteFileType.Audio,"audio_" + m.ConversationIndex);
 
                 if (savedFile != null && savedFile.Name != this.loadedMedia)
                 {
@@ -689,15 +699,15 @@ namespace PhenoPad
                     this.loadedMedia = savedFile.Name;
                     this.mediaText.Text = savedFile.Name;
                 }
+                else if (savedFile == null) {
+                    int ind = m.ConversationIndex;
+                    int start = (int)(actual_start);
+                    int end = (int)(actual_end);
+                    string name = MainPage.Current.SavedAudios[ind];
+                    string request = $"{name} {start} {end}";
+                    await BluetoothService.BluetoothService.getBluetoothService().sendBluetoothMessage(request);
+                }
 
-                // Overloaded constructor takes the arguments days, hours, minutes, seconds, miniseconds.
-                // Create a TimeSpan with miliseconds equal to the slider value.
-
-                double actual_start = Math.Max(0, m.start);
-                int start_second = (int)(actual_start);
-                int start_minute = start_second / 60;
-                start_second = start_second - 60 * start_minute;
-                int start_mili = (int)(100 * (actual_start - 60 * start_minute - start_second));
 
                 TimeSpan ts = new TimeSpan(0, 0, start_minute, start_second, start_mili);
                 Debug.WriteLine(ts);

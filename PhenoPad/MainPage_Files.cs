@@ -144,14 +144,17 @@ namespace PhenoPad
                 else
                     ExterMicRadioButton_Checked();
 
-
                 //if (notebookObject != null)
                 noteNameTextBox.Text = notebookObject.name;
 
-                //Gets the possible stored conversation transcripts from XML meta
+                //Gets the possible stored conversation transcripts and audio names from XML meta
                 conversations =  await FileManager.getSharedFileManager().GetSavedTranscriptsFromXML(notebookId);
                 pastchatView.ItemsSource = conversations;
                 SpeechPage.Current.updateChat();
+                List<string> audioNames = await FileManager.getSharedFileManager().GetSavedAudioNamesFromXML(notebookId);
+                if (audioNames != null)
+                    this.SavedAudios = audioNames;
+
 
                 //Gets all saved phenotypes from XML meta
                 List<Phenotype> phenos = await FileManager.getSharedFileManager().GetSavedPhenotypeObjectsFromXML(notebookId);
@@ -356,12 +359,10 @@ namespace PhenoPad
                 }
                 // collected phenotypes
                 result2 = await FileManager.getSharedFileManager().saveCollectedPhenotypesToFile(notebookId);
-                if (!result2)
-                    MetroLogger.getSharedLogger().Error($"Failed to save collected phenotypes");
+                result2 &= await FileManager.getSharedFileManager().SaveAudioNamesToXML(notebookId, SavedAudios);
 
                 if (! (pgResult && result2))
                     MetroLogger.getSharedLogger().Info($"Some parts of notebook {notebookId} failed to save.");
-
             }
             catch (NullReferenceException)
             {

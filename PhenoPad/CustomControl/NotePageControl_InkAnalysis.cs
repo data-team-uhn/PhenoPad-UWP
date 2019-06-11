@@ -21,6 +21,11 @@ using Windows.System;
 
 namespace PhenoPad.CustomControl
 {
+    public enum NodeType{
+        InkWord,
+        InkLine,
+        Both
+    }
     public sealed partial class NotePageControl : UserControl
     {
         public DispatcherTimer RawStrokeTimer;
@@ -596,15 +601,9 @@ namespace PhenoPad.CustomControl
 
             List<double> lst = new List<double>();
 
-            double lowerbound = lineid * LINE_HEIGHT;
-            double upperbound = (lineid + 1) * LINE_HEIGHT;
-            var allLines = inkAnalyzer.AnalysisRoot.FindNodes(InkAnalysisNodeKind.Line).ToList();
-            var allWords = inkAnalyzer.AnalysisRoot.FindNodes(InkAnalysisNodeKind.InkWord).ToList();
-            var inLine = allLines.Where(x => x.BoundingRect.Y + (x.BoundingRect.Height / 5) >= lowerbound && x.BoundingRect.Y + (x.BoundingRect.Height / 5) <= upperbound).OrderBy(x => x.BoundingRect.X).ToList();
-            var inWords = allWords.Where(x => x.BoundingRect.Y + (x.BoundingRect.Height / 5) >= lowerbound && x.BoundingRect.Y + (x.BoundingRect.Height / 5) <= upperbound).OrderBy(x => x.BoundingRect.X).ToList();
-            var allStrokes = inkCanvas.InkPresenter.StrokeContainer.GetStrokes();
-            var strokeInLine = allStrokes.Where(x => x.BoundingRect.Y + (x.BoundingRect.Height / 5) >= lowerbound && x.BoundingRect.Y + (x.BoundingRect.Height / 5) <= upperbound).OrderBy(x => x.BoundingRect.X).ToList();
-
+            var inLine = FindInkNodeInLine(lineid, NodeType.InkLine);
+            var inWords = FindInkNodeInLine(lineid, NodeType.InkWord);
+            var strokeInLine = FindAllStrokesInLine(lineid);
 
             foreach (var phrase in inLine) {
                 Debug.WriteLine(phrase.Id);
@@ -629,29 +628,17 @@ namespace PhenoPad.CustomControl
             List<WordBlockControl> result = new List<WordBlockControl>();
             try
             {
-                // clear selection
-                var allStrokes = inkCanvas.InkPresenter.StrokeContainer.GetStrokes();
-                foreach (var stroke in allStrokes)
-                    stroke.Selected = false;
 
-                double lowerbound = lineid * LINE_HEIGHT;
-                double upperbound = (lineid + 1) * LINE_HEIGHT;
-                var strokeInLine = allStrokes.Where(x => x.BoundingRect.Y + (x.BoundingRect.Height / 5) >= lowerbound && x.BoundingRect.Y + (x.BoundingRect.Height / 5) <= upperbound).OrderBy(x => x.BoundingRect.X).ToList();
-
-                var dict = GetPhrasesOnLine(lineid);
-
+                var strokeInLine = FindAllStrokesInLine(lineid);
                 if (strokeInLine.Count == 0)
-                {
-                    Debug.WriteLine($"line {lineid} has no strokes");
                     return new List<WordBlockControl>();
-                }
 
                 lastStrokeBound = strokeInLine.FirstOrDefault().BoundingRect;
-
+                await ClearSelectionAsync();
                 foreach (var s in strokeInLine)
-                {
                     s.Selected = true;
-                }
+                var dict = GetPhrasesOnLine(lineid);
+
                 //recognize selected line phrase and parse each word as a WordBlockControl
                 var HWRresult = await HWRManager.getSharedHWRManager().OnRecognizeAsync(inkCanvas.InkPresenter.StrokeContainer, InkRecognitionTarget.Selected, lineid);
 
@@ -1473,6 +1460,8 @@ namespace PhenoPad.CustomControl
             }
             return String.Join("\n", lines);
         }
+
+        #region SEARCH FOR HIT STROKES/INKNODES
         private InkAnalysisLine FindHitLine(Point pt)
         {
             // Find line by hitting position
@@ -1530,6 +1519,32 @@ namespace PhenoPad.CustomControl
             }
             return null;
         }
+        private List<InkStroke> FindAllStrokesInLine(int lineNum) {
+
+            double lowerbound = lineNum * LINE_HEIGHT;
+            double upperbound = (lineNum + 1) * LINE_HEIGHT;
+            var allStrokes = inkCan.InkPresenter.StrokeContainer.GetStrokes();
+            var strokeInLine = allStrokes.Where(x => x.BoundingRect.Y + (x.BoundingRect.Height / 5) >= lowerbound && x.BoundingRect.Y + (x.BoundingRect.Height / 5) <= upperbound).OrderBy(x => x.BoundingRect.X).ToList();
+            return strokeInLine;
+        }
+        private List<IInkAnalysisNode> FindInkNodeInLine(int lineNum,NodeType type) {
+
+            double lowerbound = lineNum * LINE_HEIGHT;
+            double upperbound = (lineNum + 1) * LINE_HEIGHT;
+            List<IInkAnalysisNode> all = null;
+            if (type == NodeType.InkWord)
+                all = inkAnalyzer.AnalysisRoot.FindNodes(InkAnalysisNodeKind.InkWord).ToList();
+            else if (type == NodeType.InkLine)
+                all = inkAnalyzer.AnalysisRoot.FindNodes(InkAnalysisNodeKind.Line).ToList();
+            else if (type == NodeType.Both) {
+                all = inkAnalyzer.AnalysisRoot.FindNodes(InkAnalysisNodeKind.InkWord).ToList();
+                all.AddRange(inkAnalyzer.AnalysisRoot.FindNodes(InkAnalysisNodeKind.Line));
+            }
+
+            var InLine = all.Where(x => x.BoundingRect.Y + (x.BoundingRect.Height / 5) >= lowerbound && x.BoundingRect.Y + (x.BoundingRect.Height / 5) <= upperbound).OrderBy(x => x.BoundingRect.X).ToList();
+            return InLine;
+        }
+        #endregion
 
         //analyzing on opening file
         public async void initialAnalyze()
@@ -1577,7 +1592,6 @@ namespace PhenoPad.CustomControl
             }
 
         }
-
         private async void searchPhenotypes(string str)
         {
             /// <summary>
