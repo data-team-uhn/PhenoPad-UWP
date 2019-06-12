@@ -239,7 +239,7 @@ namespace PhenoPad.CustomControl
             operationDispathcerTimer.Interval = TimeSpan.FromMilliseconds(500);
             unprocessedDispatcherTimer.Interval = TimeSpan.FromMilliseconds(100);
             autosaveDispatcherTimer.Interval = TimeSpan.FromSeconds(1); //setting stroke auto save interval to be 1 sec
-            RawStrokeTimer.Interval = TimeSpan.FromSeconds(1);
+            RawStrokeTimer.Interval = TimeSpan.FromMilliseconds(600);
             EraseTimer.Interval = TimeSpan.FromSeconds(2);
 
             linesToUpdate = new Queue<int>();

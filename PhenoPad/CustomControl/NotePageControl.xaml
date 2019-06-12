@@ -306,11 +306,11 @@
 
                             </Grid>
 
-                            <StackPanel x:Name="curLineParentStack" Orientation="Horizontal" Background="WhiteSmoke" CornerRadius="10" 
+                            <StackPanel Orientation="Horizontal" Background="WhiteSmoke" CornerRadius="10" 
                                         BorderThickness="1" BorderBrush="DarkGray" HorizontalAlignment="Stretch">
                                 <!-- recongtion result of current line -->
-                                <ProgressRing x:Name="loading" IsActive="True" Margin="10 0 10 0" Visibility="Collapsed"/>
-                                <StackPanel Name="curLineWordsStackPanel" Orientation="Horizontal" Spacing="5" HorizontalAlignment="Right"
+                                <StackPanel Name="curLineWordsStackPanel" Orientation="Horizontal" Visibility="Visible"
+                                            Spacing="5" HorizontalAlignment="Right"
                                             MinHeight="45" Padding="10 0 10 0" />
                                 <ListView Visibility="Collapsed" Padding="5 0 0 0" Height="40"
                                   ScrollViewer.HorizontalScrollMode="Enabled"
