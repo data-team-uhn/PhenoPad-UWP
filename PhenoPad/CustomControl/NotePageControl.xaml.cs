@@ -1007,7 +1007,6 @@ namespace PhenoPad.CustomControl
 
             foreach (RecognizedPhrases ph in recogPhrases) {
                 if (ph.line_index > last_line) {
-                    Debug.WriteLine("new");
                     NotePhraseControl npc = new NotePhraseControl(last_line, words);
                     phrases[last_line] = npc;
                     recognizedCanvas.Children.Add(npc);
@@ -1021,12 +1020,10 @@ namespace PhenoPad.CustomControl
                 wb.is_abbr = ph.is_abbr;
                 wb.corrected = ph.is_corrected;
                 words.Add(wb);
-                Debug.WriteLine("added");
             }
             //this handles the case when there's only one line of note on the page
             if (words.Count > 0) {
                 NotePhraseControl npc = new NotePhraseControl(last_line, words);
-                Debug.WriteLine("1042");
 
                 phrases[last_line] = npc;
                 Canvas.SetLeft(npc, 0);

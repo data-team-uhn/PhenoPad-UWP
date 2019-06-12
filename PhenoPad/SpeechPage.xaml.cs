@@ -34,6 +34,7 @@ using Windows.Media.Core;
 using Windows.UI.Core;
 using System.Xml.Serialization;
 using PhenoPad.FileService;
+using Windows.UI.Popups;
 
 namespace PhenoPad
 {
@@ -549,26 +550,30 @@ namespace PhenoPad
             SpeechManager.getSharedSpeechManager().RecordingCreated += SpeechPage_RecordingCreated;
         }
 
-        public async void LoadSavedAudio() {
-            savedAudio = await FileManager.getSharedFileManager().GetAllAudioFileObjects(MainPage.Current.notebookId);
-            List<string> audioNames = new List<string>();
-            foreach (var a in savedAudio) {
-                audioNames.Add(a.name);
-            }
+        public void LoadSavedAudio() {
+            //savedAudio = await FileManager.getSharedFileManager().GetAllAudioFileObjects(MainPage.Current.notebookId);
+            //List<string> audioNames = new List<string>();
+            //foreach (var a in savedAudio) {
+            //    audioNames.Add(a.name);
+            //}
+            //AudioDropdownList.ItemsSource = audioNames;
+            ////by default sets the first audio file to be the first of the list
+            //if (audioNames.Count > 0)
+            //{
+            //    AudioDropdownList.SelectedItem = audioNames[0];
+            //    _mediaPlayerElement.Source = savedAudio[0].source;
+            //    _mediaPlayerElement.Visibility = Visibility.Visible;
+            //}
+            List<string> audioNames = MainPage.Current.SavedAudios;
+            Debug.WriteLine( "audioNames count" + audioNames.Count);
             AudioDropdownList.ItemsSource = audioNames;
-            //by default sets the first audio file to be the first of the list
-            if (audioNames.Count > 0)
-            {
-                AudioDropdownList.SelectedItem = audioNames[0];
-                _mediaPlayerElement.Source = savedAudio[0].source;
-                _mediaPlayerElement.Visibility = Visibility.Visible;
-            }
             UpdateLayout();
         }
 
         public void updateChat() {
             chatView.ItemsSource = MainPage.Current.conversations;
             LoadSavedAudio();
+            UpdateLayout();
         }
 
         private void SpeechPage_RecordingCreated(SpeechManager sender, Windows.Storage.StorageFile args)
@@ -694,22 +699,25 @@ namespace PhenoPad
 
                 // check for current source
                 //var savedFile = await FileManager.getSharedFileManager().GetNoteFile(MainPage.Current.notebookId,"",NoteFileType.Audio,"audio_" + m.ConversationIndex);
-                var savedFile = await FileManager.getSharedFileManager().GetNoteFile(MainPage.Current.notebookId, "", NoteFileType.Audio, m.AudioFile);
+                var savedFile = await FileManager.getSharedFileManager().GetSavedAudioFile(MainPage.Current.notebookId, m.AudioFile);
 
 
                 //gets the local audio file and plays based on saved interval
-                if (savedFile != null && savedFile.Name != this.loadedMedia)
+                if (savedFile != null)
                 {
-                    this._mediaPlayerElement.Source = MediaSource.CreateFromStorageFile(savedFile);
-                    this.loadedMedia = savedFile.Name;
-                    this.mediaText.Text = savedFile.Name;
+                    if ( loadedMedia != savedFile.Name) {
+                        _mediaPlayerElement.Source = MediaSource.CreateFromStorageFile(savedFile);
+                        loadedMedia = savedFile.Name;
+                        mediaText.Text = savedFile.Name;
+                    }
                     TimeSpan ts = new TimeSpan(0, 0, start_minute, start_second, start_mili);
                     Debug.WriteLine(ts);
-                    this._mediaPlayerElement.MediaPlayer.Position = ts;
-                    this._mediaPlayerElement.MediaPlayer.Play();
+                    _mediaPlayerElement.MediaPlayer.Position = ts;
+                    _mediaPlayerElement.MediaPlayer.Play();
                 }
                 //tries to get file from server and plays
-                else{
+                else if (savedFile == null)
+                {
                     Debug.WriteLine("requesting from server");
                     int ind = m.ConversationIndex;
                     MainPage.Current.PlayMedia(m.AudioFile, actual_start, actual_end);
@@ -848,16 +856,54 @@ namespace PhenoPad
             }
         }
 
-        private void AudioDropdownList_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        private async void AudioDropdownList_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             if (e.AddedItems.Count > 0) {
                 string audioName = e.AddedItems[0].ToString();
-                AudioFile audioFile = savedAudio.Find(x => x.name == audioName);
-                if (audioFile.source != _mediaPlayerElement.Source)
+                Debug.WriteLine(audioName);
+                var audioFile = await FileManager.getSharedFileManager().GetSavedAudioFile(MainPage.Current.notebookId, audioName);
+                if (audioFile != null)
                 {
-                    _mediaPlayerElement.Source = audioFile.source;
+                    _mediaPlayerElement.Source = MediaSource.CreateFromStorageFile(audioFile);
                     _mediaPlayerElement.Visibility = Visibility.Visible;
                 }
+                else {
+                    TryGetAudioFromServer(audioName);
+                    audioFile = await FileManager.getSharedFileManager().GetSavedAudioFile(MainPage.Current.notebookId, audioName);
+                    if (audioFile != null)
+                    {
+                        _mediaPlayerElement.Source = MediaSource.CreateFromStorageFile(audioFile);
+                        _mediaPlayerElement.Visibility = Visibility.Visible;
+                    }
+                }
+                //AudioFile audioFile = savedAudio.Find(x => x.name == audioName);
+                //if (audioFile.source != _mediaPlayerElement.Source)
+                //{
+                //    _mediaPlayerElement.Source = audioFile.source;
+                //    _mediaPlayerElement.Visibility = Visibility.Visible;
+                //}
+            }
+        }
+
+        public async void TryGetAudioFromServer(string name) {
+            try {
+                var messageDialog = new MessageDialog("Getting audio file from server may take a while, continue?");
+                messageDialog.Title = "PhenoPad";
+                messageDialog.Commands.Add(new UICommand("Yes") { Id = 0 });
+                messageDialog.Commands.Add(new UICommand("No") { Id = 2 });
+                // Set the command that will be invoked by default
+                messageDialog.DefaultCommandIndex = 2;
+                // Set the command to be invoked when escape is pressed
+                messageDialog.CancelCommandIndex = 2;
+                // Show the message dialog
+                var result = await messageDialog.ShowAsync();
+                if ((int)result.Id == 0)
+                {
+                    bool success = await MainPage.Current.GetRemoteAudioAndSave(name);
+                }
+            }
+            catch (Exception e) {
+                LogService.MetroLogger.getSharedLogger().Error(e.Message);
             }
         }
     }

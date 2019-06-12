@@ -145,6 +145,7 @@ namespace PhenoPad
             this.SavedAudios = new List<string>();
 
 
+            playbackSem = new SemaphoreSlim(1);
             audioTimer = new DispatcherTimer();
             //waits 3 seconds before re-enabling microphone button
             audioTimer.Interval = TimeSpan.FromSeconds(3);
@@ -152,9 +153,8 @@ namespace PhenoPad
 
             isReading = false;
             readTimer = new DispatcherTimer();
-            readTimer.Interval = TimeSpan.FromSeconds(5);
+            readTimer.Interval = TimeSpan.FromSeconds(1.5);
             readTimer.Tick += EndAudioStream;
-
 
             cancelService = new CancellationTokenSource();
 

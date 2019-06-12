@@ -136,10 +136,10 @@ namespace PhenoPad.CustomControl
                 HideCurLineStackPanel();
         }
 
-        private void InkCanvas_DoubleTapped(object sender, DoubleTappedRoutedEventArgs e)
+        private async void InkCanvas_DoubleTapped(object sender, DoubleTappedRoutedEventArgs e)
         {
             var position = e.GetPosition(inkCanvas);
-            ClearSelectionAsync();
+            await ClearSelectionAsync();
 
             int count = inkCan.InkPresenter.StrokeContainer.GetStrokes().Count;
             var lines = inkAnalyzer.AnalysisRoot.FindNodes(InkAnalysisNodeKind.InkWord);

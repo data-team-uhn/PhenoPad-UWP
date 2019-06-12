@@ -1,52 +1,27 @@
 ﻿using System;
-using Windows.Foundation;
 using Windows.UI.Core;
 using Windows.UI.Input.Inking;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
-using Windows.UI.Xaml.Media;
-using Windows.UI.Xaml.Shapes;
 using PhenoPad.PhenotypeService;
-using Windows.UI.Xaml.Input;
 using System.Collections.Generic;
 using Windows.UI.Popups;
-using System.Collections.ObjectModel;
 using System.Threading.Tasks;
-using Windows.Foundation.Metadata;
-using Windows.UI.ViewManagement;
-using Windows.UI.Input.Inking.Analysis;
-using Windows.UI.Xaml.Navigation;
-using Windows.Media.SpeechRecognition;
-using System.Text;
-using Windows.Globalization;
 using PhenoPad.SpeechService;
-using Windows.Devices.Sensors;
 using Windows.UI;
 using System.Diagnostics;
 using PhenoPad.CustomControl;
-using Windows.Graphics.Display;
-using System.Reflection;
-using System.Linq;
-using Windows.UI.Xaml.Media.Animation;
 using Windows.Storage.Pickers;
 using Windows.Storage.Streams;
-using PhenoPad.WebSocketService;
 using Windows.ApplicationModel.Core;
-using PhenoPad.Styles;
 using Windows.Graphics.Imaging;
 using Windows.UI.Xaml.Media.Imaging;
 using Microsoft.Graphics.Canvas;
 using PhenoPad.FileService;
-using Windows.UI.Xaml.Data;
 using System.ComponentModel;
 using System.Threading;
 using PhenoPad.LogService;
-using PhenoPad.BluetoothService;
-using Windows.System.Threading;
-using System.IO;
 using Windows.Storage;
-using Windows.Media.Editing;
-using System.Runtime.InteropServices.WindowsRuntime;
 
 namespace PhenoPad
 {
@@ -150,12 +125,12 @@ namespace PhenoPad
                 //Gets the possible stored conversation transcripts and audio names from XML meta
                 conversations =  await FileManager.getSharedFileManager().GetSavedTranscriptsFromXML(notebookId);
                 pastchatView.ItemsSource = conversations;
-                SpeechPage.Current.updateChat();
                 List<string> audioNames = await FileManager.getSharedFileManager().GetSavedAudioNamesFromXML(notebookId);
                 if (audioNames != null)
                     this.SavedAudios = audioNames;
+                Debug.WriteLine("mainpage audionames null" + audioNames == null);
 
-
+                SpeechPage.Current.updateChat();
                 //Gets all saved phenotypes from XML meta
                 List<Phenotype> phenos = await FileManager.getSharedFileManager().GetSavedPhenotypeObjectsFromXML(notebookId);
                 if (phenos != null && phenos.Count > 0)

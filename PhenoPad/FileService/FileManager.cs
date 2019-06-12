@@ -276,6 +276,42 @@ namespace PhenoPad.FileService
             return null;
         }
 
+        public async Task<StorageFile> GetSavedAudioFile(string notebookId, string name) {
+            var path = GetNoteFilePath(notebookId, "", NoteFileType.Audio, name);
+            //path += name;
+            Debug.WriteLine("tring to get " + path);
+            try
+            {
+                var file = await ROOT_FOLDER.TryGetItemAsync(path);
+                if (file != null)
+                    return file as StorageFile;
+                
+            }
+            catch (Exception e) {
+                LogService.MetroLogger.getSharedLogger().Error("Failed to get audio file from:" + path + e.Message);
+            }
+            return null;
+        }
+
+        public async Task<bool> SaveByteAudioToFile(string notebookId, string name, List<Byte> bytes) {
+            var path = GetNoteFilePath(notebookId, "", NoteFileType.Audio, name);
+
+            try
+            {
+                var file = await ROOT_FOLDER.CreateFileAsync(path, CreationCollisionOption.ReplaceExisting);
+                using (Stream s = await file.OpenStreamForWriteAsync()) {
+                    await s.WriteAsync(bytes.ToArray(), 0, bytes.Count);
+                }
+                Debug.WriteLine("audio file bytes written to " + path);
+                return true;
+            }
+            catch (Exception e)
+            {
+                LogService.MetroLogger.getSharedLogger().Error("Failed to get audio file from:" + path + e.Message);
+            }
+            return false;
+        }
+
         public async Task<bool> SaveAudioNamesToXML(string notebookId, List<string>names) {
             try {
                 var path = GetNoteFilePath(notebookId, "", NoteFileType.AudioMeta);
@@ -336,7 +372,7 @@ namespace PhenoPad.FileService
                 StorageFile notefile = null;
                 //StorageFolder localFolder = ApplicationData.Current.LocalFolder;
                 string filepath = GetNoteFilePath(notebookId, notePageId, fileType, name);
-                Debug.WriteLineIf((fileType == NoteFileType.EHR), filepath);
+                //Debug.WriteLine(filepath);
                 notefile = await ROOT_FOLDER.CreateFileAsync(filepath, CreationCollisionOption.OpenIfExists);
                 return notefile;
             }

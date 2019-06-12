@@ -19,9 +19,9 @@ using Windows.Networking.Sockets;
 using Windows.UI.Core;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
-using Windows.Storage;
 using Windows.Storage.Streams;
 using System.Runtime.InteropServices.WindowsRuntime;
+using PhenoPad.FileService;
 
 namespace PhenoPad
 {
@@ -67,9 +67,6 @@ namespace PhenoPad
         } //automation properties
         public bool bluetoonOn;
 
-        [XmlArray("Audios")]
-        [XmlArrayItem("name")]
-        public List<string> SavedAudios;
 
 
         public string RPI_ADDRESS = "http://192.168.137.32:8000";
@@ -94,9 +91,14 @@ namespace PhenoPad
         /// Keep track of whether the continuous recognizer is currently running, so it can be cleaned up appropriately.
         private bool isListening;
 
+        //for requesting server audio playbacks
+        [XmlArray("Audios")]
+        [XmlArrayItem("name")]
+        public List<string> SavedAudios;
+        SemaphoreSlim playbackSem;
         private bool isReading; //flag for reading audio stream
         private DispatcherTimer readTimer;
-        private StreamWebSocket streamSocket;
+        private StreamWebSocket playbackStreamSocket;
         private CancellationTokenSource cancelSource;
         private CancellationToken token;
         private List<byte> audioBuffer;
@@ -683,25 +685,33 @@ namespace PhenoPad
             speechManager.ClearCurAudioName();
         }
 
-        public async void PlayMedia(string audioFileName,double start, double end)
+        public async void PlayMedia(string audioFileName,double start = 0, double end = 0)
         {
-            StreamWebSocket streamSocket = new StreamWebSocket();
+            //don't handle requests with invalid intervals
+            if (start >= end)
+                return;
+            if (playbackSem.CurrentCount == 0) {
+                Debug.WriteLine("semaphore currently inuse will abort");
+                return;
+            }
+            await playbackSem.WaitAsync();
+            playbackStreamSocket = new StreamWebSocket();
             try
             {
                 string audioName = $"666_{notebookId}_{audioFileName} {start} {end}";
-                Debug.WriteLine(audioName + " &&&");
-                //Uri serverUri = new Uri("ws://" + SERVER_ADDR + ":" + SERVER_PORT + "/client/ws/file_request" +
-                //                           "?content-type=audio%2Fx-raw%2C+layout%3D%28string%29interleaved%2C+rate%3D%28int%2916000%2C+format%3D%28string%29S16LE%2C+channels%3D%28int%291&manager_id=666");
-
                 Uri serverUri = new Uri("ws://" + SERVER_ADDR + ":" + SERVER_PORT + "/client/ws/file_request");
-                Task connectTask = streamSocket.ConnectAsync(serverUri).AsTask();
+                Task connectTask = playbackStreamSocket.ConnectAsync(serverUri).AsTask();
+
                 await connectTask;
                 if (connectTask.Exception != null)
+                {
                     MetroLogger.getSharedLogger().Error("connectTask.Exception:" + connectTask.Exception.Message);
+                    throw new Exception(connectTask.Exception.Message);
+                }
 
                 //sends the requested audio name to server through buffer
                 var bytes = Encoding.UTF8.GetBytes(audioName);
-                await streamSocket.OutputStream.WriteAsync(bytes.AsBuffer());
+                await playbackStreamSocket.OutputStream.WriteAsync(bytes.AsBuffer());
 
                 uint length = 1000000;     // Leave a large buffer
                 audioBuffer = new List<Byte>();
@@ -711,10 +721,9 @@ namespace PhenoPad
                 while (isReading)
                 {
                     readTimer.Start();
-                    IBuffer op = await streamSocket.InputStream.ReadAsync(new Windows.Storage.Streams.Buffer(length), length, InputStreamOptions.Partial).AsTask(token);
+                    IBuffer op = await playbackStreamSocket.InputStream.ReadAsync(new Windows.Storage.Streams.Buffer(length), length, InputStreamOptions.Partial).AsTask(token);
                     if (op.Length > 0)
                         audioBuffer.AddRange(op.ToArray());
-                    Debug.WriteLine("------------------" + audioBuffer.Count + "----------------");
                     readTimer.Stop();
                 }
             }
@@ -722,7 +731,7 @@ namespace PhenoPad
             {
                 //Plays the audio received from server
                 readTimer.Stop();
-                Debug.WriteLine("done receiving +++++++++++++++++++++++++");
+                Debug.WriteLine("------------------END RECEIVING" + audioBuffer.Count + "----------------");
                 MemoryStream mem = new MemoryStream(audioBuffer.ToArray());
                 MediaPlayer player = new MediaPlayer();
                 player.SetStreamSource(mem.AsRandomAccessStream());
@@ -731,18 +740,82 @@ namespace PhenoPad
             }
             catch (Exception ex)
             {
-                LogService.MetroLogger.getSharedLogger().Error("file result:" + ex + ex.Message);
-                streamSocket.Dispose();
-                streamSocket = null;
+                LogService.MetroLogger.getSharedLogger().Error("playback:" + ex.Message);
+                Current.NotifyUser("Failed to get audio from server, please try again later", NotifyType.ErrorMessage, 1);
             }
+            playbackStreamSocket.Dispose();
+            playbackStreamSocket = null;
+            playbackSem.Release();
 
+        }
 
+        public async Task<bool> GetRemoteAudioAndSave(string audioName) {
+            //don't handle requests with invalid intervals
+            if (playbackSem.CurrentCount == 0)
+            {
+                return false;
+            }
+            await playbackSem.WaitAsync();
+            playbackStreamSocket = new StreamWebSocket();
+            try
+            {
+                string audioserverName = $"666_{notebookId}_" + audioName;
+                Uri serverUri = new Uri("ws://" + SERVER_ADDR + ":" + SERVER_PORT + "/client/ws/file_request");
+                Task connectTask = playbackStreamSocket.ConnectAsync(serverUri).AsTask();
+
+                await connectTask;
+                if (connectTask.Exception != null)
+                {
+                    MetroLogger.getSharedLogger().Error("connectTask.Exception:" + connectTask.Exception.Message);
+                    throw new Exception(connectTask.Exception.Message);
+                }
+
+                //sends the requested audio name to server through buffer
+                var bytes = Encoding.UTF8.GetBytes(audioserverName);
+                await playbackStreamSocket.OutputStream.WriteAsync(bytes.AsBuffer());
+
+                uint length = 1000000;     // Leave a large buffer
+                audioBuffer = new List<Byte>();
+                isReading = true;
+                cancelSource = new CancellationTokenSource();
+                token = cancelSource.Token;
+                while (isReading)
+                {
+                    readTimer.Start();
+                    IBuffer op = await playbackStreamSocket.InputStream.ReadAsync(new Windows.Storage.Streams.Buffer(length), length, InputStreamOptions.Partial).AsTask(token);
+                    if (op.Length > 0)
+                        audioBuffer.AddRange(op.ToArray());
+                    readTimer.Stop();
+                }
+            }
+            catch (TaskCanceledException)
+            {
+                //Plays the audio received from server
+                readTimer.Stop();
+                Debug.WriteLine("------------------END RECEIVING " + audioBuffer.Count + "----------------");
+                if (audioBuffer.Count == 0)
+                    throw new Exception("No bytes in audio buffer");
+                bool success = await FileManager.getSharedFileManager().SaveByteAudioToFile(notebookId, audioName, audioBuffer);
+                if (!success)
+                    throw new Exception("Failed to save remote audio locally");
+            }
+            catch (Exception ex)
+            {
+                LogService.MetroLogger.getSharedLogger().Error("playback:" + ex.Message);
+                Current.NotifyUser("Failed to get audio from server, please try again later", NotifyType.ErrorMessage, 1);
+                return false;
+            }
+            finally {
+                playbackStreamSocket.Dispose();
+                playbackStreamSocket = null;
+                playbackSem.Release();
+            }
+            return true;
         }
         private void EndAudioStream(object sender, object e)
         {
             isReading = false;
             cancelSource.Cancel();
-            Debug.WriteLine("Timer tick, will stop reading");
         }
 
 

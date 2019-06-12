@@ -42,10 +42,12 @@ namespace PhenoPad
     {
         public string notebookId;
         private Notebook notebookObject;
-        public static string SERVER_ADDR = "137.135.117.253";
-        public static string SERVER_PORT = "8080";
         public int pageCount;
         public SpeechManager speechmana;
+
+
+        public static string SERVER_ADDR = "137.135.117.253";
+        public static string SERVER_PORT = "8080";
         private bool isReading; //flag for reading audio stream
         private DispatcherTimer readTimer;
         private StreamWebSocket streamSocket;
@@ -166,28 +168,24 @@ namespace PhenoPad
                     IBuffer op = await streamSocket.InputStream.ReadAsync(new Windows.Storage.Streams.Buffer(length), length, InputStreamOptions.Partial).AsTask(token);
                     if (op.Length > 0)
                         audioBuffer.AddRange(op.ToArray());
-                    Debug.WriteLine("------------------" + audioBuffer.Count + "----------------");
                     readTimer.Stop();
                 }
             }
             catch (TaskCanceledException) {
                 //Plays the audio received from server
                 readTimer.Stop();
-                Debug.WriteLine("done receiving +++++++++++++++++++++++++");
+                Debug.WriteLine("------------------" + audioBuffer.Count + "----------------");
                 MemoryStream mem = new MemoryStream(audioBuffer.ToArray());
                 MediaPlayer player = new MediaPlayer();
                 player.SetStreamSource(mem.AsRandomAccessStream());
                 player.Play();
-                Debug.WriteLine("done");
             }
             catch (Exception ex)
             {
                 LogService.MetroLogger.getSharedLogger().Error("file result:" + ex + ex.Message);
-                streamSocket.Dispose();
-                streamSocket = null;
             }
-
-
+            streamSocket.Dispose();
+            streamSocket = null;
         }
 
         /// <summary>
