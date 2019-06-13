@@ -31,7 +31,9 @@
     </UserControl.Resources>
 
     <Grid Background="Transparent">
-        <TextBlock x:Name="WordBlock" Text="{x:Bind current}" x:FieldModifier="public" FontSize="26" Tapped="ShowWordCandidate" />
+        <TextBlock x:Name="WordBlock" x:FieldModifier="public"  
+                   Text="{x:Bind current}" VerticalAlignment="Center" FontSize="28" 
+                   Tapped="ShowWordCandidate" />
         <Button Visibility="Collapsed" Style="{StaticResource ButtonStyle1}"/>
     </Grid>
 </UserControl>

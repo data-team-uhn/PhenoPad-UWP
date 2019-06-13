@@ -230,9 +230,8 @@ namespace PhenoPad.CustomControl
         {
             if (!leftLasso && curStroke != null)
             {
-                curLineWordsStackPanel.Visibility = Visibility.Visible;
-                RawStrokeTimer.Stop();
-                
+                //curLineWordsStackPanel.Visibility = Visibility.Visible;
+                RawStrokeTimer.Stop();              
                 // dispatcherTimer.Stop();
                 //operationDispathcerTimer.Stop();
                 inkOperationAnalyzer.ClearDataForAllStrokes();
@@ -243,8 +242,10 @@ namespace PhenoPad.CustomControl
                     await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () => {
                     recognizeAndSetUpUIForLine(line: null, lineInd:showingResultOfLine);
                     });
+                    curLineCandidatePheno.Clear();
                     curLineWordsStackPanel.Children.Clear();
                     curLineResultPanel.Visibility = Visibility.Collapsed;
+                    UpdateLayout();
                 }
 
             }
@@ -362,7 +363,7 @@ namespace PhenoPad.CustomControl
         //    }
         //}
 
-        public async void UpdateRecognition(int lineNum, List<HWRRecognizedText> result) {
+        public async void UpdateRecognitionFromServer(int lineNum, List<HWRRecognizedText> result) {
             await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () => {
                 if (!phrases.ContainsKey(lineNum) || result == null || result.Count ==0)
                     return;
@@ -507,10 +508,8 @@ namespace PhenoPad.CustomControl
                     lastWordCount = 1;
                     lastWordIndex = 0;
                     HideCurLineStackPanel();
-                    //HWRManager.getSharedHWRManager().clearCache();
                     phenoCtrlSlide.Y = 0;
                     showingResultOfLine = lineNum;
-                    //curLineObject = line;
                     UpdateLayout();
 
                 }
@@ -521,7 +520,6 @@ namespace PhenoPad.CustomControl
                     lastWordCount = phrase.words.Count == 0 ? 1 : phrase.words.Count;
                     List<WordBlockControl> results = await RecognizeLineWBC(lineNum);
                     phrase.UpdateRecognition(results, fromServer:false);
-                    //Canvas.SetLeft(phrase, lastStrokeBound.X);
                 }
                 //writing on a new line 
                 else
@@ -606,7 +604,6 @@ namespace PhenoPad.CustomControl
             var strokeInLine = FindAllStrokesInLine(lineid);
 
             foreach (var phrase in inLine) {
-                Debug.WriteLine(phrase.Id);
                 double start = phrase.BoundingRect.X;
                 double end = phrase.BoundingRect.X + phrase.BoundingRect.Width;
                 var hitWords = inWords.Where(x => x.BoundingRect.X >= start && x.BoundingRect.X + x.BoundingRect.Width <= end).ToList();
@@ -624,7 +621,6 @@ namespace PhenoPad.CustomControl
         private async Task<List<WordBlockControl>> RecognizeLineWBC(int lineid)
         {
             // only one thread is allowed to use select and recognize
-
             await selectAndRecognizeSemaphoreSlim.WaitAsync();
             List<WordBlockControl> result = new List<WordBlockControl>();
             try
@@ -665,9 +661,7 @@ namespace PhenoPad.CustomControl
                     if (recognized.candidateList.Count > 5)
                         wb.is_abbr = true;
                     result.Add(wb);
-                }
-                
-                
+                }                               
             }
             catch (Exception ex)
             {

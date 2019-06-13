@@ -2044,7 +2044,6 @@ namespace PhenoPad.CustomControl
             if (line == null)
                 return;
             curLineWordsStackPanel.Children.Clear();
-            HWRManager.getSharedHWRManager().clearCache();
 
             foreach (var stroke in inputInkCanvas.InkPresenter.StrokeContainer.GetStrokes())
                 stroke.Selected = true;

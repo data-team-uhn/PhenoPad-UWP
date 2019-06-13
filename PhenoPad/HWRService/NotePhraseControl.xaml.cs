@@ -4,7 +4,9 @@ using System.Linq;
 using PhenoPad.HWRService;
 using Windows.UI;
 using Windows.UI.Xaml.Controls;
+using Windows.UI.Core;
 using Windows.UI.Xaml.Media;
+using System;
 
 namespace PhenoPad.CustomControl
 {
@@ -29,37 +31,45 @@ namespace PhenoPad.CustomControl
             //this guarantees list will have at least one word
             if (words.Count == 0)
                 return;
+            try
+            {
+                PhraseCanvas.Children.Clear();
+                words = words.OrderBy(w => w.left).ToList();
+                StackPanel sp = InitNewBlockPanel();
+                sp.Children.Add(words[0]);
+                //Debug.WriteLine($"WBC left = {words[0].left}");
+                for (int i = 1; i < words.Count; i++)
+                {
+                    //same block
+                    if (words[i].left == words[i - 1].left)
+                    {
+                        sp.Children.Add(words[i]);
+                    }
+                    //new block
+                    else if (words[i].left > words[i - 1].left)
+                    {
+                        Debug.WriteLine($"new block WBC left = {words[i].left}");
 
-            PhraseCanvas.Children.Clear();
-            words = words.OrderBy(w => w.left).ToList();
-            StackPanel sp = InitNewBlockPanel();
-            sp.Children.Add(words[0]);
-            //Debug.WriteLine($"WBC left = {words[0].left}");
-
-            for (int i = 1; i < words.Count; i++) {
-                //Debug.WriteLine($"WBC left = {words[i].left}");
-                //same block
-                if ( words[i].left == words[i - 1].left ) {
-                    sp.Children.Add(words[i]);
+                        PhraseCanvas.Children.Add(sp);
+                        Canvas.SetLeft(sp, words[i - 1].left);
+                        Canvas.SetTop(sp, 0);
+                        sp = InitNewBlockPanel();
+                        sp.Children.Add(words[i]);
+                    }
                 }
-                //new block
-                else if(words[i].left > words[i - 1].left)
+                if (sp.Children.Count > 0)
                 {
                     PhraseCanvas.Children.Add(sp);
-                    Canvas.SetLeft(sp, words[i - 1].left);
+                    Canvas.SetLeft(sp, words[words.Count - 1].left);
                     Canvas.SetTop(sp, 0);
-                    sp = InitNewBlockPanel();
-                    sp.Children.Add(words[i]);
                 }
-            }
-            if (sp.Children.Count > 0) {
-                PhraseCanvas.Children.Add(sp);
-                Canvas.SetLeft(sp, words[words.Count - 1].left);
-                Canvas.SetTop(sp, 0);
-            }
 
-            //Debug.WriteLine("phrase layout updated");
-            UpdateLayout();
+                UpdateLayout();
+            }
+            catch (Exception e)
+            {
+                LogService.MetroLogger.getSharedLogger().Error(e.Message);
+            }
         }
 
         public StackPanel InitNewBlockPanel() {
@@ -128,12 +138,8 @@ namespace PhenoPad.CustomControl
 
         private (List<int>, List<int>) alignTwoStringList(List<string> newList, List<string> oldList)
         {
-            /// <summary>
-            /// Dynamic programming for caluculating best alignment of two string list
-            /// http://www.biorecipes.com/DynProgBasic/code.html
-            /// </summary>
-            /// <param name="newList"></param>
-            /// <param name="oldList"></param>
+            // Dynamic programming for caluculating best alignment of two string list
+            // http://www.biorecipes.com/DynProgBasic/code.html
 
             // score matrix
             int gap_score = 0;
@@ -251,7 +257,6 @@ namespace PhenoPad.CustomControl
                     words.Add(w);
                     new_index++;
                 }
-
                 UpdatePhraseLayout();
                 if (MainPage.Current != null)
                 {
@@ -275,7 +280,5 @@ namespace PhenoPad.CustomControl
             }
             return result;
         }
-
-
     }
 }
