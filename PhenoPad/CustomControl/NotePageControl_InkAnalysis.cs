@@ -643,7 +643,6 @@ namespace PhenoPad.CustomControl
                 if (dict.Count != HWRresult.Count && dict.Count != 0)
                 {
                     Debug.WriteLine($"dict count = {dict.Count}, HWRresult count = {HWRresult.Count}");
-                    //return new List<WordBlockControl>();
                 }
 
                 for (int i = 0; i < HWRresult.Count; i++)
@@ -766,7 +765,6 @@ namespace PhenoPad.CustomControl
             }
             return ids;
         }
-
 
         public void ShowAbbreviationAlter(WordBlockControl wbc, List<string> alter)
         {

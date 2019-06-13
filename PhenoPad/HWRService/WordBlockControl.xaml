@@ -25,7 +25,7 @@
                     </ListView.ItemContainerStyle>
                 </ListView>
                 <StackPanel x:Name="AlternativeStack" Orientation="Vertical"/>
-                <TextBox x:Name="AlternativeInput" MinHeight="40" LostFocus="ReplaceAlternative" />
+                <TextBox x:Name="AlternativeInput" MinHeight="40" IsFocusEngaged="False" LostFocus="ReplaceAlternative" />
             </StackPanel>
         </Flyout>
     </UserControl.Resources>

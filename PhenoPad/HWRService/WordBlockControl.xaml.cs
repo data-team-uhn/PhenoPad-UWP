@@ -33,6 +33,7 @@ namespace PhenoPad.CustomControl
 
         public string current;
         public List<string> candidates;
+        public bool flyoutOpening;
 
         public WordBlockControl()
         {
@@ -47,21 +48,41 @@ namespace PhenoPad.CustomControl
             this.candidates = candidates;
             WordBlock.Text = current;
             corrected = false;
-            AlternativeList.ItemsSource = candidates;
+            //AlternativeList.ItemsSource = candidates;
             //by default set abbreviation to false;
             is_abbr = false;
+            Flyout f = (Flyout)this.Resources["AlternativeFlyout"];
+            //f.Closed += ResetUIVisibility;
+            f.Opened += SetFlyoutOpening;
+            //this.LostFocus += ResetUIVisibility;
 
         }
 
+        private void SetFlyoutOpening(object sender, object e)
+        {
+            flyoutOpening = true;
+        }
+
+        private void ResetUIVisibility(object sender, object e)
+        {
+            AlternativeStack.Visibility = Visibility.Visible;
+            AlternativeList.Visibility = Visibility.Visible;
+            AlternativeInput.Visibility = Visibility.Visible;
+            flyoutOpening = false;
+            //Debug.WriteLine("UI RESET");
+        }
 
         public void UpdateDisplay() {
             WordBlock.Text = current;
-            AlternativeList.ItemsSource = candidates;
+            //AlternativeList.ItemsSource = candidates;
         }
 
         private void ShowWordCandidate(object sender, RoutedEventArgs args) {
-            //AlternativeList.ItemsSource = candidates;
-            foreach (var b in GetCurWordCandidates())
+            //Debug.WriteLine("textblock tapped");
+            AlternativeList.Visibility = Visibility.Collapsed;
+            AlternativeStack.Children.Clear();
+            var buttons = this.GetCurWordCandidates();
+            foreach (var b in buttons)
                 AlternativeStack.Children.Add(b);
             Flyout f = (Flyout)this.Resources["AlternativeFlyout"];
             f.ShowAt(WordBlock);
@@ -90,9 +111,8 @@ namespace PhenoPad.CustomControl
             else {
                 //nothing to do?
             }
-
+            UpdateLayout();
         }
-
 
         public void ChangeAlterFromTextInput(string word)
         {
@@ -148,15 +168,27 @@ namespace PhenoPad.CustomControl
                 }
                 tb.Tapped += CandidateList_Click;
             }
+            Debug.WriteLine(lst.Count);
             return lst;
         }
 
         public void ShowAbbrCandidatesOnFlyout(object sender, TappedRoutedEventArgs e) {
             var allAlters = candidates.Where(x => x.Contains("(") && x.Contains(")")).ToList();
+            //Debug.WriteLine($"showing {allAlters.Count} alters");
             AlternativeList.ItemsSource = allAlters;
+            AlternativeList.Visibility = Visibility.Visible;
+            AlternativeStack.Visibility = Visibility.Collapsed;
+            AlternativeInput.Visibility = Visibility.Collapsed;
             Flyout fo = (Flyout)this.Resources["AlternativeFlyout"];
-            fo.Placement = FlyoutPlacementMode.Top;
-            fo.ShowAt((FrameworkElement)sender);
+            UpdateLayout();
+
+            if (!flyoutOpening)
+            {
+                if (((FrameworkElement)sender).Parent != AlternativeStack)
+                    fo.ShowAt((FrameworkElement)sender);
+                else
+                    fo.ShowAt(this);
+            }
         }
 
         public TextBlock GetCurWordTextBlock() {
