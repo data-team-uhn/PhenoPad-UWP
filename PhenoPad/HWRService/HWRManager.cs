@@ -27,6 +27,7 @@ namespace PhenoPad.HWRService
         {
             set; get;
         }
+        public List<InkStroke> strokes { set; get; }
 
         //==========================================================================
         public HWRRecognizedText()
@@ -34,6 +35,7 @@ namespace PhenoPad.HWRService
             candidateList = new List<string>();
             selectedIndex = 0;
             selectedCandidate = "";
+            strokes = new List<InkStroke>();
         }
     }
 
@@ -117,6 +119,7 @@ namespace PhenoPad.HWRService
                     int ind = 0;
                     foreach (var r in recognitionResults)
                     {
+                        
                         List<string> parsedRes = StripSymbols(r.GetTextCandidates().ToList());
                         alternatives.Add(parsedRes);
                         //by default selects the most match candidate word 
@@ -125,6 +128,7 @@ namespace PhenoPad.HWRService
                         rt.candidateList = parsedRes;
                         rt.selectedIndex = 0;
                         rt.selectedCandidate = parsedRes.ElementAt(0);
+                        rt.strokes = r.GetStrokes().ToList();
                         recogResults.Add(rt);
                         ind++;
                     }
@@ -258,7 +262,7 @@ namespace PhenoPad.HWRService
             sentence = result.result.Split(" ").ToList();
 
             List<HWRRecognizedText> recogResults = new List<HWRRecognizedText>();
-            recogResults = processAlternative(result.alternatives);
+            recogResults = processAlternative(result.alternatives, original);
             //if server don't have any alternatives, process abbreviation using microsoft's result
             if (recogResults == null || recogResults.Count == 0) 
                 recogResults = processAbbr(result.abbreviations, original);
@@ -297,13 +301,13 @@ namespace PhenoPad.HWRService
             }
             return recogAb;
         }
-        public List<HWRRecognizedText> processAlternative(List<List<string>> alter)
+        public List<HWRRecognizedText> processAlternative(List<List<string>> alter, List<HWRRecognizedText> original)
         {
             if (alter == null)
                 return null;
 
             List<HWRRecognizedText> recogResults = new List<HWRRecognizedText>();
-
+            int count = 0;
             foreach (List<string> lst in alter)
             {
                 HWRRecognizedText rt = new HWRRecognizedText();
@@ -311,7 +315,9 @@ namespace PhenoPad.HWRService
                 rt.candidateList = res;
                 rt.selectedIndex = 0;
                 rt.selectedCandidate = res.ElementAt(0);
+                rt.strokes = original[count].strokes;
                 recogResults.Add(rt);
+                count++;
             }
             return recogResults;
 

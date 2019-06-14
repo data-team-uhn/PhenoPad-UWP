@@ -1,5 +1,7 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Xml.Serialization;
+using Windows.UI.Input.Inking;
 
 namespace PhenoPad.FileService
 {
@@ -14,6 +16,10 @@ namespace PhenoPad.FileService
         [XmlArray("alternatives")]
         [XmlArrayItem("candidate")]
         public List<string> candidate_list;
+
+        [XmlArray("strokes")]
+        [XmlArrayItem("stroke")]
+        public List<DateTime> strokes;
 
         public bool is_corrected;
         public int word_index;
@@ -32,14 +38,17 @@ namespace PhenoPad.FileService
             current = "";
             candidate_list = new List<string>();
         }
-        public RecognizedPhrases(string noteId, string pageId,int lineNum, double canvasLeft, int index, string selected,List<string>candidates, bool isCorrected,bool isAbbr) {
+        public RecognizedPhrases(string noteId, string pageId,int lineNum, double canvasLeft, int index, string selected,List<string>candidates, List<InkStroke> strokes,bool isCorrected,bool isAbbr) {
             line_index = lineNum;
-            this.canvasLeft = canvasLeft;
+            this.canvasLeft = canvasLeft;           
             word_index = index;
             is_corrected = isCorrected;
             is_abbr = isAbbr;
             current = selected;
             candidate_list = candidates;
+            this.strokes = new List<DateTime>();
+            foreach (var s in strokes)
+                this.strokes.Add(s.StrokeStartedTime.Value.DateTime);
         }
     }
 }

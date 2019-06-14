@@ -557,7 +557,6 @@ namespace PhenoPad.CustomControl
         #region Hand writting mode 
         // ==================================== Handwriting mode ===================================================/
 
-
         private void StrokeInput_PointerPressed(InkStrokeInput sender, PointerEventArgs args)
         {
             // stroke input handling: mouse pointer pressed
@@ -731,9 +730,8 @@ namespace PhenoPad.CustomControl
         #endregion
 
         public double getPageWindowRatio() {
-            /// <summary>
-            /// Returns the current note page's zoomed width in relation to control window frame
-            /// </summary>
+
+            // Returns the current note page's zoomed width in relation to control window frame
 
             if (ehrPage != null) 
                 return (ehrPage.ActualWidth * EHRScrollViewer.ZoomFactor) / ehrPage.ActualWidth;
@@ -792,17 +790,15 @@ namespace PhenoPad.CustomControl
 
         }
         
-        public async Task ClearSelectionAsync()
+        public void ClearSelectionAsync()
         {
-            await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () => {
-                var strokes = inkCanvas.InkPresenter.StrokeContainer.GetStrokes();
-                foreach (var stroke in strokes)
-                {
-                    stroke.Selected = false;
-                    SetDefaultStrokeStyle(stroke);
-                }
-                ClearDrawnBoundingRect();
-            });
+            var strokes = inkCanvas.InkPresenter.StrokeContainer.GetStrokes();
+            foreach (var stroke in strokes)
+            {
+                stroke.Selected = false;
+                SetDefaultStrokeStyle(stroke);
+            }
+            ClearDrawnBoundingRect();
             UpdateLayout();
         }
 
@@ -895,7 +891,7 @@ namespace PhenoPad.CustomControl
                     for (int i = 0; i < npc.words.Count; i++)
                     {
                         WordBlockControl wb = npc.words[i];
-                        RecognizedPhrases ph = new RecognizedPhrases(notebookId, pageId, wb.line_index, wb.left, i, wb.current, wb.candidates, wb.corrected, wb.is_abbr);
+                        RecognizedPhrases ph = new RecognizedPhrases(notebookId, pageId, wb.line_index, wb.left, i, wb.current, wb.candidates, wb.strokes,wb.corrected, wb.is_abbr);
                         wordPhrases.Add(ph);
                     }
                 }
@@ -1016,7 +1012,12 @@ namespace PhenoPad.CustomControl
                     last_line = ph.line_index;
                 }
                 List<string> candidates = ph.candidate_list;
-                WordBlockControl wb = new WordBlockControl(ph.line_index, ph.canvasLeft, ph.word_index, ph.current, candidates);
+                List<InkStroke> strokes = new List<InkStroke>();
+                foreach (var s in inkCan.InkPresenter.StrokeContainer.GetStrokes()) {
+                    if (ph.strokes.Contains(s.StrokeStartedTime.Value.DateTime))
+                        strokes.Add(s);
+                }
+                WordBlockControl wb = new WordBlockControl(ph.line_index, ph.canvasLeft, ph.word_index, ph.current, candidates, strokes);
                 wb.is_abbr = ph.is_abbr;
                 wb.corrected = ph.is_corrected;
                 words.Add(wb);

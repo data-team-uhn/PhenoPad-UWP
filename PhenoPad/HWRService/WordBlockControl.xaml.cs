@@ -9,6 +9,7 @@ using System.Xml.Serialization;
 using Windows.Foundation;
 using Windows.Foundation.Collections;
 using Windows.UI;
+using Windows.UI.Input.Inking;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
 using Windows.UI.Xaml.Controls.Primitives;
@@ -34,18 +35,20 @@ namespace PhenoPad.CustomControl
         public string current;
         public List<string> candidates;
         public bool flyoutOpening;
+        public List<InkStroke> strokes;
 
         public WordBlockControl()
         {
         }
 
-        public WordBlockControl(int line_index, double left, int word_index, string current, List<string>candidates) {
+        public WordBlockControl(int line_index, double left, int word_index, string current, List<string>candidates, List<InkStroke> strokes) {
             this.InitializeComponent();
             this.line_index = line_index;
             this.left = left;
             this.word_index = word_index;
             this.current = current;
             this.candidates = candidates;
+            this.strokes = strokes;
             WordBlock.Text = current;
             corrected = false;
             //AlternativeList.ItemsSource = candidates;
@@ -208,7 +211,7 @@ namespace PhenoPad.CustomControl
         }
 
         public Rect GetUIRect() {
-            var trans = this.TransformToVisual(MainPage.Current.curPage);
+            var trans = WordBlock.TransformToVisual(MainPage.Current.curPage);
             Rect bound = trans.TransformBounds(new Rect(0,0,20,20));
             //Debug.WriteLine($"{current}'s rect: x={bound.X}, y={bound.Y}");
             return bound;
