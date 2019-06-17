@@ -206,6 +206,20 @@ namespace PhenoPad.CustomControl
             return null;
         }
 
+        public List<WordBlockControl> GetHitWBCLine(Point pos) {
+            Rect pointerRec = new Rect(pos.X, pos.Y, 1, 1);
+            int lineNum = getLineNumByRect(pointerRec);
+            if (!phrases.ContainsKey(lineNum))
+                return null;
+
+            var inLineWBC = phrases[lineNum].words;
+            var allLeft = inLineWBC.Where(x => x.left <= pos.X);
+            var allRight = inLineWBC.Where(x => x.left > pos.X);
+            var hitLines = allLeft.Except(allRight);
+            return hitLines.Count() == 0 ? null : hitLines.ToList();
+
+        }
+
         private void InkCanvas_DoubleTapped(object sender, DoubleTappedRoutedEventArgs e)
         {
             var position = e.GetPosition(inkCanvas);
@@ -226,47 +240,69 @@ namespace PhenoPad.CustomControl
             Debug.WriteLine($"Number of inkbullet =  {inkAnalyzer.AnalysisRoot.FindNodes(InkAnalysisNodeKind.InkBullet).Count}");
 
             var line = FindHitLine(position);
-            //only handle using inkanalysis line if it's a horizontal line
-            if (line != null)
+            string text = "";
+            recognizedText.Clear();
+            var inlines = GetHitWBCLine(position);
+
+            if (inlines != null)
             {
-                double widToHeiRatio = line.BoundingRect.Width / line.BoundingRect.Height;
-                if (widToHeiRatio < 0.5) {
-                    MainPage.Current.NotifyUser("manually detect", NotifyType.StatusMessage, 1);
-                }
-                // Show the selection rect at the paragraph's bounding rect.
-                //boundingRect.Union(line.BoundingRect);
-                boundingRect = line.BoundingRect;
-                IReadOnlyList<uint> strokeIds = line.GetStrokeIds();
-
-                foreach (var strokeId in strokeIds)
+                boundingRect = inlines.FirstOrDefault().GetUIRect();
+                foreach (var w in inlines)
                 {
-                    var stroke = inkCanvas.InkPresenter.StrokeContainer.GetStrokeById(strokeId);
-                    stroke.Selected = true;
-                    SetSelectedStrokeStyle(stroke);
-                }
-                //by default uses the stroke's pre-analyzed recognition for annotation
-                int lineNum = getLineNumByRect(line.BoundingRect);
-                var phrasewords = phrases[lineNum].words;
-                string text = "";
-                recognizedText.Clear();
-
-                foreach (var word in phrasewords)
-                {
-                    var bound = word.GetUIRect();
-                    bool intersects = bound.X >= boundingRect.X && bound.X + bound.Width <= boundingRect.Right;
-                    if (intersects)
-                    {
-                        recognizedText.Add(word.ConvertToHWRRecognizedText());
-                        text += word.current + " ";
+                    foreach (var s in w.strokes) {
+                        var hitStroke = inkCan.InkPresenter.StrokeContainer.GetStrokeById(s.Id);
+                        hitStroke.Selected = true;
+                        SetSelectedStrokeStyle(hitStroke);
                     }
+                    recognizedText.Add(w.ConvertToHWRRecognizedText());
+                    text += w.current + " ";
+
                 }
                 RecognizeSelection(text);
             }
 
+
+            //only handle using inkanalysis line if it's a horizontal line
+            //if (line != null)
+            //{
+            //    double widToHeiRatio = line.BoundingRect.Width / line.BoundingRect.Height;
+            //    if (widToHeiRatio < 0.5)
+            //    {
+            //        MainPage.Current.NotifyUser("manually detect", NotifyType.StatusMessage, 1);
+            //    }
+            //    else {
+            //    }
+            //    // Show the selection rect at the paragraph's bounding rect.
+            //    //boundingRect.Union(line.BoundingRect);
+            //    boundingRect = line.BoundingRect;
+            //    IReadOnlyList<uint> strokeIds = line.GetStrokeIds();
+
+            //    foreach (var strokeId in strokeIds)
+            //    {
+            //        var stroke = inkCanvas.InkPresenter.StrokeContainer.GetStrokeById(strokeId);
+            //        stroke.Selected = true;
+            //        SetSelectedStrokeStyle(stroke);
+            //    }
+            //    //by default uses the stroke's pre-analyzed recognition for annotation
+            //    int lineNum = getLineNumByRect(line.BoundingRect);
+            //    var phrasewords = phrases[lineNum].words;
+            //    string text = "";
+            //    recognizedText.Clear();
+
+            //    foreach (var word in phrasewords)
+            //    {
+            //        var bound = word.GetUIRect();
+            //        bool intersects = bound.X >= boundingRect.X && bound.X + bound.Width <= boundingRect.Right;
+            //        if (intersects)
+            //        {
+            //            recognizedText.Add(word.ConvertToHWRRecognizedText());
+            //            text += word.current + " ";
+            //        }
+            //    }
+            //    RecognizeSelection(text);
+            //}
+
             //Manually detecting hit words and select 
-            else {
-                MainPage.Current.NotifyUser("manually detect", NotifyType.StatusMessage, 1);
-            }
 
         }
 

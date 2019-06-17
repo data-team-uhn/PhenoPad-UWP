@@ -1,28 +1,14 @@
-﻿//*********************************************************
-//
-// Copyright (c) Microsoft. All rights reserved.
-// This code is licensed under the MIT License (MIT).
-// THIS CODE IS PROVIDED *AS IS* WITHOUT WARRANTY OF
-// ANY KIND, EITHER EXPRESS OR IMPLIED, INCLUDING ANY
-// IMPLIED WARRANTIES OF FITNESS FOR A PARTICULAR
-// PURPOSE, MERCHANTABILITY, OR NON-INFRINGEMENT.
-//
-//*********************************************************
-
-using PhenoPad.SpeechService;
+﻿using PhenoPad.SpeechService;
 using System;
-using System.Collections;
 using System.Collections.ObjectModel;
 using System.Threading.Tasks;
 using Windows.Foundation;
 using Windows.Foundation.Metadata;
-using Windows.System;
 using Windows.UI;
 using Windows.UI.ViewManagement;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
 using Windows.UI.Xaml.Data;
-using Windows.UI.Xaml.Input;
 using System.Diagnostics;
 
 using PhenoPad.PhenotypeService;
@@ -868,10 +854,11 @@ namespace PhenoPad
                     _mediaPlayerElement.Visibility = Visibility.Visible;
                 }
                 else {
-                    TryGetAudioFromServer(audioName);
-                    audioFile = await FileManager.getSharedFileManager().GetSavedAudioFile(MainPage.Current.notebookId, audioName);
-                    if (audioFile != null)
+                    bool success = await TryGetAudioFromServer(audioName);
+                    Debug.WriteLine($"trygetaudiofrom server success = {success}");
+                    if (success)
                     {
+                        audioFile = await FileManager.getSharedFileManager().GetSavedAudioFile(MainPage.Current.notebookId, audioName);
                         _mediaPlayerElement.Source = MediaSource.CreateFromStorageFile(audioFile);
                         _mediaPlayerElement.Visibility = Visibility.Visible;
                     }
@@ -885,7 +872,7 @@ namespace PhenoPad
             }
         }
 
-        public async void TryGetAudioFromServer(string name) {
+        public async Task<bool> TryGetAudioFromServer(string name) {
             try {
                 var messageDialog = new MessageDialog("Getting audio file from server may take a while, continue?");
                 messageDialog.Title = "PhenoPad";
@@ -900,11 +887,13 @@ namespace PhenoPad
                 if ((int)result.Id == 0)
                 {
                     bool success = await MainPage.Current.GetRemoteAudioAndSave(name);
+                    return success;
                 }
             }
             catch (Exception e) {
                 LogService.MetroLogger.getSharedLogger().Error(e.Message);
             }
+            return false;
         }
     }
 }

@@ -35,9 +35,8 @@ namespace PhenoPad.FileService
         /// </summary>
         public RecognizedPhrases()
         {
-            current = "";
-            candidate_list = new List<string>();
         }
+
         public RecognizedPhrases(string noteId, string pageId,int lineNum, double canvasLeft, int index, string selected,List<string>candidates, List<InkStroke> strokes,bool isCorrected,bool isAbbr) {
             line_index = lineNum;
             this.canvasLeft = canvasLeft;           

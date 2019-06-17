@@ -212,6 +212,9 @@ namespace PhenoPad.SpeechService
             CancellationToken cancellationToken = cancellationSource.Token;                 
             this.speechInterpreter.newConversation();
             OperationLogger.getOpLogger().Log(OperationType.ASR, "Started");
+
+            CreateNewAudioName();
+
             await Task.Run(async () =>
             {
                 // Weird issue but seems to be some buffer issue
@@ -422,7 +425,9 @@ namespace PhenoPad.SpeechService
             //Triggers audio started event handler in Mainpage to switch necessary interface layout
             MainPage.Current.onAudioStarted(null, null);
             OperationLogger.getOpLogger().Log(OperationType.ASR, "Started");
+
             CreateNewAudioName();
+
             startGraph();
             if (useFile)
             {
