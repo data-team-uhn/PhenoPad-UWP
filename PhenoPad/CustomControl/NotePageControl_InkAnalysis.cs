@@ -1689,7 +1689,6 @@ namespace PhenoPad.CustomControl
                     pp.sourceType = SourceType.Notes;
 
                 recognizedPhenoBriefListView.ItemsSource = result;
-
                 breifPhenoProgressBar.Visibility = Visibility.Collapsed;
                 recognizedPhenoBriefListView.Visibility = Visibility.Visible;
 
@@ -1702,6 +1701,7 @@ namespace PhenoPad.CustomControl
 
                 rootPage.NotifyUser("No phenotypes found in: " + str, NotifyType.ErrorMessage, 2);
             }
+            UpdateLayout();
 
         }
         private async void searchPhenotypes(string str)
