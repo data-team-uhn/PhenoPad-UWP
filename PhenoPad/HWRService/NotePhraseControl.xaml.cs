@@ -7,6 +7,7 @@ using Windows.UI.Xaml.Controls;
 using Windows.UI.Core;
 using Windows.UI.Xaml.Media;
 using System;
+using Windows.Foundation;
 
 namespace PhenoPad.CustomControl
 {
@@ -16,6 +17,7 @@ namespace PhenoPad.CustomControl
         public int phraseIndex;
         public float LINE_HEIGHT = 50;
         public List<WordBlockControl> words;
+        public static double MAX_WORD_SPACING = 70;
 
         public NotePhraseControl(int lineNum, List<WordBlockControl> words = null)
         {
@@ -27,43 +29,72 @@ namespace PhenoPad.CustomControl
             UpdatePhraseLayout();
         }
 
+        public WordBlockControl GetHitWBC(Point pos) {
+
+            //returns the first WBC that matches in position with a given point
+
+            foreach (var w in words) {
+                var rect = w.BoundingRect;
+                rect.Intersect(new Rect(pos.X, pos.Y, 1, 1));
+                if (!rect.IsEmpty)
+                    return w;
+            }
+            return null;
+        }
+
+        public List<WordBlockControl> GetHitWBCPhrase(Point pos) {
+
+            //Returns all WBC of the same phrase that matches in position with a given point
+
+            var hitWord = GetHitWBC(pos);
+            if (hitWord != null)
+                return words.Where(x => x.phrase_index == hitWord.phrase_index).ToList();
+            else
+                return null;
+        }
+
         public void UpdatePhraseLayout() {
-            //this guarantees list will have at least one word
+
+            //updates UI display logic and re-arranges phrase based on stroke boundings
+
             if (words.Count == 0)
                 return;
             try
             {
                 PhraseCanvas.Children.Clear();
-                words = words.OrderBy(w => w.left).ToList();
+                words = words.OrderBy(w => w.word_index).ToList();
                 StackPanel sp = InitNewBlockPanel();
+                int phrase_ind = 0;
+                double left = words[0].BoundingRect.X;
+                words[0].phrase_index = phrase_ind;
                 sp.Children.Add(words[0]);
                 //Debug.WriteLine($"WBC left = {words[0].left}");
                 for (int i = 1; i < words.Count; i++)
                 {
+                    double wordSpacing = words[i].BoundingRect.X - (words[i - 1].BoundingRect.X + words[i - 1].BoundingRect.Width);
                     //same block
-                    if (words[i].left == words[i - 1].left)
+                    if (wordSpacing < MAX_WORD_SPACING)
                     {
                         sp.Children.Add(words[i]);
                     }
                     //new block
-                    else if (words[i].left > words[i - 1].left)
-                    {
-                        Debug.WriteLine($"new block WBC left = {words[i].left}");
-
+                    else{
                         PhraseCanvas.Children.Add(sp);
-                        Canvas.SetLeft(sp, words[i - 1].left);
+                        Canvas.SetLeft(sp, left);
                         Canvas.SetTop(sp, 0);
                         sp = InitNewBlockPanel();
+                        phrase_ind++;
+                        left = words[i].BoundingRect.X;
                         sp.Children.Add(words[i]);
                     }
+                    words[i].phrase_index = phrase_ind;
                 }
                 if (sp.Children.Count > 0)
                 {
                     PhraseCanvas.Children.Add(sp);
-                    Canvas.SetLeft(sp, words[words.Count - 1].left);
+                    Canvas.SetLeft(sp, left);
                     Canvas.SetTop(sp, 0);
                 }
-
                 UpdateLayout();
             }
             catch (Exception e)

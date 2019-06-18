@@ -44,27 +44,21 @@ namespace PhenoPad.CustomControl
         {
             ClearSelectionAsync();
             Point pos = e.GetPosition(inkCanvas);
-            ShowAlterOnTapped(pos);
-        }
-
-        private void ShowAlterOnTapped(Point pos)
-        {
-
-
             foreach (var s in inkCan.InkPresenter.StrokeContainer.GetStrokes())
             {
                 SetDefaultStrokeStyle(s);
             }
-
             Rect pointerRec = new Rect(pos.X, pos.Y, 1, 1);
             int lineNum = getLineNumByRect(pointerRec);
-            var words = FindInkNodeInLine(lineNum, NodeType.InkWord);
+
+            if (!phrases.ContainsKey(lineNum))
+                return;
             bool hovering = false;
 
-            var wb = GetHitWBC(pos);
+            //gets the hit WBC and setup UI for hit word
+            var wb = phrases[lineNum].GetHitWBC(pos);
             if (wb != null)
             {
-                //Debug.WriteLine(wb.current + " " + wb.strokes.Count);
                 foreach (var wbs in wb.strokes)
                 {
                     var s = inkCan.InkPresenter.StrokeContainer.GetStrokeById(wbs.Id);
@@ -81,14 +75,14 @@ namespace PhenoPad.CustomControl
                 TextBox tb = new TextBox();
                 tb.Width = 40;
                 tb.Height = curLineWordsStackPanel.ActualHeight * 0.7;
-                tb.KeyDown += (object sender, KeyRoutedEventArgs e) =>
+                tb.KeyDown += (object sender1, KeyRoutedEventArgs e1) =>
                 {
-                    if (e.Key.Equals(VirtualKey.Enter))
+                    if (e1.Key.Equals(VirtualKey.Enter))
                     {
                         this.Focus(FocusState.Programmatic);
                     }
                 };
-                tb.LostFocus += (object sender, RoutedEventArgs e) =>
+                tb.LostFocus += (object sender1, RoutedEventArgs e1) =>
                 {
                     if (tb.Text.Length > 0)
                     {
@@ -100,138 +94,12 @@ namespace PhenoPad.CustomControl
                 curWordPhenoControlGrid.Visibility = Visibility.Collapsed;
                 curLineWordsStackPanel.Visibility = Visibility.Visible;
                 curLineResultPanel.Visibility = Visibility.Visible;
-                Canvas.SetLeft(curLineResultPanel, pos.X);
+                Canvas.SetLeft(curLineResultPanel, wb.BoundingRect.X);
                 Canvas.SetTop(curLineResultPanel, (lineNum - 1) * LINE_HEIGHT);
                 return;
             }
-
-            for (int i = 0; i < words.Count; i++)
-            {
-                var w = words[i];
-                Rect wordRect = new Rect(w.BoundingRect.X, lineNum * LINE_HEIGHT, w.BoundingRect.Width, LINE_HEIGHT);
-                if (wordRect.Contains(pos))
-                {
-                    var WHRatio = Math.Abs(w.BoundingRect.X / w.BoundingRect.Y);
-                    //classified as a vertial word, need to manually show alternative of whole line
-                    if (WHRatio < 0.5)
-                    {
-
-                    }
-                    //valid inkanalysis node, will try to search for hit word
-                    else {
-                        var phrase = phrases.Where(x => x.Key == lineNum).ToList();
-                        if (phrase.Count == 0)
-                            return;
-                        WordBlockControl wbc = phrase.FirstOrDefault().Value.words.Where(x => x.word_index == i).FirstOrDefault();
-                        if (wbc != null)
-                        {
-
-                            List<uint> strokeIDs = w.GetStrokeIds().ToList();
-
-                            //for manuallying handling first few strokes of a line that are missed by inkAnalyzer as a word
-                            if (i == 0)
-                            {
-                                var line = FindInkNodeInLine(lineNum, NodeType.InkLine).FirstOrDefault();
-                                var ids = GetUnrecognizedFromNode(w, line);
-                                strokeIDs.AddRange(ids);
-                                Debug.WriteLine($"manually added {ids.Count} strokes to this word");
-                            }
-
-                            foreach (var sid in strokeIDs)
-                            {
-                                var s = inkCan.InkPresenter.StrokeContainer.GetStrokeById(sid);
-                                SetSelectedStrokeStyle(s);
-                            }
-                            hovering = true;
-
-                            curLineWordsStackPanel.Children.Clear();
-                            foreach (var b in wbc.GetCurWordCandidates())
-                            {
-                                curLineWordsStackPanel.Children.Add(b);
-                            }
-
-                            TextBox tb = new TextBox();
-                            tb.Width = 40;
-                            tb.Height = curLineWordsStackPanel.ActualHeight * 0.7;
-                            tb.KeyDown += (object sender, KeyRoutedEventArgs e) =>
-                            {
-                                if (e.Key.Equals(VirtualKey.Enter))
-                                {
-                                    this.Focus(FocusState.Programmatic);
-                                }
-                            };
-                            tb.LostFocus += (object sender, RoutedEventArgs e) =>
-                            {
-                                if (tb.Text.Length > 0)
-                                {
-                                    wbc.ChangeAlterFromTextInput(tb.Text);
-                                }
-                                HideCurLineStackPanel();
-                            };
-                            curLineWordsStackPanel.Children.Add(tb);
-                            curWordPhenoControlGrid.Visibility = Visibility.Collapsed;
-                            curLineWordsStackPanel.Visibility = Visibility.Visible;
-                            curLineResultPanel.Visibility = Visibility.Visible;
-                            Canvas.SetLeft(curLineResultPanel, w.BoundingRect.X);
-                            Canvas.SetTop(curLineResultPanel, (lineNum - 1) * LINE_HEIGHT);
-                            return;
-                        }
-
-
-                    }
-
-                }
-            }
-
             if (!hovering)
                 HideCurLineStackPanel();
-        }
-
-        public WordBlockControl GetHitWBC(Point pos) {
-            Rect pointerRec = new Rect(pos.X, pos.Y, 1, 1);
-            int lineNum = getLineNumByRect(pointerRec);
-            if (! phrases.ContainsKey(lineNum))
-                return null;
-
-            var inLineStrokes = FindAllStrokesInLine(lineNum);
-            var inLineWBC = phrases[lineNum].words;
-            double startX = inLineStrokes.FirstOrDefault().BoundingRect.X;
-            double endX = inLineStrokes.LastOrDefault().BoundingRect.X + inLineStrokes.LastOrDefault().BoundingRect.Width;
-            //gets the estimated index of pointed word
-            int ind = (int)(Math.Floor((pos.X - startX) / (endX - startX) * inLineWBC.Count - 0.1 ));
-            if (ind >= 0 && ind < inLineWBC.Count) {
-                //Debug.WriteLine($"lendth = {endX - startX}, posX={pos.X - startX} estimated index = {ind}");
-                return inLineWBC[ind];
-            }
-            return null;
-        }
-
-        public List<WordBlockControl> GetAndSelectHitWBCLine(Point pos) {
-            Rect pointerRec = new Rect(pos.X, pos.Y, 1, 1);
-            int lineNum = getLineNumByRect(pointerRec);
-            if (!phrases.ContainsKey(lineNum))
-                return null;
-
-            var inLineWBC = phrases[lineNum].words;
-            var allLeft = inLineWBC.Where(x => x.left <= pos.X);
-            var allRight = inLineWBC.Where(x => x.left > pos.X);
-            var hitLines = allLeft.Except(allRight).OrderBy(x=>x.word_index);
-            if (hitLines.Count() > 0)
-            {
-                var strokes = hitLines.SelectMany(x => x.strokes).ToList().OrderBy(x => x.BoundingRect.X);
-                foreach (var stroke in strokes) {
-                    var s = inkCan.InkPresenter.StrokeContainer.GetStrokeById(stroke.Id);
-                    s.Selected = true;
-                    SetSelectedStrokeStyle(s);
-                }
-                double left = strokes.FirstOrDefault().BoundingRect.X;
-                double right = strokes.LastOrDefault().BoundingRect.X + strokes.LastOrDefault().BoundingRect.Width;
-                boundingRect = new Rect(left, lineNum * LINE_HEIGHT, right - left, LINE_HEIGHT);
-                return hitLines.ToList();
-            }
-            else
-                return null;
-          
         }
 
         private void InkCanvas_DoubleTapped(object sender, DoubleTappedRoutedEventArgs e)
@@ -240,80 +108,47 @@ namespace PhenoPad.CustomControl
             ClearSelectionAsync();
 
             //FOR DEBUGGING PURPOSES
+            //int count = inkCan.InkPresenter.StrokeContainer.GetStrokes().Count;
+            //var lines = inkAnalyzer.AnalysisRoot.FindNodes(InkAnalysisNodeKind.InkWord);
+            //int allLineCount = 0;
+            //foreach (var l in lines)
+            //{
+            //    allLineCount += l.GetStrokeIds().Count;
+            //}
+            //Debug.WriteLine($"Number of stroked missed by Inkword = {count - allLineCount}");
+            //Debug.WriteLine($"Number of words = {lines.Count}");
+            //Debug.WriteLine($"Number of lines =  {inkAnalyzer.AnalysisRoot.FindNodes(InkAnalysisNodeKind.Line).Count}");
+            //Debug.WriteLine($"Number of listitem =  {inkAnalyzer.AnalysisRoot.FindNodes(InkAnalysisNodeKind.ListItem).Count}");
+            //Debug.WriteLine($"Number of drawing =  {inkAnalyzer.AnalysisRoot.FindNodes(InkAnalysisNodeKind.InkDrawing).Count}");
+            //Debug.WriteLine($"Number of inkbullet =  {inkAnalyzer.AnalysisRoot.FindNodes(InkAnalysisNodeKind.InkBullet).Count}");
 
-            int count = inkCan.InkPresenter.StrokeContainer.GetStrokes().Count;
-            var lines = inkAnalyzer.AnalysisRoot.FindNodes(InkAnalysisNodeKind.InkWord);
-            int allLineCount = 0;
-            foreach (var l in lines)
-            {
-                allLineCount += l.GetStrokeIds().Count;
-            }
-            Debug.WriteLine($"Number of stroked missed by Inkword = {count - allLineCount}");
-            Debug.WriteLine($"Number of words = {lines.Count}");
-            Debug.WriteLine($"Number of lines =  {inkAnalyzer.AnalysisRoot.FindNodes(InkAnalysisNodeKind.Line).Count}");
-            Debug.WriteLine($"Number of listitem =  {inkAnalyzer.AnalysisRoot.FindNodes(InkAnalysisNodeKind.ListItem).Count}");
-            Debug.WriteLine($"Number of drawing =  {inkAnalyzer.AnalysisRoot.FindNodes(InkAnalysisNodeKind.InkDrawing).Count}");
-            Debug.WriteLine($"Number of inkbullet =  {inkAnalyzer.AnalysisRoot.FindNodes(InkAnalysisNodeKind.InkBullet).Count}");
-
-            var line = FindHitLine(position);
             string text = "";
             recognizedText.Clear();
-            var inlines = GetAndSelectHitWBCLine(position);
-
+            Rect pointerRec = new Rect(position.X, position.Y, 1, 1);
+            int lineNum = getLineNumByRect(pointerRec);
+            if (!phrases.ContainsKey(lineNum))
+                return;
+            var inlines = phrases[lineNum].GetHitWBCPhrase(position);
             if (inlines != null)
             {
+                var strokes = inlines.SelectMany(x => x.strokes).ToList().OrderBy(x => x.BoundingRect.X);
+                foreach (var stroke in strokes)
+                {
+                    var s = inkCan.InkPresenter.StrokeContainer.GetStrokeById(stroke.Id);
+                    s.Selected = true;
+                    SetSelectedStrokeStyle(s);
+                }
+                double left = strokes.FirstOrDefault().BoundingRect.X;
+                double right = strokes.LastOrDefault().BoundingRect.X + strokes.LastOrDefault().BoundingRect.Width;
+                boundingRect = new Rect(left, lineNum * LINE_HEIGHT, right - left, LINE_HEIGHT);
+
                 foreach (var w in inlines)
                 {
                     recognizedText.Add(w.ConvertToHWRRecognizedText());
                     text += w.current + " ";
-
                 }
                 RecognizeSelection(text);
             }
-
-
-            //only handle using inkanalysis line if it's a horizontal line
-            //if (line != null)
-            //{
-            //    double widToHeiRatio = line.BoundingRect.Width / line.BoundingRect.Height;
-            //    if (widToHeiRatio < 0.5)
-            //    {
-            //        MainPage.Current.NotifyUser("manually detect", NotifyType.StatusMessage, 1);
-            //    }
-            //    else {
-            //    }
-            //    // Show the selection rect at the paragraph's bounding rect.
-            //    //boundingRect.Union(line.BoundingRect);
-            //    boundingRect = line.BoundingRect;
-            //    IReadOnlyList<uint> strokeIds = line.GetStrokeIds();
-
-            //    foreach (var strokeId in strokeIds)
-            //    {
-            //        var stroke = inkCanvas.InkPresenter.StrokeContainer.GetStrokeById(strokeId);
-            //        stroke.Selected = true;
-            //        SetSelectedStrokeStyle(stroke);
-            //    }
-            //    //by default uses the stroke's pre-analyzed recognition for annotation
-            //    int lineNum = getLineNumByRect(line.BoundingRect);
-            //    var phrasewords = phrases[lineNum].words;
-            //    string text = "";
-            //    recognizedText.Clear();
-
-            //    foreach (var word in phrasewords)
-            //    {
-            //        var bound = word.GetUIRect();
-            //        bool intersects = bound.X >= boundingRect.X && bound.X + bound.Width <= boundingRect.Right;
-            //        if (intersects)
-            //        {
-            //            recognizedText.Add(word.ConvertToHWRRecognizedText());
-            //            text += word.current + " ";
-            //        }
-            //    }
-            //    RecognizeSelection(text);
-            //}
-
-            //Manually detecting hit words and select 
-
         }
 
         #endregion
@@ -506,7 +341,7 @@ namespace PhenoPad.CustomControl
                     //this handles some weird error when dict count != HWR count, by default will count this word as last phrase
                     if (i >= dict.Count)
                         ind = dict.Count - 1;
-                    WordBlockControl wb = new WordBlockControl(lineNum, dict[ind], i, recognized.selectedCandidate, recognized.candidateList,recognized.strokes);
+                    WordBlockControl wb = new WordBlockControl(lineNum, i, recognized.selectedCandidate, recognized.candidateList,recognized.strokes);
                     //just an intuitive way to check for abbreviation
                     if (recognized.candidateList.Count > 5)
                         wb.is_abbr = true;
@@ -731,7 +566,6 @@ namespace PhenoPad.CustomControl
                 double start = phrase.BoundingRect.X;
                 double end = phrase.BoundingRect.X + phrase.BoundingRect.Width;
                 var hitWords = inWords.Where(x => x.BoundingRect.X >= start && x.BoundingRect.X + x.BoundingRect.Width <= end).ToList();
-                Debug.WriteLine($"phrase starting {start} has {hitWords.Count} words");
                 foreach (var w in hitWords)
                     lst.Add(start);
             }
@@ -760,27 +594,15 @@ namespace PhenoPad.CustomControl
                     s.Selected = false;
                 foreach (var s in strokeInLine)
                     s.Selected = true;
-                var dict = GetPhrasesOnLine(lineid);
 
                 //recognize selected line phrase and parse each word as a WordBlockControl
                 var HWRresult = await HWRManager.getSharedHWRManager().OnRecognizeAsync(inkCanvas.InkPresenter.StrokeContainer, InkRecognitionTarget.Selected, lineid);
 
-                if (dict.Count != HWRresult.Count && dict.Count != 0)
-                {
-                    Debug.WriteLine($"dict count = {dict.Count}, HWRresult count = {HWRresult.Count}");
-                }
 
                 for (int i = 0; i < HWRresult.Count; i++)
                 {
                     HWRRecognizedText recognized = HWRresult[i];
-                    int ind = i;
-                    //this handles some weird error when dict count != HWR count, by default will count this word as last phrase
-                    if (i >= dict.Count)
-                        ind = dict.Count - 1;
-                    double left = strokeInLine.FirstOrDefault().BoundingRect.X;
-                    if (dict.Count > 0)
-                        left = dict[ind];
-                    WordBlockControl wb = new WordBlockControl(lineid, left, i, recognized.selectedCandidate, recognized.candidateList,recognized.strokes);
+                    WordBlockControl wb = new WordBlockControl(lineid, i, recognized.selectedCandidate, recognized.candidateList,recognized.strokes);
                     //just an intuitive way to check for abbreviation
                     if (recognized.candidateList.Count > 5)
                         wb.is_abbr = true;

@@ -26,8 +26,10 @@ namespace PhenoPad.CustomControl
     public sealed partial class WordBlockControl : UserControl
     {
         public int line_index;
-        public int word_index;//The word index within a phrase
-        public double left;//The leading canvasLeft coordinate of a phrase, all words of the same phrase will have the same left value
+        public int word_index;//The word index within the line
+        public int phrase_index;
+
+        public Rect BoundingRect;
 
         public bool corrected;//Whether this word has been manually corrected
         public bool is_abbr;//whether this word is detected as an abbreviation
@@ -41,14 +43,14 @@ namespace PhenoPad.CustomControl
         {
         }
 
-        public WordBlockControl(int line_index, double left, int word_index, string current, List<string>candidates, List<InkStroke> strokes) {
+        public WordBlockControl(int line_index, int word_index, string current, List<string>candidates, List<InkStroke> strokes) {
             this.InitializeComponent();
             this.line_index = line_index;
-            this.left = left;
             this.word_index = word_index;
             this.current = current;
             this.candidates = candidates;
             this.strokes = strokes;
+            SetBoundingRect(this.strokes);
             WordBlock.Text = current;
             corrected = false;
             //AlternativeList.ItemsSource = candidates;
@@ -60,6 +62,14 @@ namespace PhenoPad.CustomControl
             //this.LostFocus += ResetUIVisibility;
 
         }
+
+        public void SetBoundingRect(List<InkStroke> strokes) {
+            var s = strokes.OrderBy(x => x.BoundingRect.X).ToList();
+            double left = s.FirstOrDefault().BoundingRect.X;
+            double right = s.LastOrDefault().BoundingRect.X + s.LastOrDefault().BoundingRect.Width;
+            this.BoundingRect = new Rect(left, line_index * NotePageControl.LINE_HEIGHT, right - left, NotePageControl.LINE_HEIGHT);
+        }
+
 
         private void SetFlyoutOpening(object sender, object e)
         {
@@ -77,6 +87,7 @@ namespace PhenoPad.CustomControl
 
         public void UpdateDisplay() {
             WordBlock.Text = current;
+            SetBoundingRect(this.strokes);
             //AlternativeList.ItemsSource = candidates;
         }
 
@@ -210,12 +221,12 @@ namespace PhenoPad.CustomControl
             return tb;
         }
 
-        public Rect GetUIRect() {
-            var trans = WordBlock.TransformToVisual(MainPage.Current.curPage);
-            Rect bound = trans.TransformBounds(new Rect(0,0,20,20));
-            //Debug.WriteLine($"{current}'s rect: x={bound.X}, y={bound.Y}");
-            return bound;
-        }
+        //public Rect GetUIRect() {
+        //    var trans = WordBlock.TransformToVisual(MainPage.Current.curPage);
+        //    Rect bound = trans.TransformBounds(new Rect(0,0,20,20));
+        //    //Debug.WriteLine($"{current}'s rect: x={bound.X}, y={bound.Y}");
+        //    return bound;
+        //}
 
         private void CandidateList_Click(object sender, RoutedEventArgs args)
         {//called when user clicks on the alternative from the horizonal word stack panel

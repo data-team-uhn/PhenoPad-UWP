@@ -891,7 +891,7 @@ namespace PhenoPad.CustomControl
                     for (int i = 0; i < npc.words.Count; i++)
                     {
                         WordBlockControl wb = npc.words[i];
-                        RecognizedPhrases ph = new RecognizedPhrases(notebookId, pageId, wb.line_index, wb.left, i, wb.current, wb.candidates, wb.strokes,wb.corrected, wb.is_abbr);
+                        RecognizedPhrases ph = new RecognizedPhrases(notebookId, pageId, wb.line_index, i, wb.current, wb.candidates, wb.strokes,wb.corrected, wb.is_abbr);
                         wordPhrases.Add(ph);
                     }
                 }
@@ -1017,7 +1017,7 @@ namespace PhenoPad.CustomControl
                     if (ph.strokes.Contains(s.StrokeStartedTime.Value.DateTime))
                         strokes.Add(s);
                 }
-                WordBlockControl wb = new WordBlockControl(ph.line_index, ph.canvasLeft, ph.word_index, ph.current, candidates, strokes);
+                WordBlockControl wb = new WordBlockControl(ph.line_index, ph.word_index, ph.current, candidates, strokes);
                 wb.is_abbr = ph.is_abbr;
                 wb.corrected = ph.is_corrected;
                 words.Add(wb);

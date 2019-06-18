@@ -81,7 +81,8 @@ namespace PhenoPad.CustomControl
             int line_index = recogPhrase.FirstOrDefault().line_index;
             foreach (var ph in recogPhrase) {
                 List<string> candidates = ph.candidate_list;
-                WordBlockControl wb = new WordBlockControl(ph.line_index, ph.canvasLeft, ph.word_index, ph.current, candidates,null);
+                //2019/06/18-> remember to change null back to strokes that match condition!
+                WordBlockControl wb = new WordBlockControl(ph.line_index, ph.word_index, ph.current, candidates,null);
                 wb.WordBlock.FontSize = 18;
                 wb.corrected = ph.is_corrected;
                 words.Add(wb);
