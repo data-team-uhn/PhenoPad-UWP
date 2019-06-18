@@ -17,7 +17,6 @@
     xmlns:local="using:PhenoPad"
     xmlns:customcontrol="using:PhenoPad.CustomControl"
     xmlns:phenotypeservice="using:PhenoPad.PhenotypeService"
-    xmlns:styles="using:PhenoPad.Styles"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     mc:Ignorable="d">
@@ -330,12 +329,14 @@
             </StackPanel>
 
             <StackPanel Orientation="Horizontal" Grid.Column="1" Padding="5,3,3,3"
+                        Width="auto"
                         HorizontalAlignment="Left">
                 <TextBlock x:Name="mediaText"  Text="Recorded Audio" 
                     Margin="5" 
                     Padding="5,5,5,1"
                     Visibility="Collapsed"/>
-                <ComboBox x:Name="AudioDropdownList" Header="Recorded Audio" SelectionChanged="AudioDropdownList_SelectionChanged"/>
+                <ComboBox x:Name="AudioDropdownList" Header="Recorded Audio" Width="auto"
+                          SelectionChanged="AudioDropdownList_SelectionChanged"/>
                 <MediaPlayerElement x:Name="_mediaPlayerElement" 
                                     AreTransportControlsEnabled="True" 
                                     Margin="5"

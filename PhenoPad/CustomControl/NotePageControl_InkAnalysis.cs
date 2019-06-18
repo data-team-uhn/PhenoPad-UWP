@@ -206,7 +206,7 @@ namespace PhenoPad.CustomControl
             return null;
         }
 
-        public List<WordBlockControl> GetHitWBCLine(Point pos) {
+        public List<WordBlockControl> GetAndSelectHitWBCLine(Point pos) {
             Rect pointerRec = new Rect(pos.X, pos.Y, 1, 1);
             int lineNum = getLineNumByRect(pointerRec);
             if (!phrases.ContainsKey(lineNum))
@@ -215,15 +215,31 @@ namespace PhenoPad.CustomControl
             var inLineWBC = phrases[lineNum].words;
             var allLeft = inLineWBC.Where(x => x.left <= pos.X);
             var allRight = inLineWBC.Where(x => x.left > pos.X);
-            var hitLines = allLeft.Except(allRight);
-            return hitLines.Count() == 0 ? null : hitLines.ToList();
-
+            var hitLines = allLeft.Except(allRight).OrderBy(x=>x.word_index);
+            if (hitLines.Count() > 0)
+            {
+                var strokes = hitLines.SelectMany(x => x.strokes).ToList().OrderBy(x => x.BoundingRect.X);
+                foreach (var stroke in strokes) {
+                    var s = inkCan.InkPresenter.StrokeContainer.GetStrokeById(stroke.Id);
+                    s.Selected = true;
+                    SetSelectedStrokeStyle(s);
+                }
+                double left = strokes.FirstOrDefault().BoundingRect.X;
+                double right = strokes.LastOrDefault().BoundingRect.X + strokes.LastOrDefault().BoundingRect.Width;
+                boundingRect = new Rect(left, lineNum * LINE_HEIGHT, right - left, LINE_HEIGHT);
+                return hitLines.ToList();
+            }
+            else
+                return null;
+          
         }
 
         private void InkCanvas_DoubleTapped(object sender, DoubleTappedRoutedEventArgs e)
         {
             var position = e.GetPosition(inkCanvas);
             ClearSelectionAsync();
+
+            //FOR DEBUGGING PURPOSES
 
             int count = inkCan.InkPresenter.StrokeContainer.GetStrokes().Count;
             var lines = inkAnalyzer.AnalysisRoot.FindNodes(InkAnalysisNodeKind.InkWord);
@@ -242,18 +258,12 @@ namespace PhenoPad.CustomControl
             var line = FindHitLine(position);
             string text = "";
             recognizedText.Clear();
-            var inlines = GetHitWBCLine(position);
+            var inlines = GetAndSelectHitWBCLine(position);
 
             if (inlines != null)
             {
-                boundingRect = inlines.FirstOrDefault().GetUIRect();
                 foreach (var w in inlines)
                 {
-                    foreach (var s in w.strokes) {
-                        var hitStroke = inkCan.InkPresenter.StrokeContainer.GetStrokeById(s.Id);
-                        hitStroke.Selected = true;
-                        SetSelectedStrokeStyle(hitStroke);
-                    }
                     recognizedText.Add(w.ConvertToHWRRecognizedText());
                     text += w.current + " ";
 
@@ -721,6 +731,7 @@ namespace PhenoPad.CustomControl
                 double start = phrase.BoundingRect.X;
                 double end = phrase.BoundingRect.X + phrase.BoundingRect.Width;
                 var hitWords = inWords.Where(x => x.BoundingRect.X >= start && x.BoundingRect.X + x.BoundingRect.Width <= end).ToList();
+                Debug.WriteLine($"phrase starting {start} has {hitWords.Count} words");
                 foreach (var w in hitWords)
                     lst.Add(start);
             }
@@ -1345,8 +1356,8 @@ namespace PhenoPad.CustomControl
 
                 }
                 else {
-                    Canvas.SetLeft(selectionRectangle, boundingRect.Left);
-                    Canvas.SetTop(selectionRectangle, boundingRect.Top);
+                    Canvas.SetLeft(selectionRectangle, boundingRect.X);
+                    Canvas.SetTop(selectionRectangle, boundingRect.Y);
 
                     selectionCanvas.Children.Add(PopupCommandBar);
                     selectionCanvas.Children.Add(recognizedPhenoBriefPanel);

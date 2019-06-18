@@ -368,6 +368,7 @@ namespace PhenoPad.SpeechService
                 try
                 {
                     speechStreamSocket = new SpeechStreamSocket(this.serverAddress, this.serverPort);
+                    CreateNewAudioName();
                     speechAPI.setupClient(this.serverAddress);
                     succeed = await speechStreamSocket.ConnectToServer();
                 }
@@ -426,9 +427,11 @@ namespace PhenoPad.SpeechService
             MainPage.Current.onAudioStarted(null, null);
             OperationLogger.getOpLogger().Log(OperationType.ASR, "Started");
 
-            CreateNewAudioName();
-
+            //bool response = await speechStreamSocket.SendBytesAsync(Encoding.UTF8.GetBytes(GetAudioNameForServer()));
+            //Debug.WriteLine("");
+            //await Task.Delay(TimeSpan.FromSeconds(2));
             startGraph();
+
             if (useFile)
             {
                 fileInputNode.Start();
