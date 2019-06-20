@@ -28,15 +28,30 @@
                                  By="45"
                                  Duration="0:0:0.01" />
             </Storyboard>
-            
-            <Flyout x:Key="PhenotypeSelectionFlyout" Placement="Bottom"  Closed="PhenotypeSelectionFlyoutClosed">
+
+            <Flyout x:Key="PhenotypeSelectionFlyout" Placement="Bottom" 
+                    OverlayInputPassThroughElement="{Binding ElementName=PopupDeleteButton}" 
+                    Closed="PhenotypeSelectionFlyoutClosed">
                 <Flyout.FlyoutPresenterStyle>
                     <Style TargetType="FlyoutPresenter">
                         <Setter Property="ScrollViewer.ZoomMode" Value="Disabled"/>
                         <Setter Property="Width" Value="{Binding ElementName=recognizedPhenoListView, Path=ActualWidth, Mode=OneWay}"/>
                     </Style>
                 </Flyout.FlyoutPresenterStyle>
+                
                 <StackPanel>
+
+                    <RelativePanel  MinWidth="60" Padding="3" HorizontalAlignment="Right">
+
+                            <Button Foreground="PaleVioletRed" Style="{StaticResource ButtonStyle1}"
+                                    ToolTipService.ToolTip="Delete strokes"
+                                    Click="PopupDeleteButton_Click" Background="WhiteSmoke" 
+                                    Padding="0" RelativePanel.AlignLeftWithPanel="True">
+                                <SymbolIcon Symbol="Delete" Height="30" Width="30"/>
+                            </Button>
+                            
+                    </RelativePanel>
+
                     <TextBox Name="recognizedResultTextBlock" KeyDown="recognizedResultTextBlock_KeyDown" 
                          IsReadOnly="True" Width="auto"
                          GotFocus ="recognizedResultTextBlock_GotFocus" SelectionChanged="recognizedResultTextBlock_SelectionChanged"/>
@@ -115,8 +130,6 @@
                 </StackPanel>
             </Flyout>
 
-
-
         </ResourceDictionary>
     </UserControl.Resources>
     
@@ -154,12 +167,9 @@
                       Background="{ThemeResource SystemControlBackgroundChromeWhiteBrush}" 
                       Height="{x:Bind PAGE_HEIGHT}" Width="{x:Bind PAGE_WIDTH}">
 
-                    <!-- Inking area -->
+                    <!-- Note taking ink canvases -->
                     <Canvas x:Name="backgroundCanvas" />
-
-                    <!-- Note taking ink canvas -->
                     <InkCanvas  x:Name="inkCanvas" />
-
                     <Grid x:Name="textEditGrid" Visibility="Collapsed">
                         <Grid.RowDefinitions>
                             <RowDefinition Height="*"/>
@@ -176,20 +186,23 @@
                     </Grid>
 
 
-
+                    <!--Canvas for adding recognized textblocks-->
                     <Canvas x:Name="recognizedCanvas" Visibility="Collapsed"/>
-
                     <!-- pop up after selection-->
                     <Canvas x:Name="selectionCanvas">
-                        <RelativePanel x:Name="PopupCommandBar" MinWidth="60" Height="30"  Visibility="Collapsed">
-                            <Button Foreground="PaleVioletRed" Click="PopupDeleteButton_Click" Background="WhiteSmoke" 
+                        <!--<RelativePanel x:Name="PopupCommandBar" MinWidth="60" Height="30"  Visibility="Collapsed">
+
+                            <Button Foreground="PaleVioletRed" 
+                                    Click="PopupDeleteButton_Click" Background="WhiteSmoke" 
                                     Padding="0" RelativePanel.AlignLeftWithPanel="True">
                                 <SymbolIcon Symbol="Delete" Height="30" Width="30"/>
                             </Button>
-                        </RelativePanel>
+                            
+                        </RelativePanel>-->
 
                         <RelativePanel x:Name="recognizedPhenoBriefPanel" Height="200" Visibility="Collapsed"  
                                        Background="WhiteSmoke" BorderThickness="1" BorderBrush="Gray">
+                            
                             <ListView x:Name="recognizedPhenoBriefListView" Height="200" HorizontalAlignment="Stretch" 
                                       Visibility="Collapsed">
                                 <ListView.ItemTemplate>
@@ -211,6 +224,7 @@
                             <ProgressRing x:Name="breifPhenoProgressBar" Height="100" Width="200"  
                                           IsActive="True" RelativePanel.AlignHorizontalCenterWithPanel="True" 
                                           RelativePanel.AlignVerticalCenterWithPanel="True"/>
+                                                       
                         </RelativePanel>
 
                         <Rectangle StrokeDashArray="2 2"  Name="selectionRectangle" Stroke="DarkBlue" StrokeThickness="2"/>

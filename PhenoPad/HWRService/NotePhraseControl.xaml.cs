@@ -301,9 +301,17 @@ namespace PhenoPad.CustomControl
                 {
                     MainPage.Current.curPage.annotateCurrentLineAndUpdateUI(lineIndex);
                 }
-                Debug.WriteLine($"====== updated line {lineIndex}, server {fromServer}, word count={words.Count} ");
+                //Debug.WriteLine($"====== updated line {lineIndex}, server {fromServer}, word count={words.Count} ");
                 UpdateLayout();
             }
+        }
+
+        public void ClearPhrase() {
+            PhraseCanvas.Children.Clear();
+            this.words = new List<WordBlockControl>();
+            UpdateLayout();
+
+
         }
 
         public List<TextBlock> GetCurLineHWR() {

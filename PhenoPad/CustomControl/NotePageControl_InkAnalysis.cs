@@ -282,14 +282,28 @@ namespace PhenoPad.CustomControl
             else {
                 foreach (int line in linesErased)
                 {
-                    if (phrases.ContainsKey(line)) {
-                        List<WordBlockControl> updated = await RecognizeLineWBC(line);
-                        NotePhraseControl npc = phrases[line];
-                        npc.UpdateRecognition(updated, fromServer: false);
-                    }
+                    await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, async () => {
+                        if (phrases.ContainsKey(line))
+                        {
+                            var strokes = FindAllStrokesInLine(line);
+                            List<WordBlockControl> updated = new List<WordBlockControl>();
+                            NotePhraseControl npc = phrases[line];
+                            if (strokes.Count == 0)
+                            {
+                                npc.ClearPhrase();
+                            }
+                            else {
+                                updated = await RecognizeLineWBC(line);
+                                npc.UpdateRecognition(updated, fromServer: false);
+
+                            }
+                        }
+                    });
                 }
             }
             linesErased.Clear();
+            Debug.WriteLine("done re recognizing after erase");
+            autosaveDispatcherTimer.Start();
         }
 
         private async void RawStrokeTimer_Tick(object sender = null, object e = null)
@@ -516,18 +530,18 @@ namespace PhenoPad.CustomControl
                 tb.VerticalAlignment = VerticalAlignment.Center;
                 tb.FontSize = 16;
                 curLineWordsStackPanel.Children.Add(tb);
-                PopupCommandBar.Visibility = Visibility.Collapsed;
+                //PopupCommandBar.Visibility = Visibility.Collapsed;
                 recognizedPhenoBriefPanel.Visibility = Visibility.Visible;
-                Canvas.SetLeft(PopupCommandBar, boundingRect.X);
-                Canvas.SetTop(PopupCommandBar, boundingRect.Y - PopupCommandBar.Height);
-                PopupCommandBar.Width = Math.Max(boundingRect.Width, PopupCommandBar.MinWidth);
+                //Canvas.SetLeft(PopupCommandBar, boundingRect.X);
+                //Canvas.SetTop(PopupCommandBar, boundingRect.Y - PopupCommandBar.Height);
+                //PopupCommandBar.Width = Math.Max(boundingRect.Width, PopupCommandBar.MinWidth);
                 Canvas.SetLeft(recognizedPhenoBriefPanel, Math.Max(boundingRect.X, boundingRect.X));
                 Canvas.SetTop(recognizedPhenoBriefPanel, boundingRect.Y + boundingRect.Height);
 
                 Canvas.SetLeft(curLineResultPanel, boundingRect.X);
                 Canvas.SetTop(curLineResultPanel, boundingRect.Y - LINE_HEIGHT);
 
-                selectionCanvas.Children.Add(PopupCommandBar);
+                //selectionCanvas.Children.Add(PopupCommandBar);
                 selectionCanvas.Children.Add(recognizedPhenoBriefPanel);
 
                 selectionRectangle.Width = boundingRect.Width;
@@ -793,6 +807,7 @@ namespace PhenoPad.CustomControl
             //Handles when annoResult has at least one element
             if (annoResult != null && annoResult.Count > 0)
             {
+                Debug.WriteLine($"line {lineNum} annotation result = {annoResult.Count}");
                 // update global annotations
                 foreach (var anno in annoResult.ToList())
                 {
@@ -807,32 +822,42 @@ namespace PhenoPad.CustomControl
 
                 // update current line annotation
                 phrases[lineNum].phenotypes = annoResult.Values.ToList();
-
-
-                if (curLineCandidatePheno.Count == 0 || phenoCtrlSlide.Y == 0)
-                {
-                    curWordPhenoControlGrid.Visibility = Visibility.Visible;
-                    phenoCtrlSlide.Y = 0;
-                    ((DoubleAnimation)curWordPhenoAnimation.Children[0]).By = -45;
-                    curWordPhenoAnimation.Begin();
-                }
-
+                //don't update UI if user is already on another line
+                if (showingResultOfLine != lineNum)
+                    return;
                 foreach (var pheno in phrases[lineNum].phenotypes)
                 {
                     var temp = curLineCandidatePheno.Where(x => x == pheno).FirstOrDefault();
                     pheno.state = PhenotypeManager.getSharedPhenotypeManager().getStateByHpid(pheno.hpId);
                     if (temp == null)
+                    {
+
+                        Debug.WriteLine("temp null will add");
+                        
                         curLineCandidatePheno.Add(pheno);
+
+                        Debug.WriteLine("temp null added");
+
+                    }
                     else
                     {
                         if (temp.state != pheno.state)
-                        {                           
+                        {
                             var ind = curLineCandidatePheno.IndexOf(temp);
                             curLineCandidatePheno.Remove(temp);
                             curLineCandidatePheno.Insert(ind, pheno);
                         }
                     }
                 }
+                if (curLineCandidatePheno.Count > 0 && phenoCtrlSlide.Y == 0 && showingResultOfLine == lineNum)
+                {
+                    curWordPhenoControlGrid.Visibility = Visibility.Visible;
+                    //phenoCtrlSlide.Y = 0;
+                    ((DoubleAnimation)curWordPhenoAnimation.Children[0]).By = -45;
+                    curWordPhenoAnimation.Begin();
+                }
+
+
                 //donno what this block does so temporarily commenting it out
                 //if (curLineCandidatePheno.Count != 0)
                 //{
@@ -857,7 +882,7 @@ namespace PhenoPad.CustomControl
                 //    }
                 //}
             }
-            
+
             //Handles when annoResult has no elements
             else
             {
@@ -1146,17 +1171,13 @@ namespace PhenoPad.CustomControl
 
             if (!str.Equals(String.Empty) && !str.Equals(""))
             {
-                PopupCommandBar.Visibility = Visibility.Visible;
+                //PopupCommandBar.Visibility = Visibility.Visible;             
+                //Canvas.SetLeft(PopupCommandBar, boundingRect.X);
+                //Canvas.SetTop(PopupCommandBar, boundingRect.Y - PopupCommandBar.Height);
+                //PopupCommandBar.Width = Math.Max(boundingRect.Width, PopupCommandBar.MinWidth);
                 recognizedPhenoBriefPanel.Visibility = Visibility.Collapsed;
-                Canvas.SetLeft(PopupCommandBar, boundingRect.X);
-                Canvas.SetTop(PopupCommandBar, boundingRect.Y - PopupCommandBar.Height);
-                PopupCommandBar.Width = Math.Max(boundingRect.Width, PopupCommandBar.MinWidth);
-                //Canvas.SetLeft(recognizedPhenoBriefPanel, Math.Max(boundingRect.X, boundingRect.X));
-                //Canvas.SetTop(recognizedPhenoBriefPanel, boundingRect.Y + boundingRect.Height);
                 selectionRectangle.Width = boundingRect.Width;
                 selectionRectangle.Height = boundingRect.Height;
-                //selectionRectangleTranform = new TranslateTransform();
-                //selectionRectangle.RenderTransform = this.selectionRectangleTranform;
 
                 if (ehrPage != null)
                 {
@@ -1175,7 +1196,7 @@ namespace PhenoPad.CustomControl
                     Canvas.SetLeft(selectionRectangle, boundingRect.X);
                     Canvas.SetTop(selectionRectangle, boundingRect.Y);
 
-                    selectionCanvas.Children.Add(PopupCommandBar);
+                    //selectionCanvas.Children.Add(PopupCommandBar);
                     selectionCanvas.Children.Add(recognizedPhenoBriefPanel);
                     selectionCanvas.Children.Add(selectionRectangle);
                     //TestC.Children.Add(selectionRectangle);

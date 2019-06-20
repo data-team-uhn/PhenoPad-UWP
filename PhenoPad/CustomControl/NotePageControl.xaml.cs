@@ -707,6 +707,8 @@ namespace PhenoPad.CustomControl
 
         private void SetSelectedStrokeStyle(InkStroke stroke)
         {
+            if (stroke == null)
+                return;
             var drawingAttributes = stroke.DrawingAttributes;
             //saves current stroke to dict for cache
             if (!tempFormat.ContainsKey(stroke.Id))
@@ -1697,13 +1699,18 @@ namespace PhenoPad.CustomControl
 
         private void PopupDeleteButton_Click(object sender, RoutedEventArgs e)
         {
-            foreach (var stroke in inkCanvas.InkPresenter.StrokeContainer.GetStrokes())
+            //the button that shows when selected strokes using lasso tool
+            var selected = inkCan.InkPresenter.StrokeContainer.GetStrokes().Where(x => x.Selected == true);
+            foreach (var stroke in selected)
             {
-                if (stroke.Selected == true)
-                    inkAnalyzer.RemoveDataForStroke(stroke.Id);
+                inkAnalyzer.RemoveDataForStroke(stroke.Id);
+                int lineNum = getLineNumByRect(stroke.BoundingRect);
+                if (!linesErased.Contains(lineNum))
+                    linesErased.Add(lineNum);
             }
             inkCanvas.InkPresenter.StrokeContainer.DeleteSelected();
             ClearDrawnBoundingRect();
+            EraseTimer.Start();
         }
 
         private void ShowToastNotification(string title, string stringContent)
