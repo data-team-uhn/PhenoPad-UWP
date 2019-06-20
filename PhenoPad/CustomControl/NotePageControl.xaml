@@ -30,12 +30,18 @@
             </Storyboard>
             
             <Flyout x:Key="PhenotypeSelectionFlyout" Placement="Bottom"  Closed="PhenotypeSelectionFlyoutClosed">
-            <StackPanel>
-                <TextBox Name="recognizedResultTextBlock" KeyDown="recognizedResultTextBlock_KeyDown" 
-                         IsReadOnly="True"
-                         GotFocus ="recognizedResultTextBlock_GotFocus" SelectionChanged="recognizedResultTextBlock_SelectionChanged"></TextBox>
-                
-                <ListView x:Name="candidateListView" Visibility="Collapsed" 
+                <Flyout.FlyoutPresenterStyle>
+                    <Style TargetType="FlyoutPresenter">
+                        <Setter Property="ScrollViewer.ZoomMode" Value="Disabled"/>
+                        <Setter Property="Width" Value="{Binding ElementName=recognizedPhenoListView, Path=ActualWidth, Mode=OneWay}"/>
+                    </Style>
+                </Flyout.FlyoutPresenterStyle>
+                <StackPanel>
+                    <TextBox Name="recognizedResultTextBlock" KeyDown="recognizedResultTextBlock_KeyDown" 
+                         IsReadOnly="True" Width="auto"
+                         GotFocus ="recognizedResultTextBlock_GotFocus" SelectionChanged="recognizedResultTextBlock_SelectionChanged"/>
+
+                    <ListView x:Name="candidateListView" Visibility="Collapsed" 
                           Margin="0, 10" ScrollViewer.VerticalScrollMode="Disabled" 
                           ScrollViewer.HorizontalScrollMode="Enabled"
                           ScrollViewer.HorizontalScrollBarVisibility="Auto" 
@@ -43,7 +49,7 @@
                           >
                     <ListView.ItemsPanel>
                         <ItemsPanelTemplate>
-                            <StackPanel Orientation="Horizontal"  Padding="0"/>
+                            <StackPanel Orientation="Horizontal" Width="auto"  Padding="0"/>
                         </ItemsPanelTemplate>
                     </ListView.ItemsPanel>
                     <ListView.ItemTemplate>
@@ -61,33 +67,18 @@
                             <Setter Property="Padding" Value="0,0,0,0" />
                             <Setter Property="MinHeight" Value="20" />
                             <Setter Property="MinWidth" Value="20" />
-                        </Style>
+                            </Style>
                     </ListView.ItemContainerStyle>
                 </ListView>
-                <!--
-                        </DataTemplate>
-                    </ListView.ItemTemplate>
-                    <ListView.ItemContainerStyle>
-                        <Style TargetType="ListViewItem">
-                            <Setter Property="HorizontalContentAlignment" Value="Left" />
-                            <Setter Property="VerticalContentAlignment" Value="Center" />
-                            <Setter Property="Margin" Value="0,0,0,0" />
-                            <Setter Property="Padding" Value="0,0,0,0" />
-                            <Setter Property="MinHeight" Value="20" />
-                            <Setter Property="MinWidth" Value="20" />
-                        </Style>
-                    </ListView.ItemContainerStyle>
-                </ListView>
-                -->
                 <RelativePanel  Height="300">
-                    <ListView x:Name="recognizedPhenoListView"  Height="300" HorizontalAlignment="Stretch" Visibility="Collapsed">
+                    <ListView x:Name="recognizedPhenoListView" Width="auto" Height="auto" HorizontalAlignment="Stretch" Visibility="Collapsed">
                         <ListView.ItemTemplate>
                             <DataTemplate x:DataType="phenotypeservice:Phenotype">
-                                <local:PhenotypeControl phenotypeName="{x:Bind name}" 
+                                    <local:PhenotypeControl phenotypeName="{x:Bind name}" 
                                                         phenotypeId="{x:Bind hpId}" 
                                                         phenotypeState="{x:Bind state}" 
-                                                        sourceType="Notes"></local:PhenotypeControl>
-                            </DataTemplate>
+                                                        sourceType="Notes"/>
+                                </DataTemplate>
                         </ListView.ItemTemplate>
                         <ListView.ItemContainerStyle>
                             <Style TargetType="ListViewItem">
@@ -97,7 +88,7 @@
                                 <Setter Property="Padding" Value="0,0,0,0" />
                                 <Setter Property="MinHeight" Value="20" />
                                 <Setter Property="MinWidth" Value="200" />
-                                    <Setter Property="MaxWidth" Value="400" />
+                                    <Setter Property="Width" Value="auto" />
                                 </Style>
                         </ListView.ItemContainerStyle>
                     </ListView>

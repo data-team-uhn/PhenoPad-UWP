@@ -8,6 +8,8 @@ using Windows.UI.Core;
 using Windows.UI.Xaml.Media;
 using System;
 using Windows.Foundation;
+using System.Text.RegularExpressions;
+using PhenoPad.PhenotypeService;
 
 namespace PhenoPad.CustomControl
 {
@@ -18,11 +20,15 @@ namespace PhenoPad.CustomControl
         public float LINE_HEIGHT = 50;
         public List<WordBlockControl> words;
         public static double MAX_WORD_SPACING = 70;
+        public Regex rgx = new Regex("[^a-zA-Z0-9 -]");
+        public List<Phenotype> phenotypes;
+
 
         public NotePhraseControl(int lineNum, List<WordBlockControl> words = null)
         {
             InitializeComponent();
             lineIndex = lineNum;
+            phenotypes = new List<Phenotype>();
             this.words = new List<WordBlockControl>();
             if (words != null)
                 this.words = words;
@@ -35,7 +41,7 @@ namespace PhenoPad.CustomControl
 
             foreach (var w in words) {
                 var rect = w.BoundingRect;
-                rect.Intersect(new Rect(pos.X, pos.Y, 1, 1));
+                rect.Intersect(new Rect(pos.X, pos.Y, 10, 10));
                 if (!rect.IsEmpty)
                     return w;
             }
@@ -114,7 +120,7 @@ namespace PhenoPad.CustomControl
         public List<string> GetStringAsList() {
             List<string> str = new List<string>();
             foreach (WordBlockControl s in words)
-                str.Add(s.current.Trim('(').Trim(')'));
+                str.Add(rgx.Replace(s.current, ""));
             return str;
         }
 
@@ -122,14 +128,16 @@ namespace PhenoPad.CustomControl
         {
             List<string> str = new List<string>();
             foreach (var s in updated)
-                str.Add(s.current.Trim('(').Trim(')'));
+                str.Add(rgx.Replace(s.current, ""));
             return str;
         }
 
         public string GetString() {
             string text = "";
+
             foreach (WordBlockControl s in words) {
-                text += s.current.Trim('(').Trim(')') + " ";
+                var newWord = rgx.Replace(s.current, "");
+                text += newWord + " ";
             }
             return text.Trim();
         }
@@ -291,7 +299,7 @@ namespace PhenoPad.CustomControl
                 UpdatePhraseLayout();
                 if (MainPage.Current != null)
                 {
-                    MainPage.Current.curPage.annotateCurrentLineAndUpdateUI(line_index: lineIndex);
+                    MainPage.Current.curPage.annotateCurrentLineAndUpdateUI(lineIndex);
                 }
                 Debug.WriteLine($"====== updated line {lineIndex}, server {fromServer}, word count={words.Count} ");
                 UpdateLayout();
@@ -303,10 +311,10 @@ namespace PhenoPad.CustomControl
             for (int i = 0; i < words.Count; i++) {
                 var tb = words[i].GetCurWordTextBlock();
 
-                if (i == words.Count - 1) {
-                    tb.Foreground = new SolidColorBrush(Colors.SkyBlue);
-                    tb.UpdateLayout();                  
-                }
+                //if (i == words.Count - 1) {
+                //    tb.Foreground = new SolidColorBrush(Colors.SkyBlue);
+                //    tb.UpdateLayout();                  
+                //}
                 result.Add(tb);
             }
             return result;

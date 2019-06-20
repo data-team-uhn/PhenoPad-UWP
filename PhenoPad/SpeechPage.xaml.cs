@@ -706,7 +706,7 @@ namespace PhenoPad
                 {
                     Debug.WriteLine("requesting from server");
                     int ind = m.ConversationIndex;
-                    MainPage.Current.PlayMedia(m.AudioFile, actual_start, actual_end);
+                    MainPage.Current.PlayMedia(m.AudioFile, actual_start , actual_end);
                 }
 
             }

@@ -603,7 +603,7 @@ namespace PhenoPad.CustomControl
             {
                 lasso.Points.Add(args.CurrentPoint.RawPosition);
             }
-            Debug.WriteLine(args.CurrentPoint.Position);
+            //Debug.WriteLine(args.CurrentPoint.Position);
         }
 
         private void UnprocessedInput_PointerReleased(InkUnprocessedInput sender, PointerEventArgs args)

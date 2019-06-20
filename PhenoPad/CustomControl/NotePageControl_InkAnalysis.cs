@@ -44,10 +44,6 @@ namespace PhenoPad.CustomControl
         {
             ClearSelectionAsync();
             Point pos = e.GetPosition(inkCanvas);
-            foreach (var s in inkCan.InkPresenter.StrokeContainer.GetStrokes())
-            {
-                SetDefaultStrokeStyle(s);
-            }
             Rect pointerRec = new Rect(pos.X, pos.Y, 1, 1);
             int lineNum = getLineNumByRect(pointerRec);
 
@@ -131,16 +127,17 @@ namespace PhenoPad.CustomControl
             var inlines = phrases[lineNum].GetHitWBCPhrase(position);
             if (inlines != null)
             {
-                var strokes = inlines.SelectMany(x => x.strokes).ToList().OrderBy(x => x.BoundingRect.X);
+                var strokes = inlines.SelectMany(x => x.strokes).ToList();
                 foreach (var stroke in strokes)
                 {
                     var s = inkCan.InkPresenter.StrokeContainer.GetStrokeById(stroke.Id);
                     s.Selected = true;
                     SetSelectedStrokeStyle(s);
                 }
-                double left = strokes.FirstOrDefault().BoundingRect.X;
-                double right = strokes.LastOrDefault().BoundingRect.X + strokes.LastOrDefault().BoundingRect.Width;
-                boundingRect = new Rect(left, lineNum * LINE_HEIGHT, right - left, LINE_HEIGHT);
+                List<Rect> rects = strokes.Select(x => x.BoundingRect).OrderBy(x=>x.X+x.Width).ToList();
+                double left = rects.FirstOrDefault().X;
+                double right = rects.LastOrDefault().X + rects.LastOrDefault().Width;
+                boundingRect = new Rect(left - 5, lineNum * LINE_HEIGHT, right - left + 10, LINE_HEIGHT);
 
                 foreach (var w in inlines)
                 {
@@ -285,12 +282,10 @@ namespace PhenoPad.CustomControl
             else {
                 foreach (int line in linesErased)
                 {
-                    var phrase = phrases.Where(x => x.Key == line).ToList();
-                    if (phrase.Count>0) {
+                    if (phrases.ContainsKey(line)) {
                         List<WordBlockControl> updated = await RecognizeLineWBC(line);
-                        NotePhraseControl npc = phrase.FirstOrDefault().Value;
-                        npc.UpdateRecognition(updated, fromServer:false);
-                        Canvas.SetLeft(npc, 0);
+                        NotePhraseControl npc = phrases[line];
+                        npc.UpdateRecognition(updated, fromServer: false);
                     }
                 }
             }
@@ -463,10 +458,11 @@ namespace PhenoPad.CustomControl
                 // switch to another line, clear result of current line
                 if (lineNum != showingResultOfLine)
                 {
-                    Debug.WriteLine($"Switching to a different line, line num= {lineNum}");
+                    //Debug.WriteLine($"Switching to a different line, line num= {lineNum}");
                     lastWordCount = 1;
                     lastWordIndex = 0;
                     HideCurLineStackPanel();
+                    curLineCandidatePheno.Clear();
                     phenoCtrlSlide.Y = 0;
                     showingResultOfLine = lineNum;
                     UpdateLayout();
@@ -484,7 +480,7 @@ namespace PhenoPad.CustomControl
                 else
                 {
                     //new line
-                    Debug.WriteLine($"Created a new line = {lineNum}");
+                    //Debug.WriteLine($"Created a new line = {lineNum}");
                     NotePhraseControl phrase = new NotePhraseControl(lineNum);
                     phrases[lineNum] = phrase;
                     recognizedCanvas.Children.Add(phrase);
@@ -508,8 +504,8 @@ namespace PhenoPad.CustomControl
             ShowCurLineStackPanel();
 
 
-            // annotation and UI
-            annotateCurrentLineAndUpdateUI(line, lineNum);
+            //// annotation and UI
+            //annotateCurrentLineAndUpdateUI(lineNum);
 
             if (indetails)
             {
@@ -783,20 +779,20 @@ namespace PhenoPad.CustomControl
             //annotateCurrentLineAndUpdateUI(curLineObject);
         }
 
-        public async void annotateCurrentLineAndUpdateUI(InkAnalysisLine line=null, int line_index = -1)
+        public async void annotateCurrentLineAndUpdateUI(int line_index = -1)
         {
             //do not annotate if there aren't available resources yet
-            if ((line == null && line_index == -1) || !phrases.ContainsKey(line_index))
+            if (line_index == -1 || !phrases.ContainsKey(line_index))
                 return;
 
-            int lineNum = line == null? line_index:getLineNumByRect(line.BoundingRect);
+            int lineNum = line_index;
             // after get annotation, recognized text has also changed
             Dictionary<string, Phenotype> annoResult = await PhenoMana.annotateByNCRAsync(phrases[lineNum].GetString());
             //OperationLogger.getOpLogger().Log(OperationType.Recognition, idToNoteLine.GetValueOrDefault(line.Id).Text, annoResult);
-
+            
+            //Handles when annoResult has at least one element
             if (annoResult != null && annoResult.Count > 0)
             {
-
                 // update global annotations
                 foreach (var anno in annoResult.ToList())
                 {
@@ -810,20 +806,18 @@ namespace PhenoPad.CustomControl
                 }
 
                 // update current line annotation
-                //idToNoteLine.GetValueOrDefault(line.Id).phenotypes = annoResult.Values.ToList();
+                phrases[lineNum].phenotypes = annoResult.Values.ToList();
 
-                curWordPhenoControlGrid.Visibility = Visibility.Visible;
 
                 if (curLineCandidatePheno.Count == 0 || phenoCtrlSlide.Y == 0)
                 {
-                    //Debug.WriteLine($"current Y offset is at {phenoCtrlSlide.Y}, visibility is {curWordPhenoControlGrid.Visibility}");
+                    curWordPhenoControlGrid.Visibility = Visibility.Visible;
                     phenoCtrlSlide.Y = 0;
                     ((DoubleAnimation)curWordPhenoAnimation.Children[0]).By = -45;
                     curWordPhenoAnimation.Begin();
                 }
 
-
-                foreach (var pheno in annoResult.Values.ToList())
+                foreach (var pheno in phrases[lineNum].phenotypes)
                 {
                     var temp = curLineCandidatePheno.Where(x => x == pheno).FirstOrDefault();
                     pheno.state = PhenotypeManager.getSharedPhenotypeManager().getStateByHpid(pheno.hpId);
@@ -839,30 +833,32 @@ namespace PhenoPad.CustomControl
                         }
                     }
                 }
+                //donno what this block does so temporarily commenting it out
+                //if (curLineCandidatePheno.Count != 0)
+                //{
+                //    if (!annotatedLines.Contains(lineNum))
+                //    {
+                //        annotatedLines.Add(lineNum);
+                //        if (!lineToRect.ContainsKey(lineNum))
+                //        {
 
-                if (curLineCandidatePheno.Count != 0)
-                {
-                    if (!annotatedLines.Contains(lineNum))
-                    {
-                        annotatedLines.Add(lineNum);
-                        if (!lineToRect.ContainsKey(lineNum))
-                        {
+                //            Rectangle rect = new Rectangle
+                //            {
+                //                Fill = Application.Current.Resources["Button_Background"] as SolidColorBrush,
+                //                Width = 5,
+                //                Height = LINE_HEIGHT - 20
+                //            };
+                //            sideCanvas.Children.Add(rect);
+                //            Canvas.SetTop(rect, lineNum * LINE_HEIGHT + 10);
+                //            Canvas.SetLeft(rect, sideScrollView.ActualWidth / 2);
+                //            lineToRect.Add(lineNum, rect);
+                //        }
 
-                            Rectangle rect = new Rectangle
-                            {
-                                Fill = Application.Current.Resources["Button_Background"] as SolidColorBrush,
-                                Width = 5,
-                                Height = LINE_HEIGHT - 20
-                            };
-                            sideCanvas.Children.Add(rect);
-                            Canvas.SetTop(rect, lineNum * LINE_HEIGHT + 10);
-                            Canvas.SetLeft(rect, sideScrollView.ActualWidth / 2);
-                            lineToRect.Add(lineNum, rect);
-                        }
-
-                    }
-                }
+                //    }
+                //}
             }
+            
+            //Handles when annoResult has no elements
             else
             {
                 curWordPhenoControlGrid.Visibility = Visibility.Collapsed;
@@ -883,8 +879,6 @@ namespace PhenoPad.CustomControl
                 }
                 //curWordPhenoHideAnimation.Begin();
             }
-
-            curWordPhenoControlGrid.Visibility = Visibility.Visible;
 
         }
 

@@ -64,10 +64,10 @@ namespace PhenoPad.CustomControl
         }
 
         public void SetBoundingRect(List<InkStroke> strokes) {
-            var s = strokes.OrderBy(x => x.BoundingRect.X).ToList();
+            var s = strokes.OrderBy(x => x.StrokeStartedTime).ToList();
             double left = s.FirstOrDefault().BoundingRect.X;
             double right = s.LastOrDefault().BoundingRect.X + s.LastOrDefault().BoundingRect.Width;
-            this.BoundingRect = new Rect(left, line_index * NotePageControl.LINE_HEIGHT, right - left, NotePageControl.LINE_HEIGHT);
+            this.BoundingRect = new Rect(left, line_index * NotePageControl.LINE_HEIGHT, right - left + 10, NotePageControl.LINE_HEIGHT);
         }
 
 
@@ -151,6 +151,8 @@ namespace PhenoPad.CustomControl
             current = candidates[ind];
             WordBlock.Text = current;
             corrected = true;
+            Flyout f = (Flyout)this.Resources["AlternativeFlyout"];
+            f.Hide();
             if (MainPage.Current != null) {
                 MainPage.Current.curPage.annotateCurrentLineAndUpdateUI(line_index: line_index);
                 MainPage.Current.curPage.ClearSelectionAsync();
@@ -182,7 +184,6 @@ namespace PhenoPad.CustomControl
                 }
                 tb.Tapped += CandidateList_Click;
             }
-            Debug.WriteLine(lst.Count);
             return lst;
         }
 
@@ -211,22 +212,21 @@ namespace PhenoPad.CustomControl
             tb.Tapped += ShowWordCandidate;
             tb.Text = current;
             tb.VerticalAlignment = VerticalAlignment.Center;
+            List<uint> stroke_ids = strokes.Select(s => s.Id).ToList();
             if (is_abbr)
             {
                 tb.Foreground = new SolidColorBrush(Colors.Orange);
+            }
+            else if (MainPage.Current.curPage.curStroke != null)
+            {
+                if (stroke_ids.Contains(MainPage.Current.curPage.curStroke.Id))
+                    tb.Foreground = new SolidColorBrush(Colors.SkyBlue);
             }
             else {
                 tb.Foreground = new SolidColorBrush(Colors.Black);
             }
             return tb;
         }
-
-        //public Rect GetUIRect() {
-        //    var trans = WordBlock.TransformToVisual(MainPage.Current.curPage);
-        //    Rect bound = trans.TransformBounds(new Rect(0,0,20,20));
-        //    //Debug.WriteLine($"{current}'s rect: x={bound.X}, y={bound.Y}");
-        //    return bound;
-        //}
 
         private void CandidateList_Click(object sender, RoutedEventArgs args)
         {//called when user clicks on the alternative from the horizonal word stack panel
@@ -243,6 +243,9 @@ namespace PhenoPad.CustomControl
             }
             WordBlock.Text = current;
             corrected = true;
+            Flyout f = (Flyout)this.Resources["AlternativeFlyout"];
+            f.Hide();
+
             //don't need to check for condition because this function will only be called from note editing mode
             MainPage.Current.curPage.RawStrokeTimer.Stop();
             MainPage.Current.curPage.annotateCurrentLineAndUpdateUI(line_index: line_index);
