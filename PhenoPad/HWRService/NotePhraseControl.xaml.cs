@@ -134,7 +134,6 @@ namespace PhenoPad.CustomControl
 
         public string GetString() {
             string text = "";
-
             foreach (WordBlockControl s in words) {
                 var newWord = rgx.Replace(s.current, "");
                 text += newWord + " ";

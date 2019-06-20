@@ -832,10 +832,8 @@ namespace PhenoPad.CustomControl
                     if (temp == null)
                     {
 
-                        Debug.WriteLine("temp null will add");
-                        
+                        Debug.WriteLine("temp null will add");                    
                         curLineCandidatePheno.Add(pheno);
-
                         Debug.WriteLine("temp null added");
 
                     }
@@ -849,9 +847,11 @@ namespace PhenoPad.CustomControl
                         }
                     }
                 }
-                if (curLineCandidatePheno.Count > 0 && phenoCtrlSlide.Y == 0 && showingResultOfLine == lineNum)
-                {
+                if (curLineCandidatePheno.Count >0)
                     curWordPhenoControlGrid.Visibility = Visibility.Visible;
+
+                if (phenoCtrlSlide.Y == 0)
+                {
                     //phenoCtrlSlide.Y = 0;
                     ((DoubleAnimation)curWordPhenoAnimation.Children[0]).By = -45;
                     curWordPhenoAnimation.Begin();
