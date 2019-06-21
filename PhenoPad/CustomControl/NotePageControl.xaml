@@ -41,7 +41,7 @@
                 
                 <StackPanel>
 
-                    <RelativePanel  MinWidth="60" Padding="3" HorizontalAlignment="Right">
+                    <RelativePanel  MinWidth="60" Padding="3" HorizontalAlignment="Stretch">
 
                             <Button Foreground="PaleVioletRed" Style="{StaticResource ButtonStyle1}"
                                     ToolTipService.ToolTip="Delete strokes"

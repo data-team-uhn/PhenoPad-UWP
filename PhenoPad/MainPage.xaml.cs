@@ -1751,30 +1751,30 @@ namespace PhenoPad
 
     }
 
-    // MyScript 
-    public class FlyoutCommand : System.Windows.Input.ICommand
-    {
-        public delegate void InvokedHandler(FlyoutCommand command);
+    //// MyScript 
+    //public class FlyoutCommand : System.Windows.Input.ICommand
+    //{
+    //    public delegate void InvokedHandler(FlyoutCommand command);
 
-        public string Id { get; set; }
-        private InvokedHandler _handler = null;
+    //    public string Id { get; set; }
+    //    private InvokedHandler _handler = null;
 
-        public FlyoutCommand(string id, InvokedHandler handler)
-        {
-            Id = id;
-            _handler = handler;
-        }
+    //    public FlyoutCommand(string id, InvokedHandler handler)
+    //    {
+    //        Id = id;
+    //        _handler = handler;
+    //    }
 
-        public bool CanExecute(object parameter)
-        {
-            return _handler != null;
-        }
+    //    public bool CanExecute(object parameter)
+    //    {
+    //        return _handler != null;
+    //    }
 
-        public void Execute(object parameter)
-        {
-            _handler(this);
-        }
+    //    public void Execute(object parameter)
+    //    {
+    //        _handler(this);
+    //    }
 
-        public event EventHandler CanExecuteChanged;
-    }
+    //    public event EventHandler CanExecuteChanged;
+    //}
 }

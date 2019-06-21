@@ -282,27 +282,38 @@ namespace PhenoPad.CustomControl
 
         }
 
-        internal void UpdateRecognition(List<WordBlockControl> new_w, bool fromServer = false)
+        internal void UpdateRecognition(List<WordBlockControl> new_w, bool fromServer = false, bool fromErase=false)
         {
-            if (new_w != null && new_w.Count > 0)
+            lock (words)
             {
-                var merged_new = MergeNewResultToOld(new_w);
-                words.Clear();
-                int new_index = 0;
-                foreach (var w in merged_new)
+                if (new_w != null && new_w.Count > 0)
                 {
-                    w.word_index = new_index;
-                    words.Add(w);
-                    new_index++;
+                    var merged_new = MergeNewResultToOld(new_w);
+                    words.Clear();
+                    int new_index = 0;
+                    foreach (var w in merged_new)
+                    {
+                        w.word_index = new_index;
+                        words.Add(w);
+                        new_index++;
+                    }
+                    UpdatePhraseLayout();
+                    if (MainPage.Current != null)
+                    {
+                        if (!fromErase)
+                            MainPage.Current.curPage.annotateCurrentLineAndUpdateUI(lineIndex);
+                        else
+                            MainPage.Current.curPage.UpdateAnnotationAfterErase(lineIndex);
+
+
+                    }
+                    //Debug.WriteLine($"====== updated line {lineIndex}, server {fromServer}, word count={words.Count} ");
+                    UpdateLayout();
                 }
-                UpdatePhraseLayout();
-                if (MainPage.Current != null)
-                {
-                    MainPage.Current.curPage.annotateCurrentLineAndUpdateUI(lineIndex);
-                }
-                //Debug.WriteLine($"====== updated line {lineIndex}, server {fromServer}, word count={words.Count} ");
-                UpdateLayout();
             }
+        }
+
+        internal void AnnotateCurrentLineAfterErase() {
         }
 
         public void ClearPhrase() {

@@ -294,7 +294,7 @@ namespace PhenoPad.CustomControl
                             }
                             else {
                                 updated = await RecognizeLineWBC(line);
-                                npc.UpdateRecognition(updated, fromServer: false);
+                                npc.UpdateRecognition(updated, fromServer: false, fromErase:true);
 
                             }
                         }
@@ -414,39 +414,19 @@ namespace PhenoPad.CustomControl
                 }
                 //analyze all lines within the page
                 else {
-                    IReadOnlyList<IInkAnalysisNode> lineNodes = inkAnalyzer.AnalysisRoot.FindNodes(InkAnalysisNodeKind.Line);
-                    foreach (var line in lineNodes) {
-                        int lineNum = getLineNumByRect(line.BoundingRect);
-                        if (phrases.ContainsKey(lineNum))
-                        {
+                    Debug.WriteLine("current stroke is null, will analyze whole page ...");
+                    for (int i = 1; i < PAGE_HEIGHT / LINE_HEIGHT; i++) {
+                        int lineNum = i;
+                        if (phrases.ContainsKey(lineNum)) {
                             Dictionary<string, Phenotype> annoResult = await PhenoMana.annotateByNCRAsync(phrases[lineNum].GetString());
-                            //OperationLogger.getOpLogger().Log(OperationType.Recognition, nl.Text, annoResult);
-                            if (annoResult != null && annoResult.Count != 0)
-                            {
-                                if (!annotatedLines.Contains(lineNum))
-                                {
-                                    annotatedLines.Add(lineNum);
-                                    Rectangle rect = new Rectangle
-                                    {
-                                        Fill = Application.Current.Resources["Button_Background"] as SolidColorBrush,
-                                        Width = 5,
-                                        Height = LINE_HEIGHT - 20
-                                    };
-                                    sideCanvas.Children.Add(rect);
-                                    Canvas.SetTop(rect, lineNum * LINE_HEIGHT + 10);
-                                    Canvas.SetLeft(rect, 5);
-                                    if (!lineToRect.ContainsKey(lineNum))
-                                        lineToRect.Add(lineNum, rect);
-                                }
-
+                            if (annoResult != null && annoResult.Count > 0)
                                 foreach (var pp in annoResult.Values)
                                 {
                                     pp.sourceType = SourceType.Notes;
+                                    phrases[lineNum].phenotypes.Add(pp);
                                     PhenoMana.addPhenotypeCandidate(pp, SourceType.Notes);
                                 }
-                            }
                         }
-
                     }
                 }
                 return true;
@@ -821,6 +801,19 @@ namespace PhenoPad.CustomControl
                 }
 
                 // update current line annotation
+                //var removed = phrases[lineNum].phenotypes.Except(annoResult.Values.ToList()).Select(x=>x.hpId);
+                //var newAdded = annoResult.Values.ToList().Except(phrases[lineNum].phenotypes);
+                //Debug.WriteLine($"removed {removed.Count()} phenotypes, added {newAdded.Count()} phenotypes");
+                //foreach (var id in removed)
+                //{
+                //    //deletes the phenotype only if it has not been selected as Y/N
+                //    var p = phrases[lineNum].phenotypes.Where(x => x.hpId == id).FirstOrDefault();
+                //    if (p != null && p.state == -1) {
+                //        phrases[lineNum].phenotypes.Remove(p);
+                //        PhenoMana.deletePhenotype(p);
+                //    }
+                //}
+                //phrases[lineNum].phenotypes.AddRange(newAdded.ToList());
                 phrases[lineNum].phenotypes = annoResult.Values.ToList();
                 //don't update UI if user is already on another line
                 if (showingResultOfLine != lineNum)
@@ -904,6 +897,61 @@ namespace PhenoPad.CustomControl
                 }
                 //curWordPhenoHideAnimation.Begin();
             }
+
+        }
+
+        public async void UpdateAnnotationAfterErase(int lineNum) {
+            Dictionary<string, Phenotype> annoResult = await PhenoMana.annotateByNCRAsync(phrases[lineNum].GetString());
+            //Handles when annoResult has at least one element
+            if (annoResult != null && annoResult.Count > 0)
+            {
+                // update global annotations
+                foreach (var anno in annoResult.ToList())
+                {
+                    if (cachedAnnotation.ContainsKey(anno.Key))
+                        cachedAnnotation[anno.Key] = anno.Value;
+                    else
+                        cachedAnnotation.Add(anno.Key, anno.Value);
+                    // add to global candidate list
+                    anno.Value.sourceType = SourceType.Notes;
+                    PhenoMana.addPhenotypeCandidate(anno.Value, SourceType.Notes);
+                }
+
+                // update current line annotation
+                var removed = phrases[lineNum].phenotypes.Except(annoResult.Values.ToList()).Select(x => x.hpId).ToArray();
+                var newAdded = annoResult.Values.ToList().Except(phrases[lineNum].phenotypes);
+                Debug.WriteLine($"removed {removed.Count()} phenotypes, added {newAdded.Count()} phenotypes");
+                foreach (var id in removed)
+                {
+                    //deletes the phenotype only if it has not been selected as Y/N
+                    var p = phrases[lineNum].phenotypes.Where(x => x.hpId == id).FirstOrDefault();
+                    if (p != null && p.state == -1)
+                    {
+                        phrases[lineNum].phenotypes.Remove(p);
+                        PhenoMana.phenotypesCandidates.Remove(p);
+                    }
+                    if (lineNum == showingResultOfLine) {
+                        curLineCandidatePheno.Remove(p);
+                    }
+                }
+                phrases[lineNum].phenotypes.AddRange(newAdded.ToList());
+                UpdateLayout();
+            }
+
+            //Handles when annoResult has no elements
+            else
+            {
+                if (phrases[lineNum].phenotypes.Count > 0)
+                {
+                    foreach (var p in phrases[lineNum].phenotypes) {
+                        if (p.state == -1)
+                            PhenoMana.phenotypesCandidates.Remove(p);
+                    }
+                    phrases[lineNum].phenotypes.Clear();
+                }
+            }
+
+
 
         }
 

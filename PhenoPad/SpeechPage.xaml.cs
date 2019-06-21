@@ -551,7 +551,7 @@ namespace PhenoPad
             //    _mediaPlayerElement.Visibility = Visibility.Visible;
             //}
             List<string> audioNames = MainPage.Current.SavedAudios;
-            Debug.WriteLine( "audioNames count" + audioNames.Count);
+            //Debug.WriteLine( "audioNames count" + audioNames.Count);
             AudioDropdownList.ItemsSource = audioNames;
             UpdateLayout();
         }

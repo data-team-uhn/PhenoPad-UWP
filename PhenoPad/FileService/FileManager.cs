@@ -244,7 +244,7 @@ namespace PhenoPad.FileService
                 List < TextMessage > msg = new List<TextMessage>();
                 string transcriptPath = $"{notebookId}\\Transcripts";
                 StorageFolder folder = await ROOT_FOLDER.GetFolderAsync(transcriptPath);
-                Debug.WriteLine("transcript folder ="+folder.Path);
+                //Debug.WriteLine("transcript folder ="+folder.Path);
                 IReadOnlyList<StorageFile> fileList = await folder.GetFilesAsync();
                 SpeechManager.getSharedSpeechManager().setAudioIndex(fileList.Count);
                 foreach (StorageFile file in fileList) {
