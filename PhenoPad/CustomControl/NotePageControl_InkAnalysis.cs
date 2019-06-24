@@ -787,7 +787,7 @@ namespace PhenoPad.CustomControl
             //Handles when annoResult has at least one element
             if (annoResult != null && annoResult.Count > 0)
             {
-                Debug.WriteLine($"line {lineNum} annotation result = {annoResult.Count}");
+                //Debug.WriteLine($"line {lineNum} annotation result = {annoResult.Count}");
                 // update global annotations
                 foreach (var anno in annoResult.ToList())
                 {
@@ -846,7 +846,7 @@ namespace PhenoPad.CustomControl
                 if (phenoCtrlSlide.Y == 0)
                 {
                     //phenoCtrlSlide.Y = 0;
-                    ((DoubleAnimation)curWordPhenoAnimation.Children[0]).By = -45;
+                    ((DoubleAnimation)curWordPhenoAnimation.Children[0]).By = -47;
                     curWordPhenoAnimation.Begin();
                 }
 
@@ -881,7 +881,7 @@ namespace PhenoPad.CustomControl
             {
                 curWordPhenoControlGrid.Visibility = Visibility.Collapsed;
                 //curWordPhenoControlGrid.Margin = new Thickness(0, 0, 0, 0);
-                // phenoCtrlSlide.Y = 0;
+                phenoCtrlSlide.Y = 0;
                 if (lineToRect.ContainsKey(lineNum))
                 {
                     try

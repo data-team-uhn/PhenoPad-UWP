@@ -168,8 +168,8 @@ namespace PhenoPad.PhenotypeService
                 //phenotype is not saved and not in candidate list
                 if (temp == null && tempInCand == null)
                     phenotypesCandidates.Insert(0, pp);
-                //phenotype is in candidate list
-                else if (tempInCand != null && phenotypesCandidates[0] != tempInCand) {
+                //phenotype is in candidate list, only reinserts it if the ordering is really behind
+                else if (tempInCand != null && phenotypesCandidates.IndexOf(tempInCand) > 5) {
                     phenotypesCandidates.Remove(pheno);
                     phenotypesCandidates.Insert(0, pp);
                 }

@@ -236,7 +236,7 @@
                     <!-- Current line result -->
                     <Canvas>
                         <Grid Name="curLineResultPanel" Visibility="Collapsed" HorizontalAlignment="Right">
-                            <Grid x:Name="curWordPhenoControlGrid" Height="40" HorizontalAlignment="Left" 
+                            <Grid x:Name="curWordPhenoControlGrid" Height="45" HorizontalAlignment="Left" 
                                   Background="WhiteSmoke"  Padding="5" BorderBrush="LightGray" BorderThickness="0" 
                                   CornerRadius="10">
                                 <Grid.RenderTransform>

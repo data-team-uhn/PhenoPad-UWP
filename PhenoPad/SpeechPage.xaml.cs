@@ -863,12 +863,6 @@ namespace PhenoPad
                         _mediaPlayerElement.Visibility = Visibility.Visible;
                     }
                 }
-                //AudioFile audioFile = savedAudio.Find(x => x.name == audioName);
-                //if (audioFile.source != _mediaPlayerElement.Source)
-                //{
-                //    _mediaPlayerElement.Source = audioFile.source;
-                //    _mediaPlayerElement.Visibility = Visibility.Visible;
-                //}
             }
         }
 

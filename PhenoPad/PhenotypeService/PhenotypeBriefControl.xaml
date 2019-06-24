@@ -16,7 +16,7 @@
     </UserControl.Resources>
 
     <Border CornerRadius="5">
-        <Grid Height="30" Margin="1 0 1 0" Name="NameGrid">
+        <Grid Height="35" Margin="1 0 1 0" Name="NameGrid">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="Auto"></ColumnDefinition>
                 <ColumnDefinition Width="Auto"></ColumnDefinition>

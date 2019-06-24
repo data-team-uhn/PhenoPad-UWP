@@ -345,12 +345,10 @@ namespace PhenoPad.CustomControl
 
                         inkRatio = Math.Min((bound.Height) / (line * COMMENT_HEIGHT + 10), (line * COMMENT_HEIGHT) / (bound.Height + 10));
 
-                        Debug.WriteLine($"multiple, #lines = {line}, ratio = {inkRatio}");
                         //recalculate number of lines relative to compressed strokes
                         if (inknodes.Count < 1)
                             line = (int)(Math.Ceiling((bound.Height * inkRatio + 1) / COMMENT_HEIGHT));
 
-                        Debug.WriteLine($"recalculated, #lines = {line}");
                         this.Height = (line) * COMMENT_HEIGHT;
                     }
                     //further compresses the strokes if calculated ratio is over 60%
@@ -364,7 +362,7 @@ namespace PhenoPad.CustomControl
                     }
 
                     bound = inkCan.InkPresenter.StrokeContainer.BoundingRect;
-                    Debug.WriteLine($"bound.width = {bound.Width}, bound.height = {bound.Height}, bound.x = {bound.X}, bound.y = {bound.Y}");
+                    //Debug.WriteLine($"bound.width = {bound.Width}, bound.height = {bound.Height}, bound.x = {bound.X}, bound.y = {bound.Y}");
                     inkCanvas.InkPresenter.StrokeContainer.MoveSelected(new Point(-1 * bound.X + 1, -1 * bound.Y));
                     this.Width = bound.Width < COMMENT_WIDTH ? COMMENT_WIDTH : bound.Width + 5;
                     inkAnalyzer.ClearDataForAllStrokes();

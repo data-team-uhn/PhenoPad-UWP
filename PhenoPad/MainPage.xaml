@@ -857,13 +857,13 @@
                         </Grid.ColumnDefinitions>
                         
                         <Grid.RowDefinitions>
-                            <RowDefinition Height="40" />
+                            <RowDefinition Height="45" />
                             <RowDefinition Height="*"/>
                         </Grid.RowDefinitions>
 
                         <Grid Name="OpenCandidatePanelButtonGrid" Grid.Column="0">
                             <ToggleButton HorizontalAlignment="Center" Grid.Column="0" Background="Transparent" Style="{StaticResource MyToggleButtonStyle}" IsChecked="false" 
-                                          VerticalAlignment="Center"  Name="OpenCandidatePanelButton" Click="OpenCandidate_Click" Width="40" Height="40">
+                                          VerticalAlignment="Center"  Name="OpenCandidatePanelButton" Click="OpenCandidate_Click" Width="40" Height="45">
                                 <Grid>
                                     <FontIcon Visibility="Collapsed" Name="OpenCandidatePanelButtonIcon" 
                                               Foreground="Gold" FontWeight="ExtraBlack"  FontFamily="Segoe MDL2 Assets" Glyph="&#xE82F;"/>
@@ -875,7 +875,7 @@
                         <Grid Grid.Column="1">
                             <ToggleButton HorizontalAlignment="Center" Background="WhiteSmoke" ToolTipService.ToolTip="Show All Candidates"
                                           Style="{StaticResource MyToggleButtonStyle}" IsChecked="false" 
-                                          VerticalAlignment="Center"  x:Name="ExpandButton" Click="ExpandButton_Click" Width="40" Height="40">
+                                          VerticalAlignment="Center"  x:Name="ExpandButton" Click="ExpandButton_Click" Width="40" Height="45">
                                 <Grid>
                                     <FontIcon FontWeight="ExtraBlack"  FontFamily="Segoe MDL2 Assets" Glyph="&#xEA37;"/>
                                 </Grid>
@@ -892,7 +892,7 @@
 
                             <ListView 
                             ScrollViewer.HorizontalScrollMode="Enabled"
-                            ScrollViewer.VerticalScrollMode="Disabled"
+                            ScrollViewer.VerticalScrollMode="Enabled"
                             ScrollViewer.HorizontalScrollBarVisibility="Hidden"
                             ScrollViewer.VerticalScrollBarVisibility="Hidden"
                             ScrollViewer.IsHorizontalRailEnabled="True"          
