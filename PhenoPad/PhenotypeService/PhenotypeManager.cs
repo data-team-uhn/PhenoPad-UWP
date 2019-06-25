@@ -83,7 +83,6 @@ namespace PhenoPad.PhenotypeService
                 Phenotype pp = p.Clone();
                 phenotypesCandidates.Remove(p);
                 phenotypesCandidates.Insert(0, pp);
-
                 //addPhenotypeCandidate(p, p.sourceType);
             }
             return curPageCand.Count;
@@ -156,12 +155,20 @@ namespace PhenoPad.PhenotypeService
                 else
                     pp.state = -1;
 
-
                 if (from == SourceType.Speech)
                 {
                     temp = phenotypesInSpeech.Where(x => x == pheno).FirstOrDefault();
                     if (temp != null)
                         temp.state = pheno.state;
+                    else
+                        phenotypesInSpeech.Insert(0, pp);
+                }
+                else if (from == SourceType.Notes) {
+                    temp = phenotypesInNote.Where(x => x == pheno).FirstOrDefault();
+                    if (temp != null)
+                        temp.state = pheno.state;
+                    else
+                        phenotypesInNote.Insert(0, pp);
                 }
 
 
@@ -258,8 +265,7 @@ namespace PhenoPad.PhenotypeService
                 }
                 if (from == SourceType.Speech)
                 {
-                    phenotypesInSpeech.Add(pheno);
-                   
+                    phenotypesInSpeech.Add(pheno);               
                 }
             }
             MainPage.Current.NotifyUser("Saved phenotypes are loaded.", NotifyType.StatusMessage, 1);
@@ -471,6 +477,7 @@ namespace PhenoPad.PhenotypeService
                // if (type != SourceType.Speech)
                 {
                     Phenotype pp = temp.Clone();
+                   
                     ind = phenotypesInSpeech.IndexOf(temp);
                     phenotypesInSpeech.Remove(temp);
                     phenotypesInSpeech.Insert(ind, pp);

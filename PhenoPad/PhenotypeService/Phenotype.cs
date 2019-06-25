@@ -95,13 +95,15 @@ namespace PhenoPad.PhenotypeService
 
         public Phenotype Clone()
         {
-
-            Phenotype p = new Phenotype(this.hpId, this.name, this.state, this.pageSource,this.alternatives, this.sourceType);
+            Phenotype p = new Phenotype();
+            p.hpId = this.hpId;
+            p.name = this.name;
+            p.state = this.state;
+            p.pageSource = this.pageSource;
+            p.alternatives = this.alternatives;
+            p.sourceType = this.sourceType;
             return p;
         }
-
-
-
 
         public override bool Equals(object obj)
         {
