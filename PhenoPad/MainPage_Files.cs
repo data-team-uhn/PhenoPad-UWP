@@ -165,9 +165,9 @@ namespace PhenoPad
                         await aPage.SwitchToEHR(ehr);
                     }
 
-                    //load strokes
+                    //load strokes and parse strokes to line to dictionary
                     bool result = await FileManager.getSharedFileManager().LoadNotePageStroke(notebookId, pageIds[i], aPage);
-                    //addNoteIndex(i);
+                    aPage.InitAnalyzeStrokes();
                     
                     //load image/drawing addins
                     List<ImageAndAnnotation> imageAndAnno = await FileManager.getSharedFileManager().GetImgageAndAnnotationObjectFromXML(notebookId, pageIds[i]);

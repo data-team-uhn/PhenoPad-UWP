@@ -96,6 +96,7 @@ namespace PhenoPad.CustomControl
         object lineUpdateLock = new object();
         Dictionary<int, string> stringsOfLines;
         Dictionary<int, List<Phenotype>> phenotypesOfLines;
+        Dictionary<int, List<InkStroke>> StrokesInLine;
         public ObservableCollection<Phenotype> curLineCandidatePheno = new ObservableCollection<Phenotype>();
 
         public PhenotypeManager PhenoMana => PhenotypeManager.getSharedPhenotypeManager();
@@ -262,6 +263,7 @@ namespace PhenoPad.CustomControl
             RawStrokes = new List<InkStroke>();
             //currentIndex = 0;
             strokeAnalyzer = new InkAnalyzer();
+            StrokesInLine = new Dictionary<int, List<InkStroke>>();
             
             recognizedTextCanvas.Visibility = Visibility.Collapsed;
 

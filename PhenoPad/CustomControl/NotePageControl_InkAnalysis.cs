@@ -170,6 +170,9 @@ namespace PhenoPad.CustomControl
                         if (stroke.BoundingRect.Height <= MAX_WRITING)
                         {
                             int line = getLineNumByRect(stroke.BoundingRect);
+                            if (StrokesInLine.ContainsKey(line) && StrokesInLine[line].Contains(stroke)) {
+                                StrokesInLine[line].Remove(stroke);
+                            }
                             if (!linesErased.Contains(line))
                                 linesErased.Add(line);
                         }
@@ -241,15 +244,22 @@ namespace PhenoPad.CustomControl
                     else
                     {
                         //marking the current stroke for later server recognition
+                        int lineNum = getLineNumByRect(s.BoundingRect);
+                        if (!StrokesInLine.ContainsKey(lineNum))
+                            StrokesInLine.Add(lineNum, new List<InkStroke> { s });
+                        else
+                            StrokesInLine[lineNum].Add(s);
                         curStroke = s;
+
                         inkAnalyzer.AddDataForStroke(s);
                         inkAnalyzer.SetStrokeDataKind(s.Id, InkAnalysisStrokeKind.Writing);
+                        recognizeAndSetUpUIForLine(line: null, lineInd: lineNum);
                         OperationLogger.getOpLogger().Log(OperationType.Stroke, s.Id.ToString(), s.StrokeStartedTime.Value.ToString(), s.StrokeDuration.ToString(), getLineNumByRect(s.BoundingRect).ToString(), pageId.ToString());
                     }
 
                 }
                 //here we need instant call to analyze ink for the specified line input
-                var result = await analyzeInk(curStroke, serverFlag: MainPage.Current.abbreviation_enabled);
+                //var result = await analyzeInk(curStroke, serverFlag: MainPage.Current.abbreviation_enabled);
                 RawStrokeTimer.Start();
 
             }
@@ -567,17 +577,35 @@ namespace PhenoPad.CustomControl
             return lst;
         }
 
+        public void InitAnalyzeStrokes() {
+            //gets all strokes in current canvas and add them to dictionary 
+            foreach (var s in inkCan.InkPresenter.StrokeContainer.GetStrokes()) {
+                int lineNum = getLineNumByRect(s.BoundingRect);
+                if (StrokesInLine.ContainsKey(lineNum))
+                {
+                    StrokesInLine[lineNum].Add(s);
+                }
+                else {
+                    StrokesInLine.Add(lineNum, new List<InkStroke>() { s });
+                }
+            }
+            Debug.WriteLine(StrokesInLine.Keys.Count + " ==================");
+        }
+
         private async Task<List<WordBlockControl>> RecognizeLineWBC(int lineid)
         {
+            //don't bother if there aren't any strokes to recognize
+            if (! StrokesInLine.ContainsKey(lineid) || StrokesInLine[lineid].Count == 0)
+                return new List<WordBlockControl>();
+
             // only one thread is allowed to use select and recognize
             await selectAndRecognizeSemaphoreSlim.WaitAsync();
             List<WordBlockControl> result = new List<WordBlockControl>();
             try
             {
 
-                var strokeInLine = FindAllStrokesInLine(lineid);
-                if (strokeInLine.Count == 0)
-                    return new List<WordBlockControl>();
+                //var strokeInLine = FindAllStrokesInLine(lineid);
+                var strokeInLine = StrokesInLine[lineid].OrderBy(x => x.BoundingRect.X).ToList();
 
                 lastStrokeBound = strokeInLine.FirstOrDefault().BoundingRect;
                 foreach (var s in inkCan.InkPresenter.StrokeContainer.GetStrokes())
@@ -969,7 +997,7 @@ namespace PhenoPad.CustomControl
                 }
 
                 
-                await inkAnalyzer.AnalyzeAsync().AsTask();
+                //await inkAnalyzer.AnalyzeAsync().AsTask();
 
                 for (int i = 1; i < PAGE_HEIGHT / LINE_HEIGHT; i++) {
                     await Dispatcher.RunAsync(CoreDispatcherPriority.High, async () =>
@@ -981,7 +1009,7 @@ namespace PhenoPad.CustomControl
                             NotePhraseControl npc = new NotePhraseControl(lineNum, result);
                             Canvas.SetLeft(npc, 0);
                             Canvas.SetTop(npc, lineNum * LINE_HEIGHT);
-                            phrases[lineNum] = npc;
+                            phrases.Add(lineNum, npc);
                             recognizedCanvas.Children.Add(npc);
                         }
                     });

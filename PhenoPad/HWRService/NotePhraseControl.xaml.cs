@@ -13,6 +13,9 @@ using PhenoPad.PhenotypeService;
 
 namespace PhenoPad.CustomControl
 {
+    /// <summary>
+    /// A class for storing recognized text and strokes of a single note line.
+    /// </summary>
     public sealed partial class NotePhraseControl : UserControl
     {
         public int lineIndex;

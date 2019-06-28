@@ -301,7 +301,6 @@ namespace PhenoPad.PhenotypeService
                 }
             }
             
-
             List<Disease> dis = await predictDisease();
             predictedDiseases.Clear();
             if (dis != null)

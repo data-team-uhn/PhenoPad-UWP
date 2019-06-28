@@ -156,7 +156,7 @@ namespace PhenoPad.HWRService
             string sentence = "";
             foreach (string word in lst)
                 sentence += word + " ";
-            return sentence.Trim();
+            return sentence;
         }
         public List<String> StripSymbols(List<String> unprocessed) {
 
@@ -235,11 +235,11 @@ namespace PhenoPad.HWRService
 
                 string rawdatastr = JsonConvert.SerializeObject(rawdata);
                 HttpStringContent data = new HttpStringContent(rawdatastr, UnicodeEncoding.Utf8, "application/json");
-                //Debug.WriteLine(data);
+                Debug.WriteLine(data);
                 httpResponse = await httpClient.PostAsync(requestUri, data);
                 httpResponse.EnsureSuccessStatusCode();
                 httpResponseBody = await httpResponse.Content.ReadAsStringAsync();
-                //Debug.WriteLine(httpResponseBody);
+                Debug.WriteLine(httpResponseBody);
                 return httpResponseBody;
 
             }

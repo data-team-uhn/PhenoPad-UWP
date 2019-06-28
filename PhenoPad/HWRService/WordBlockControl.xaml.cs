@@ -64,9 +64,12 @@ namespace PhenoPad.CustomControl
         }
 
         public void SetBoundingRect(List<InkStroke> strokes) {
+            Debug.Assert(strokes != null);
+            if (strokes.Count == 0)
+                return;
             var s = strokes.OrderBy(x => x.StrokeStartedTime).ToList();
-            double left = s.FirstOrDefault().BoundingRect.X;
-            double right = s.LastOrDefault().BoundingRect.X + s.LastOrDefault().BoundingRect.Width;
+            double left = s.First().BoundingRect.X;
+            double right = s.Last().BoundingRect.X + s.Last().BoundingRect.Width;
             this.BoundingRect = new Rect(left, line_index * NotePageControl.LINE_HEIGHT, right - left + 10, NotePageControl.LINE_HEIGHT);
         }
 
