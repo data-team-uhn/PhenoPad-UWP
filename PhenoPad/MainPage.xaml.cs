@@ -142,6 +142,7 @@ namespace PhenoPad
             AbbreviationON_Checked(null, null);
             InitBTConnectionSemaphore = new SemaphoreSlim(1);
             InitializeBTConnection();
+
             this.SavedAudios = new List<string>();
 
 

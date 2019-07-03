@@ -872,7 +872,7 @@
                                 </Grid>
                             </ToggleButton>
                         </Grid>
-                        <Grid Grid.Column="1">
+                        <Grid Grid.Column="1" Name="ExpandCandidatePanelGrid">
                             <ToggleButton HorizontalAlignment="Center" Background="WhiteSmoke" ToolTipService.ToolTip="Show All Candidates"
                                           Style="{StaticResource MyToggleButtonStyle}" IsChecked="false" 
                                           VerticalAlignment="Center"  x:Name="ExpandButton" Click="ExpandButton_Click" Width="40" Height="45">

@@ -490,7 +490,7 @@ namespace PhenoPad.SpeechService
                              {
                                  // need - not _ here... =. =
 
-                                 Debug.WriteLine("Result from speech: " + json);
+                                 //Debug.WriteLine("Result from speech: " + json);
                                  var parsedSpeech = JsonConvert.DeserializeObject<SpeechEngineJSON>(json);
                                  parsedSpeech.original = json;
 

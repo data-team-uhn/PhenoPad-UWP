@@ -316,6 +316,20 @@ namespace PhenoPad.CustomControl
             }
         }
 
+        internal void UpdatePhenotypes(List<Phenotype> newPhenos) {
+
+            var deleted = phenotypes.Except(newPhenos).ToList();
+
+            foreach (var p in deleted) {
+                PhenotypeManager.getSharedPhenotypeManager().deletePhenotype(p);                
+            }
+            phenotypes = newPhenos;
+
+            Debug.WriteLine($"line {lineIndex} is updated");
+
+
+        }
+
         internal void AnnotateCurrentLineAfterErase() {
         }
 

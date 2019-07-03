@@ -370,6 +370,22 @@ namespace PhenoPad.PhenotypeService
             if (temp != null)
                 temp.state = pheno.state;
 
+            //updates the phenotype states in saved text conversations
+            var tm = MainPage.Current.conversations.Where(x => x.phenotypesInText.Contains(pheno)).ToList();
+            int count = 0;
+            if (tm.Count > 0) {
+                foreach (var m in tm) {
+                    var ph = m.phenotypesInText.Where(x => x == pheno).FirstOrDefault();
+                    ph.state = pheno.state;
+                    count++;
+                }
+                Debug.WriteLine($"updated {count} phenotype states in textmessages");
+            }
+
+            //updates the phenotype states in ongoing conversation
+            SpeechService.SpeechManager.getSharedSpeechManager().speechInterpreter.UpdatePhenotypeState(pheno);
+
+
             //autosavetimer.Start();
         }
 
@@ -508,7 +524,27 @@ namespace PhenoPad.PhenotypeService
                     break;
             }
             updateSuggestionAndDifferential();
+            if (temp == null)
+                return;
 
+
+            //updates the phenotype states in saved text conversations
+
+            var tm = MainPage.Current.conversations.Where(x => x.phenotypesInText.Contains(temp)).ToList();
+            int count = 0;
+            if (tm.Count > 0)
+            {
+                foreach (var m in tm)
+                {
+                    var ph = m.phenotypesInText.Where(x => x == temp).FirstOrDefault();
+                    ph.state = temp.state;
+                    count++;
+                }
+                Debug.WriteLine($"updated {count} phenotype states in textmessages");
+            }
+
+            //updates the phenotype states in ongoing conversation
+            SpeechService.SpeechManager.getSharedSpeechManager().speechInterpreter.UpdatePhenotypeState(temp);
 
         }
 

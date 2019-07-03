@@ -217,7 +217,7 @@ namespace PhenoPad.SpeechService
                     {
                         this.queryPhenoService(json.result.hypotheses[0].transcript);
 
-                        Debug.WriteLine(json.result.hypotheses[0].transcript);
+                        //Debug.WriteLine(json.result.hypotheses[0].transcript);
 
                         // Then we should have a bunch of words to look at
                         double latest = 0;
@@ -516,6 +516,17 @@ namespace PhenoPad.SpeechService
             this.latestSentenceIndex = this.diarizationWordIndex;
         }
 
+        private async void AnnotateTextMessage(TextMessage tm) {
+            var result = await PhenotypeManager.getSharedPhenotypeManager().annotateByNCRAsync(tm.Body);
+            if (result.Count > 0) {
+                foreach (var pheno in result.Values.ToList()) {
+                    pheno.sourceType = SourceType.Speech;
+                }
+                tm.phenotypesInText.AddRange(result.Values.ToList());
+                Debug.WriteLine($"added {result.Values.Count} phenotypes to list");
+            }
+        }
+
 
         // Concatenate words together to form sentences
         // awkward thing is we don't know how to get sentences
@@ -555,8 +566,9 @@ namespace PhenoPad.SpeechService
                         Interval = new TimeInterval(prevStart, words[wordIndex - 1].interval.end),
                         IsFinal = true,
                         ConversationIndex = this.conversationIndex,
-                        AudioFile = SpeechManager.getSharedSpeechManager().GetAudioName()
-                        
+                        AudioFile = SpeechManager.getSharedSpeechManager().GetAudioName(),
+                        phenotypesInText = new List<Phenotype>()
+                                             
                     };
                     messages.Add(message);
                     prevSpeaker = wordProposedSpeaker;
@@ -574,6 +586,8 @@ namespace PhenoPad.SpeechService
             // Do not add new sentence if it is empty
             if (sentence.Length > 0 && prevSpeaker != -1)
             {
+                Debug.WriteLine($"\nconstructing a new textmessage\n");
+
                 var m = new TextMessage()
                 {
                     Body = sentence,
@@ -582,9 +596,10 @@ namespace PhenoPad.SpeechService
                     IsFinal = true,
                     DisplayTime = DateTime.Now,
                     ConversationIndex = this.conversationIndex,
-                    AudioFile = SpeechManager.getSharedSpeechManager().GetAudioName()
-
+                    AudioFile = SpeechManager.getSharedSpeechManager().GetAudioName(),
+                    phenotypesInText = new List<Phenotype>()
                 };
+                AnnotateTextMessage(m);
                 messages.Add(m);
             }
             this.lastSpeaker = prevSpeaker;
@@ -660,7 +675,6 @@ namespace PhenoPad.SpeechService
             Debug.WriteLine("---------------------");
         }
 
-
         public static string getFirstJSON(string content, out string outContent)
         {
             int count = 0;
@@ -701,6 +715,18 @@ namespace PhenoPad.SpeechService
             }
         }
 
+        public void UpdatePhenotypeState(Phenotype pheno) {
+            var tm = this.currentConversation.Where(x => x.phenotypesInText.Contains(pheno)).ToList();
+            if (tm.Count > 0) {
+                foreach (var mess in tm) {
+                   int ind = mess.phenotypesInText.IndexOf(pheno);
+                    mess.phenotypesInText[ind].state = pheno.state;
+
+
+                }
+                Debug.WriteLine("updated phenotype states in speechinterpreter.");
+            }
+        }
 
         // save transcriptions
         public async Task SaveCurrentConversationsToDisk()

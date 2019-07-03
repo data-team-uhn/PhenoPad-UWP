@@ -828,24 +828,14 @@ namespace PhenoPad.CustomControl
                     PhenoMana.addPhenotypeCandidate(anno.Value, SourceType.Notes);
                 }
 
-                // update current line annotation
-                //var removed = phrases[lineNum].phenotypes.Except(annoResult.Values.ToList()).Select(x=>x.hpId);
-                //var newAdded = annoResult.Values.ToList().Except(phrases[lineNum].phenotypes);
-                //Debug.WriteLine($"removed {removed.Count()} phenotypes, added {newAdded.Count()} phenotypes");
-                //foreach (var id in removed)
-                //{
-                //    //deletes the phenotype only if it has not been selected as Y/N
-                //    var p = phrases[lineNum].phenotypes.Where(x => x.hpId == id).FirstOrDefault();
-                //    if (p != null && p.state == -1) {
-                //        phrases[lineNum].phenotypes.Remove(p);
-                //        PhenoMana.deletePhenotype(p);
-                //    }
-                //}
-                //phrases[lineNum].phenotypes.AddRange(newAdded.ToList());
-                phrases[lineNum].phenotypes = annoResult.Values.ToList();
+                phrases[lineNum].UpdatePhenotypes(annoResult.Values.ToList());
+
                 //don't update UI if user is already on another line
                 if (showingResultOfLine != lineNum)
                     return;
+                //curLineCandidatePheno.Clear();
+                //foreach (var pheno in phrases[lineNum].phenotypes)
+                //    curLineCandidatePheno.Add(pheno);
                 foreach (var pheno in phrases[lineNum].phenotypes)
                 {
                     var temp = curLineCandidatePheno.Where(x => x == pheno).FirstOrDefault();
@@ -853,8 +843,9 @@ namespace PhenoPad.CustomControl
                     if (temp == null)
                     {
 
-                        Debug.WriteLine("temp null will add");                    
+                        Debug.WriteLine("temp null will add");
                         curLineCandidatePheno.Add(pheno);
+
                         Debug.WriteLine("temp null added");
 
                     }

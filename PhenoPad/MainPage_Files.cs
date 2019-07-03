@@ -86,6 +86,7 @@ namespace PhenoPad
             await FileManager.getSharedFileManager().CreateNotePage(notebookObject, curPageIndex.ToString());
             OperationLogger.getOpLogger().SetCurrentNoteID(notebookId);
 
+            ExpandButton.Visibility = Visibility.Collapsed;
             await Task.Delay(TimeSpan.FromSeconds(3));
             LoadingPopup.IsOpen = false;
             curPage.Visibility = Visibility.Visible;
@@ -266,6 +267,13 @@ namespace PhenoPad
 
             notePages = new List<NotePageControl>();
             pageIndexButtons = new List<Button>();
+
+            //initializes audio microphone service
+            bool cur_mic = ConfigService.ConfigService.getConfigService().IfUseExternalMicrophone();
+            if (cur_mic == false)
+                SurfaceMicRadioButton_Checked();
+            else
+                ExterMicRadioButton_Checked();
 
             NotePageControl aPage = new NotePageControl(notebookId, "0");
             notePages.Add(aPage);

@@ -21,6 +21,8 @@ using Windows.UI.Core;
 using System.Xml.Serialization;
 using PhenoPad.FileService;
 using Windows.UI.Popups;
+using Windows.UI.Input;
+using Windows.UI.Xaml.Input;
 
 namespace PhenoPad
 {
@@ -93,8 +95,14 @@ namespace PhenoPad
         //public string DisplayTime { get; set; }
 
         // Bind to phenotype display in conversation
-        [XmlIgnore]
-        public ObservableCollection<Phenotype> phenotypesInText { get; set; }
+        //[XmlIgnore]
+        //public ObservableCollection<Phenotype> phenotypesInText { get; set; }
+
+
+        [XmlArray("Phenotypes")]
+        [XmlArrayItem("phenotype")]
+        public List<Phenotype> phenotypesInText;
+
 
         // Now that we support more than 2 users, we need to have speaker index
         public uint Speaker { get; set; }
@@ -560,6 +568,11 @@ namespace PhenoPad
             chatView.ItemsSource = MainPage.Current.conversations;
             LoadSavedAudio();
             UpdateLayout();
+        }
+
+        private void EditTextMessage(object sender, DoubleTappedRoutedEventArgs ee) {
+            Debug.WriteLine("double tapped");
+
         }
 
         private void SpeechPage_RecordingCreated(SpeechManager sender, Windows.Storage.StorageFile args)

@@ -114,7 +114,7 @@
                                 <RowDefinition Height="Auto"/>
                             </Grid.RowDefinitions>
 
-                                    <TextBlock
+                            <TextBlock
                                 Text="{x:Bind Body}"
                                 Grid.Row="0"
                                 Grid.Column="0"
@@ -123,9 +123,22 @@
                                 MaxWidth="500"
                                 FontSize="18"
                                 Padding="10"
+                                DoubleTapped="EditTextMessage"
                                 HorizontalAlignment="Left"
                                 VerticalAlignment="Center"
                                 Foreground="Black"/>
+                                
+                            <TextBox 
+                                Grid.Row="0"
+                                Grid.Column="0"
+                                TextWrapping="Wrap"
+                                PlaceholderText="{x:Bind Body}"
+                                Visibility="Collapsed"
+                                MinWidth="300"
+                                MaxWidth="500"
+                                FontSize="18"
+                                Padding="10"/>
+
 
                             <Button Grid.Row="1" 
                                     Background="Transparent"
@@ -144,7 +157,7 @@
                         </Grid>
 
 
-                        <ListView x:Name="phenoFromConversationListView" 
+                        <!--<ListView x:Name="phenoFromConversationListView" 
                                     Grid.Column="{Binding PhenoColumn}"
                                     Grid.Row="0"
                                     Padding="6"
@@ -162,7 +175,7 @@
                                     <Setter Property="HorizontalContentAlignment" Value="Stretch" />
                                 </Style>
                             </ListView.ItemContainerStyle>
-                        </ListView>
+                        </ListView>-->
 
                     </Grid>
                 </DataTemplate>
