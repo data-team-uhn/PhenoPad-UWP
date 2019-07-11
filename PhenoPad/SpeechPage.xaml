@@ -19,6 +19,7 @@
     xmlns:phenotypeservice="using:PhenoPad.PhenotypeService"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:controls="using:Microsoft.Toolkit.Uwp.UI.Controls"
     mc:Ignorable="d">
 
 
@@ -34,8 +35,8 @@
     </Page.Resources>
 
     
-
-    <Grid Background="{ThemeResource ApplicationPageBackgroundThemeBrush}" Padding="12,10,12,12">
+    
+    <Grid x:Name="root" Background="{ThemeResource ApplicationPageBackgroundThemeBrush}" Padding="12,10,12,12">
         
         <Grid.RowDefinitions>
             <RowDefinition Height="*"/>
@@ -45,6 +46,9 @@
             <ColumnDefinition Width="*"/>
             <ColumnDefinition Width="300"/>
         </Grid.ColumnDefinitions>
+        
+        
+        
         <!--<StackPanel Grid.Row="0">
             <TextBlock Text="Speech:" Style="{StaticResource SampleHeaderTextStyle}"/>
         </StackPanel>-->
@@ -106,10 +110,12 @@
                             Grid.Column="{Binding TextColumn}"
                             Background="{StaticResource Background_Temp}"
                             Visibility="{x:Bind Path=IsNotFinal}"/>
-                            <Grid
+                        
+                        <Grid
                             Grid.Row="0"
                             Grid.Column="{Binding TextColumn}">
                             <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
                                 <RowDefinition Height="Auto"/>
                                 <RowDefinition Height="Auto"/>
                             </Grid.RowDefinitions>
@@ -120,14 +126,14 @@
                                 Grid.Column="0"
                                 TextWrapping="Wrap"
                                 MinWidth="300"
-                                MaxWidth="500"
+                                MaxWidth="700"
                                 FontSize="18"
                                 Padding="10"
-                                DoubleTapped="EditTextMessage"
+                                DoubleTapped="SpeechBubbleDoubleTapped"
                                 HorizontalAlignment="Left"
                                 VerticalAlignment="Center"
                                 Foreground="Black"/>
-                                
+
                             <TextBox 
                                 Grid.Row="0"
                                 Grid.Column="0"
@@ -135,12 +141,60 @@
                                 PlaceholderText="{x:Bind Body}"
                                 Visibility="Collapsed"
                                 MinWidth="300"
-                                MaxWidth="500"
+                                MaxWidth="700"
                                 FontSize="18"
                                 Padding="10"/>
 
+                            <ListView 
+                                Grid.Row="1"
+                                Padding="10 0 10 0"
+                                ScrollViewer.HorizontalScrollMode="Disabled"
+                                ScrollViewer.VerticalScrollMode="Enabled"
+                                ScrollViewer.HorizontalScrollBarVisibility="Hidden"
+                                ScrollViewer.VerticalScrollBarVisibility="Hidden"
+                                ScrollViewer.IsHorizontalRailEnabled="True"          
+                                x:Name="PhenotypeList" ItemsSource="{x:Bind phenotypesInText}">
+                                <ListView.ItemsPanel>
+                                    <ItemsPanelTemplate>
+                                        <!--<Grid CornerRadius="10">-->
+                                        <controls:WrapPanel x:Name="wrappanel"
+                                            FlowDirection="LeftToRight" 
+                                            Height="auto"
+                                            MaxWidth="700"
+                                            Orientation="Horizontal"/>
+                                        <!--</Grid>-->
+                                    </ItemsPanelTemplate>
+                                </ListView.ItemsPanel>
+                                <ListView.ItemTemplate>
+                                    <DataTemplate x:DataType="phenotypeservice:Phenotype">
 
-                            <Button Grid.Row="1" 
+                                        <customcontrol:PhenotypeBriefControl 
+                                    VerticalAlignment="Center" phenotypeName="{x:Bind name}" 
+                                    phenotypeId="{x:Bind hpId}" phenotypeState="{x:Bind state}" 
+                                    sourceType="{x:Bind sourceType}" presentPosition="List" />
+                                    </DataTemplate>
+                                </ListView.ItemTemplate>
+                                <!--Defining the phenotype candidate tile style-->
+                                <ListView.ItemContainerStyle>
+                                    <Style TargetType="ListViewItem">
+                                        <Setter Property="Padding" Value="0 0 0 0" />
+                                        <Setter Property="Margin" Value="0 0 0 0" />
+                                        <!--<Setter Property="Height" Value="40"/>-->
+                                        <Setter Property="HorizontalContentAlignment" Value="Left" />
+                                        <Setter Property="Template">
+                                            <Setter.Value>
+                                                <ControlTemplate>
+                                                    <ContentPresenter/>
+                                                </ControlTemplate>
+                                            </Setter.Value>
+                                        </Setter>
+                                    </Style>
+                                </ListView.ItemContainerStyle>
+                            </ListView>
+
+
+
+                            <Button Grid.Row="2" 
                                     Background="Transparent"
                                     HorizontalAlignment="Stretch"
                                     Style="{StaticResource ButtonStyle1}"
@@ -155,28 +209,6 @@
                                 />
                             </Button>
                         </Grid>
-
-
-                        <!--<ListView x:Name="phenoFromConversationListView" 
-                                    Grid.Column="{Binding PhenoColumn}"
-                                    Grid.Row="0"
-                                    Padding="6"
-                                    ItemsSource="{Binding phenotypesInText}">
-                            <ListView.ItemTemplate>
-                                <DataTemplate x:DataType="phenotypeservice:Phenotype">
-                                    <customcontrol:PhenotypeControl phenotypeName="{x:Bind name}" 
-                                                                    phenotypeId="{x:Bind hpId}" 
-                                                                    phenotypeState="{x:Bind state}"
-                                                                    sourceType="Speech"/>
-                                </DataTemplate>
-                            </ListView.ItemTemplate>
-                            <ListView.ItemContainerStyle>
-                                <Style TargetType="ListViewItem">
-                                    <Setter Property="HorizontalContentAlignment" Value="Stretch" />
-                                </Style>
-                            </ListView.ItemContainerStyle>
-                        </ListView>-->
-
                     </Grid>
                 </DataTemplate>
             </ListView.ItemTemplate>
@@ -198,7 +230,10 @@
 
                     <ListView.ItemTemplate>
                         <DataTemplate x:DataType="phenotypeservice:Phenotype">
-                            <customcontrol:PhenotypeControl phenotypeName="{x:Bind name}" phenotypeId="{x:Bind hpId}" phenotypeState="{x:Bind state}" sourceType="Speech"></customcontrol:PhenotypeControl>
+                            <customcontrol:PhenotypeControl phenotypeName="{x:Bind name}" 
+                                                            phenotypeId="{x:Bind hpId}" 
+                                                            phenotypeState="{x:Bind state}" 
+                                                            sourceType="Speech"></customcontrol:PhenotypeControl>
                         </DataTemplate>
                     </ListView.ItemTemplate>
                     <ListView.ItemContainerStyle>
@@ -291,7 +326,6 @@
             
         </Grid>
         
-
         <!-- To allow doctor to identify "himself"-->
         <Grid  Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2">
             <Grid.ColumnDefinitions>
@@ -358,5 +392,15 @@
             </StackPanel>
 
         </Grid>
+
+        <Canvas x:Name="popupcanvas">
+
+            <Grid x:Name="PhenotypePopup" Visibility="Collapsed" CornerRadius="10"
+                        Height="auto" Width="auto">
+            </Grid>
+
+
+        </Canvas>
     </Grid>
+    
 </Page>

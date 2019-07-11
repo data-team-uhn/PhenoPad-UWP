@@ -250,18 +250,16 @@ namespace PhenoPad.CustomControl
                         else
                             StrokesInLine[lineNum].Add(s);
                         curStroke = s;
-
                         inkAnalyzer.AddDataForStroke(s);
                         inkAnalyzer.SetStrokeDataKind(s.Id, InkAnalysisStrokeKind.Writing);
                         recognizeAndSetUpUIForLine(line: null, lineInd: lineNum);
                         OperationLogger.getOpLogger().Log(OperationType.Stroke, s.Id.ToString(), s.StrokeStartedTime.Value.ToString(), s.StrokeDuration.ToString(), getLineNumByRect(s.BoundingRect).ToString(), pageId.ToString());
+                        RawStrokeTimer.Start();
                     }
 
                 }
                 //here we need instant call to analyze ink for the specified line input
                 //var result = await analyzeInk(curStroke, serverFlag: MainPage.Current.abbreviation_enabled);
-                RawStrokeTimer.Start();
-
             }
             else
             {//processing strokes selected with left mouse lasso strokes
@@ -316,13 +314,14 @@ namespace PhenoPad.CustomControl
             autosaveDispatcherTimer.Start();
         }
 
-        private async void RawStrokeTimer_Tick(object sender = null, object e = null)
+        private void RawStrokeTimer_Tick(object sender = null, object e = null)
         {
+            //recognizes the last written line when timer ticks
+
             RawStrokeTimer.Stop();
-            //await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () => {
-            //    recognizeAndSetUpUIForLine(null, showingResultOfLine, timerFlag: true);
-            //});
-            await analyzeInk(curStroke, serverFlag: MainPage.Current.abbreviation_enabled);
+            //await analyzeInk(curStroke, serverFlag: MainPage.Current.abbreviation_enabled);
+            int curLine = getLineNumByRect(curStroke.BoundingRect);
+            recognizeAndSetUpUIForLine(line : null, lineInd: curLine);
         }
 
         //private void LineAnalysisDispatcherTimer_Tick(object sender, object e)

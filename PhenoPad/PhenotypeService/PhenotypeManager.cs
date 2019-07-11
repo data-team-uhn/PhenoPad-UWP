@@ -529,22 +529,17 @@ namespace PhenoPad.PhenotypeService
 
 
             //updates the phenotype states in saved text conversations
-
-            var tm = MainPage.Current.conversations.Where(x => x.phenotypesInText.Contains(temp)).ToList();
-            int count = 0;
-            if (tm.Count > 0)
-            {
-                foreach (var m in tm)
-                {
-                    var ph = m.phenotypesInText.Where(x => x == temp).FirstOrDefault();
-                    ph.state = temp.state;
-                    count++;
+            foreach (var mess in MainPage.Current.conversations) {
+                var pheno = mess.phenotypesInText.Where(x => x.hpId == pid).FirstOrDefault();
+                if (pheno != null) {
+                    pheno.state = state;
                 }
-                Debug.WriteLine($"updated {count} phenotype states in textmessages");
             }
 
             //updates the phenotype states in ongoing conversation
             SpeechService.SpeechManager.getSharedSpeechManager().speechInterpreter.UpdatePhenotypeState(temp);
+            SpeechPage.Current.UpdateLayout();
+
 
         }
 
