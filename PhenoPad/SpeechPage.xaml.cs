@@ -460,7 +460,7 @@ namespace PhenoPad
             {
                 this._body = value;
                 this.NotifyPropertyChanged("Body");
-                
+
                 /*
                 Task<List<Phenotype>> phenosTask = PhenotypeManager.getSharedPhenotypeManager().annotateByNCRAsync(this._body);
                 
@@ -520,7 +520,7 @@ namespace PhenoPad
         [XmlArrayItem("phenotype")]
         public List<Phenotype> phenotypesInText;
 
-
+        public bool hasPhenotype { get; set; }
         // Now that we support more than 2 users, we need to have speaker index
         public uint Speaker { get; set; }
 

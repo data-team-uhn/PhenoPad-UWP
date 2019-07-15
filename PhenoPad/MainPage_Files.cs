@@ -125,7 +125,11 @@ namespace PhenoPad
 
                 //Gets the possible stored conversation transcripts and audio names from XML meta
                 conversations =  await FileManager.getSharedFileManager().GetSavedTranscriptsFromXML(notebookId);
-                pastchatView.ItemsSource = conversations;
+                if (conversations != null)
+                    MainPage.Current.conversations = conversations;
+                else
+                    Current.conversations = new List<TextMessage>();
+                //pastchatView.ItemsSource = conversations;
                 List<string> audioNames = await FileManager.getSharedFileManager().GetSavedAudioNamesFromXML(notebookId);
                 if (audioNames != null)
                     this.SavedAudios = audioNames;
@@ -611,7 +615,7 @@ namespace PhenoPad
         /// </summary>
         public async void updatePastConversation() {
             conversations = await FileManager.getSharedFileManager().GetSavedTranscriptsFromXML(notebookId);
-            pastchatView.ItemsSource = conversations;
+            //pastchatView.ItemsSource = conversations;
             SpeechPage.Current.updateChat();
         }
     }

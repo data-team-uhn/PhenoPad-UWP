@@ -394,12 +394,9 @@
         </Grid>
 
         <Canvas x:Name="popupcanvas">
-
             <Grid x:Name="PhenotypePopup" Visibility="Collapsed" CornerRadius="10"
                         Height="auto" Width="auto">
             </Grid>
-
-
         </Canvas>
     </Grid>
     

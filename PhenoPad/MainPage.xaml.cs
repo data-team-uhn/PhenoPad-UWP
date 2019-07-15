@@ -81,7 +81,7 @@ namespace PhenoPad
 
         //private int num = 0;
         public bool abbreviation_enabled;
-
+        public List<Phenotype> showingPhenoSpeech;
         private SemaphoreSlim notifySemaphoreSlim = new SemaphoreSlim(1);
         #endregion
 
@@ -144,7 +144,9 @@ namespace PhenoPad
             InitializeBTConnection();
 
             this.SavedAudios = new List<string>();
+            showingPhenoSpeech = new List<Phenotype>();
 
+            conversations = new List<TextMessage>();
 
             playbackSem = new SemaphoreSlim(1);
             audioTimer = new DispatcherTimer();
@@ -158,6 +160,7 @@ namespace PhenoPad
             readTimer.Tick += EndAudioStream;
 
             cancelService = new CancellationTokenSource();
+            this.Tapped += HideUIs;
 
             //When user clicks X while in mainpage, auto-saves all current process and exits the program.
             Windows.UI.Core.Preview.SystemNavigationManagerPreview.GetForCurrentView().CloseRequested +=
@@ -172,6 +175,11 @@ namespace PhenoPad
                 }
                 args.Handled = false;
             };
+        }
+
+        private void HideUIs(object sender, TappedRoutedEventArgs e)
+        {
+            PhenotypePopup.Visibility = Visibility.Collapsed;
         }
 
         private async void InitializeBTConnection() {

@@ -56,6 +56,10 @@
             <!--</Grid>-->
         </Flyout>
 
+        <Flyout x:Key="PhenoInSpeechFlyout">
+
+        </Flyout>
+
 
         <!-- Don't need to convert toggle status
         <local:ToggleValueConverter x:Key="toggleValueConverter" />
@@ -161,7 +165,7 @@
                 <ColumnDefinition Width="5*"></ColumnDefinition>
                 <ColumnDefinition Width="Auto"></ColumnDefinition>
             </Grid.ColumnDefinitions>
-            
+
             <StackPanel Orientation="Horizontal" Grid.Column="0" >
                 <Button Name="BackButton" Click="BackButton_Click" Width="40"  
                         Background="{StaticResource Button_Background}" 
@@ -176,7 +180,7 @@
 
             <CommandBar Grid.Column="1" HorizontalAlignment="Right" Margin="0 0 0 0"  Name="topCmdBar" OverflowButtonVisibility="Collapsed" 
                         Background="{StaticResource TITLE_BAR_WHITE}">
-                
+
                 <!--<AppBarToggleButton Style="{StaticResource MyAppBarToggleButtonStyle}" IsChecked="True" Label="Notes" Name="NotesButton" Click="NotesButton_Click">
                     <ToolTipService.ToolTip>
                         <TextBlock>Show notes panel</TextBlock>
@@ -228,7 +232,7 @@
                                     <SymbolIcon Symbol="Globe"/>
                                 </MenuFlyoutItem.Icon>
                             </MenuFlyoutItem>
-                            
+
                             <MenuFlyoutItem Text="Re-recognize Page" 
                                             HorizontalAlignment="Stretch"
                                             x:Name="ClearRecogBtn"
@@ -319,7 +323,6 @@
             </StackPanel>
 
         </Grid>
-        
         <!--SIDE/BOTTOM MENU VIEW-->
         <SplitView   Name="MainSplitView" Grid.Row="1" DisplayMode="CompactInline"  IsPaneOpen="False" OpenPaneLength="400"  CompactPaneLength="40" PanePlacement="Left">
             <SplitView.Style>
@@ -443,8 +446,7 @@
                             </ListView.ItemContainerStyle>
                         </ListView>
                     </Grid>
-<!--Phenotype Suggestion Panel-->
-                    
+                    <!--Phenotype Suggestion Panel-->                 
                     <Grid Name="QuickView2" Height="auto" Background="White" Grid.Row="1" Grid.Column="1" >
 
                         <ListView ScrollViewer.VerticalScrollBarVisibility="Hidden" x:Name="suggestedPhenoListView"  
@@ -584,6 +586,7 @@
                                         <Grid MaxWidth="260" MinWidth="100" Grid.Row="0" Grid.Column="0">
                                             <Grid.RowDefinitions>
                                                 <RowDefinition Height="Auto"/>
+                                                <RowDefinition Height="Auto"/>
                                             </Grid.RowDefinitions>
 
                                             <TextBlock
@@ -591,12 +594,65 @@
                                             Grid.Row="0"
                                             Grid.Column="0"
                                             TextWrapping="Wrap"
-                               
+                                            DoubleTapped="SpeechBubble_DoubleTapped"                           
                                             FontSize="16"
                                             Padding="10"
                                             VerticalAlignment="Center"
                                             Foreground="Black"/>
+                                            <!--Phenotype Grid-->
+                                            <ListView 
+                                                Grid.Row="1"
+                                                Padding="10 0 10 0"
+                                                ScrollViewer.HorizontalScrollMode="Disabled"
+                                                ScrollViewer.VerticalScrollMode="Enabled"
+                                                ScrollViewer.HorizontalScrollBarVisibility="Hidden"
+                                                ScrollViewer.VerticalScrollBarVisibility="Hidden"
+                                                ScrollViewer.IsHorizontalRailEnabled="True"          
+                                                x:Name="PhenotypeList" ItemsSource="{x:Bind phenotypesInText}">
+                                                <ListView.ItemsPanel>
+                                                    <ItemsPanelTemplate>
+                                                        <!--<Grid CornerRadius="10">-->
+                                                        <controls:WrapPanel x:Name="wrappanel"
+                                                            FlowDirection="LeftToRight" 
+                                                            Height="auto"
+                                                            MaxWidth="700"
+                                                            Orientation="Horizontal"/>
+
+                                                        <!--</Grid>-->
+                                                    </ItemsPanelTemplate>
+                                                </ListView.ItemsPanel>
+                                                <ListView.ItemTemplate>
+                                                    <DataTemplate x:DataType="phenotypeservice:Phenotype">
+
+                                                        <customcontrol:PhenotypeBriefControl 
+                                    VerticalAlignment="Center" phenotypeName="{x:Bind name}" 
+                                    phenotypeId="{x:Bind hpId}" phenotypeState="{x:Bind state}" 
+                                    sourceType="{x:Bind sourceType}" presentPosition="List" />
+                                                    </DataTemplate>
+                                                </ListView.ItemTemplate>
+                                                <!--Defining the phenotype candidate tile style-->
+                                                <ListView.ItemContainerStyle>
+                                                    <Style TargetType="ListViewItem">
+                                                        <Setter Property="Padding" Value="0 0 0 0" />
+                                                        <Setter Property="Margin" Value="0 0 0 0" />
+                                                        <!--<Setter Property="Height" Value="40"/>-->
+                                                        <Setter Property="HorizontalContentAlignment" Value="Left" />
+                                                        <Setter Property="Template">
+                                                            <Setter.Value>
+                                                                <ControlTemplate>
+                                                                    <ContentPresenter/>
+                                                                </ControlTemplate>
+                                                            </Setter.Value>
+                                                        </Setter>
+                                                    </Style>
+                                                </ListView.ItemContainerStyle>
+                                            </ListView>
+
+
+
+
                                         </Grid>
+
 
 
                                     </Grid>
@@ -653,7 +709,7 @@
                                     </local:ChatListView>
                     </Grid>
 
-                    <Grid Name="pastSpeechView" Grid.Row="0" Grid.Column="1" Grid.RowSpan="3" Visibility="Collapsed" Padding="5" Background="White">
+                    <!--<Grid Name="pastSpeechView" Grid.Row="0" Grid.Column="1" Grid.RowSpan="3" Visibility="Collapsed" Padding="5" Background="White">
                         <TextBlock Text="Past Conversations" FontWeight="SemiBold" FontSize="18" HorizontalAlignment="Left" Margin="10 10 20 10" />
                         <local:ChatListView x:Name="pastchatView" Grid.Row="0" 
                             IncrementalLoadingThreshold="2" Margin="0 60 0 0" 
@@ -661,8 +717,9 @@
                             ScrollViewer.VerticalScrollBarVisibility="Hidden">
                             <ListView.ItemsPanel>
                                 <ItemsPanelTemplate>
-                                    <!--" ItemsStackPanel ItemsUpdatingScrollMode="KeepLastItemInView" VerticalAlignment="Bottom"/-->
-                                    <ItemsStackPanel ItemsUpdatingScrollMode="KeepLastItemInView"  VerticalAlignment="Bottom"/>
+                                    --><!--" ItemsStackPanel ItemsUpdatingScrollMode="KeepLastItemInView" VerticalAlignment="Bottom"/--><!--
+                                    <ItemsStackPanel ItemsUpdatingScrollMode="KeepLastItemInView"  
+                                                     VerticalAlignment="Bottom"/>
                                 </ItemsPanelTemplate>
                             </ListView.ItemsPanel>
 
@@ -693,58 +750,59 @@
 
                                         <Grid.ColumnDefinitions>
                                             <ColumnDefinition Width="auto"/>
+                                            <ColumnDefinition Width="auto"/>
                                         </Grid.ColumnDefinitions>
 
-                                        <!--Finalized message color-->
+                                        --><!--Finalized message color--><!--
                                         <Border BorderThickness="1" CornerRadius="10">
                                             <Grid
-                            Grid.Row="0"
-                            Grid.Column="0"
-                            Grid.ColumnSpan="2"
-                            Background="{Binding Converter={StaticResource bcConverter}}"
-                            Visibility="{x:Bind Path=IsFinal}"/>
+                                                Grid.Row="0"
+                                                Grid.Column="0"
+                                                Grid.ColumnSpan="2"
+                                                Background="{Binding Converter={StaticResource bcConverter}}"
+                                                Visibility="{x:Bind Path=IsFinal}"/>
                                         </Border>
-                                        <Grid
-                            Grid.Row="0"
-                            Grid.Column="{Binding TextColumn}">
-                                                <Grid.RowDefinitions>
-                                                    <RowDefinition Height="Auto"/>
-                                                    <RowDefinition Height="Auto"/>
-                                                </Grid.RowDefinitions>
-                                                <Grid.ColumnDefinitions>
-                                                    <ColumnDefinition Width="auto" />
-                                                </Grid.ColumnDefinitions>
-                                                <TextBlock
-                                Text="{x:Bind Body}"
-                                Grid.Row="0"
-                                Grid.Column="0"
-                                MaxWidth= "340"
-                                TextWrapping="WrapWholeWords"                                                                                          
-                                FontSize="15"                              
-                                Padding="10 10 10 10"
-                                VerticalAlignment="Center"
-                                HorizontalAlignment="Left"
-                                Foreground="Black"/>
-
-                                                <TextBlock
-                                    Grid.Row="1"
-                                    Grid.Column="0"
-                                    FontSize="11"
-                                    Text="{Binding Converter={StaticResource intervalConverter}}"
-                                    TextWrapping="Wrap"                        
-                                    Padding="10 10 10 10"
-                                    Foreground="Black"
-                                />
-
-                                            </Grid>
                                         
+                                        <Grid Grid.Row="0" Grid.Column="{Binding TextColumn}">
+                                            <Grid.RowDefinitions>
+                                                <RowDefinition Height="Auto"/>
+                                                <RowDefinition Height="Auto"/>
+                                                <RowDefinition Height="Auto"/>
+                                            </Grid.RowDefinitions>
+                                            
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="Auto" />
+                                            </Grid.ColumnDefinitions>
+                                                                                        
+                                            --><!--Speech Message grid--><!--
+                                            <TextBlock
+                                                Text="{x:Bind Body}"
+                                                DoubleTapped="SpeechBubble_DoubleTapped"
+                                                Grid.Row="0"
+                                                Grid.Column="1"
+                                                MaxWidth= "340"
+                                                TextWrapping="WrapWholeWords"                                                                                          
+                                                FontSize="15"                              
+                                                Padding="10 10 10 10"
+                                                VerticalAlignment="Center"
+                                                HorizontalAlignment="Left"
+                                                Foreground="Black"/>
 
-
+                                            --><!--Speech Info Grid--><!--
+                                            <TextBlock
+                                                Grid.Row="1"
+                                                Grid.Column="1"
+                                                FontSize="11"
+                                                Text="{Binding Converter={StaticResource intervalConverter}}"
+                                                TextWrapping="Wrap"                        
+                                                Padding="10 10 10 10"
+                                                Foreground="Black"/>
+                                        </Grid>
                                     </Grid>
                                 </DataTemplate>
                             </ListView.ItemTemplate>
                         </local:ChatListView>
-                    </Grid>
+                    </Grid>-->
 
 
                 </Grid>
@@ -1160,6 +1218,62 @@
 
             </Grid>
             </Grid>
+        <!--POPUP FOR SHOWING CLICKED SPEECH BUBBLE-->
+        <Canvas x:Name="popupcanvas">
+            <Grid x:Name="PhenotypePopup" CornerRadius="10" Visibility="Collapsed"
+                        Height="160" Width="300" Background="WhiteSmoke">
+                <ListView 
+                                Grid.Row="1"
+                                Padding="10 0 10 0"
+                                ScrollViewer.HorizontalScrollMode="Disabled"
+                                ScrollViewer.VerticalScrollMode="Enabled"
+                                ScrollViewer.HorizontalScrollBarVisibility="Hidden"
+                                ScrollViewer.VerticalScrollBarVisibility="Hidden"
+                                ScrollViewer.IsHorizontalRailEnabled="True"          
+                                x:Name="PhenotypeList">
+                    <ListView.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <!--<Grid CornerRadius="10">-->
+                            <controls:WrapPanel x:Name="wrappanel"
+                                            FlowDirection="LeftToRight" 
+                                            Height="auto"
+                                            MaxWidth="700"
+                                            Orientation="Horizontal"/>
+                            <!--</Grid>-->
+                        </ItemsPanelTemplate>
+                    </ListView.ItemsPanel>
+                    <ListView.ItemTemplate>
+                        <DataTemplate x:DataType="phenotypeservice:Phenotype">
+
+                            <customcontrol:PhenotypeBriefControl 
+                                    VerticalAlignment="Center" phenotypeName="{x:Bind name}" 
+                                    phenotypeId="{x:Bind hpId}" phenotypeState="{x:Bind state}" 
+                                    sourceType="{x:Bind sourceType}" presentPosition="List" />
+                        </DataTemplate>
+                    </ListView.ItemTemplate>
+                    <!--Defining the phenotype candidate tile style-->
+                    <ListView.ItemContainerStyle>
+                        <Style TargetType="ListViewItem">
+                            <Setter Property="Padding" Value="0 0 0 0" />
+                            <Setter Property="Margin" Value="0 0 0 0" />
+                            <!--<Setter Property="Height" Value="40"/>-->
+                            <Setter Property="HorizontalContentAlignment" Value="Left" />
+                            <Setter Property="Template">
+                                <Setter.Value>
+                                    <ControlTemplate>
+                                        <ContentPresenter/>
+                                    </ControlTemplate>
+                                </Setter.Value>
+                            </Setter>
+                        </Style>
+                    </ListView.ItemContainerStyle>
+                </ListView>
+
+            </Grid>
+
+        </Canvas>
+
+
         <!--POP UP PAGES FOR OVERVIEW / SPEECH-->
         <Popup Grid.Row="0" Grid.RowSpan="2" Grid.Column="0" x:Name="LoadingPopup" x:FieldModifier="public" IsOpen="True"
                HorizontalAlignment="Center" VerticalAlignment="Center" Width="{x:Bind Width}" Height="{x:Bind Height}"

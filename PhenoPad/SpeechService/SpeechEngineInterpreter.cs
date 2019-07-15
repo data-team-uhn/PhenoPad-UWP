@@ -415,21 +415,10 @@ namespace PhenoPad.SpeechService
 
             return message;
         }
-        
 
-        private void constructLatestSentence()
-        {
-            /*
-            int longSentenceCap = 80;
-
-            string[] a = this.tempSentence.Split(new char[] { '.' }, StringSplitOptions.RemoveEmptyEntries);    // need to remove the empty one after '.'
-            this.latestSentence = a[a.Count() - 1];
-
-            if (this.latestSentence.Length > longSentenceCap)
-            {
-                this.latestSentence = this.latestSentence.Substring(this.latestSentence.Length - longSentenceCap, longSentenceCap);
-                this.latestSentence = "... " + this.latestSentence;
-            }*/
+        public TextMessage GetTextMessage(string body) {
+            var tx = currentConversation.Where(x => x.Body == body).FirstOrDefault();
+            return tx;
         }
 
 
@@ -472,7 +461,6 @@ namespace PhenoPad.SpeechService
                 }
             }
         }
-
 
         // Label speaker for each word according to speaker intervals
         // returns index to word that has been diarized
@@ -517,12 +505,14 @@ namespace PhenoPad.SpeechService
         }
 
         private async void AnnotateTextMessage(TextMessage tm) {
+            
             var result = await PhenotypeManager.getSharedPhenotypeManager().annotateByNCRAsync(tm.Body);
             if (result.Count > 0) {
                 foreach (var pheno in result.Values.ToList()) {
                     pheno.sourceType = SourceType.Speech;
                 }
                 tm.phenotypesInText.AddRange(result.Values.ToList());
+                tm.hasPhenotype = true;
                 Debug.WriteLine($"added {result.Values.Count} phenotypes to list");
             }
         }
@@ -530,7 +520,7 @@ namespace PhenoPad.SpeechService
 
         // Concatenate words together to form sentences
         // awkward thing is we don't know how to get sentences
-        private List<TextMessage> formConversation(bool full)
+        private async Task<List<TextMessage>> formConversation(bool full)
         {
             List<TextMessage> messages = new List<TextMessage>();
 
@@ -542,22 +532,22 @@ namespace PhenoPad.SpeechService
             Debug.WriteLine("Forming conversation from word index " +
                         this.constructDiarizedSentenceIndex.ToString() + " to " +
                         this.diarizationWordIndex.ToString());*/
+
             for (int wordIndex = this.constructDiarizedSentenceIndex; wordIndex < this.diarizationWordIndex; wordIndex++)
             {   
                 // then won't trigger again
                 if (prevStart == 0)
-                {
                     prevStart = words[wordIndex].interval.start;
-                }
 
+                //tries to determine the speaker, if unknown by default assigns to last speaker
                 int wordProposedSpeaker = this.words[wordIndex].determineSpeaker();
                 if (wordProposedSpeaker == -1)
-                {
                     wordProposedSpeaker = prevSpeaker;
-                }
 
+                //pushes messages if the speaker if different or exceeded char limit 50
                 if ((wordProposedSpeaker != prevSpeaker && sentence.Length != 0) || (words[wordIndex].word == "." && sentence.Length > 50))
                 {
+                    Debug.WriteLine("speechengineinterpreter in for loop creating message");
                     var message = new TextMessage()
                     {
                         Body = sentence + ".",
@@ -576,6 +566,7 @@ namespace PhenoPad.SpeechService
                     sentence += " " + words[wordIndex].word;
                     prevStart = words[wordIndex].interval.start;
                 }
+                //if same speaker, add words to current sentence
                 else
                 {
                     sentence += " " + words[wordIndex].word;
@@ -586,7 +577,6 @@ namespace PhenoPad.SpeechService
             // Do not add new sentence if it is empty
             if (sentence.Length > 0 && prevSpeaker != -1)
             {
-                Debug.WriteLine($"\nconstructing a new textmessage\n");
 
                 var m = new TextMessage()
                 {
@@ -599,14 +589,25 @@ namespace PhenoPad.SpeechService
                     AudioFile = SpeechManager.getSharedSpeechManager().GetAudioName(),
                     phenotypesInText = new List<Phenotype>()
                 };
-                AnnotateTextMessage(m);
+                var result = await PhenotypeManager.getSharedPhenotypeManager().annotateByNCRAsync(sentence);
+                if (result.Count > 0)
+                {
+                    foreach (var pheno in result.Values.ToList())
+                    {
+                        pheno.sourceType = SourceType.Speech;
+                    }
+                    m.phenotypesInText.AddRange(result.Values.ToList());
+                    m.hasPhenotype = true;
+                    Debug.WriteLine($"added {result.Values.Count} phenotypes to list");
+                }
                 messages.Add(m);
             }
+
             this.lastSpeaker = prevSpeaker;
 
             /*Debug.WriteLine("Forming a conversation of length " + messages.Count.ToString());*/
 
-            Windows.ApplicationModel.Core.CoreApplication.MainView.CoreWindow.Dispatcher.RunAsync(CoreDispatcherPriority.Normal,
+            await Windows.ApplicationModel.Core.CoreApplication.MainView.CoreWindow.Dispatcher.RunAsync(CoreDispatcherPriority.Normal,
             () =>
             {
                 if (full)
@@ -622,6 +623,9 @@ namespace PhenoPad.SpeechService
                     temp.AddRange(messages);
                     this.conversation.AddRange(temp);
                     currentConversation.AddRange(temp);
+                    //MainPage.Current.conversations.AddRange(temp);
+                    //SpeechPage.Current.updateChat();
+
                 }
 
             }
@@ -630,6 +634,7 @@ namespace PhenoPad.SpeechService
             return messages;
         }
 
+        //adding temporary text messages
         private void formRealtimeConversation()
         {
             List<TextMessage> messages = new List<TextMessage>();
@@ -658,7 +663,6 @@ namespace PhenoPad.SpeechService
             }
             );
         }
-
 
         public void printDiarizationResult()
         {

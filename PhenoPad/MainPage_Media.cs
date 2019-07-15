@@ -22,6 +22,9 @@ using Windows.UI.Xaml.Controls;
 using Windows.Storage.Streams;
 using System.Runtime.InteropServices.WindowsRuntime;
 using PhenoPad.FileService;
+using Windows.UI.Xaml.Input;
+using Windows.Foundation;
+using System.Linq;
 
 namespace PhenoPad
 {
@@ -817,6 +820,32 @@ namespace PhenoPad
             isReading = false;
             cancelSource.Cancel();
         }
+
+        private void SpeechBubble_DoubleTapped(object sender, DoubleTappedRoutedEventArgs e)
+        {
+            //handling when user double tapps on the speech bubble 
+            Debug.WriteLine("doubletapped");
+            TextBlock tb = ((TextBlock)sender);
+            string body = tb.Text;
+            var element_Visual_Relative = tb.TransformToVisual(this);
+            Point pos = element_Visual_Relative.TransformPoint(new Point(0, 0));
+            TextMessage tm = speechManager.speechInterpreter.GetTextMessage(body);
+            //technically tm cannot be null otherwise it wouldn't be in speechbubble at all
+            Debug.Assert(tm != null);
+
+            if (tm.phenotypesInText.Count > 0)
+            {
+                Debug.WriteLine($"has phenotype, first = {tm.phenotypesInText[0].name}");
+                PhenotypeList.ItemsSource = tm.phenotypesInText;
+                showingPhenoSpeech = tm.phenotypesInText;
+                UpdateLayout();
+                Canvas.SetLeft(PhenotypePopup, pos.X);
+                Canvas.SetTop(PhenotypePopup, pos.Y - 100);
+                PhenotypePopup.Visibility = Visibility.Visible;
+                //((Flyout)this.Resources["PhenoInSpeechFlyout"]).ShowAt(tb);
+            }
+        }
+
 
 
 
