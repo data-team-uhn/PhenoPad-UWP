@@ -156,44 +156,6 @@ namespace PhenoPad.SpeechService
             this.latestSentenceIndex = 0;
         }
 
-        public void queryPhenoService(string text)
-        {
-            Task<Dictionary<string, Phenotype>> phenosTask = PhenotypeManager.getSharedPhenotypeManager().annotateByNCRAsync(text);
-
-            phenosTask.ContinueWith(_ =>
-            {
-
-                if (phenosTask.Result == null)
-                    return;
-                //only log from speech if there are phenotypes detected,otherwise would be really crowded
-                if (phenosTask.Result.Keys.Count() > 0)
-                    OperationLogger.getOpLogger().Log(OperationType.Speech, text, phenosTask.Result);
-
-                List<Phenotype> list = new List<Phenotype>();
-                foreach(var key in phenosTask.Result.Keys)
-                {
-                    list.Add(phenosTask.Result[key]);
-                }
-
-                if (list != null && list.Count > 0)
-                {
-                    //Debug.WriteLine("We detected at least " + list[0].name);
-
-                    list.Reverse();
-                    //need this runasync function otherwise will give threading error
-                    Windows.ApplicationModel.Core.CoreApplication.MainView.CoreWindow.Dispatcher.RunAsync(CoreDispatcherPriority.Normal,
-                    () =>
-                    {
-                        foreach (var p in list)
-                        {
-                            PhenotypeManager.getSharedPhenotypeManager().addPhenotypeCandidate(p, SourceType.Speech);
-                        }
-                    }
-                    );
-
-                }
-            });
-        }
 
         // Looks at speech engine result to identify what can be done
         public async void processJSON(SpeechEngineJSON json)
@@ -215,7 +177,7 @@ namespace PhenoPad.SpeechService
                     // First check if speech is final (remember that diarization is always slower)
                     if (json.result.final)
                     {
-                        this.queryPhenoService(json.result.hypotheses[0].transcript);
+                        //this.queryPhenoService(json.result.hypotheses[0].transcript);
 
                         //Debug.WriteLine(json.result.hypotheses[0].transcript);
 
@@ -252,13 +214,14 @@ namespace PhenoPad.SpeechService
                     if (json.result.diarization != null && json.result.diarization.Count > 0)
                     {
                         bool full = false;
+
+                        //Received new diarization. Removing previous results
                         if (!json.result.diarization_incremental)
                         {
-                            //Debug.WriteLine("Received new diarization. Removing previous results.");
-                            this.diarization.Clear();
-                            this.diarizationSmallSeg.Clear();
-                            this.diarizationWordIndex = 0;
-                            this.constructDiarizedSentenceIndex = 0;
+                            diarization.Clear();
+                            diarizationSmallSeg.Clear();
+                            diarizationWordIndex = 0;
+                            constructDiarizedSentenceIndex = 0;
                             full = true;
                         }
                         foreach (var d in json.result.diarization)
@@ -267,7 +230,6 @@ namespace PhenoPad.SpeechService
                             //Debug.WriteLine("Identified speaker is " + speaker.ToString());
                             double start = d.start;
                             double end = d.end;
-
                             var interval = new TimeInterval(start, end);
                             this.insertToDiarization(interval, speaker);
                         }
@@ -296,12 +258,12 @@ namespace PhenoPad.SpeechService
                     {
                         if (this.tempSentence.Equals("ADD NEW"))
                         {
-                            this.realtimeConversation.UpdateLastMessage(this.constructRealtimeTempBubble(), true);
+                            this.realtimeConversation.UpdateLastMessage(constructRealtimeTempBubble(), true);
                             //Debug.WriteLine("Not final, no existing");
                         }
                         else
                         {
-                            this.realtimeConversation.UpdateLastMessage(this.constructRealtimeTempBubble(), false);
+                            this.realtimeConversation.UpdateLastMessage(constructRealtimeTempBubble(), false);
                             //Debug.WriteLine("Not final, but has existing");
                         }
                         this.tempSentence = String.Empty;
@@ -325,11 +287,7 @@ namespace PhenoPad.SpeechService
 
         }
 
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="diaJson"></param>
-        public void processDiaJson(DiarizationJSON diaJson)
+        public async void processDiaJson(DiarizationJSON diaJson)
         {
             // Then check if we have results from diarization
             //if (json.result.diarization != null && json.result.diarization.Count > 0)
@@ -344,17 +302,17 @@ namespace PhenoPad.SpeechService
                 double end = diaJson.end;
 
                 var interval = new TimeInterval(start, end);
-                this.insertToDiarization(interval, speaker);
+                insertToDiarization(interval, speaker);
                 //}
 
-                this.assignSpeakerToWords();
+                assignSpeakerToWords();
                 //Debug.WriteLine("Diarized to word count" + diarizationWordIndex.ToString());
                 //Debug.WriteLine("Total word count" + words.Count.ToString());
                 //Debug.WriteLine(json.original);
-                this.formConversation(full);
+                await formConversation(full);
 
                 // so that we don't have an overflow of words
-                this.constructTempSentence();
+                constructTempSentence();
                 //this.printDiarizationResult();
             }
         }
@@ -393,7 +351,6 @@ namespace PhenoPad.SpeechService
             {
                 Body = this.tempSentence,
                 Speaker = 99,
-                //DisplayTime = DateTime.Now,
                 IsFinal = false,
                 ConversationIndex = this.conversationIndex
             };
@@ -407,8 +364,6 @@ namespace PhenoPad.SpeechService
             {
                 Body = this.realtimeLastSentence,
                 Speaker = 99,
-                //DisplayTime = DateTime.Now,
-                //Interval = new TimeInterval(start, start + length),
                 IsFinal = false,
                 ConversationIndex = this.conversationIndex
             };
@@ -424,10 +379,11 @@ namespace PhenoPad.SpeechService
 
         // ------ Helper Functions for Diarization ---------------
 
-        // Fill in diarizaitonSmallSeg by reading interval
         private void insertToDiarization(TimeInterval interval, int speaker)
         {
-            this.diarization.Add(new Pair<TimeInterval, int>(interval, speaker));
+            // Fill in diarizaitonSmallSeg by reading interval
+
+            diarization.Add(new Pair<TimeInterval, int>(interval, speaker));
 
             double prev = 0;
             if (this.diarizationSmallSeg.Count > 0)
@@ -462,10 +418,11 @@ namespace PhenoPad.SpeechService
             }
         }
 
-        // Label speaker for each word according to speaker intervals
-        // returns index to word that has been diarized
         private void assignSpeakerToWords()
         {
+            // Label speaker for each word according to speaker intervals
+            // returns index to word that has been diarized
+
             // construct diarized sentences from previous diarized word index
             this.constructDiarizedSentenceIndex = this.diarizationWordIndex;
             /*Debug.WriteLine("assigning words from word index " +
@@ -504,17 +461,37 @@ namespace PhenoPad.SpeechService
             this.latestSentenceIndex = this.diarizationWordIndex;
         }
 
-        private async void AnnotateTextMessage(TextMessage tm) {
-            
-            var result = await PhenotypeManager.getSharedPhenotypeManager().annotateByNCRAsync(tm.Body);
-            if (result.Count > 0) {
-                foreach (var pheno in result.Values.ToList()) {
-                    pheno.sourceType = SourceType.Speech;
-                }
-                tm.phenotypesInText.AddRange(result.Values.ToList());
-                tm.hasPhenotype = true;
-                Debug.WriteLine($"added {result.Values.Count} phenotypes to list");
+
+        public async Task<List<Phenotype>> queryPhenoService(string text)
+        {
+            var phenos = await PhenotypeManager.getSharedPhenotypeManager().annotateByNCRAsync(text);
+            if (phenos == null)
+                return new List<Phenotype>();
+            //only log from speech if there are phenotypes detected,otherwise would be really crowded
+            if (phenos.Keys.Count() > 0)
+                OperationLogger.getOpLogger().Log(OperationType.Speech, text, phenos);
+
+            List<Phenotype> phenolist = new List<Phenotype>();
+            foreach (var key in phenos.Keys)
+            {
+                phenolist.Add(phenos[key]);
             }
+
+            if (phenolist != null && phenolist.Count > 0)
+            {
+                //phenolist.Reverse();
+                //need this runasync function otherwise will give threading error
+                Windows.ApplicationModel.Core.CoreApplication.MainView.CoreWindow.Dispatcher.RunAsync(CoreDispatcherPriority.Normal,
+                () =>{
+                    foreach (var p in phenolist)
+                    {
+                        PhenotypeManager.getSharedPhenotypeManager().addPhenotypeCandidate(p, SourceType.Speech);
+                        p.sourceType = SourceType.Speech;
+                    }
+                });
+
+            }
+            return phenolist;
         }
 
 
@@ -528,10 +505,6 @@ namespace PhenoPad.SpeechService
             double speechEnd = 0;
             int prevSpeaker = this.lastSpeaker;
             string sentence = String.Empty;
-            /*
-            Debug.WriteLine("Forming conversation from word index " +
-                        this.constructDiarizedSentenceIndex.ToString() + " to " +
-                        this.diarizationWordIndex.ToString());*/
 
             for (int wordIndex = this.constructDiarizedSentenceIndex; wordIndex < this.diarizationWordIndex; wordIndex++)
             {   
@@ -577,7 +550,8 @@ namespace PhenoPad.SpeechService
             // Do not add new sentence if it is empty
             if (sentence.Length > 0 && prevSpeaker != -1)
             {
-
+                var phenotypes = await queryPhenoService(sentence);
+                bool hasPheno =  phenotypes.Count>0? true : false;
                 var m = new TextMessage()
                 {
                     Body = sentence,
@@ -587,19 +561,9 @@ namespace PhenoPad.SpeechService
                     DisplayTime = DateTime.Now,
                     ConversationIndex = this.conversationIndex,
                     AudioFile = SpeechManager.getSharedSpeechManager().GetAudioName(),
-                    phenotypesInText = new List<Phenotype>()
+                    phenotypesInText = phenotypes,
+                    hasPhenotype = hasPheno
                 };
-                var result = await PhenotypeManager.getSharedPhenotypeManager().annotateByNCRAsync(sentence);
-                if (result.Count > 0)
-                {
-                    foreach (var pheno in result.Values.ToList())
-                    {
-                        pheno.sourceType = SourceType.Speech;
-                    }
-                    m.phenotypesInText.AddRange(result.Values.ToList());
-                    m.hasPhenotype = true;
-                    Debug.WriteLine($"added {result.Values.Count} phenotypes to list");
-                }
                 messages.Add(m);
             }
 
@@ -623,9 +587,8 @@ namespace PhenoPad.SpeechService
                     temp.AddRange(messages);
                     this.conversation.AddRange(temp);
                     currentConversation.AddRange(temp);
-                    //MainPage.Current.conversations.AddRange(temp);
-                    //SpeechPage.Current.updateChat();
-
+                    MainPage.Current.conversations.AddRange(temp);
+                    SpeechPage.Current.updateChat();
                 }
 
             }
@@ -635,7 +598,7 @@ namespace PhenoPad.SpeechService
         }
 
         //adding temporary text messages
-        private void formRealtimeConversation()
+        private async void formRealtimeConversation()
         {
             List<TextMessage> messages = new List<TextMessage>();
 
@@ -655,7 +618,7 @@ namespace PhenoPad.SpeechService
             }
 
 
-            Windows.ApplicationModel.Core.CoreApplication.MainView.CoreWindow.Dispatcher.RunAsync(CoreDispatcherPriority.Normal,
+            await Windows.ApplicationModel.Core.CoreApplication.MainView.CoreWindow.Dispatcher.RunAsync(CoreDispatcherPriority.Normal,
             () =>
             {
                 //this.conversation.Clear();
@@ -725,43 +688,15 @@ namespace PhenoPad.SpeechService
                 foreach (var mess in tm) {
                    int ind = mess.phenotypesInText.IndexOf(pheno);
                     mess.phenotypesInText[ind].state = pheno.state;
-
-
                 }
                 Debug.WriteLine("updated phenotype states in speechinterpreter.");
             }
         }
 
-        // save transcriptions
-        public async Task SaveCurrentConversationsToDisk()
-        {
-            int finalCount = 0;
-            foreach (TextMessage msg in currentConversation) {
-                if (msg.IsFinal)
-                    finalCount++;
-            }
-            Debug.WriteLine($"saving transcripts: number of final messages = {finalCount}");
-            if (currentConversation.Count > 0 && finalCount > 0)
-            {//only save transcripts if there are finalized messages
+        public bool CurrentConversationHasContent() {
+            return currentConversation.Count > 0;
+        }
 
-                try
-                {
-                    MetroLogger.getSharedLogger().Info($"Saving final messages of current conversation to transcript_{this.conversationIndex}");
-                    string fpath = FileManager.getSharedFileManager().GetNoteFilePath(
-                      FileManager.getSharedFileManager().currentNoteboookId,
-                      "",
-                      NoteFileType.Transcriptions,
-                      "transcriptions_" + conversationIndex);
-                    Debug.WriteLine("transcript will be saved to " + fpath);
-                    var result = await FileManager.getSharedFileManager().SaveObjectSerilization(fpath, currentConversation, typeof(List<TextMessage>));
-                    Debug.WriteLine("transcript save result = " + result);
-                }
-                catch (Exception e)
-                {
-                    MetroLogger.getSharedLogger().Error("Failed to save current conversations transcriptions into disk: " + e.Message);
-                }
-            }
-           }
 
         public void addToCurrentConversation(TextMessage t) {
             currentConversation.Add(t);

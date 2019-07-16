@@ -344,6 +344,8 @@ namespace PhenoPad
                         }
                     );
                 }
+                //save the transcripts from past speeches;
+                await Current.SaveCurrentConversationsToDisk();
                 // collected phenotypes
                 result2 = await FileManager.getSharedFileManager().saveCollectedPhenotypesToFile(notebookId);
                 result2 &= await FileManager.getSharedFileManager().SaveAudioNamesToXML(notebookId, SavedAudios);

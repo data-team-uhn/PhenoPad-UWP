@@ -725,8 +725,7 @@ namespace PhenoPad.SpeechService
         //==================================================================================================================
         public async Task SaveTranscriptions(bool reload=true)
         {
-            LogService.MetroLogger.getSharedLogger().Info("Saving transriptions for audio_" + getAudioCount());
-            await this.speechInterpreter.SaveCurrentConversationsToDisk();
+            await MainPage.Current.SaveCurrentConversationsToDisk();
             if (reload) {
                 MainPage.Current.updateAudioMeta();
                 MainPage.Current.updatePastConversation();

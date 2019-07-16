@@ -846,6 +846,25 @@ namespace PhenoPad
             }
         }
 
+        // save transcriptions
+        public async Task SaveCurrentConversationsToDisk()
+        {
+            if ( speechManager.speechInterpreter.CurrentConversationHasContent() || Current.conversations.Count > 0)
+            {//only save transcripts if there are finalized messages
+                try
+                {
+                    string fpath = FileManager.getSharedFileManager().GetNoteFilePath(
+                      FileManager.getSharedFileManager().currentNoteboookId, "", NoteFileType.Transcriptions, "transcripts");
+                    var result = await FileManager.getSharedFileManager().SaveObjectSerilization(fpath, conversations, typeof(List<TextMessage>));
+                    Debug.WriteLine($"transcripts saved to {fpath}, result = {result}");
+                }
+                catch (Exception e)
+                {
+                    MetroLogger.getSharedLogger().Error("Failed to save current conversations transcriptions into disk: " + e.Message);
+                }
+            }
+        }
+
 
 
 
