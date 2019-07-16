@@ -8,7 +8,6 @@ using Windows.Media;
 using Windows.Media.Audio;
 using Windows.Media.Capture;
 using Windows.Media.Render;
-
 using System.Runtime.InteropServices;
 using Windows.Media.MediaProperties;
 //using Google.Cloud.Speech.V1;
@@ -20,15 +19,12 @@ using System.IO;
 using Windows.Web;
 using Windows.Storage.Pickers;
 using Windows.Storage;
-
 // To parse JSON we received from speech engine server
 using Newtonsoft.Json;
 using Windows.UI.Core;
 using Windows.UI.Popups;
 using Windows.Storage.Streams;
 using PhenoPad.LogService;
-using PhenoPad.BluetoothService;
-using System.Xml.Serialization;
 //using Newtonsoft.Json.Linq;   // Seems like we only need JSON parsing
 
 namespace PhenoPad.SpeechService
@@ -54,9 +50,7 @@ namespace PhenoPad.SpeechService
         public static string RESTART_AUIDO_SERVER = "TIMEOUTEXIT";
         public static bool NEED_RESTART_AUDIO = false;
         public static SpeechManager sharedSpeechManager;
-        private static string currentAudioName;
-
-        
+        private static string currentAudioName;        
         public Conversation conversation = new Conversation();
         public Conversation realtimeConversation = new Conversation();
         public SpeechEngineInterpreter speechInterpreter;
@@ -94,11 +88,9 @@ namespace PhenoPad.SpeechService
             {
                 this.serverPort = (string)val2;
             }
-
             this.speechInterpreter = new SpeechEngineInterpreter(this.conversation, this.realtimeConversation);
             this.speechStreamSocket = new SpeechStreamSocket(this.serverAddress, this.serverPort);
-            this.speechAPI = new SpeechRESTAPI();
-            
+            this.speechAPI = new SpeechRESTAPI();          
         }
 
 
@@ -767,7 +759,6 @@ namespace PhenoPad.SpeechService
 
                     // Format.
                     dataWriter.WriteBytes(Encoding.ASCII.GetBytes("WAVE"));
-
 
                     // Sub-chunk 1.
                     // Sub-chunk 1 ID.

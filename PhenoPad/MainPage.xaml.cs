@@ -145,7 +145,6 @@ namespace PhenoPad
 
             this.SavedAudios = new List<string>();
             showingPhenoSpeech = new List<Phenotype>();
-
             conversations = new List<TextMessage>();
 
             playbackSem = new SemaphoreSlim(1);
@@ -176,6 +175,8 @@ namespace PhenoPad
                 args.Handled = false;
             };
         }
+
+        //******************************END OF CONSTRUCTORS************************************************
 
         private void HideUIs(object sender, TappedRoutedEventArgs e)
         {
