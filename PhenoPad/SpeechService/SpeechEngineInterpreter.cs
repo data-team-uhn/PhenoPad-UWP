@@ -693,6 +693,19 @@ namespace PhenoPad.SpeechService
             }
         }
 
+        public void DeletePhenotype(Phenotype pheno) {
+            var tm = this.currentConversation.Where(x => x.phenotypesInText.Contains(pheno)).ToList();
+            if (tm.Count > 0)
+            {
+                foreach (var mess in tm)
+                {
+                    int ind = mess.phenotypesInText.IndexOf(pheno);
+                    mess.phenotypesInText.RemoveAt(ind);
+                }
+                Debug.WriteLine("deleted phenotype states in speechinterpreter.");
+            }
+        }
+
         public bool CurrentConversationHasContent() {
             return currentConversation.Count > 0;
         }

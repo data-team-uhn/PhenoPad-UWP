@@ -348,6 +348,25 @@ namespace PhenoPad.PhenotypeService
                 phenotypesCandidates.Remove(temp);
                 phenotypesCandidates.Insert(0, pp);
             }
+
+            //updates the phenotype states in saved text conversations
+            var tm = MainPage.Current.conversations.Where(x => x.phenotypesInText.Contains(pheno)).ToList();
+            int count = 0;
+            if (tm.Count > 0)
+            {
+                foreach (var m in tm)
+                {
+                    var ph = m.phenotypesInText.Where(x => x == pheno).FirstOrDefault();
+                    m.phenotypesInText.Remove(ph);
+                    count++;
+                }
+                Debug.WriteLine($"removed {count} phenotype states in textmessages");
+            }
+
+            //updates the phenotype states in ongoing conversation
+            SpeechService.SpeechManager.getSharedSpeechManager().speechInterpreter.DeletePhenotype(pheno);
+
+
             autosavetimer.Start();
             return false;
         }
@@ -404,6 +423,24 @@ namespace PhenoPad.PhenotypeService
             {
                 target = temp;
                 phenotypesInSpeech.Remove(temp);
+                //updates the phenotype states in saved text conversations
+                var tm = MainPage.Current.conversations.Where(x => x.phenotypesInText.Contains(temp)).ToList();
+                int count = 0;
+                if (tm.Count > 0)
+                {
+                    foreach (var m in tm)
+                    {
+                        var ph = m.phenotypesInText.Where(x => x == temp).FirstOrDefault();
+                        m.phenotypesInText.Remove(ph);
+                        count++;
+                    }
+                    Debug.WriteLine($"removed {count} phenotype states in textmessages");
+                }
+
+                //updates the phenotype states in ongoing conversation
+                SpeechService.SpeechManager.getSharedSpeechManager().speechInterpreter.DeletePhenotype(temp);
+
+
             }
 
             temp = phenotypesInNote.Where(x => x.hpId == pid).FirstOrDefault();
@@ -430,6 +467,7 @@ namespace PhenoPad.PhenotypeService
                     //phenotypesCandidates.Insert(ind, pp);
                 }
             }
+
             //target is null only when deleting a phenotype with state -1 in the curline recognition bar
             if (target != null)
                 //OperationLogger.getOpLogger().Log(OperationType.Phenotype, type.ToString(), "removed", target.name);
