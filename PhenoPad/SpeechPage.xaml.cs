@@ -42,9 +42,9 @@ namespace PhenoPad
         {
             this.InitializeComponent();
             Current = this;
+            mainpage = MainPage.Current;
             phenoInSpeech = new List<Phenotype>();
-            chatView.ItemsSource = MainPage.Current.conversations;
-            chatView.UpdateLayout();
+            chatView.ItemsSource = mainpage.conversations;
             //chatView.ItemsSource = SpeechManager.getSharedSpeechManager().conversation;
             chatView.ContainerContentChanging += OnChatViewContainerContentChanging;
             //realtimeChatView.Children.Add(MainPage.Current.speechQuickView.c);
@@ -186,17 +186,17 @@ namespace PhenoPad
 
             // Do not change combobox label after selection
             //speakerTxt.Text = "doctor: " + (doctor + 1).ToString();
-            Conversation conversation = SpeechManager.getSharedSpeechManager().GetConversation();
-            for (int i = 0; i < conversation.Count; i++)
+
+            for (int i = 0; i < SpeechManager.getSharedSpeechManager().conversation.Count; i++)
             //foreach (TextMessage item in chatView.ItemsSource.Items)
             {
-                if (conversation[i].IsNotFinal)
+                if (SpeechManager.getSharedSpeechManager().conversation[i].IsNotFinal)
                 {
-                    conversation[i].OnLeft = false;
+                    SpeechManager.getSharedSpeechManager().conversation[i].OnLeft = false;
                 }
                 else
                 {
-                    conversation[i].OnLeft = (conversation[i].Speaker != doctor);
+                    SpeechManager.getSharedSpeechManager().conversation[i].OnLeft = (SpeechManager.getSharedSpeechManager().conversation[i].Speaker != doctor);
                 }
             }
 
@@ -723,19 +723,6 @@ namespace PhenoPad
             this.OnCollectionChanged(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Reset));
         }
 
-        public void DeletePhenotypeInItem(string pid) {
-            foreach (var item in this.Items) {
-                Debug.WriteLine("************" + item.Body + item.phenotypesInText.Count);
-                var ph = item.phenotypesInText.Where(x => x.hpId == pid).FirstOrDefault();
-                if (ph != null) {
-                    item.phenotypesInText.Remove(ph);
-                    Debug.WriteLine($"deleted {ph.name}");
-                    this.OnPropertyChanged(new PropertyChangedEventArgs("Phenotype"));
-                    this.OnCollectionChanged(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Reset));
-                }
-            }
-        }
-
         public void AddRange(List<TextMessage> range)
         {
             foreach (var item in range)
@@ -943,7 +930,6 @@ namespace PhenoPad
                         args.Handled = true;
                         break;
                 }
-                this.UpdateLayout();
             }
         }
     }

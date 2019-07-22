@@ -382,12 +382,6 @@ namespace PhenoPad
             return complete;
         }
 
-        internal void UpdateRealtimeChat()
-        {
-            finalchatView.ItemsSource = speechManager.GetConversation();
-            finalchatView.UpdateLayout();
-        }
-
         /// <summary>
         /// Load everything from disk, include: 
         /// handwritten strokes, typing words, photos and annotations, drawing, collected phenotypes.
