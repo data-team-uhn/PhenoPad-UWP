@@ -364,7 +364,7 @@ namespace PhenoPad.PhenotypeService
             }
 
             //updates the phenotype states in ongoing conversation
-            SpeechService.SpeechManager.getSharedSpeechManager().speechInterpreter.DeletePhenotype(pheno);
+            MainPage.Current.speechManager.DeletePhenotype(pheno.hpId);
 
 
             autosavetimer.Start();
@@ -432,14 +432,15 @@ namespace PhenoPad.PhenotypeService
                     {
                         var ph = m.phenotypesInText.Where(x => x == temp).FirstOrDefault();
                         m.phenotypesInText.Remove(ph);
+                        if (m.phenotypesInText.Count == 0)
+                            m.hasPhenotype = false;
                         count++;
                     }
-                    Debug.WriteLine($"removed {count} phenotype states in textmessages");
+                    //updates the phenotype states in ongoing conversation
+                    MainPage.Current.speechManager.DeletePhenotype(temp.hpId);
+                    MainPage.Current.UpdateLayout();
+                    SpeechPage.Current.updateChat();
                 }
-
-                //updates the phenotype states in ongoing conversation
-                SpeechService.SpeechManager.getSharedSpeechManager().speechInterpreter.DeletePhenotype(temp);
-
 
             }
 

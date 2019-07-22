@@ -133,11 +133,11 @@ namespace PhenoPad.CustomControl
         private void DeleteBtn_Click(object sender, RoutedEventArgs e)
         {
             localState = -1;
-            PhenotypeManager.getSharedPhenotypeManager().removeByIdAsync(phenotypeId, SourceType.Notes);
-            if (presentPosition == PresentPosition.Inline)
-            {
+            PhenotypeManager.getSharedPhenotypeManager().removeByIdAsync(phenotypeId, sourceType);
+            //if (presentPosition == PresentPosition.Inline)
+            //{
                 this.Visibility = Visibility.Collapsed;
-            }
+            //}
         }
         
 

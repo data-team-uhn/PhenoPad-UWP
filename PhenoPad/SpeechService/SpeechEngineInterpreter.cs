@@ -576,6 +576,7 @@ namespace PhenoPad.SpeechService
             {
                 if (full)
                 {
+                    Debug.WriteLine("forming new full conversation");
                     List<TextMessage> temp = new List<TextMessage>(oldConversations);
                     temp.AddRange(messages);
                     this.conversation.ClearThenAddRange(temp);
@@ -588,6 +589,7 @@ namespace PhenoPad.SpeechService
                     this.conversation.AddRange(temp);
                     currentConversation.AddRange(temp);
                     MainPage.Current.conversations.AddRange(temp);
+                    Debug.WriteLine(MainPage.Current.conversations.Count);
                     SpeechPage.Current.updateChat();
                 }
 
@@ -690,19 +692,6 @@ namespace PhenoPad.SpeechService
                     mess.phenotypesInText[ind].state = pheno.state;
                 }
                 Debug.WriteLine("updated phenotype states in speechinterpreter.");
-            }
-        }
-
-        public void DeletePhenotype(Phenotype pheno) {
-            var tm = this.currentConversation.Where(x => x.phenotypesInText.Contains(pheno)).ToList();
-            if (tm.Count > 0)
-            {
-                foreach (var mess in tm)
-                {
-                    int ind = mess.phenotypesInText.IndexOf(pheno);
-                    mess.phenotypesInText.RemoveAt(ind);
-                }
-                Debug.WriteLine("deleted phenotype states in speechinterpreter.");
             }
         }
 

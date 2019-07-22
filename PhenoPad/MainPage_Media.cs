@@ -168,8 +168,8 @@ namespace PhenoPad
                 args.ItemContainer.HorizontalAlignment = (message.Speaker == doctor) ? HorizontalAlignment.Right : HorizontalAlignment.Left;
                 //Need this dispatcher in-order to avoid threading errors
                 await CoreApplication.MainView.CoreWindow.Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () => {
-                    chatView.UpdateLayout();
-                    chatView.ScrollIntoView(chatView.Items[chatView.Items.Count - 1]);
+                    finalchatView.UpdateLayout();
+                    finalchatView.ScrollIntoView(finalchatView.Items[finalchatView.Items.Count - 1]);
                 });
             }
         }

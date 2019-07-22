@@ -520,7 +520,7 @@
                         </Grid.RowDefinitions>
 
                         <!--colored speech bubbles-->
-                        <local:ChatListView x:Name="chatView" Background="White"  Grid.Row="0"
+                        <local:ChatListView x:Name="finalchatView" Background="White"  Grid.Row="0"
                                             IncrementalLoadingThreshold="2" 
                                             ScrollViewer.VerticalScrollBarVisibility="Auto"
                                             ContainerContentChanging="OnChatViewContainerContentChanging">
@@ -606,7 +606,7 @@
                                             ScrollViewer.HorizontalScrollBarVisibility="Hidden"
                                             ScrollViewer.VerticalScrollBarVisibility="Hidden"
                                             ScrollViewer.IsHorizontalRailEnabled="True"          
-                                            x:Name="PhenotypeList" ItemsSource="{x:Bind phenotypesInText}">
+                                            x:Name="PhenotypeList" ItemsSource="{x:Bind phenotypesInText,Mode=OneWay}">
                                             <ListView.ItemsPanel>
                                                 <ItemsPanelTemplate>
                                                     <!--<Grid CornerRadius="10">-->
@@ -659,7 +659,7 @@
                     </local:ChatListView>
                         
                         <!--gray realtime speech bubbles-->
-                            <local:ChatListView x:Name="realtimeChatView" Grid.Row="1" Background="White"
+                            <local:ChatListView x:Name="nonfinalChatView" Grid.Row="1" Background="White"
                             IncrementalLoadingThreshold="2" 
                             ScrollViewer.VerticalScrollBarVisibility="Hidden">
                                         <ListView.ItemsPanel>

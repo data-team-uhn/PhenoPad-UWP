@@ -55,6 +55,7 @@
         <local:ChatListView x:Name="chatView" Grid.Row="0" Grid.Column="0"
                             IncrementalLoadingThreshold="2" Margin="10" 
                             BorderBrush="White" BorderThickness="2"
+                            
                             ScrollViewer.VerticalScrollBarVisibility="Hidden">
             <ListView.ItemsPanel>
                 <ItemsPanelTemplate>
@@ -153,7 +154,7 @@
                                 ScrollViewer.HorizontalScrollBarVisibility="Hidden"
                                 ScrollViewer.VerticalScrollBarVisibility="Hidden"
                                 ScrollViewer.IsHorizontalRailEnabled="True"          
-                                x:Name="PhenotypeList" ItemsSource="{x:Bind phenotypesInText}">
+                                x:Name="PhenotypeList" ItemsSource="{x:Bind phenotypesInText, Mode=OneWay}">
                                 <ListView.ItemsPanel>
                                     <ItemsPanelTemplate>
                                         <!--<Grid CornerRadius="10">-->

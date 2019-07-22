@@ -51,7 +51,7 @@ namespace PhenoPad.SpeechService
         public static bool NEED_RESTART_AUDIO = false;
         public static SpeechManager sharedSpeechManager;
         private static string currentAudioName;        
-        public Conversation conversation = new Conversation();
+        private Conversation conversation = new Conversation();
         public Conversation realtimeConversation = new Conversation();
         public SpeechEngineInterpreter speechInterpreter;
         private MainPage rootPage = MainPage.Current;
@@ -349,6 +349,17 @@ namespace PhenoPad.SpeechService
             }
             return false;
         }
+
+        internal void DeletePhenotype(string hpId)
+        {
+            speechInterpreter.conversation.DeletePhenotypeInItem(hpId);
+            
+        }
+
+        public Conversation GetConversation() {
+            return this.speechInterpreter.conversation;
+        }
+
         // ================================== AUDIO START / STOP FOR USING INTERNAL MICROPHONE =============================
         public async Task<bool> StartAudio()
         {

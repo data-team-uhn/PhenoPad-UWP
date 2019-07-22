@@ -124,9 +124,9 @@ namespace PhenoPad
             MainPageInkBar.EraseAllClicked += InkToolbar_EraseAllClicked;
 
             //SpeechPage initialization 
-            chatView.ItemsSource = SpeechManager.getSharedSpeechManager().conversation;
-            chatView.ContainerContentChanging += OnChatViewContainerContentChanging;
-            realtimeChatView.ItemsSource = SpeechManager.getSharedSpeechManager().realtimeConversation;
+            finalchatView.ItemsSource = SpeechManager.getSharedSpeechManager().GetConversation();
+            finalchatView.ContainerContentChanging += OnChatViewContainerContentChanging;
+            nonfinalChatView.ItemsSource = SpeechManager.getSharedSpeechManager().realtimeConversation;
             speechEngineRunning = false;
             PropertyChanged += MainPage_PropertyChanged;
 
