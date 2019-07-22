@@ -46,6 +46,8 @@ namespace PhenoPad
             //NotifyUser("Creating Notebook...",NotifyType.StatusMessage,3);
             MetroLogger.getSharedLogger().Info("Initialize a new notebook.");
             PhenoMana.clearCache();
+            conversations = new List<TextMessage>();
+            SpeechPage.Current.updateChat();
 
             // Tries to create a file structure for the new notebook.
             {
