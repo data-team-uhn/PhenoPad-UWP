@@ -43,7 +43,6 @@ namespace PhenoPad
         public async void InitializeNotebook()
         {
             LoadingPopup.IsOpen = true;
-            //NotifyUser("Creating Notebook...",NotifyType.StatusMessage,3);
             MetroLogger.getSharedLogger().Info("Initialize a new notebook.");
             PhenoMana.clearCache();
             conversations = new List<TextMessage>();
@@ -74,7 +73,6 @@ namespace PhenoPad
             curPage = aPage;
             curPageIndex = 0;
             PageHost.Content = curPage;
-            //curPageIndexBlock.Text = $"{curPageIndex + 1}";
             setPageIndexText(0);
 
             currentMode = WritingMode;
@@ -128,7 +126,7 @@ namespace PhenoPad
                 //Gets the possible stored conversation transcripts and audio names from XML meta
                 conversations =  await FileManager.getSharedFileManager().GetSavedTranscriptsFromXML(notebookId);
                 if (conversations != null)
-                    MainPage.Current.conversations = conversations;
+                    Current.conversations = conversations;
                 else
                     Current.conversations = new List<TextMessage>();
                 //pastchatView.ItemsSource = conversations;

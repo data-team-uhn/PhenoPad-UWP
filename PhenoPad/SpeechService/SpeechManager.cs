@@ -381,7 +381,6 @@ namespace PhenoPad.SpeechService
                     messageDialog.DefaultCommandIndex = 0;
                     // Set the command to be invoked when escape is pressed
                     messageDialog.CancelCommandIndex = 1;
-
                     // Show the message dialog
                     var result = await messageDialog.ShowAsync();
 
@@ -707,11 +706,7 @@ namespace PhenoPad.SpeechService
                 EngineHasResult.Invoke(this, speechInterpreter);
                 await Task.Delay(delay);
             }
-
-
             return true;
-
-
         }
 
         public async Task<bool> EndAudioDemo(string notebookid) {

@@ -32,6 +32,17 @@
     <Page.Resources>
         <local:BackgroundColorConverter x:Key="bcConverter" />
         <local:IntervalDisplayConverter x:Key="intervalConverter" />
+        <Flyout x:Key="EditPanelFlyout" Placement="Top">
+            <Grid Padding="3" Width="400">
+
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="200"/>
+                    <RowDefinition Height="50"/>
+                </Grid.RowDefinitions>
+
+                <RichEditBox Name="TranscriptEditBox" />
+            </Grid>
+        </Flyout>
     </Page.Resources>
 
     
@@ -47,11 +58,6 @@
             <ColumnDefinition Width="300"/>
         </Grid.ColumnDefinitions>
         
-        
-        
-        <!--<StackPanel Grid.Row="0">
-            <TextBlock Text="Speech:" Style="{StaticResource SampleHeaderTextStyle}"/>
-        </StackPanel>-->
         <local:ChatListView x:Name="chatView" Grid.Row="0" Grid.Column="0"
                             IncrementalLoadingThreshold="2" Margin="10" 
                             BorderBrush="White" BorderThickness="2"

@@ -110,7 +110,7 @@ namespace PhenoPad.FileService
             catch (Exception ex)
             {
                 rootPage.NotifyUser("Failed to get all notebook ids.", NotifyType.ErrorMessage, 2);
-                LogService.MetroLogger.getSharedLogger().Error($"Failed to get notebook id list: {ex.Message}");
+                MetroLogger.getSharedLogger().Error($"Failed to get notebook id list: {ex.Message}");
             }
             return null;
         }
@@ -137,7 +137,7 @@ namespace PhenoPad.FileService
             catch (Exception ex)
             {
                 rootPage.NotifyUser("Failed to get all note page ids.", NotifyType.ErrorMessage, 2);
-                LogService.MetroLogger.getSharedLogger().Error($"Failed to get page ids of {notebookId}: {ex.Message}");
+                MetroLogger.getSharedLogger().Error($"Failed to get page ids of {notebookId}: {ex.Message}");
             }
             return null;
         }

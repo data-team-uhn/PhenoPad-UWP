@@ -14,7 +14,6 @@
     NavigationCacheMode="Required">
 
     <Page.Resources>
-
         <Flyout x:Name="AllPagesPanel" Placement="Left" 
                 ScrollViewer.HorizontalScrollMode="Disabled" 
                 ScrollViewer.VerticalScrollMode="Disabled">

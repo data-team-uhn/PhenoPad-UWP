@@ -124,9 +124,7 @@ namespace PhenoPad.CustomControl
         // Add a phenotype
         private void AddBtn_Click(object sender, RoutedEventArgs e)
         {
-            //AddPhenotypeSB.Begin();
             setPhenotypeState(1);
-            //YNSwitch.Margin = new Thickness(0, 0, 0, 0);
             PhenotypeManager.getSharedPhenotypeManager().addPhenotype(new Phenotype(phenotypeId, phenotypeName, 1, MainPage.Current.curPageIndex), sourceType);
         }
         
