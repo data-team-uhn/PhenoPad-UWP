@@ -629,7 +629,6 @@ namespace PhenoPad
 
         }
 
-
         public void onAudioStarted(object sender, object e) {
             audioTimer.Stop();
             speechEngineRunning = true;
@@ -815,6 +814,7 @@ namespace PhenoPad
             }
             return true;
         }
+
         private void EndAudioStream(object sender, object e)
         {
             isReading = false;
@@ -823,32 +823,38 @@ namespace PhenoPad
 
         private void SpeechBubble_DoubleTapped(object sender, DoubleTappedRoutedEventArgs e)
         {
-            //handling when user double tapps on the speech bubble 
-            Debug.WriteLine("doubletapped");
+            //handling when user double tapps on the speech bubble in the realtime conversation grid
+
+            //Debug.WriteLine("doubletapped");
             TextBlock tb = ((TextBlock)sender);
             string body = tb.Text;
-            var element_Visual_Relative = tb.TransformToVisual(this);
-            Point pos = element_Visual_Relative.TransformPoint(new Point(0, 0));
-            TextMessage tm = speechManager.speechInterpreter.GetTextMessage(body);
-            //technically tm cannot be null otherwise it wouldn't be in speechbubble at all
-            Debug.Assert(tm != null);
+            //Gets the position of note content grid for pop up alignment
+            var element_Visual_Relative = NoteGrid.TransformToVisual(this);
+            Point pos_grid = element_Visual_Relative.TransformPoint(new Point(0, 0));
 
-            if (tm.phenotypesInText.Count > 0)
+            var element_Visual_Relative2 = tb.TransformToVisual(this);
+            Point pos_bubble = element_Visual_Relative2.TransformPoint(new Point(0, 0));
+
+
+
+            TextMessage tm = speechManager.speechInterpreter.GetTextMessage(body);
+
+            if (tm != null && tm.phenotypesInText.Count > 0)
             {
-                Debug.WriteLine($"has phenotype, first = {tm.phenotypesInText[0].name}");
-                PhenotypeList.ItemsSource = tm.phenotypesInText;
+                //Debug.WriteLine($"has phenotype, first = {tm.phenotypesInText[0].name}");
+                PhenoInSpeechListView.ItemsSource = tm.phenotypesInText;
                 showingPhenoSpeech = tm.phenotypesInText;
-                UpdateLayout();
-                Canvas.SetLeft(PhenotypePopup, pos.X);
-                Canvas.SetTop(PhenotypePopup, pos.Y - 100);
+                Canvas.SetLeft(PhenotypePopup, pos_grid.X);
+                Canvas.SetTop(PhenotypePopup, pos_bubble.Y - 50);
                 PhenotypePopup.Visibility = Visibility.Visible;
-                //((Flyout)this.Resources["PhenoInSpeechFlyout"]).ShowAt(tb);
+                UpdateLayout();
             }
         }
-
-        // save transcriptions
+      
         public async Task SaveCurrentConversationsToDisk()
         {
+            // save transcriptions to local file only when there's transcripts
+
             if ( speechManager.speechInterpreter.CurrentConversationHasContent() || Current.conversations.Count > 0)
             {//only save transcripts if there are finalized messages
                 try

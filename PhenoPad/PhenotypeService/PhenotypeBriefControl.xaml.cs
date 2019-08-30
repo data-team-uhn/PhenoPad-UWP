@@ -132,9 +132,10 @@ namespace PhenoPad.CustomControl
         {
             localState = -1;
             PhenotypeManager.getSharedPhenotypeManager().removeByIdAsync(phenotypeId, SourceType.Notes);
+            this.Visibility = Visibility.Collapsed;
+
             if (presentPosition == PresentPosition.Inline)
             {
-                this.Visibility = Visibility.Collapsed;
             }
         }
         

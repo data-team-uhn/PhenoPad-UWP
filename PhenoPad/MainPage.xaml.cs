@@ -413,6 +413,7 @@ namespace PhenoPad
                     curPage.Visibility = Visibility.Collapsed;
                     await saveNoteToDisk();
                 }
+                SpeechPage.Current.PlaybackTimer_Tick(null,null);
                 SpeechManager.getSharedSpeechManager().cleanUp();
                 CloseCandidate();
                 notePages = null;

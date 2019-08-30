@@ -733,7 +733,6 @@ namespace PhenoPad.SpeechService
 
             //string datestring = System.DateTime.Now.ToString("dd-MM-yyyy-HH-mm-ss");
             savedFile = await FileService.FileManager.getSharedFileManager().GetNoteFile(notebookid, "", FileService.NoteFileType.Audio, currentAudioName);
-            // await storageFolder.CreateFileAsync("sample_" + this.speechInterpreter.conversationIndex + ".wav", Windows.Storage.CreationCollisionOption.ReplaceExisting);
 
             Debug.WriteLine("Output file to " + savedFile.Path.ToString());
 

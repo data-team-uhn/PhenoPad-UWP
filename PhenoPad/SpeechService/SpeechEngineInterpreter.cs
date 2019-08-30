@@ -179,7 +179,7 @@ namespace PhenoPad.SpeechService
                     {
                         //this.queryPhenoService(json.result.hypotheses[0].transcript);
 
-                        //Debug.WriteLine(json.result.hypotheses[0].transcript);
+                        Debug.WriteLine(json.result.hypotheses[0].transcript);
 
                         // Then we should have a bunch of words to look at
                         double latest = 0;

@@ -35,12 +35,20 @@ namespace PhenoPad
         private string loadedMedia = String.Empty;
         private List<AudioFile> savedAudio;
         private List<Phenotype> phenoInSpeech = new List<Phenotype>();
+        private DispatcherTimer playbackTimer;
+
+        //ATTRIBUTES FOR EDITING TRANSCRIPT
+        private string originText;
+        private TextMessage selectedTM;
+        private TextBlock selectedTB;
 
 
         //=================================METHODS==============================================
         public SpeechPage()
         {
             this.InitializeComponent();
+            playbackTimer = new DispatcherTimer();
+            playbackTimer.Tick += PlaybackTimer_Tick;
             Current = this;
             mainpage = MainPage.Current;
             phenoInSpeech = new List<Phenotype>();
@@ -54,56 +62,42 @@ namespace PhenoPad
             this.Tapped += HidePopups;
         }
 
-        private void HidePopups(object sender, TappedRoutedEventArgs e)
+        public void PlaybackTimer_Tick(object sender, object e)
         {
-            PhenotypePopup.Visibility = Visibility.Collapsed;
+            //stops mediaplayback when timer ticks
+            playbackTimer.Stop();
+            if (_mediaPlayerElement.MediaPlayer != null)
+                _mediaPlayerElement.MediaPlayer.Pause();
         }
 
-        public void LoadSavedAudio()
+        private void HidePopups(object sender, TappedRoutedEventArgs e)
         {
-            //savedAudio = await FileManager.getSharedFileManager().GetAllAudioFileObjects(MainPage.Current.notebookId);
-            //List<string> audioNames = new List<string>();
-            //foreach (var a in savedAudio) {
-            //    audioNames.Add(a.name);
-            //}
-            //AudioDropdownList.ItemsSource = audioNames;
-            ////by default sets the first audio file to be the first of the list
-            //if (audioNames.Count > 0)
-            //{
-            //    AudioDropdownList.SelectedItem = audioNames[0];
-            //    _mediaPlayerElement.Source = savedAudio[0].source;
-            //    _mediaPlayerElement.Visibility = Visibility.Visible;
-            //}
+            //PhenotypePopup.Visibility = Visibility.Collapsed;
+            ChatEditPopup.Visibility = Visibility.Collapsed;
+        }
+
+        public async void LoadSavedAudio()
+        {
             List<string> audioNames = MainPage.Current.SavedAudios;
-            //Debug.WriteLine( "audioNames count" + audioNames.Count);
             AudioDropdownList.ItemsSource = audioNames;
+            //if (audioNames.Count > 0) {
+            //    AudioDropdownList.SelectedIndex = 0;
+            //    var audioFile = await FileManager.getSharedFileManager().GetSavedAudioFile(MainPage.Current.notebookId, audioNames[0]);
+            //    if (audioFile != null)
+            //    {
+            //        _mediaPlayerElement.Source = MediaSource.CreateFromStorageFile(audioFile);
+            //        _mediaPlayerElement.Visibility = Visibility.Visible;
+            //    }
+            //}
             UpdateLayout();
         }
 
         public void updateChat()
         {
             chatView.ItemsSource = MainPage.Current.conversations;
-            LoadSavedAudio();
+            if (MainPage.Current != null && !MainPage.Current.speechEngineRunning)
+                LoadSavedAudio();
             UpdateLayout();
-        }
-
-        private void SpeechBubbleDoubleTapped(object sender, DoubleTappedRoutedEventArgs e)
-        {
-            TextBlock tb = ((TextBlock)sender);
-            string body = tb.Text;
-            var element_Visual_Relative = tb.TransformToVisual(root);
-            Point pos = element_Visual_Relative.TransformPoint(new Point(0, 0));
-            TextMessage tm = MainPage.Current.conversations.Where(x => x.Body == body).FirstOrDefault();
-            //technically tm cannot be null otherwise it wouldn't be in speechbubble at all
-            Debug.Assert(tm != null);
-
-            if (tm.phenotypesInText.Count > 0) {
-                //PhenotypeList.ItemsSource = tm.phenotypesInText;
-                Canvas.SetLeft(PhenotypePopup, pos.X);
-                Canvas.SetTop(PhenotypePopup, pos.Y - 100);
-                PhenotypePopup.Visibility = Visibility.Visible;
-            }
-            //UpdateLayout();
         }
 
         private void SpeechPage_RecordingCreated(SpeechManager sender, Windows.Storage.StorageFile args)
@@ -205,13 +199,69 @@ namespace PhenoPad
             chatView.ItemsSource = temp;
         }
 
-        private async void MessageButtonClick(object sender, RoutedEventArgs e)
+        private void TextBlockDoubleTapped(object sender, RoutedEventArgs e) {
+
+            TextBlock tb = ((TextBlock)sender);
+            string body = tb.Text;
+            originText = body.Trim();
+            var element_Visual_Relative = tb.TransformToVisual(root);
+            Point pos = element_Visual_Relative.TransformPoint(new Point(0, 0));
+            TextMessage tm = MainPage.Current.conversations.Where(x => x.Body == body).FirstOrDefault();
+            selectedTM = tm;
+            selectedTB = tb;
+            if (tm != null) {
+                Canvas.SetLeft(ChatEditPopup, pos.X);
+                Canvas.SetTop(ChatEditPopup, pos.Y);
+                ChatEditPopup.Width = tb.ActualWidth - 10;
+                ChatEditPopup.Height = tb.ActualHeight;
+                TranscriptEditBox.Document.SetText(Windows.UI.Text.TextSetOptions.None, originText);
+                ChatEditPopup.Visibility = Visibility.Visible;
+                TranscriptEditBox.Focus(FocusState.Pointer);
+            }
+
+        }
+
+        private void TextBlockTapped(object sender, RoutedEventArgs e)
         {
-            if (this._mediaPlayerElement != null)
+
+            TextBlock tb = ((TextBlock)sender);
+            string body = tb.Text;
+            originText = body.Trim();
+            var element_Visual_Relative = tb.TransformToVisual(root);
+            Point pos = element_Visual_Relative.TransformPoint(new Point(0, 0));
+            TextMessage tm = MainPage.Current.conversations.Where(x => x.Body == body).FirstOrDefault();
+            selectedTM = tm;
+            selectedTB = tb;
+            if (tm != null)
+            {
+                var phenos = tm.phenotypesInText;
+                speechPhenoListView.ItemsSource = phenos;
+                speechPhenoListView.UpdateLayout();
+            }
+
+        }
+
+        private async void EditBoxLostFocus(object sender, RoutedEventArgs e) {
+            string newText = "";
+            TranscriptEditBox.Document.GetText(Windows.UI.Text.TextGetOptions.None, out newText);
+            newText = newText.Trim();
+            if (newText != originText && newText!= "") {
+                selectedTM.Body = newText;
+                selectedTB.Text = newText;
+                await MainPage.Current.SaveCurrentConversationsToDisk();
+                chatView.ItemsSource = MainPage.Current.conversations;
+                UpdateLayout();
+                MainPage.Current.NotifyUser("Transcript updated", NotifyType.StatusMessage, 1);
+            }
+        }
+
+        private async void MessageAudioButtonClick(object sender, RoutedEventArgs e)
+        {
+            //only allow audio playback when there's no 
+            if (this._mediaPlayerElement != null )
             {
                 Button srcButton = (Button)sender;
                 var m = (TextMessage)srcButton.DataContext;
-                //Debug.WriteLine(m.Body);
 
                 // Overloaded constructor takes the arguments days, hours, minutes, seconds, miniseconds.
                 // Create a TimeSpan with miliseconds equal to the slider value.
@@ -228,7 +278,6 @@ namespace PhenoPad
                 int start_mili = (int)(100 * (actual_start - 60 * start_minute - start_second));
 
                 // check for current source
-                //var savedFile = await FileManager.getSharedFileManager().GetNoteFile(MainPage.Current.notebookId,"",NoteFileType.Audio,"audio_" + m.ConversationIndex);
                 var savedFile = await FileManager.getSharedFileManager().GetSavedAudioFile(MainPage.Current.notebookId, m.AudioFile);
 
 
@@ -242,9 +291,11 @@ namespace PhenoPad
                         mediaText.Text = savedFile.Name;
                     }
                     TimeSpan ts = new TimeSpan(0, 0, start_minute, start_second, start_mili);
+                    playbackTimer.Interval = ts;
                     //Debug.WriteLine(ts);
                     _mediaPlayerElement.MediaPlayer.Position = ts;
                     _mediaPlayerElement.MediaPlayer.Play();
+                    playbackTimer.Start();
                 }
                 //tries to get file from server and plays
                 else if (savedFile == null)
@@ -255,6 +306,10 @@ namespace PhenoPad
                 }
 
             }
+        }
+
+        private void ListButtonClick(object sender, RoutedEventArgs e) {
+
         }
 
         private String changeNumSpeakers(String text, bool direction)
@@ -394,7 +449,7 @@ namespace PhenoPad
             if (e.AddedItems.Count > 0)
             {
                 string audioName = e.AddedItems[0].ToString();
-                Debug.WriteLine(audioName);
+                Debug.WriteLine("selection changed"+audioName);
                 var audioFile = await FileManager.getSharedFileManager().GetSavedAudioFile(MainPage.Current.notebookId, audioName);
                 if (audioFile != null)
                 {
@@ -417,6 +472,7 @@ namespace PhenoPad
 
         public async Task<bool> TryGetAudioFromServer(string name)
         {
+            //tries to request recorded audio from sickkids server when local audio does not exist
             try
             {
                 var messageDialog = new MessageDialog("Getting audio file from server may take a while, continue?");
@@ -521,6 +577,13 @@ namespace PhenoPad
         public List<Phenotype> phenotypesInText;
 
         public bool hasPhenotype { get; set; }
+        public string numPhenotype
+        {
+            get
+            {
+                return phenotypesInText.Count.ToString();
+            }
+        }
         // Now that we support more than 2 users, we need to have speaker index
         public uint Speaker { get; set; }
 
@@ -642,7 +705,7 @@ namespace PhenoPad
                 string date = String.Format("{0:g}", m.DisplayTime);
                 //determines whos speaking: todo: clsssify who is doctor/patient
                 string speaker = m.Speaker == 0 ? "Doctor" : "Patient:" + m.Speaker;
-                return date+"  "+ " Session #" + m.ConversationIndex+", by Speaker "+ m.Speaker;
+                return date+"-Session#" + m.ConversationIndex+"-Speaker "+ m.Speaker;
             }
             else
             {

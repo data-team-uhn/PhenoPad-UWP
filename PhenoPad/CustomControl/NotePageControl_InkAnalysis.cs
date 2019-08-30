@@ -21,11 +21,13 @@ using Windows.System;
 
 namespace PhenoPad.CustomControl
 {
+    //CLASS WITH FUNCTIONS DEDICATED FOR NOTE TAKING STROKE INK ANALYSIS
     public enum NodeType{
         InkWord,
         InkLine,
         Both
     }
+
     public sealed partial class NotePageControl : UserControl
     {
         public DispatcherTimer RawStrokeTimer;
@@ -189,15 +191,12 @@ namespace PhenoPad.CustomControl
         {
             if (!leftLasso && curStroke != null)
             {
-                //curLineWordsStackPanel.Visibility = Visibility.Visible;
                 RawStrokeTimer.Stop();              
-                // dispatcherTimer.Stop();
-                //operationDispathcerTimer.Stop();
                 inkOperationAnalyzer.ClearDataForAllStrokes();
+                //checks if writing on new line and instantly recognizes if so
                 var newLine = (int)Math.Floor(args.CurrentPoint.Position.Y / LINE_HEIGHT);
                 if (newLine != showingResultOfLine)
                 {
-                    Debug.WriteLine("differnt line");
                     await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () => {
                     recognizeAndSetUpUIForLine(line: null, lineInd:showingResultOfLine);
                     });
@@ -214,7 +213,6 @@ namespace PhenoPad.CustomControl
         private void StrokeInput_StrokeEnded(InkStrokeInput sender, PointerEventArgs args)
         {
             autosaveDispatcherTimer.Start();
-            //lastStrokePoint = new Point(args.CurrentPoint.Position.X, args.CurrentPoint.Position.Y);
         }
 
         private async void InkPresenter_StrokesCollectedAsync(InkPresenter sender, InkStrokesCollectedEventArgs args)

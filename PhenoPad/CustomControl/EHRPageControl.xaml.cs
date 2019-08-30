@@ -323,7 +323,7 @@ namespace PhenoPad.CustomControl
                 newX -= 400;
             var offset = parentControl.EHRScrollViewer.VerticalOffset;
             var zoomfactor = parentControl.EHRScrollViewer.ZoomFactor;
-            Debug.WriteLine($"current scroll V offset = {offset}, zoom={zoomfactor},new V = {zoomfactor*(newY - (0.3*MainPage.Current.ActualHeight))}");
+            //Debug.WriteLine($"current scroll V offset = {offset}, zoom={zoomfactor},new V = {zoomfactor*(newY - (0.3*MainPage.Current.ActualHeight))}");
             parentControl.EHRScrollViewer.ChangeView(0, (newY - 0.3*MainPage.Current.ActualHeight)*zoomfactor , zoomfactor);
 
             Canvas.SetLeft(inputgrid, newX);
@@ -409,7 +409,7 @@ namespace PhenoPad.CustomControl
                     comment.SlideToRight();
                 else
                 {
-                    Debug.WriteLine($"current commant id = {comment.commentID}, added ID= {lastAddedCommentID}");
+                    //Debug.WriteLine($"current commant id = {comment.commentID}, added ID= {lastAddedCommentID}");
                     bool collides = Collides(lastAdded, comment);
                     if (comment.commentID <= lastAdded.commentID)
                     {
@@ -424,7 +424,7 @@ namespace PhenoPad.CustomControl
                     {
                         double commentHeight = lastAdded.GetCommentHeight();
                         overlap_offset = (lastAdded.canvasTop + lastAdded.commentslideY + commentHeight + 10) - (comment.canvasTop + comment.commentslideY) + 10;
-                        Debug.WriteLine($"overlap offset = {overlap_offset}");
+                        //Debug.WriteLine($"overlap offset = {overlap_offset}");
                         comment.commentslideY += overlap_offset;
                         comment.Slide(y: overlap_offset);
                         shift = true;
@@ -488,13 +488,12 @@ namespace PhenoPad.CustomControl
 
         private void OnElementTapped(object sender = null, TappedRoutedEventArgs e = null)
         {/// Dismiss all pop-ups when tapping on canvas
-            Debug.WriteLine("on element tapped");
+
             if (InputHasContent())
             {
                 InsertToEHRClick();
             }
             if (! InputHasContent() && insertingAtEnd) {
-                Debug.WriteLine("deleting trailing period");
                 EHRTextBox.Document.SetText(TextSetOptions.None, getText(EHRTextBox).Trim().TrimEnd('.') + " ");
             }
             else
@@ -515,8 +514,6 @@ namespace PhenoPad.CustomControl
             ToggleHandwritingMode();
             parentControl.addinCanvasEHR.UpdateLayout();
             parentControl.userControlCanvas.UpdateLayout();
-
-            //insertType = InsertType.None;            
         }
 
         private async void TriggerAutoSave(object sender = null, object e = null)

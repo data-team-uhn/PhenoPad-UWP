@@ -140,7 +140,8 @@ namespace PhenoPad.CustomControl
 
         public async void SlideToRight()
         {
-            //Debug.WriteLine($"indock = {inDock}");
+            //slides the comment UI to the right side and minimize strokes if necessary
+
             if (! inDock)
             {
                 Visibility = Visibility.Visible;
@@ -175,9 +176,10 @@ namespace PhenoPad.CustomControl
         }
 
         private void InsertConverted(object sender, RoutedEventArgs e) {
-            Debug.WriteLine(this.commentID);
-            ehr.AddInsert(insertFromComment: this, index: commentID);
-            
+            //inserts the converted text in the comment tag to EHR text
+
+            //Debug.WriteLine(this.commentID);
+            ehr.AddInsert(insertFromComment: this, index: commentID);           
         }
 
         private void ShowMenu(object sender, RoutedEventArgs e)
@@ -429,10 +431,10 @@ namespace PhenoPad.CustomControl
 
         private async void inkCanvas_StrokesCollected(InkPresenter sender, InkStrokesCollectedEventArgs args)
         {
-            //inkAnalyzer = new InkAnalyzer();
+            //auto analyzer new strokes bound when user finished writing a stroke comment 
+
             inkAnalyzer.AddDataForStrokes(inkCan.InkPresenter.StrokeContainer.GetStrokes());
             await inkAnalyzer.AnalyzeAsync();
-
             //detects if user input has reached maximum height and extend if necessary
             Rect bound = inkCan.InkPresenter.StrokeContainer.BoundingRect;
             if (bound.Top + bound.Height > 0.8 * this.Height) {
