@@ -273,13 +273,22 @@ namespace PhenoPad.LogService
                             if (sameLine == null)
                             {
                                 var phrase = recogPhrases.Where(x => x.line_index == lineNum).ToList();
-                                NoteLineViewControl newLine = new NoteLineViewControl(time, lineNum, "Stroke", phrase);
+
+                                // Skip lines with erased phrases
+                                if(phrase.Count == 0)
+                                {
+                                    continue;
+                                }
+
+                                
+                                NoteLineViewControl newLine = new NoteLineViewControl(time, lineNum, "Stroke", phrase, s, notebook);
                                 Int32.TryParse(segment[6].Trim(), out newLine.pageID);
 
                                 newLine.UpdateUILayout();
 
                                 newLine.strokeCanvas.InkPresenter.IsInputEnabled = false;
                                 newLine.keyLine = lineNum;
+                                
                                 if (s != null)
                                 {
                                     newLine.strokeCanvas.InkPresenter.StrokeContainer.AddStrokes(s);
@@ -314,7 +323,7 @@ namespace PhenoPad.LogService
                     }
                 }
                 //TODO
-                //1. add word blocks for lines
+                //1. add word blocks for lines           
                 foreach (var l in opitems.Where(x => x.type == "Stroke")) {
                     l.LoadPhenotypes(savedPhenotypes);
                     var rect = l.strokeCanvas.InkPresenter.StrokeContainer.BoundingRect;

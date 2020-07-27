@@ -5,6 +5,8 @@ VisualStudioVersion = 15.0.26730.12
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PhenoPad", "PhenoPad\PhenoPad.csproj", "{28DF54D3-7737-4333-91C1-41A40FA428F1}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PhenoPadTests", "PhenoPadTests\PhenoPadTests.csproj", "{493543BE-73EC-4C69-822B-58787238C58B}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|ARM = Debug|ARM
@@ -33,6 +35,24 @@ Global
 		{28DF54D3-7737-4333-91C1-41A40FA428F1}.Release|x86.ActiveCfg = Release|x86
 		{28DF54D3-7737-4333-91C1-41A40FA428F1}.Release|x86.Build.0 = Release|x86
 		{28DF54D3-7737-4333-91C1-41A40FA428F1}.Release|x86.Deploy.0 = Release|x86
+		{493543BE-73EC-4C69-822B-58787238C58B}.Debug|ARM.ActiveCfg = Debug|ARM
+		{493543BE-73EC-4C69-822B-58787238C58B}.Debug|ARM.Build.0 = Debug|ARM
+		{493543BE-73EC-4C69-822B-58787238C58B}.Debug|ARM.Deploy.0 = Debug|ARM
+		{493543BE-73EC-4C69-822B-58787238C58B}.Debug|x64.ActiveCfg = Debug|x64
+		{493543BE-73EC-4C69-822B-58787238C58B}.Debug|x64.Build.0 = Debug|x64
+		{493543BE-73EC-4C69-822B-58787238C58B}.Debug|x64.Deploy.0 = Debug|x64
+		{493543BE-73EC-4C69-822B-58787238C58B}.Debug|x86.ActiveCfg = Debug|x86
+		{493543BE-73EC-4C69-822B-58787238C58B}.Debug|x86.Build.0 = Debug|x86
+		{493543BE-73EC-4C69-822B-58787238C58B}.Debug|x86.Deploy.0 = Debug|x86
+		{493543BE-73EC-4C69-822B-58787238C58B}.Release|ARM.ActiveCfg = Release|ARM
+		{493543BE-73EC-4C69-822B-58787238C58B}.Release|ARM.Build.0 = Release|ARM
+		{493543BE-73EC-4C69-822B-58787238C58B}.Release|ARM.Deploy.0 = Release|ARM
+		{493543BE-73EC-4C69-822B-58787238C58B}.Release|x64.ActiveCfg = Release|x64
+		{493543BE-73EC-4C69-822B-58787238C58B}.Release|x64.Build.0 = Release|x64
+		{493543BE-73EC-4C69-822B-58787238C58B}.Release|x64.Deploy.0 = Release|x64
+		{493543BE-73EC-4C69-822B-58787238C58B}.Release|x86.ActiveCfg = Release|x86
+		{493543BE-73EC-4C69-822B-58787238C58B}.Release|x86.Build.0 = Release|x86
+		{493543BE-73EC-4C69-822B-58787238C58B}.Release|x86.Deploy.0 = Release|x86
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

@@ -108,7 +108,8 @@ namespace PhenoPad
         public static string SERVER_ADDR = "137.135.117.253";
         public static string SERVER_PORT = "8080";
 
-
+        private int RETRIES = 3;
+        private int RETRY_DELAY = 1000; // in milliseconds
 
         #endregion
         //======================================== START OF METHODS =======================================/
@@ -555,6 +556,24 @@ namespace PhenoPad
 
         #endregion
 
+        private async Task<bool> RunFuncWithRetries (int retries, Task<bool> f)
+        {
+            bool success = await f;
+            
+            int retryCount = retries;
+            
+            // retry if task failed 
+            while(retryCount > 0 && !success)
+            {
+                // wait 1 second before retrying
+                await Task.Delay(RETRY_DELAY);
+                retryCount--;
+                success = await f;
+            }
+
+            return success;
+        }
+
         private async void AudioStreamButton_Clicked(object sender = null, RoutedEventArgs e = null)
         {
             /// <summary>
@@ -578,12 +597,14 @@ namespace PhenoPad
                     //ASR is already on, turning off ASR
                     if (speechEngineRunning)
                     {
-                        var success = await SpeechManager.getSharedSpeechManager().StopASRResults();
+                        //var success = await SpeechManager.getSharedSpeechManager().StopASRResults();
+                        var success = await RunFuncWithRetries(RETRIES, SpeechManager.getSharedSpeechManager().StopASRResults());
                     }
-                    //Bluetooth is connected, just start ASR
-                    else if (!speechEngineRunning)
+                    //Bluetooth is connected and ASR isn't already on so just start ASR
+                    else
                     {
-                        var success = await StartAudioAfterBluetooth();
+                        //var success = await StartAudioAfterBluetooth();
+                        var success = await RunFuncWithRetries(RETRIES, StartAudioAfterBluetooth());
                     }
 
                 }
@@ -591,9 +612,11 @@ namespace PhenoPad
             // using internal microphone
             else
             {
-                var success = await changeSpeechEngineState();
+                //var success = await changeSpeechEngineState();
+                var success = await RunFuncWithRetries(RETRIES, changeSpeechEngineState());
                 ReEnableAudioButton();
             }
+
         }
 
         public async Task<bool> changeSpeechEngineState()
@@ -700,8 +723,12 @@ namespace PhenoPad
             playbackStreamSocket = new StreamWebSocket();
             try
             {
+
                 string audioName = $"666_{notebookId}_{audioFileName} {start} {end}";
-                Uri serverUri = new Uri("ws://" + SERVER_ADDR + ":" + SERVER_PORT + "/client/ws/file_request");
+                //Uri serverUri = new Uri("ws://" + SERVER_ADDR + ":" + SERVER_PORT + "/client/ws/file_request");
+                String serverAddr = ASRAddrInput.Text.Trim().Split(':')[0];
+                String serverPort = ASRAddrInput.Text.Trim().Split(':')[1];
+                Uri serverUri = new Uri("ws://" + serverAddr + ":" + serverPort + "/client/ws/file_request");
                 Task connectTask = playbackStreamSocket.ConnectAsync(serverUri).AsTask();
 
                 await connectTask;

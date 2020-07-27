@@ -148,7 +148,7 @@ namespace PhenoPad.PhenotypeService
                 Phenotype pp = pheno.Clone();
                 Phenotype temp = null;
                 Phenotype tempInCand = phenotypesCandidates.Where(x => x == pheno).FirstOrDefault();
-
+          
                 temp = savedPhenotypes.Where(x => x == pheno).FirstOrDefault();
                 if (temp != null)
                     pp.state = temp.state;

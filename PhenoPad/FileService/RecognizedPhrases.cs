@@ -19,7 +19,11 @@ namespace PhenoPad.FileService
 
         [XmlArray("strokes")]
         [XmlArrayItem("stroke")]
+
+        // change back
         public List<DateTime> strokes;
+        //public List<InkStroke> strokes;
+
 
         public bool is_corrected;
         public int word_index;
@@ -28,7 +32,6 @@ namespace PhenoPad.FileService
         public string pageId;
         public string noteId;
         public bool is_abbr;
-
 
         /// <summary>
         /// Empty construtor for serialization.
@@ -44,9 +47,15 @@ namespace PhenoPad.FileService
             is_abbr = isAbbr;
             current = selected;
             candidate_list = candidates;
+
+            // track noteId and pageId to know which note to edit in view mode
+            this.noteId = noteId;
+            this.pageId = pageId;
+
             this.strokes = new List<DateTime>();
             foreach (var s in strokes)
                 this.strokes.Add(s.StrokeStartedTime.Value.DateTime);
+        
         }
     }
 }

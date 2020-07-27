@@ -163,7 +163,10 @@
         <RelativePanel Grid.ColumnSpan="3" Grid.Row="0" Name="TitleRelativePanel" Visibility="Visible" Background="WhiteSmoke">
                 <Button Style="{StaticResource MyButtonStyle}" Background="Transparent" Foreground="Gray" 
                     Height="48" VerticalAlignment="Top" Width="48" Padding="0" Name="deleteButton" Click="Delete_Click" Margin="0">
-                    <SymbolIcon Symbol="Clear" Height="35" Width="35" Margin="-1,-1,-3,-3" HorizontalAlignment="Left"></SymbolIcon>
+                    <StackPanel>
+                        <SymbolIcon Symbol="Clear" Height="35" Width="35" Margin="-1,-1,-3,-3" HorizontalAlignment="Left"></SymbolIcon>
+                        <TextBlock FontSize="10"> Delete </TextBlock>
+                </StackPanel>
                 </Button>
                 <Button Style="{StaticResource MyButtonStyle}" Background="Transparent" Foreground="Gray" Height="48" 
                     VerticalAlignment="Top" Width="48" Padding="0" Name="minimizeButton" Click="Minimize_Click" Margin="50,0,0,0">

@@ -38,22 +38,37 @@ namespace PhenoPad.CustomControl
         public List<Phenotype> phenotypes;
         public List<TextMessage> chats;
 
+        // test field
+        public Notebook notebook;
+
+
         public NoteLineViewControl() { }
             
-        public NoteLineViewControl(DateTime time, int line, string type, List<RecognizedPhrases> phrase=null)
+        // remove extra parameter for stroke
+        public NoteLineViewControl(DateTime time, int line, string type, List<RecognizedPhrases> phrase=null, List<InkStroke> strokes = null, Notebook notebook = null)
         {
             this.InitializeComponent();
             keyTime = time;
             keyLine = line;
             this.type = type;
             phenotypes = new List<Phenotype>();
-            //if (phrase != null)
-            //    AddRecogPhrases(phrase);
+            //Debug.WriteLine("Phraseeeeee FIX THIS", phrase.ToString());
+
+            // take out
+            this.strokes = strokes;
+            this.notebook = notebook;
+            // COMMENT OUT
+            // also need to check count to make sure to not add phrases that have been erased
+            HWRs = new List<WordBlockControl>();
+            if (phrase != null && phrase.Count != 0)
+                AddRecogPhrases(phrase);
+
+   
         }
 
         public void UpdateUILayout() {
             KeyTime.Text = keyTime.ToString();
-            KeyLine.Text = $"Page {pageID + 1}    Line {keyLine}";
+            KeyLine.Text = $"Page {pageID + 1}  \nLine {keyLine}";
             if (addin != null)
             {
                 AddInIcon.Child = addin;
@@ -81,18 +96,53 @@ namespace PhenoPad.CustomControl
             int line_index = recogPhrase.FirstOrDefault().line_index;
             foreach (var ph in recogPhrase) {
                 List<string> candidates = ph.candidate_list;
+
+                // remove dupe candidates
+                candidates = candidates.Distinct().ToList();
+
                 //2019/06/18-> remember to change null back to strokes that match condition!
-                WordBlockControl wb = new WordBlockControl(ph.line_index, ph.word_index, ph.current, candidates,null);
-                wb.WordBlock.FontSize = 18;
+                //List<InkStroke> strokes = new List<InkStroke>();
+                //foreach (var s in inkCan.InkPresenter.StrokeContainer.GetStrokes())
+                //{
+                //if (ph.strokes.Contains(s.StrokeStartedTime.Value.DateTime))
+                //strokes.Add(s);
+                //}
+
+                // matching stroke test
+                List<InkStroke> matchingStrokes = new List<InkStroke>();
+
+                foreach(var s in strokes)
+                {
+                    if (ph.strokes.Contains(s.StrokeStartedTime.Value.DateTime))
+                    {
+                        matchingStrokes.Add(s);
+                    }
+                }
+
+                WordBlockControl wb = new WordBlockControl(ph.line_index, ph.word_index, ph.current, candidates, matchingStrokes, notebook, notebook.notePages.ElementAt(Int32.Parse(ph.pageId)), ph.pageId, recogPhrase);
+                // might need to replace strokes with something else later?
+                //WordBlockControl wb = new WordBlockControl(ph.line_index, ph.word_index, ph.current, candidates, this.strokes);
+                wb.WordBlock.FontSize = 16;
                 wb.corrected = ph.is_corrected;
+                //wb.WordBlock.RenderTransform = new TranslateTransform { X = 10, Y = 20 };
                 words.Add(wb);
+
+                // add to handwriting recognition
+                HWRs.Add(wb);
             }
             //this handles the case when there's only one line of note on the page
             if (words.Count > 0)
             {
                 NotePhraseControl npc = new NotePhraseControl(line_index, words);
-                text = npc.GetString();
+                //npc.PhraseCanvas.InkPresenter.StrokeContainer.MoveSelected(new Point(-rect.X, -rect.Y));
+
+                text = npc.GetString().Trim();
+                //text = "Test";
+                //recogPhraseStack.RenderTransform = new TranslateTransform { X = -500 };
+
                 recogPhraseStack.Children.Add(npc);
+                //recogPhraseStack.RenderTransform = new TranslateTransform { X = -500 };
+                //UpdateLayout();
                 npc.UpdateLayout();
             }
 

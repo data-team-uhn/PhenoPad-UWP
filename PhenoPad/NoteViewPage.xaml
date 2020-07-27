@@ -139,5 +139,25 @@
 
         </ListView>
 
+        <Popup Grid.Row="0" Grid.RowSpan="2" Grid.Column="2" x:Name="ViewLoadingPopup" x:FieldModifier="public" IsOpen="True"
+               HorizontalAlignment="Center" VerticalAlignment="Center" Width="{x:Bind Width}" Height="{x:Bind Height}"
+               Margin="-250 -250 0 0">
+            <Grid Width="200" Height="200" CornerRadius="10" 
+                      
+                      Background="WhiteSmoke">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+
+                <ProgressRing VerticalAlignment="Center" HorizontalAlignment="Center" Grid.Row="0" Margin="-40 0 0 0" IsActive="True">
+                    <ProgressRing.RenderTransform>
+                        <ScaleTransform ScaleX="3" ScaleY="3"/>
+                    </ProgressRing.RenderTransform>
+                </ProgressRing>
+                <TextBlock Grid.Row="1" VerticalAlignment="Center" HorizontalAlignment="Center" FontSize="26" Text="Loading"/>
+            </Grid>
+        </Popup>
     </Grid>
+    
 </Page>

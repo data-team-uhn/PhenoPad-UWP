@@ -17,6 +17,16 @@ using Windows.UI.Xaml.Data;
 using Windows.UI.Xaml.Input;
 using Windows.UI.Xaml.Media;
 using Windows.UI.Xaml.Navigation;
+using PhenoPad.FileService;
+
+
+using System.Threading.Tasks;
+using PhenoPad.PhenotypeService;
+using Windows.ApplicationModel.Core;
+using Windows.UI.Core;
+using PhenoPad.LogService;
+
+
 
 // The User Control item template is documented at https://go.microsoft.com/fwlink/?LinkId=234236
 
@@ -39,17 +49,35 @@ namespace PhenoPad.CustomControl
         public bool flyoutOpening;
         public List<InkStroke> strokes;
 
+
+        // test fields
+        public string noteId;
+        public string pageId;
+        public Notebook noteBook;
+        public NotePage notePage;
+        public List<RecognizedPhrases> phrases;
+
         public WordBlockControl()
         {
         }
 
-        public WordBlockControl(int line_index, int word_index, string current, List<string>candidates, List<InkStroke> strokes) {
+        public WordBlockControl(int line_index, int word_index, string current, List<string>candidates, List<InkStroke> strokes, Notebook noteBook = null, NotePage notePage = null, string pageId = null, List<RecognizedPhrases> phrases = null) {
             this.InitializeComponent();
             this.line_index = line_index;
             this.word_index = word_index;
             this.current = current;
             this.candidates = candidates;
             this.strokes = strokes;
+
+
+            // test fields
+            //this.noteId = noteId;
+            this.pageId = pageId;
+            this.noteBook = noteBook;
+            this.notePage = notePage;
+            this.phrases = phrases;
+
+            //Debug.WriteLine("count when initializing", strokes.Count);
             SetBoundingRect(this.strokes);
             WordBlock.Text = current;
             corrected = false;
@@ -64,13 +92,15 @@ namespace PhenoPad.CustomControl
         }
 
         public void SetBoundingRect(List<InkStroke> strokes) {
+            //Debug.WriteLine("counttttt", strokes.Count);
             Debug.Assert(strokes != null);
-            if (strokes.Count == 0)
+            // remove null check later
+            if (strokes == null || strokes.Count == 0)
                 return;
             var s = strokes.OrderBy(x => x.StrokeStartedTime).ToList();
             double left = s.First().BoundingRect.X;
             double right = s.Last().BoundingRect.X + s.Last().BoundingRect.Width;
-            this.BoundingRect = new Rect(left, line_index * NotePageControl.LINE_HEIGHT, right - left + 10, NotePageControl.LINE_HEIGHT);
+            this.BoundingRect = new Rect(left, line_index * NotePageControl.LINE_HEIGHT, Math.Abs(right - left) + 10, NotePageControl.LINE_HEIGHT);
         }
 
 
@@ -117,7 +147,8 @@ namespace PhenoPad.CustomControl
                 //remove the last word
                 candidates.Insert(0, text);
                 candidates.RemoveAt(candidates.Count - 1);
-                if (MainPage.Current != null)
+                // need to add check to ensure MainPage.Current.curPage is also not null
+                if (MainPage.Current != null && MainPage.Current.curPage != null)
                 {
                     MainPage.Current.curPage.annotateCurrentLineAndUpdateUI(line_index: line_index);
                     MainPage.Current.NotifyUser($"Changed to {text}", NotifyType.StatusMessage, 1);
@@ -240,21 +271,33 @@ namespace PhenoPad.CustomControl
             if (ind == -1)
             {
                 current = content;
+
             }
             else {
                 current = candidates[ind];
+
             }
             WordBlock.Text = current;
             corrected = true;
             Flyout f = (Flyout)this.Resources["AlternativeFlyout"];
+
             f.Hide();
 
             //don't need to check for condition because this function will only be called from note editing mode
-            MainPage.Current.curPage.RawStrokeTimer.Stop();
-            MainPage.Current.curPage.annotateCurrentLineAndUpdateUI(line_index: line_index);
-            MainPage.Current.curPage.HideCurLineStackPanel();
-            MainPage.Current.NotifyUser($"Changed to {current}", NotifyType.StatusMessage, 1);
-            MainPage.Current.curPage.ClearSelectionAsync();
+            // can only update if not in view mode
+            // need the extra check to ensure MainPage.Current.curPage is also not null
+            // to avoid the case where MainPage.Current is not null but MainPage.Current.curPage is
+            // this could happen if note is opened then user exits the note and opens the view UI
+            if (MainPage.Current != null && MainPage.Current.curPage != null) 
+            {
+            
+                MainPage.Current.curPage.RawStrokeTimer.Stop();
+                MainPage.Current.curPage.annotateCurrentLineAndUpdateUI(line_index: line_index);
+                MainPage.Current.curPage.HideCurLineStackPanel();
+                MainPage.Current.NotifyUser($"Changed to {current}", NotifyType.StatusMessage, 1);
+                MainPage.Current.curPage.ClearSelectionAsync();
+                
+            }
             UpdateLayout();
         }
 
