@@ -21,8 +21,8 @@
     <AppxAutoIncrementPackageRevision>False</AppxAutoIncrementPackageRevision>
     <AppxBundle>Always</AppxBundle>
     <AppxBundlePlatforms>x64</AppxBundlePlatforms>
-    <PackageCertificateThumbprint>80F52011B650AFF265AC529BAEF1FE91DDD05F56</PackageCertificateThumbprint>
-    <AppxPackageDir>C:\Users\test\Downloads\</AppxPackageDir>
+    <PackageCertificateThumbprint>654032A70CC4B9AECAFB9C3DDC3313B8C5706395</PackageCertificateThumbprint>
+    <AppxPackageDir>C:\Users\helen\Downloads\</AppxPackageDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x86'">
     <DebugSymbols>true</DebugSymbols>
@@ -85,6 +85,8 @@
     <ErrorReport>prompt</ErrorReport>
     <Prefer32Bit>true</Prefer32Bit>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <RunCodeAnalysis>false</RunCodeAnalysis>
+    <UseDotNetNativeToolchain>false</UseDotNetNativeToolchain>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x64'">
     <OutputPath>bin\x64\Release\</OutputPath>
@@ -112,6 +114,8 @@
     <Compile Include="BrowsePage.xaml.cs">
       <DependentUpon>BrowsePage.xaml</DependentUpon>
     </Compile>
+    <Compile Include="ConfigService\ConfigService.cs" />
+    <Compile Include="CustomControl\AddInAnnotationControl.cs" />
     <Compile Include="CustomControl\AddInImageControl.xaml.cs">
       <DependentUpon>AddInImageControl.xaml</DependentUpon>
     </Compile>
@@ -124,11 +128,17 @@
     <Compile Include="CustomControl\DiseaseDetailControl.xaml.cs">
       <DependentUpon>DiseaseDetailControl.xaml</DependentUpon>
     </Compile>
-    <Compile Include="CustomControl\MyScriptTextEditor.xaml.cs">
-      <DependentUpon>MyScriptTextEditor.xaml</DependentUpon>
+    <Compile Include="CustomControl\EHRPageControl.xaml.cs">
+      <DependentUpon>EHRPageControl.xaml</DependentUpon>
     </Compile>
     <Compile Include="CustomControl\NotePageControl.xaml.cs">
       <DependentUpon>NotePageControl.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="CustomControl\NotePageControl_HWR.cs" />
+    <Compile Include="CustomControl\NotePageControl_InkAnalysis.cs" />
+    <Compile Include="CustomControl\NotePageControl_Notetext.cs" />
+    <Compile Include="CustomControl\NotePhraseControl.xaml.cs">
+      <DependentUpon>NotePhraseControl.xaml</DependentUpon>
     </Compile>
     <Compile Include="CustomControl\PhenotypeBriefControl.xaml.cs">
       <DependentUpon>PhenotypeBriefControl.xaml</DependentUpon>
@@ -136,12 +146,33 @@
     <Compile Include="CustomControl\PhenotypeDetail.xaml.cs">
       <DependentUpon>PhenotypeDetail.xaml</DependentUpon>
     </Compile>
+    <Compile Include="CustomControl\WordBlockControl.xaml.cs">
+      <DependentUpon>WordBlockControl.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="FileService\EHRFormats.cs" />
     <Compile Include="FileService\FileManager.cs" />
     <Compile Include="FileService\FileServerClient.cs" />
     <Compile Include="FileService\Notebook.cs" />
     <Compile Include="FileService\ImageAndAnnotation.cs" />
     <Compile Include="FileService\NotePage.cs" />
+    <Compile Include="Gestures\Category.cs" />
+    <Compile Include="Gestures\GestureManager.cs" />
+    <Compile Include="Gestures\NBestList.cs" />
+    <Compile Include="Gestures\ProgressEvent.cs" />
+    <Compile Include="Gestures\Recognizer.cs" />
+    <Compile Include="Gestures\Unistroke.cs" />
+    <Compile Include="HelperFunctions.cs" />
     <Compile Include="HWRService\HWRManager.cs" />
+    <Compile Include="LogService\FileLoggingSessionScenario.cs" />
+    <Compile Include="LogService\MetroLogger.cs" />
+    <Compile Include="LogService\LoggingScenarioEventArgs.cs" />
+    <Compile Include="LogService\OperationLog.cs" />
+    <Compile Include="MainPage_Files.cs" />
+    <Compile Include="MainPage_Media.cs" />
+    <Compile Include="MainPage_WebSocket.cs" />
+    <Compile Include="NoteViewPage.xaml.cs">
+      <DependentUpon>NoteViewPage.xaml</DependentUpon>
+    </Compile>
     <Compile Include="PageOverview.xaml.cs">
       <DependentUpon>PageOverview.xaml</DependentUpon>
     </Compile>
@@ -166,7 +197,6 @@
     <Compile Include="PhenotypeService\Disease.cs" />
     <Compile Include="PhenotypeService\Phenotype.cs" />
     <Compile Include="PhenotypeService\PhenotypeManager.cs" />
-    <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="SpeechService\GoogleRecognize.cs" />
     <Compile Include="SpeechService\SpeechEngineInterpreter.cs" />
     <Compile Include="SpeechService\SpeechManager.cs" />
@@ -175,12 +205,25 @@
     <Compile Include="Styles\MyColors.cs" />
     <Compile Include="WebSocketService\UIWebSocketClient.cs" />
     <Compile Include="WebSocketService\SpeechStreamSocket.cs" />
+    <Compile Include="WobbrockLib\CircleR.cs" />
+    <Compile Include="WobbrockLib\EventArgsT.cs" />
+    <Compile Include="WobbrockLib\GeotrigEx.cs" />
+    <Compile Include="WobbrockLib\PointR.cs" />
+    <Compile Include="WobbrockLib\RandomEx.cs" />
+    <Compile Include="WobbrockLib\RangeR.cs" />
+    <Compile Include="WobbrockLib\RectangleR.cs" />
+    <Compile Include="WobbrockLib\SeriesEx.cs" />
+    <Compile Include="WobbrockLib\SizeR.cs" />
+    <Compile Include="WobbrockLib\TimePointR.cs" />
   </ItemGroup>
   <ItemGroup>
     <AppxManifest Include="Package.appxmanifest">
       <SubType>Designer</SubType>
     </AppxManifest>
+    <Content Include="Assets\back.png" />
+    <Content Include="Assets\back_black.png" />
     <Content Include="Assets\checkmark.png" />
+    <Content Include="Assets\idea.png" />
     <Content Include="Assets\written_notes.jpg" />
     <Content Include="conf\diagram.conf" />
     <Content Include="conf\en_US.conf" />
@@ -190,7 +233,9 @@
   <ItemGroup>
     <Content Include="Assets\abc_print.png" />
     <Content Include="Assets\abc_write.png" />
-    <Content Include="Properties\Default.rd.xml" />
+    <Content Include="Properties\Default.rd.xml">
+      <SubType>Designer</SubType>
+    </Content>
     <Content Include="Assets\LockScreenLogo.scale-200.png" />
     <Content Include="Assets\SplashScreen.scale-200.png" />
     <Content Include="Assets\Square150x150Logo.scale-200.png" />
@@ -230,11 +275,15 @@
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
-    <Page Include="CustomControl\MyScriptTextEditor.xaml">
+    <Page Include="CustomControl\EHRPageControl.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
     <Page Include="CustomControl\NotePageControl.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="CustomControl\NotePhraseControl.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
@@ -243,6 +292,14 @@
       <SubType>Designer</SubType>
     </Page>
     <Page Include="CustomControl\PhenotypeDetail.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="CustomControl\WordBlockControl.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="NoteViewPage.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
@@ -279,6 +336,9 @@
     <PackageReference Include="log4net">
       <Version>2.0.8</Version>
     </PackageReference>
+    <PackageReference Include="MetroLog">
+      <Version>1.0.1</Version>
+    </PackageReference>
     <PackageReference Include="Microsoft.AspNet.WebApi.Client">
       <Version>5.2.4</Version>
     </PackageReference>
@@ -291,14 +351,17 @@
     <PackageReference Include="Microsoft.Toolkit.Uwp.UI.Controls">
       <Version>2.2.0</Version>
     </PackageReference>
-    <PackageReference Include="MyScript.InteractiveInk.Uwp">
-      <Version>1.1.2</Version>
+    <PackageReference Include="NAudio">
+      <Version>1.8.5</Version>
     </PackageReference>
     <PackageReference Include="NETStandard.Library">
       <Version>2.0.2</Version>
     </PackageReference>
     <PackageReference Include="Newtonsoft.Json">
       <Version>11.0.2</Version>
+    </PackageReference>
+    <PackageReference Include="RtfDomParser">
+      <Version>1.0.0</Version>
     </PackageReference>
     <PackageReference Include="System.Interactive.Async">
       <Version>3.1.1</Version>
@@ -315,16 +378,14 @@
     <PackageReference Include="Win2D.uwp">
       <Version>1.21.0</Version>
     </PackageReference>
+    <PackageReference Include="WriteableBitmapEx">
+      <Version>1.5.1</Version>
+    </PackageReference>
     <PackageReference Include="Zlib.Portable.Signed">
       <Version>1.11.0</Version>
     </PackageReference>
   </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\UIReferenceImplementation\MyScript.InteractiveInk.UIReferenceImplementation.Uwp-VS2017.csproj">
-      <Project>{667892f3-1761-4ea9-bdfa-71944c768bad}</Project>
-      <Name>MyScript.InteractiveInk.UIReferenceImplementation.Uwp-VS2017</Name>
-    </ProjectReference>
-  </ItemGroup>
+  <ItemGroup />
   <PropertyGroup Condition=" '$(VisualStudioVersion)' == '' or '$(VisualStudioVersion)' &lt; '14.0' ">
     <VisualStudioVersion>14.0</VisualStudioVersion>
   </PropertyGroup>

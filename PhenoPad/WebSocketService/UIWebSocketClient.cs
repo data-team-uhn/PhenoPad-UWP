@@ -80,9 +80,10 @@ namespace PhenoPad.WebSocketService
 
         public UIWebSocketClient()
         {
-            Debug.WriteLine("Initializer does nothing");
         }
-
+        /// <summary>
+        /// Tries to connect to speech engine 
+        /// </summary>
         public async Task<bool> ConnectToServer()
         {
             client = new MessageWebSocket();
@@ -91,8 +92,9 @@ namespace PhenoPad.WebSocketService
 
             try
             {
-                Task connectTask = client.ConnectAsync(new Uri(getUI_URI())).AsTask();
-                MainPage.Current.NotifyUser("Connecting to speech engine, please wait ...", NotifyType.StatusMessage, 2);
+                Uri url = new Uri(getUI_URI());
+                LogService.MetroLogger.getSharedLogger().Info($"Connecting to: {url.ToString()}...");
+                Task connectTask = client.ConnectAsync(url).AsTask();
 
                 await connectTask;
                 this.dataWriter = new DataWriter(client.OutputStream);
@@ -100,8 +102,7 @@ namespace PhenoPad.WebSocketService
             }
             catch (Exception ex)
             {
-                Debug.WriteLine(ex.Message);
-                Debug.WriteLine(ex.Message);
+                LogService.MetroLogger.getSharedLogger().Error($"UIWebSocket:{ex.Message}");
                 client.Dispose();
                 client = null;
                 return false;
@@ -117,11 +118,10 @@ namespace PhenoPad.WebSocketService
             this.client = null;
         }
 
-        private async void clientClosedHandler(Windows.Networking.Sockets.IWebSocket sender, 
+        private void clientClosedHandler(Windows.Networking.Sockets.IWebSocket sender, 
                                                 Windows.Networking.Sockets.WebSocketClosedEventArgs args)
         {
-            MainPage.Current.NotifyUser("Websocket connection is closed. Please try to reconnect.", NotifyType.ErrorMessage, 1);
-            Debug.WriteLine("WebSocket_Closed; Code: " + args.Code + ", Reason: \"" + args.Reason + "\"");
+            LogService.MetroLogger.getSharedLogger().Info("WebSocket_Closed; Code: " + args.Code + ", Reason: \"" + args.Reason + "\"");
             // Add additional code here to handle the WebSocket being closed.
         }
 
@@ -152,8 +152,7 @@ namespace PhenoPad.WebSocketService
         }
 
 
-        private async void clientMessageReceivedHandler(Windows.Networking.Sockets.MessageWebSocket sender, 
-                                Windows.Networking.Sockets.MessageWebSocketMessageReceivedEventArgs args)
+        private async void clientMessageReceivedHandler(MessageWebSocket sender, MessageWebSocketMessageReceivedEventArgs args)
         {
             try
             {
@@ -162,7 +161,6 @@ namespace PhenoPad.WebSocketService
                     dataReader.UnicodeEncoding = Windows.Storage.Streams.UnicodeEncoding.Utf8;
                     string message = dataReader.ReadString(dataReader.UnconsumedBufferLength);
                     Debug.WriteLine("Message received from MessageWebSocket: " + message);
-
                     var parsed = this.tryParseUIMessage(message);
 
                     if (parsed.GetType() == typeof(ServerStatusRootObject))
@@ -192,9 +190,9 @@ namespace PhenoPad.WebSocketService
                         ManagerIDRootObject json = (ManagerIDRootObject)(parsed);
                         if (json.manager_id != null)
                         {
-                            this.manager_id = json.manager_id;
-                            BluetoothService.BluetoothService.getBluetoothService().sendBluetoothMessage("manager_id " + this.manager_id);
-                            BluetoothService.BluetoothService.getBluetoothService().sendBluetoothMessage("server_ip " + UIWebSocketClient.serverAddress);
+                            manager_id = json.manager_id;
+                            await BluetoothService.BluetoothService.getBluetoothService().sendBluetoothMessage("manager_id " + this.manager_id);
+                            await BluetoothService.BluetoothService.getBluetoothService().sendBluetoothMessage("server_ip " + serverAddress);
                         }
                     }
                 }
@@ -217,9 +215,10 @@ namespace PhenoPad.WebSocketService
                     var parsedSpeech = JsonConvert.DeserializeObject<ServerStatusRootObject>(message);
                     result = parsedSpeech;
                 }
-                catch (Exception ex)
+                catch (Exception e)
                 {
                     Debug.WriteLine("Message of length " + message.Length.ToString() + " cannot be parsed as ServerStatusRootObject");
+                    LogService.MetroLogger.getSharedLogger().Error("tryParseUIMessage:" + e.Message);
                 }
             }
             
@@ -236,7 +235,6 @@ namespace PhenoPad.WebSocketService
                     Debug.WriteLine("Message of length " + message.Length.ToString() + " cannot be parsed as ManagerIDRootObject");
                 }
             }
-
             return result;
         }
     }

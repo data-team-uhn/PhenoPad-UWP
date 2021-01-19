@@ -22,8 +22,8 @@ namespace PhenoPad.PhenotypeService
 
     public class Row
     {
-        public List<string> name_es { get; set; }
-        public List<string> name_fr { get; set; }
+        public string name_es { get; set; }
+        public string name_fr { get; set; }
         public List<string> xref { get; set; }
         public string def { get; set; }
         public string name_translated { get; set; }
@@ -39,10 +39,10 @@ namespace PhenoPad.PhenotypeService
         public List<object> links { get; set; }
         public string id { get; set; }
         public List<string> is_a { get; set; }
-        public List<string> name_it { get; set; }
+        public string name_it { get; set; }
         public List<string> associated_genes { get; set; }
         public List<Parent> parents { get; set; }
-        public List<string> name_de { get; set; }
+        public string name_de { get; set; }
         public List<string> alt_id { get; set; }
         public List<string> synonym_es { get; set; }
     }

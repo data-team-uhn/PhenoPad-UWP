@@ -11,9 +11,20 @@ using System.IO;
 using PhenoPad.PhenotypeService;
 using System.Xml.Serialization;
 using Windows.Storage.Search;
+using Windows.Graphics.Imaging;
+using System.Runtime.InteropServices.WindowsRuntime;
+using Windows.Graphics.Display;
+using System.Threading;
+using System.Xml;
+using PhenoPad.LogService;
+using PhenoPad.SpeechService;
+using Windows.UI.Input.Inking;
 
 namespace PhenoPad.FileService
 {
+    /// <summary>
+    /// Specifies PhenoPad file type constants
+    /// </summary>
     public enum NoteFileType
     {
         Strokes,
@@ -21,70 +32,63 @@ namespace PhenoPad.FileService
         ImageAnnotation,
         Phenotypes,
         Audio,
+        Transcriptions,
         Video,
         Meta,
-        ImageAnnotationMeta
+        ImageAnnotationMeta,
+        EHR,
+        EHRFormat,
+        OperationLog,
+        NoteText
     };
 
+    /// <summary>
+    /// Class for managing all note file components including all text and media forms.
+    /// </summary>
     class FileManager
     {
-        public static FileManager sharedFileManager;
+        #region attributes
+        public static FileManager sharedFileManager = null;
         private MainPage rootPage = MainPage.Current;
         private string STROKE_FILE_NAME = "strokes.gif";
+        private string EHR_FILE_NAME = "ehr.txt";
+        private string EHR_FORMAT_NAME = "ehrformat.xml";
+        private string OPERATION_LOG_NAME = "OperationLogs.txt";
         private string PHENOTYPE_FILE_NAME = "phenotypes.txt";
         private string NOTENOOK_NAME_PREFIX = "note_";
         private string NOTE_META_FILE = "meta.xml";
-
+        private string NOTE_TEXT_FILE = "text.txt";
+        public string currentNoteboookId = "";
+        //setting application data root folder as the default disk access location
         private StorageFolder ROOT_FOLDER = ApplicationData.Current.LocalFolder;
+        #endregion
 
+        /// <summary>
+        /// Creates a new FileManager instance.
+        /// </summary>
+        public FileManager()
+        {
+            Debug.WriteLine("Application local folder is " + ROOT_FOLDER.Path.ToString());
+        }
+
+        #region GET methods
+        /// <summary>
+        /// Returns the file manager object if exists, otherwise initialize a new file manager.
+        /// </summary>
         public static FileManager getSharedFileManager()
         {
             if (sharedFileManager == null)
             {
                 sharedFileManager = new FileManager();
-                return sharedFileManager;
             }
-            else
-            {
-                return sharedFileManager;
-            }
-        }
-        public FileManager()
-        {
-            Debug.WriteLine("Application local folder is " + ROOT_FOLDER.Path.ToString());
-        }
-        
-        // return a unique name based on time tick
-        public string CreateUniqueName()
-        {
-            return $@"{DateTime.Now.Ticks}";
-            //return "goodname";
+
+            return sharedFileManager;
         }
 
-        // create a folder for this notebook
-        public async Task<bool> CreateNotebook(string notebookId)
-        {
-            bool result = true;
-            //StorageFolder localFolder = ApplicationData.Current.LocalFolder;
-            // create folder structure
-            try
-            {
-                var notebookFolder = await ROOT_FOLDER.CreateFolderAsync(notebookId, CreationCollisionOption.OpenIfExists);
-                Debug.WriteLine("Notebook Folder is " + notebookFolder);
-                Notebook nb = new Notebook(notebookId);
-                var metaFile = GetNoteFilePath(notebookId, "", NoteFileType.Meta);
-                result = await SaveObjectSerilization(metaFile, nb, nb.GetType()); // save meta data to xml file
-            }
-            catch (Exception)
-            {
-                Debug.WriteLine("Failed to crate notebook");
-                return false;
-            }
-            return result;
-        }
-
-        // Get all notebook ids
-        public async Task<List<string>>  GetAllNotebookIds()
+        /// <summary>
+        /// Returns all Notebook ids from local notes.Returns null if failed.
+        /// </summary>
+        public async Task<List<string>> GetAllNotebookIds()
         {
             List<string> result = new List<string>();
             try
@@ -98,13 +102,17 @@ namespace PhenoPad.FileService
                 }
                 return result;
             }
-            catch (FileNotFoundException)
+            catch (Exception ex)
             {
                 rootPage.NotifyUser("Failed to get all notebook ids.", NotifyType.ErrorMessage, 2);
+                LogService.MetroLogger.getSharedLogger().Error($"Failed to get notebook id list: {ex.Message}");
             }
             return null;
         }
-        // Get note page ids by notebook name
+
+        /// <summary>
+        /// Returns all note page IDs by notebook ID.Returns null if failed.
+        /// </summary>
         public async Task<List<string>> GetPageIdsByNotebook(string notebookId)
         {
             List<string> result = new List<string>();
@@ -115,372 +123,203 @@ namespace PhenoPad.FileService
                 var folders = await notebookFolder.GetFoldersAsync();
                 foreach (var f in folders)
                 {
-                    result.Add(f.Name);
+                    // only folders with numeric names are pages
+                    if (int.TryParse(f.Name, out int n))
+                        result.Add(f.Name);
                 }
                 return result;
             }
-            catch (FileNotFoundException)
+            catch (Exception ex)
             {
                 rootPage.NotifyUser("Failed to get all note page ids.", NotifyType.ErrorMessage, 2);
+                LogService.MetroLogger.getSharedLogger().Error($"Failed to get page ids of {notebookId}: {ex.Message}");
             }
             return null;
         }
 
-        // create file structure for a note page
-        public async Task<bool> CreateNotePage(Notebook note, string pageId)
-        {
-            if (note == null)
-                return false;
-
-            bool result = true;
-            //StorageFolder localFolder = ApplicationData.Current.LocalFolder;
-            //StorageFolder localFolder = KnownFolders.DocumentsLibrary;
-            Debug.WriteLine("Local Path: " + ROOT_FOLDER.Path);
-            try {
-                var notebookFolder = await ROOT_FOLDER.GetFolderAsync(note.id);
-                var pageFolder = await notebookFolder.CreateFolderAsync(pageId.ToString(), CreationCollisionOption.OpenIfExists);
-                await pageFolder.CreateFolderAsync("Strokes", CreationCollisionOption.OpenIfExists);
-                await pageFolder.CreateFolderAsync("ImagesWithAnnotations", CreationCollisionOption.OpenIfExists);
-                await pageFolder.CreateFolderAsync("Phenotypes", CreationCollisionOption.OpenIfExists);
-                await pageFolder.CreateFolderAsync("Video", CreationCollisionOption.OpenIfExists);
-                await pageFolder.CreateFolderAsync("Audio", CreationCollisionOption.OpenIfExists);
-
-
-                // update meta data
-                if (note != null)
-                {
-                    NotePage np = new NotePage(note.id, pageId);
-                    note.notePages.Add(np);
-                    result = await SaveToMetaFile(note);
-                }
-                else
-                {
-                    result = false;
-                }
-                Debug.WriteLine("Successfully created file structure for note");
-            }
-            catch (Exception)
-            {
-                Debug.WriteLine("Failed to create note page.");
-                result = false;
-            }
-            return result;
-        }
-
-
-        public async Task<bool> SaveToMetaFile(Notebook notebook)
-        {
-            var metafile = GetNoteFilePath(notebook.id, "", NoteFileType.Meta);
-            return await SaveObjectSerilization(metafile, notebook, typeof(Notebook));
-        }
-
-        // get notebook object from meta file
+        /// <summary>
+        /// Returns the Notebook object from XML meta file by Notebook ID. Returns null if failed.
+        /// </summary>
         public async Task<Notebook> GetNotebookObjectFromXML(string notebookId)
         {
-            // meta data
-            var metafile = await GetNoteFile(notebookId, "", NoteFileType.Meta);
-            object obj = await LoadObjectFromSerilization(metafile, typeof(Notebook));
-            if (obj != null)
-            {
-                return obj as Notebook;
-            }
-            return null;
-        }
-
-        public async Task<List<ImageAndAnnotation>> GetImgageAndAnnotationObjectFromXML(string notebookId, string pageId)
-        {
-            var metafile = await GetNoteFile(notebookId, pageId, NoteFileType.ImageAnnotationMeta);
-            object obj = await LoadObjectFromSerilization(metafile, typeof(List<ImageAndAnnotation>));
-            if (obj != null)
-            {
-                return obj as List<ImageAndAnnotation>;
-            }
-            return null;
-        }
-
-        // get saved phenotypes object from meta file
-        public async Task<List<Phenotype>> GetSavedPhenotypeObjectsFromXML(string notebookId)
-        {
-            // meta data
-            var phenofile = await GetNoteFile(notebookId, "", NoteFileType.Phenotypes);
-            object obj = await LoadObjectFromSerilization(phenofile, typeof(List<Phenotype>));
-            if (obj != null)
-            {
-                return obj as List<Phenotype>;
-            }
-            return null;
-        }
-
-        //copy photo to local folder
-        public async Task<bool> CopyPhotoToLocal(StorageFile photo, string notebookId, string pageid, string name)
-        {
-            bool isSuc = true;
             try
             {
-                string filename = GetNoteFilePath(notebookId, pageid, NoteFileType.Image, name);
-                string path = System.IO.Path.GetDirectoryName(filename);
-                //StorageFolder localFolder = ApplicationData.Current.LocalFolder;
-                var pfile = await ROOT_FOLDER.CreateFileAsync(filename, CreationCollisionOption.ReplaceExisting);
-                await photo.CopyAndReplaceAsync(pfile);
-            }
-            catch
-            {
-                isSuc = false;
-            }
-            return isSuc;
-        }
-
-        // save photos and annotations to disk
-        public async Task<bool> SaveNotePageDrawingAndPhotos(string notebookId, string pageId, NotePageControl notePage)
-        {
-            bool isSuccessful = true;
-            //StorageFolder localFolder = ApplicationData.Current.LocalFolder;
-
-            try
-            {
-                List<ImageAndAnnotation> imageList = new List<ImageAndAnnotation>();
-                foreach (AddInControl con in notePage.GetAllAddInControls())
-                {
-                    ImageAndAnnotation temp = new ImageAndAnnotation(con.name, notebookId, pageId, con.canvasLeft, con.canvasTop);
-                    imageList.Add(temp);
-                    // image
-                    if (con.type == "photo")
-                    {
-                        //saved after insertion
-
-
-                        //string imagePath = GetNoteFilePath(notebookId, pageId, NoteFileType.ImageAnnotation, con.name);
-                        //var imageFile = await localFolder.CreateFileAsync(imagePath, CreationCollisionOption.ReplaceExisting);
-                    }
-                    // annotations
-                    string strokePath = GetNoteFilePath(notebookId, pageId, NoteFileType.ImageAnnotation, con.name);
-                    var strokesFile = await ROOT_FOLDER.CreateFileAsync(strokePath, CreationCollisionOption.ReplaceExisting);
-                    isSuccessful = await saveStrokes(strokesFile, con.inkCan);
-                    
-                }
-                string metapath = GetNoteFilePath(notebookId, pageId, NoteFileType.ImageAnnotationMeta);
-                isSuccessful = await SaveObjectSerilization(metapath, imageList, typeof(List<ImageAndAnnotation>));
-            }
-            catch (Exception e)
-            {
-                Debug.WriteLine(e.Message);
-                isSuccessful = false;
-            }
-
-            return isSuccessful;
-        }
-
-        // save ink data to disk 
-        public async Task<bool> SaveNotePageStrokes(string notebookId, string pageId, NotePageControl notePage)
-        {
-            bool isSuccessful = true;
-            //StorageFolder localFolder = ApplicationData.Current.LocalFolder;
-            Debug.WriteLine("Local Path: " + ROOT_FOLDER.Path);
-          
-            try {
-                var notebookFolder = await ROOT_FOLDER.GetFolderAsync(notebookId);
-                var pageFolder = await notebookFolder.GetFolderAsync(pageId);
-                var strokesFolder = await pageFolder.GetFolderAsync("Strokes");
-                var  strokesFile = await strokesFolder.CreateFileAsync(this.STROKE_FILE_NAME, CreationCollisionOption.OpenIfExists);
-                isSuccessful = await saveStrokes(strokesFile, notePage.inkCan);
-            }
-            catch (Exception e)
-            {
-                Debug.WriteLine(e.Message);
-            }
-            return true;
-        }
-
-        // load ink data from disk
-        public async Task<bool> LoadNotePageStroke(string notebookId, string pageId, NotePageControl notePage)
-        {
-            bool isSuccessful = true;
-            //StorageFolder localFolder = ApplicationData.Current.LocalFolder;
-            Debug.WriteLine("Local Path: " + ROOT_FOLDER.Path);
-            try
-            {
-                string strokePath = GetNoteFilePath(notebookId, pageId, NoteFileType.Strokes);
-                var strokesFile = await ROOT_FOLDER.GetFileAsync(strokePath);
-                isSuccessful = await loadStrokes(strokesFile, notePage.inkCan);
-
-            }
-            catch (Exception e)
-            {
-                //rootPage.NotifyUser(e.Message, NotifyType.ErrorMessage, 2);
-                Debug.WriteLine(e.Message);
-                Debug.WriteLine("Folder not found when trying to load note page.");
-                return false;
-            }
-            return isSuccessful;
-        }
-
-        public async Task<object> LoadObjectFromSerilization(StorageFile metaFile, Type type)
-        {
-            try
-            {
-                Stream stream = await metaFile.OpenStreamForReadAsync();
-                //tosave = new Class1("ididid", "namename");
-                var serializer = new XmlSerializer(type);
-                using (stream)
-                {
-                    object obj = serializer.Deserialize(stream);
-                    return obj;
-                }
+                //Debug.WriteLine($"Fetching notebook meta file object of {notebookId}");
+                // meta data
+                var metafile = await GetNoteFile(notebookId, "", NoteFileType.Meta);
+                Notebook obj = null;
+                obj = (Notebook) await LoadObjectFromSerilization(metafile, typeof(Notebook));
+                return obj;
             }
             catch (Exception) {
                 return null;
             }
         }
 
-        public async Task<bool> SaveObjectSerilization(string filepath, Object tosave, Type type)
-        {
-            bool result = true;
+        public async Task<List<string>> GetLogStrings(string notebookID) {
             try
             {
-                //StorageFolder localFolder = ApplicationData.Current.LocalFolder;
-                StorageFile sfile = await ROOT_FOLDER.CreateFileAsync(filepath, CreationCollisionOption.ReplaceExisting);
-                Windows.Storage.CachedFileManager.DeferUpdates(sfile);
-                Stream stream = await sfile.OpenStreamForWriteAsync();
-                var serializer = new XmlSerializer(type);
-                using (stream)
-                {
-                    serializer.Serialize(stream, tosave);
-                }
-                stream.Dispose();
+                List<string> logs = new List<string>();
+                var file = await GetNoteFile(notebookID, "", NoteFileType.OperationLog);
+                var log = await FileIO.ReadLinesAsync(file);
+                foreach (string line in log)
+                    logs.Add(line.TrimEnd());
+                return logs;
+            }
+            catch (Exception e) {
+                MetroLogger.getSharedLogger().Error(e + e.Message);
+                return null;
+            }
+        }
 
-                // Finalize write so other apps can update file.
-                Windows.Storage.Provider.FileUpdateStatus status =
-                    await Windows.Storage.CachedFileManager.CompleteUpdatesAsync(sfile);
-
-                if (status == Windows.Storage.Provider.FileUpdateStatus.Complete)
-                {
-                }
+        /// <summary>
+        /// Returns all Image ad Annotations from XML meta file by Notebook ID and page IDs. Returns null if failed.
+        /// </summary>
+        public async Task<List<ImageAndAnnotation>> GetImgageAndAnnotationObjectFromXML(string notebookId, string pageId)
+        {
+            try
+            {
+                var metafile = await GetNoteFile(notebookId, pageId, NoteFileType.ImageAnnotationMeta);
+                object obj = await LoadObjectFromSerilization(metafile, typeof(List<ImageAndAnnotation>));
+                if (obj != null)
+                    return obj as List<ImageAndAnnotation>;
                 else
-                {
-                    Debug.WriteLine(status.ToString());
-                    result = false;
-                }
+                    return null;
             }
-            catch (Exception)
-            {
-                result = false;
+            catch (Exception) {
+                //LogService.MetroLogger.getSharedLogger().Error($"{notebookId}-{pageId}:{e}:{e.Message}");
+                return null;
             }
-            return result;
+            
         }
 
-        // save strokes to gif file
-        public async Task<bool> saveStrokes(StorageFile strokesFile, InkCanvas inkcancas)
+        /// <summary>
+        /// Returns all saved phenotypes object from XML meta file by Notebook ID. Returns null if failed.
+        /// </summary>
+        public async Task<List<Phenotype>> GetSavedPhenotypeObjectsFromXML(string notebookId)
         {
-            // Prevent updates to the file until updates are 
-            // finalized with call to CompleteUpdatesAsync.
-            //Windows.Storage.CachedFileManager.DeferUpdates(strokesFile);
-            // Open a file stream for writing.
-            IRandomAccessStream stream = await strokesFile.OpenAsync(Windows.Storage.FileAccessMode.ReadWrite);
-            // Write the ink strokes to the output stream.
-            using (IOutputStream outputStream = stream.GetOutputStreamAt(0))
-            {
-                await inkcancas.InkPresenter.StrokeContainer.SaveAsync(outputStream);
-                await outputStream.FlushAsync();
+            try {
+                // meta data
+                var phenofile = await GetNoteFile(notebookId, "", NoteFileType.Phenotypes);
+                object obj = await LoadObjectFromSerilization(phenofile, typeof(List<Phenotype>));
+                if (obj != null)
+                    return obj as List<Phenotype>;
+                return null;
             }
-            stream.Dispose();
+            catch (Exception) {
+                return null;
+            }
+        }
 
-            // Finalize write so other apps can update file.
-            Windows.Storage.Provider.FileUpdateStatus status =
-                await Windows.Storage.CachedFileManager.CompleteUpdatesAsync(strokesFile);
+        /// <summary>
+        /// Gets the saved transcripts from disk and return as a list of text messages.
+        /// </summary>
+        public async Task<List<TextMessage>> GetSavedTranscriptsFromXML(string notebookId,string name = "")
+        {
+            try {
+                List < TextMessage > msg = new List<TextMessage>();
+                string transcriptPath = $"{notebookId}\\Transcripts";
+                StorageFolder folder = await ROOT_FOLDER.GetFolderAsync(transcriptPath);
+                Debug.WriteLine("transcript folder ="+folder.Path);
+                IReadOnlyList<StorageFile> fileList = await folder.GetFilesAsync();
+                SpeechManager.getSharedSpeechManager().setAudioIndex(fileList.Count);
+                foreach (StorageFile file in fileList) {
+                    List<TextMessage> obj = await LoadObjectFromSerilization(file, typeof(List<TextMessage>)) as List<TextMessage>;
+                    if (obj != null)
+                        msg.AddRange(obj);
+                }
+                return msg;
+            }
+            catch (Exception e) {
+                MetroLogger.getSharedLogger().Error( e + e.Message);
+                return null;
+            }
+        }
 
-            if (status == Windows.Storage.Provider.FileUpdateStatus.Complete)
+        /// <summary>
+        /// Gets the operation log file under local folder, if such file does not exist, creates a new one and returns it
+        /// </summary>
+        public async Task<StorageFile> GetOperationLogFile(string notebookId) {
+            try { 
+                //StorageFolder localFolder = ApplicationData.Current.LocalFolder;
+                string filepath = GetNoteFilePath(notebookId, "", NoteFileType.OperationLog);
+                var item = await ROOT_FOLDER.TryGetItemAsync(filepath);
+                if (item == null)
+                {
+                    StorageFile file = await ROOT_FOLDER.CreateFileAsync(filepath, CreationCollisionOption.OpenIfExists);
+                    return file;
+                }
+                return (StorageFile)item;
+           
+            }
+            catch (Exception ex)
             {
-                Debug.WriteLine("strokes has been saved.");
+                LogService.MetroLogger.getSharedLogger().Error($"Failed to get operation logs: {ex.Message}");
+                return null;
+            }
+        }
+
+        public async Task<bool> AppendLogToFile(List<string> cachedLogs, string notebookId) {
+            try {
+                StorageFile logFile = await GetOperationLogFile(notebookId);
+                while (logFile == null)
+                    logFile = await GetOperationLogFile(notebookId);
+                await FileIO.AppendLinesAsync(logFile, cachedLogs);
                 return true;
+
             }
-            else
-            {
-                Debug.WriteLine("strokes couldn't be saved.");
+            catch (Exception e) {
+                LogService.MetroLogger.getSharedLogger().Error("FileManager:" + e.Message);
                 return false;
             }
         }
 
-        // load strokes from gif file
-        public async Task<bool> loadStrokes(StorageFile strokesFile, InkCanvas inkcancas)
-        {
-            // User selects a file and picker returns a reference to the selected file.
-            if (strokesFile != null)
-            {
-                try
-                {
-                    // Open a file stream for reading.
-                    IRandomAccessStream stream = await strokesFile.OpenAsync(Windows.Storage.FileAccessMode.Read);
-                    // Read from file.
-                    using (var inputStream = stream.GetInputStreamAt(0))
-                    {
-                        await inkcancas.InkPresenter.StrokeContainer.LoadAsync(inputStream);
-                        Debug.WriteLine($"{strokesFile.Path} has been loaded.");
-                    }
-                    stream.Dispose();
-                }
-                catch (Exception)
-                {
-                    Debug.WriteLine($"Failed to load {strokesFile.Path}.");
-                    return false;
-                }
-            }
-            else
-            {
-                return false;
-            }
-            return true;
-        }
-
-        // create file to save images and annotations on note
-        public async Task<StorageFile> CreateImageFileForPage(string notebookId, string pageId, string name)
-        {
-            //StorageFolder localFolder = ApplicationData.Current.LocalFolder;
-            string foldername = String.Format("{0}\\{1}\\ImagesWithAnnotations", notebookId, pageId);
-            var imageFolder = await ROOT_FOLDER.GetFolderAsync(foldername);
-            if (imageFolder != null)
-            {
-
-                return await imageFolder.CreateFileAsync(name + ".jpg");
-
-            }
-            return null;
-        }
-
+        /// <summary>
+        /// Creates and returns a new local file for given Notebook, returns null if failed.
+        /// </summary>
         public async Task<StorageFile> GetNoteFile(string notebookId, string notePageId, NoteFileType fileType, string name = "")
         {
-            StorageFile notefile = null;
-            //StorageFolder localFolder = ApplicationData.Current.LocalFolder;
-            string filepath = GetNoteFilePath(notebookId, notePageId, fileType);
             try
             {
+                StorageFile notefile = null;
+                //StorageFolder localFolder = ApplicationData.Current.LocalFolder;
+                string filepath = GetNoteFilePath(notebookId, notePageId, fileType, name);
+                Debug.WriteLineIf((fileType == NoteFileType.EHR), filepath);
                 notefile = await ROOT_FOLDER.CreateFileAsync(filepath, CreationCollisionOption.OpenIfExists);
+                return notefile;
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                Debug.WriteLine($"Failed to get {filepath}");
+                LogService.MetroLogger.getSharedLogger().Error($"Failed to create file: notebook: {notebookId}, " +
+                    $"page: {notebookId}, type: {fileType}, name: {name}, details: {ex.Message}");
                 return null;
             }
-            return notefile;
         }
 
+        /// <summary>
+        /// Returns the file given IDs,type and name fron root folder. Return null if failed.
+        /// </summary>
         public async Task<StorageFile> GetNoteFileNotCreate(string notebookId, string notePageId, NoteFileType fileType, string name = "")
         {
-            StorageFile notefile = null;
-            //StorageFolder localFolder = ApplicationData.Current.LocalFolder;
-            string filepath = GetNoteFilePath(notebookId, notePageId, fileType, name);
             try
             {
-                notefile = await ROOT_FOLDER.GetFileAsync(filepath);
+                StorageFile notefile = null;
+                string filepath = GetNoteFilePath(notebookId, notePageId, fileType, name);
+                var item = await ROOT_FOLDER.TryGetItemAsync(filepath);
+                if (item != null)
+                    notefile = await ROOT_FOLDER.GetFileAsync(filepath);
+                return notefile;
             }
-            catch (Exception)
+            catch (Exception e)
             {
-                Debug.WriteLine($"Failed to get {filepath}");
+                LogService.MetroLogger.getSharedLogger().Error($"Failed to get file:{e}+{e.Message}");
                 return null;
             }
-            return notefile;
         }
 
-        // return a file path by notebook and page id, apply to various file types 
+        /// <summary>
+        /// Return a file path by notebook and page id, apply to various file types 
+        /// </summary>
         public string GetNoteFilePath(string notebookId, string notePageId, NoteFileType fileType, string name = "")
         {
             string foldername = String.Format(@"{0}\{1}\", notebookId, notePageId);
@@ -504,6 +343,12 @@ namespace PhenoPad.FileService
                 case NoteFileType.Phenotypes:
                     foldername = String.Format(@"{0}\", notebookId);
                     break;
+                case NoteFileType.Audio:
+                    foldername += @"Audio\";
+                    break;
+                case NoteFileType.Transcriptions:
+                    foldername += @"Transcripts\";
+                    break;
             }
 
             string filename = "";
@@ -515,7 +360,6 @@ namespace PhenoPad.FileService
                 case NoteFileType.ImageAnnotation:
                     filename = name + ".gif";
                     break;
-
                 case NoteFileType.Image:
                     filename = name + ".jpg";
                     break;
@@ -528,49 +372,51 @@ namespace PhenoPad.FileService
                 case NoteFileType.Phenotypes:
                     filename = PHENOTYPE_FILE_NAME;
                     break;
+                case NoteFileType.Audio:
+                    filename = name + ".wav";
+                    break;
+                case NoteFileType.Transcriptions:
+                    filename = name + ".xml";
+                    break;
+                case NoteFileType.EHR:
+                    filename = EHR_FILE_NAME;
+                    break;
+                case NoteFileType.EHRFormat:
+                    filename = EHR_FORMAT_NAME;
+                    break;
+                case NoteFileType.OperationLog:
+                    filename = OPERATION_LOG_NAME;
+                    break;
+                case NoteFileType.NoteText:
+                    filename = NOTE_TEXT_FILE;
+                    break;
             }
 
             return foldername + filename;
         }
 
-        // create note name by id
-        public string createNotebookId()
-        {
-            return NOTENOOK_NAME_PREFIX + CreateUniqueName();
-        }
-        
-        // Save collected phenotypes to file
-        public async Task<bool> saveCollectedPhenotypesToFile(string notebookId)
-        {
-            bool result = true;
-            try
-            {
-                string phenopath = GetNoteFilePath(notebookId, "", NoteFileType.Phenotypes);
-                List<Phenotype> saved = new List<Phenotype>(PhenotypeManager.getSharedPhenotypeManager().savedPhenotypes);
-                result = await SaveObjectSerilization(phenopath, saved, typeof(List<Phenotype>));
-
-               
-            }
-            catch (FileNotFoundException)
-            {
-                Debug.WriteLine("Failed to found note folder of " + notebookId);
-                result = false;
-            }
-            return result;
-        }
-
-
-        // get stroke image by notebook and note page
+        /// <summary>
+        /// Returns stroke bitmap image from file by IDs, returns null if failed
+        /// </summary>
         public BitmapImage GetStrokeImage(string notebookId, string pageId)
         {
-            string imagePath = GetNoteFilePath(notebookId, pageId, NoteFileType.Strokes);
-            BitmapImage bitmapImage = new BitmapImage(new Uri($"ms-appdata:///local/{imagePath}"));
-            return bitmapImage;
+            try
+            {
+                string imagePath = GetNoteFilePath(notebookId, pageId, NoteFileType.Strokes);
+                BitmapImage bitmapImage = new BitmapImage(new Uri($"ms-appdata:///local/{imagePath}"));
+                return bitmapImage;
+            }
+            catch (Exception ex)
+            {
+                LogService.MetroLogger.getSharedLogger().Error($"Failed to get stroke image, notebook: {notebookId}, page: {pageId}" +
+                    $"details: {ex.Message}");
+            }
+            return null;
         }
 
-        
-
-        // get all notebook objects
+        /// <summary>
+        /// Returns all Notebook objects from root file, returns null if failed.
+        /// </summary>
         public async Task<List<Notebook>> GetAllNotebookObjects()
         {
             List<Notebook> result = new List<Notebook>();
@@ -601,49 +447,662 @@ namespace PhenoPad.FileService
                 }
                 return result;
             }
-            catch (FileNotFoundException)
+            catch (Exception)
             {
-                Debug.WriteLine("Failed to get all notebook IDs");
+                LogService.MetroLogger.getSharedLogger().Error("Failed to get all notebook ids.");
                 rootPage.NotifyUser("Failed to get all notebook ids.", NotifyType.ErrorMessage, 2);
             }
             return null;
         }
 
-
-        // get all image and annotation objects
+        /// <summary>
+        /// Returns all image and annotation objects from root file, returns null if failed.
+        /// </summary>
         public async Task<List<ImageAndAnnotation>> GetAllImageAndAnnotationObjects(string notebookId)
         {
-            List<string> pageIds = await GetPageIdsByNotebook(notebookId);
-            if (pageIds == null)
-                return null;
+            try {
 
-            List<ImageAndAnnotation> result = new List<ImageAndAnnotation>();
-            foreach (var pid in pageIds)
-            {
-                List<ImageAndAnnotation> imageAndAnno = await FileManager.getSharedFileManager().GetImgageAndAnnotationObjectFromXML(notebookId, pid);
-                if (imageAndAnno != null && imageAndAnno.Count != 0)
-                    result.AddRange(imageAndAnno);
+                List<string> pageIds = await GetPageIdsByNotebook(notebookId);
+                if (pageIds == null)
+                    return null;
+
+                List<ImageAndAnnotation> result = new List<ImageAndAnnotation>();
+                foreach (var pid in pageIds)
+                {
+                    List<ImageAndAnnotation> imageAndAnno = await FileManager.getSharedFileManager().GetImgageAndAnnotationObjectFromXML(notebookId, pid);
+                    if (imageAndAnno != null && imageAndAnno.Count != 0)
+                        result.AddRange(imageAndAnno);
+                }
+                return result;
+
             }
-            return result;
+            catch (Exception e) {
+                LogService.MetroLogger.getSharedLogger().Error($"{notebookId}:{e}:{e.Message}");
+                return null;
+            }
         }
 
-        // get all note page objects
+        /// <summary>
+        /// Returns all NotePage objects of the given Notebook ID from root file, returns null if failed.
+        /// </summary>
         public async Task<List<NotePage>> GetAllNotePageObjects(string notebookId)
         {
-            
-            List<string> pageIds = await GetPageIdsByNotebook(notebookId);
-            if (pageIds == null)
-                return null;
+            try {
+                List<string> pageIds = await GetPageIdsByNotebook(notebookId);
+                if (pageIds == null)
+                    return null;
 
-            List<NotePage> result = new List<NotePage>();
-            foreach (var pid in pageIds)
+                List<NotePage> result = new List<NotePage>();
+                foreach (var pid in pageIds)
+                {
+                    NotePage np = new NotePage(notebookId, pid);
+                    result.Add(np);
+                }
+                return result;
+
+            }
+            catch (Exception) {
+                return null;
+            }
+
+        }
+        #endregion
+
+        #region CREATE/SAVE methods
+
+        /// <summary>
+        /// Creates and returns a unique name based on current time tick.
+        /// </summary>
+        public string CreateUniqueName()
+        {
+            return $@"{DateTime.Now.Ticks}";
+            //return "goodname";
+        }
+
+        /// <summary>
+        /// Creates a local folder for this notebook and returns boolean results.
+        /// </summary>
+        public async Task<bool> CreateNotebook(string notebookId)
+        {
+            LogService.MetroLogger.getSharedLogger().Info($"Creating notebook {notebookId}");
+            bool result = true;
+            //StorageFolder localFolder = ApplicationData.Current.LocalFolder;
+            // create folder structure
+            try
             {
-                NotePage np = new NotePage(notebookId, pid);
-                result.Add(np);
+                var notebookFolder = await ROOT_FOLDER.CreateFolderAsync(notebookId, CreationCollisionOption.OpenIfExists);
+                await notebookFolder.CreateFolderAsync("Audio", CreationCollisionOption.OpenIfExists);
+                await notebookFolder.CreateFolderAsync("Transcripts", CreationCollisionOption.OpenIfExists);
+
+                Debug.WriteLine("Notebook Folder is " + notebookFolder);
+                Notebook nb = new Notebook(notebookId);
+                var metaFile = GetNoteFilePath(notebookId, "", NoteFileType.Meta);
+                result = await SaveObjectSerilization(metaFile, nb, nb.GetType()); // save meta data to xml file
+            }
+            catch (Exception)
+            {
+                MetroLogger.getSharedLogger().Error($"Failed to create notebook {notebookId}");
+                return false;
+            }
+            Debug.WriteLine($"Successfully created notebook {notebookId}");
+            return result;
+        }
+
+        /// <summary>
+        /// Created a new file folder for a note page and creates folders to store components on notepage, returns boolean result.
+        /// </summary>
+        public async Task<bool> CreateNotePage(Notebook note, string pageId)
+        {
+            Debug.WriteLine($"Creating note page {pageId} for notebook {note.id}");
+            if (note == null)
+                return false;
+
+            bool result = true;
+
+            try
+            {
+                var notebookFolder = await ROOT_FOLDER.GetFolderAsync(note.id);
+                var pageFolder = await notebookFolder.CreateFolderAsync(pageId.ToString(), CreationCollisionOption.OpenIfExists);
+                await pageFolder.CreateFolderAsync("Strokes", CreationCollisionOption.OpenIfExists);
+                await pageFolder.CreateFolderAsync("ImagesWithAnnotations", CreationCollisionOption.OpenIfExists);
+                await pageFolder.CreateFolderAsync("Phenotypes", CreationCollisionOption.OpenIfExists);
+                await pageFolder.CreateFolderAsync("Video", CreationCollisionOption.OpenIfExists);
+                await pageFolder.CreateFolderAsync("Audio", CreationCollisionOption.OpenIfExists);
+
+
+                // update meta data
+                if (note != null)
+                {
+                    NotePage np = new NotePage(note.id, pageId);
+                    note.notePages.Add(np);
+                    result = await SaveToMetaFile(note);
+                }
+                else
+                {
+                    result = false;
+                }
+                Debug.WriteLine("Successfully created file structure for note");
+                LogService.MetroLogger.getSharedLogger().Info($"Successfully created note page {pageId} for notebook {note.id}");
+            }
+            catch (Exception)
+            {
+                Debug.WriteLine("Failed to create note page.");
+                LogService.MetroLogger.getSharedLogger().Error($"Failed to create note page {pageId} for notebook {note.id}");
+                result = false;
             }
             return result;
         }
 
+        /// <summary>
+        /// Creates file to save images and annotations on note, returns null if failed.
+        /// </summary>
+        public async Task<StorageFile> CreateImageFileForPage(string notebookId, string pageId, string name)
+        {
+            //StorageFolder localFolder = ApplicationData.Current.LocalFolder;
+            string foldername = String.Format("{0}\\{1}\\ImagesWithAnnotations", notebookId, pageId);
+            try
+            {
+                var imageFolder = await ROOT_FOLDER.GetFolderAsync(foldername);
+                if (imageFolder != null)
+                {
 
+                    return await imageFolder.CreateFileAsync(name + ".jpg");
+
+                }
+            }
+            catch (Exception ex)
+            {
+                LogService.MetroLogger.getSharedLogger().Error($"Failed to create image file, notebook:{notebookId}, " +
+                    $"page: {pageId}, name: {name}, details: {ex.Message} ");
+            }
+            return null;
+        }
+
+        /// <summary>
+        /// Creates and saves the photo file to local disk and returns boolean result
+        /// </summary>
+        public async Task<bool> CopyPhotoToLocal(StorageFile photo, string notebookId, string pageid, string name)
+        {
+            bool isSuc = true;
+            try
+            {
+                string filename = GetNoteFilePath(notebookId, pageid, NoteFileType.Image, name);
+                string path = System.IO.Path.GetDirectoryName(filename);
+                //StorageFolder localFolder = ApplicationData.Current.LocalFolder;
+                var pfile = await ROOT_FOLDER.CreateFileAsync(filename, CreationCollisionOption.ReplaceExisting);
+                await photo.CopyAndReplaceAsync(pfile);
+            }
+            catch (Exception ex)
+            {
+                isSuc = false;
+                LogService.MetroLogger.getSharedLogger().Error("Falied to copy photo to local folder: " + ex.Message);
+            }
+            return isSuc;
+        }
+
+        /// <summary>
+        /// Saves notebook meta file object to root folder.
+        /// </summary>
+        public async Task<bool> SaveToMetaFile(Notebook notebook)
+        {
+            Debug.WriteLine($"Saving notebook meta file object of {notebook.id}");
+            try
+            {
+                var metafile = GetNoteFilePath(notebook.id, "", NoteFileType.Meta);
+                return await SaveObjectSerilization(metafile, notebook, typeof(Notebook));
+            }
+            catch (Exception e)
+            {
+                LogService.MetroLogger.getSharedLogger().Error($"{notebook.id}:Failed to save to meta file:{e.Message}");
+                return false;
+            }
+        }
+
+        // save photos and annotations to disk
+        /// <summary>
+        /// Saves all Images and Annotations to local disk and returns boolean result
+        /// </summary>
+        public async Task<bool> SaveNotePageDrawingAndPhotos(string notebookId, string pageId, NotePageControl notePage)
+        {
+            bool isSuccessful = true;
+            //StorageFolder localFolder = ApplicationData.Current.LocalFolder;
+
+            try
+            {
+                List<ImageAndAnnotation> imageList = await notePage.GetAllAddInObjects();
+                throw new Exception("SaveNotePageDrawingAndPhotos need to be implemented, you might want to try CreateImageFileForPage");
+            }
+            catch (Exception e)
+            {
+                LogService.MetroLogger.getSharedLogger().Error($"{notebookId}-{pageId}:Failed to save to meta file:{e}:{e.Message}");
+                isSuccessful = false;
+            }
+
+            return isSuccessful;
+        }
+
+        /// <summary>
+        /// Creates and saves all strokes of the notepage to local file and returns boolean result.
+        /// </summary>
+        public async Task<bool> SaveNotePageStrokes(string notebookId, string pageId, NotePageControl notePage)
+        {
+            bool isSuccessful = true;
+            //StorageFolder localFolder = ApplicationData.Current.LocalFolder;
+
+            try
+            {
+                var notebookFolder = await ROOT_FOLDER.GetFolderAsync(notebookId);
+                var pageFolder = await notebookFolder.GetFolderAsync(pageId);
+                var strokesFolder = await pageFolder.GetFolderAsync("Strokes");
+                var strokesFile = await strokesFolder.CreateFileAsync(this.STROKE_FILE_NAME, CreationCollisionOption.OpenIfExists);
+                
+                //Saves strokes on different canvas based on whether an EHR document exists
+                if (notePage.ehrPage == null)
+                    isSuccessful = await saveStrokes(strokesFile, notePage.inkCan);
+                else
+                    isSuccessful = await saveStrokes(strokesFile, notePage.ehrPage.annotations);
+
+            }
+            catch (Exception e)
+            {
+                LogService.MetroLogger.getSharedLogger().Error(
+                    $"Failed to save strokes, notebook: {notebookId}, page: {pageId}, details: "
+                    + e.Message);
+                return false;
+            }
+            return true;
+        }
+
+        /// <summary>
+        /// Saves the EHR text file into local .txt file
+        /// </summary>
+        public async Task<bool> SaveEHRText(string notebookId, string pageId, EHRPageControl ehr) {
+
+            try
+            {
+                var notebookFolder = await ROOT_FOLDER.GetFolderAsync(notebookId);
+                var pageFolder = await notebookFolder.GetFolderAsync(pageId);
+                var ehrFile = await pageFolder.CreateFileAsync(this.EHR_FILE_NAME, CreationCollisionOption.OpenIfExists);
+                //saves text to local .txt file
+                await FileIO.WriteTextAsync(ehrFile, ehr.getText(ehr.EHRTextBox));
+            }
+            catch (Exception e)
+            {
+                LogService.MetroLogger.getSharedLogger().Error(
+                    $"Failed to save EHR, notebook: {notebookId}, page: {pageId}, details: "
+                    + e.Message);
+                return false;
+            }
+            return true;
+
+        }
+
+        public async Task<bool> SaveNoteText(string notebookId, string pageId, string text) {
+            try
+            {
+                string textPath = GetNoteFilePath(notebookId, pageId, NoteFileType.NoteText);
+                StorageFile textFile = await ROOT_FOLDER.CreateFileAsync(textPath, CreationCollisionOption.ReplaceExisting);
+                //saves text to local .txt file
+                await FileIO.WriteTextAsync(textFile, text);
+            }
+            catch (Exception e)
+            {
+                LogService.MetroLogger.getSharedLogger().Error(
+                    $"Failed to save note text, notebook: {notebookId}, page: {pageId}, details: "
+                    + e.Message);
+                return false;
+            }
+            return true;
+        }
+
+        SemaphoreSlim serilizationSS = new SemaphoreSlim(1);
+        /// <summary>
+        /// Save object to XML meta file and returns boolean result.
+        /// </summary>
+        public async Task<bool> SaveObjectSerilization(string filepath, Object tosave, Type type)
+        {
+            await serilizationSS.WaitAsync();
+            bool result = true;
+            StorageFile sfile = null;
+            Stream stream = null;
+            try
+            {
+                //StorageFolder localFolder = ApplicationData.Current.LocalFolder;
+                sfile = await ROOT_FOLDER.CreateFileAsync(filepath, CreationCollisionOption.ReplaceExisting);
+                //Windows.Storage.CachedFileManager.DeferUpdates(sfile);
+                stream = await sfile.OpenStreamForWriteAsync();
+                var serializer = new XmlSerializer(type);
+                using (stream)
+                {
+                    serializer.Serialize(stream, tosave);
+                }
+            }
+            catch (Exception e)
+            {
+                LogService.MetroLogger.getSharedLogger().Error($"Failed to save object serilization:{e.Message}");
+                result = false;
+            }
+            finally
+            {
+                serilizationSS.Release();
+                if (stream != null)
+                    stream.Dispose();
+                // Finalize write so other apps can update file.
+                // Windows.Storage.Provider.FileUpdateStatus status = await Windows.Storage.CachedFileManager.CompleteUpdatesAsync(sfile);
+            }
+            return result;
+        }
+
+        /// <summary>
+        /// Save ink strokes to a gif file.
+        /// </summary>
+        public async Task<bool> saveStrokes(StorageFile strokesFile, InkCanvas inkcancas)
+        {
+            try {
+                // Prevent updates to the file until updates are 
+                // finalized with call to CompleteUpdatesAsync.
+                //Windows.Storage.CachedFileManager.DeferUpdates(strokesFile);
+                // Open a file stream for writing.
+                IRandomAccessStream stream = await strokesFile.OpenAsync(FileAccessMode.ReadWrite);
+                // Write the ink strokes to the output stream.
+                using (IOutputStream outputStream = stream.GetOutputStreamAt(0))
+                {
+                    await inkcancas.InkPresenter.StrokeContainer.SaveAsync(outputStream);
+                    await outputStream.FlushAsync();
+                    outputStream.Dispose();
+                }
+                stream.Dispose();
+
+                // Finalize write so other apps can update file.
+                Windows.Storage.Provider.FileUpdateStatus status =
+                    await CachedFileManager.CompleteUpdatesAsync(strokesFile);
+
+                if (status == Windows.Storage.Provider.FileUpdateStatus.Complete)
+                {
+                    return true;
+                }
+                else
+                {
+                    MetroLogger.getSharedLogger().Error($"Failed to save strokes of InkCanvas.");
+                    return false;
+                }
+
+            }
+            catch (Exception) {
+                return false;
+            }
+
+        }
+
+        /// <summary>
+        /// Encodes and saves BitmapImage to file and returns boolean result.
+        /// </summary>
+        public async Task<bool> SaveImageForNotepage(string notebookId, string pageId, string name, WriteableBitmap wb)
+        {
+            bool isSuccess = true;
+            try
+            {
+                Guid bitmapEncoderGuid = BitmapEncoder.JpegEncoderId;
+                var imageFile = await getSharedFileManager().CreateImageFileForPage(notebookId, pageId, name);
+
+                using (IRandomAccessStream stream = await imageFile.OpenAsync(FileAccessMode.ReadWrite))
+                {
+                    BitmapEncoder encoder = await BitmapEncoder.CreateAsync(bitmapEncoderGuid, stream);
+                    Stream pixelStream = wb.PixelBuffer.AsStream();
+                    byte[] pixels = new byte[pixelStream.Length];
+                    await pixelStream.ReadAsync(pixels, 0, pixels.Length);
+
+                    encoder.SetPixelData(BitmapPixelFormat.Bgra8, BitmapAlphaMode.Ignore,
+                              (uint)wb.PixelWidth,
+                              (uint)wb.PixelHeight,
+                              96.0,
+                              96.0,
+                              pixels);
+                    //Windows.Graphics.Imaging.BitmapDecoder decoder = await Windows.Graphics.Imaging.BitmapDecoder.CreateAsync(imgstream);
+                    //Windows.Graphics.Imaging.PixelDataProvider pxprd = await decoder.GetPixelDataAsync(Windows.Graphics.Imaging.BitmapPixelFormat.Bgra8, Windows.Graphics.Imaging.BitmapAlphaMode.Straight, new Windows.Graphics.Imaging.BitmapTransform(), Windows.Graphics.Imaging.ExifOrientationMode.RespectExifOrientation, Windows.Graphics.Imaging.ColorManagementMode.DoNotColorManage);
+
+                    await encoder.FlushAsync();
+                }
+            }
+            catch (Exception ex)
+            {
+                isSuccess = false;
+                LogService.MetroLogger.getSharedLogger().Error($"Failed to save BitmapImage: notebook: {notebookId}, page: {notebookId}, name: {name}, details: {ex.Message}");
+
+            }
+            return isSuccess;
+
+        }
+
+        public async Task<bool> SaveEHRFormats(string notebookId, string pageId, EHRPageControl ehr) {
+            try
+            {
+                EHRFormats format = new EHRFormats(ehr);
+                string xml = format.Serialize();
+                string path = GetNoteFilePath(notebookId, pageId, NoteFileType.EHRFormat);
+                StorageFile sfile = await ROOT_FOLDER.CreateFileAsync(path, CreationCollisionOption.ReplaceExisting);
+                await Windows.Storage.FileIO.WriteTextAsync(sfile, xml);
+                return true;
+
+            }
+            catch (Exception e) {
+                Debug.WriteLine(e + e.Message);
+                return false;
+            }
+        }
+        public async Task<EHRFormats> LoadEHRFormats(string notebookId, string pageId) {
+            try
+            {
+                string path = GetNoteFilePath(notebookId, pageId, NoteFileType.EHRFormat);
+                var sfile = await ROOT_FOLDER.TryGetItemAsync(path);
+                if (sfile != null) {
+                    sfile = await ROOT_FOLDER.GetFileAsync(path);
+                    string xml = await Windows.Storage.FileIO.ReadTextAsync((StorageFile)sfile);
+                    EHRFormats ehrformat = EHRFormats.Deserialize(xml);
+                    return ehrformat;
+                }
+                return null;
+            }
+            catch (FileNotFoundException) {
+                //this may happen when creating a new ehr and thus can be omitted
+                return null;
+            }
+            catch (Exception e)
+            {
+                LogService.MetroLogger.getSharedLogger().Error("FileManager|"+ e.Message);
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// Creates and returns a new Notebook ID
+        /// </summary>
+        public string createNotebookId()
+        {
+            return NOTENOOK_NAME_PREFIX + CreateUniqueName();
+        }
+
+
+        /// <summary>
+        /// Saves collected phenotypes to file and return boolean results
+        /// </summary>
+        public async Task<bool> saveCollectedPhenotypesToFile(string notebookId)
+        {
+            bool result = true;
+            try
+            {
+                string phenopath = GetNoteFilePath(notebookId, "", NoteFileType.Phenotypes);
+                List<Phenotype> saved = new List<Phenotype>(PhenotypeManager.getSharedPhenotypeManager().savedPhenotypes);
+                result = await SaveObjectSerilization(phenopath, saved, typeof(List<Phenotype>));
+            }
+            catch (Exception ex)
+            {
+                LogService.MetroLogger.getSharedLogger().Error($"Failed to save phenotypes for notebook {notebookId}, error: {ex.Message}");
+                result = false;
+            }
+            return result;
+        }
+
+        #endregion
+
+        #region LOAD methods
+
+        /// <summary>
+        /// Loads all ink strokes from local file and returns boolean result.
+        /// </summary>
+        public async Task<bool> LoadNotePageStroke(string notebookId, string pageId, NotePageControl notePage,InkCanvas canvas = null)
+        {
+            bool isSuccessful = true;
+            try
+            {
+                string strokePath = GetNoteFilePath(notebookId, pageId, NoteFileType.Strokes);
+                var s = await ROOT_FOLDER.TryGetItemAsync(strokePath);
+                if (s != null)
+                {
+                    var strokesFile = await ROOT_FOLDER.GetFileAsync(strokePath);
+                    //is canvas not null, loading strokes for view mode
+                    if (canvas != null)
+                        isSuccessful = await loadStrokes(strokesFile, canvas);
+                    //loads the stroked based on whether the current note page is an EHR document
+                    else
+                    {
+                        if (notePage.ehrPage == null)
+                            isSuccessful = await loadStrokes(strokesFile, notePage.inkCan);
+                        else
+                            isSuccessful = await loadStrokes(strokesFile, notePage.ehrPage.annotations);
+                    }
+
+                }
+                else
+                    isSuccessful = false;
+
+                return isSuccessful;
+            }
+            catch (Exception e)
+            {
+                //rootPage.NotifyUser(e.Message, NotifyType.ErrorMessage, 2);
+                LogService.MetroLogger.getSharedLogger().Error("Failed to load note page stroke from disk: "
+                    + e.Message);
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Load object from XML meta file, returns null if failed.
+        /// </summary>
+        public async Task<object> LoadObjectFromSerilization(StorageFile metaFile, Type type)
+        {
+            Stream stream = null;
+            try
+            {
+                stream = await metaFile.OpenStreamForReadAsync();
+                var serializer = new XmlSerializer(type);
+                using (stream)
+                {
+                    object obj = serializer.Deserialize(stream);
+                    return obj;
+                }
+            }
+            catch (InvalidOperationException) {     
+                return null;
+            }
+            catch (Exception ex)
+            {
+                LogService.MetroLogger.getSharedLogger().Error($"Failed to fetch object from serilization file: {metaFile.Path}, error: {ex}");
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// Load ink strokes from a gif file.
+        /// </summary>
+        public async Task<bool> loadStrokes(StorageFile strokesFile, InkCanvas inkcancas)
+        {
+            // User selects a file and picker returns a reference to the selected file.
+            try
+            {
+                if (strokesFile == null)
+                    return false;
+                // Open a file stream for reading.
+                IRandomAccessStream stream = await strokesFile.OpenAsync(FileAccessMode.Read);
+                // Read from file.
+                using (var inputStream = stream.GetInputStreamAt(0))
+                {
+                    await inkcancas.InkPresenter.StrokeContainer.LoadAsync(inputStream);
+                }
+                stream.Dispose();
+                return true;
+            }
+            catch (Exception e)
+            {
+                LogService.MetroLogger.getSharedLogger().Error($"Failed to load strokes:{e.Message}.");
+                return false;
+            }
+        }
+
+        public async Task<string> LoadNoteText(string notebookId, string pageId)
+        {
+            try
+            {
+                string textPath = GetNoteFilePath(notebookId, pageId, NoteFileType.NoteText);
+                StorageFile textFile = await ROOT_FOLDER.GetFileAsync(textPath);
+                //saves text to local .txt file
+
+                string text = await FileIO.ReadTextAsync(textFile);
+                return text;
+            }
+            catch (Exception e)
+            {
+                LogService.MetroLogger.getSharedLogger().Error(
+                    $"Failed to load note text, notebook: {notebookId}, page: {pageId}, details: "
+                    + e.Message);
+                return "";
+            }
+        }
+
+        #endregion
+
+        #region DELETE methods
+
+        /// <summary>
+        /// Deletes the Notebook file by ID and returns boolean result.
+        /// </summary>
+        public async Task<bool> DeleteNotebookById(string id)
+        {
+            try
+            {
+                var notebook = await ROOT_FOLDER.GetFolderAsync(id);
+                await notebook.DeleteAsync();
+                return true;
+            }
+            catch (Exception e)
+            {
+                LogService.MetroLogger.getSharedLogger().Error($"Failed to delete notebook: {id}:{e.Message}");
+                return false;
+            }           
+        }
+
+        public async Task<bool> DeleteAddInFile(string notebookId, string pageId, string name) {
+            try
+            {
+                string strokepath = GetNoteFilePath(notebookId, pageId, NoteFileType.ImageAnnotation,name);
+                string imagepath = GetNoteFilePath(notebookId, pageId, NoteFileType.Image, name);
+                var s = await ROOT_FOLDER.TryGetItemAsync(strokepath);
+                if (s != null)
+                    await s.DeleteAsync();
+                var i = await ROOT_FOLDER.TryGetItemAsync(imagepath);
+                if (i != null)
+                    await i.DeleteAsync();
+                return true;
+            }
+            catch (Exception e)
+            {
+                LogService.MetroLogger.getSharedLogger().Error($"Failed to delete addin file: {e}:{e.Message}");
+                return false;
+            }
+
+        }
+
+        #endregion
     }
 }

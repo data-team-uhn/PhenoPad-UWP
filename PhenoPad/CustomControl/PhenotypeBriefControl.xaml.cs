@@ -15,6 +15,7 @@ using Windows.UI.Xaml.Navigation;
 using PhenoPad.PhenotypeService;
 using Windows.UI;
 using PhenoPad.Styles;
+using System.Diagnostics;
 
 // The User Control item template is documented at https://go.microsoft.com/fwlink/?LinkId=234236
 
@@ -58,6 +59,17 @@ namespace PhenoPad.CustomControl
             }
         }
 
+        public PresentPosition presentPosition
+        {
+            get { return (PresentPosition)GetValue(presentPositionProperty); }
+            set
+            {
+                SetValue(presentPositionProperty, value);
+            }
+        }
+
+
+
         public static readonly DependencyProperty phenotypeNameProperty = DependencyProperty.Register(
           "phenotypeName",
           typeof(String),
@@ -83,13 +95,18 @@ namespace PhenoPad.CustomControl
           typeof(TextBlock),
           new PropertyMetadata(null)
         );
+        public static readonly DependencyProperty presentPositionProperty = DependencyProperty.Register(
+         "presentPosition",
+         typeof(PresentPosition),
+         typeof(TextBlock),
+         new PropertyMetadata(null)
+       );
 
         private int localState;
 
         public PhenotypeBriefControl()
         {
             this.InitializeComponent();
-            setPhenotypeState(phenotypeState);
             //DeletePhenotypeSB.Begin();
         }
 
@@ -99,6 +116,7 @@ namespace PhenoPad.CustomControl
             phenotypeId = p.hpId;
             phenotypeState = p.state;
             sourceType = p.sourceType;
+            setPhenotypeState(phenotypeState);
         }
 
         // Add a phenotype
@@ -112,20 +130,19 @@ namespace PhenoPad.CustomControl
         
         private void DeleteBtn_Click(object sender, RoutedEventArgs e)
         {
-            //DeletePhenotypeSB.Begin();   
-            //YNSwitch.Margin = new Thickness(-100, 0, 0, 0);
-
-            //if(sourceType == SourceType.Speech)
-            //    PhenotypeManager.getSharedPhenotypeManager().removeById(phenotypeId, SourceType.Speech);
-            //else
-            //    PhenotypeManager.getSharedPhenotypeManager().updatePhenoStateById(phenotypeId, -1, sourceType);
             localState = -1;
-                PhenotypeManager.getSharedPhenotypeManager().removeById(phenotypeId, SourceType.Suggested);
+            PhenotypeManager.getSharedPhenotypeManager().removeByIdAsync(phenotypeId, SourceType.Notes);
+            if (presentPosition == PresentPosition.Inline)
+            {
+                this.Visibility = Visibility.Collapsed;
+            }
         }
         
+
         private void YSwitchBtn_Click(object sender, RoutedEventArgs e)
         {
             setPhenotypeState(1);
+            Debug.WriteLine(((Button)sender).Parent.GetType().ToString());
             PhenotypeManager.getSharedPhenotypeManager().updatePhenoStateById(phenotypeId, 1, sourceType);
 
         }
@@ -137,54 +154,58 @@ namespace PhenoPad.CustomControl
 
         private void setPhenotypeState(int state)
         {
+            //default state: user has not done anything
             if (state == -1)
             {
-                //NameGrid.Background = new SolidColorBrush(Colors.White);
-                phenotypeNameTextBlock.Foreground = new SolidColorBrush(Colors.Gray);
-                //phenotypeNameTextBlock.Foreground = new SolidColorBrush(Colors.Black);
+                NameGrid.Background = new SolidColorBrush(Colors.LightGray);
+                phenotypeNameTextBlock.Foreground = new SolidColorBrush(Colors.Black);
                 phenotypeNameTextBlock.Text = phenotypeName;
-                NameCrossLine.Visibility = Visibility.Collapsed;
+                //NameCrossLine.Visibility = Visibility.Collapsed;
             }
+            //user selects the phenotype as Y
             else if (state == 1)
             {
                 //NameGrid.Background = Application.Current.Resources["Button_Background"] as SolidColorBrush;
-                phenotypeNameTextBlock.Foreground = Application.Current.Resources["WORD_DARK"] as SolidColorBrush;
+                //phenotypeNameTextBlock.Foreground = Application.Current.Resources["WORD_DARK"] as SolidColorBrush;
+                //phenotypeNameTextBlock.Foreground = new SolidColorBrush(Colors.Black);
+                phenotypeNameTextBlock.Foreground = new SolidColorBrush(Colors.White);
                 phenotypeNameTextBlock.Text = phenotypeName;
-                NameCrossLine.Visibility = Visibility.Collapsed;
+                NameGrid.Background = new SolidColorBrush(Colors.CornflowerBlue);
+                //NameCrossLine.Visibility = Visibility.Collapsed;
             }
+            //user selects the phenotype as N
             else
             {
                 //NameGrid.Background = new SolidColorBrush(Colors.LightCoral);
-                phenotypeNameTextBlock.Foreground = new SolidColorBrush(Colors.LightCoral);
-                phenotypeNameTextBlock.Text = "NO " + phenotypeName;
-                NameCrossLine.Visibility = Visibility.Visible;
+                phenotypeNameTextBlock.Foreground = new SolidColorBrush(Colors.White);
+                NameGrid.Background = new SolidColorBrush(Colors.PaleVioletRed);
+                phenotypeNameTextBlock.Text = "No " + phenotypeName;
+                //NameCrossLine.Visibility = Visibility.Visible;
             }
             
         }
 
-
-      
-
-        private void phenotypeNameTextBlock_Tapped(object sender, TappedRoutedEventArgs e)
+        private void phenotypeNameTextBlock_Tapped(object sender, RoutedEventArgs e)
         {
+
             switch (localState)
             {
                 case -1:
                     localState = 1;
-                    setPhenotypeState(1);
-                    PhenotypeManager.getSharedPhenotypeManager().addPhenotype(new Phenotype(phenotypeId, phenotypeName, 1), sourceType);
+                        setPhenotypeState(1);
+                    PhenotypeManager.getSharedPhenotypeManager().addPhenotype(new Phenotype(phenotypeId, phenotypeName, 1), SourceType.Notes);
                     break;
                 case 0:
-                    //PhenotypeManager.getSharedPhenotypeManager().removeById(phenotypeId, SourceType.Saved);
-                    // PhenotypeManager.getSharedPhenotypeManager().removeById(phenotypeId, sourceType);
                     localState = 1;
-                    setPhenotypeState(1);
-                    PhenotypeManager.getSharedPhenotypeManager().updatePhenoStateById(phenotypeId, 1, sourceType);
+                    //if (presentPosition == PresentPosition.Inline)
+                        setPhenotypeState(1);
+                    PhenotypeManager.getSharedPhenotypeManager().updatePhenoStateById(phenotypeId, 1, SourceType.Notes);
                     break;
                 case 1:
                     localState = 0;
-                    setPhenotypeState(0);
-                    PhenotypeManager.getSharedPhenotypeManager().updatePhenoStateById(phenotypeId, 0, sourceType);
+                    //if (presentPosition == PresentPosition.Inline)
+                        setPhenotypeState(0);
+                    PhenotypeManager.getSharedPhenotypeManager().updatePhenoStateById(phenotypeId, 0, SourceType.Notes);
                     break;
             }
         }

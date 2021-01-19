@@ -9,7 +9,7 @@
 
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     mc:Ignorable="d"
-    NavigationCacheMode="Disabled">
+    NavigationCacheMode="Required">
     <Page.Resources>
         <ResourceDictionary>
             <ResourceDictionary.ThemeDictionaries>
@@ -35,21 +35,35 @@
        
         <Grid>
             <Grid.RowDefinitions>
-
                 <RowDefinition Height="100"></RowDefinition>
                 <RowDefinition Height="100"></RowDefinition>
-                
                 <RowDefinition Height="*"></RowDefinition>
             </Grid.RowDefinitions>
-            <Border Grid.Row="0" Padding="5">
-                <Button Background="Transparent" Style="{StaticResource MyButtonStyle}" Click="CreateButton_Click" HorizontalAlignment="Stretch"  VerticalAlignment="Stretch">
+
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"></ColumnDefinition>
+                <ColumnDefinition Width="*"></ColumnDefinition>
+            </Grid.ColumnDefinitions>
+
+            <Border Grid.Row="0" Grid.Column="0" >
+                <Button Background="Transparent" Style="{StaticResource MyButtonStyle}" Click="CreateButton_Click" 
+                        HorizontalAlignment="Stretch"  VerticalAlignment="Stretch">
                     <StackPanel Orientation="Horizontal" >
-                        <FontIcon FontSize="27" FontWeight="ExtraBold" FontFamily="Segoe MDL2 Assets" Glyph="&#xE710;"/>
-                        <TextBlock Margin="15 0 0 0" FontSize="27" >Create new note</TextBlock>
+                        <FontIcon FontSize="25" FontFamily="Segoe MDL2 Assets" Glyph="&#xE7C3;"/>
+                        <TextBlock Margin="10 0 0 0" FontSize="25" TextWrapping="WrapWholeWords" >New Note</TextBlock>
                     </StackPanel>
                 </Button>
             </Border>
-            <StackPanel Grid.Row="1" Margin="5" >
+            <Border Grid.Row="0" Grid.Column="1" >
+                <Button Background="Transparent" Style="{StaticResource MyButtonStyle}" Click="ImportEHR_Click" 
+                        HorizontalAlignment="Stretch"  VerticalAlignment="Stretch">
+                    <StackPanel Orientation="Horizontal" >
+                        <FontIcon FontSize="25" FontFamily="Segoe MDL2 Assets" Glyph="&#xE896;"/>
+                        <TextBlock Margin="10 0 0 0" FontSize="25" >Edit EHR</TextBlock>
+                    </StackPanel>
+                </Button>
+            </Border>
+            <StackPanel Grid.Row="1" Grid.ColumnSpan="2" Margin="5" >
                 <Grid >
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="2*"/>
@@ -68,18 +82,35 @@
                 </Grid>
                 <AutoSuggestBox QueryIcon="Find" HorizontalAlignment="Stretch" Margin="5 0 5 0" RelativePanel.AlignVerticalCenterWithPanel="True" Name="autoSuggestBox" PlaceholderText="Search" TextChanged="autosuggesttextchanged" QuerySubmitted="autosuggestquerysubmitted" ></AutoSuggestBox>
             </StackPanel>
-            <ListView  Margin="5"  x:Name="notebookList" ItemClick="notebookList_ItemClick" IsItemClickEnabled="True" Grid.Row="2">
+            
+            <ListView  Margin="5"  x:Name="notebookList" ItemClick="notebookList_ItemClick" 
+                       IsItemClickEnabled="True" Grid.ColumnSpan="2" Grid.Row="2"
+                       ScrollViewer.HorizontalScrollMode="Disabled"
+                       ScrollViewer.VerticalScrollBarVisibility="Hidden"
+                       ScrollViewer.IsVerticalScrollChainingEnabled="False">
+                <ListView.Resources>
+                    <SwipeItems x:Key="left" Mode="Reveal">
+                        <SwipeItem Text="Delete" Background="PaleVioletRed" Invoked="Delete_ItemInvoked">
+                            <SwipeItem.IconSource>
+                                <SymbolIconSource Symbol="Delete"/>
+                            </SwipeItem.IconSource>
+                        </SwipeItem>
+                    </SwipeItems>
+                </ListView.Resources>
                 <ListView.ItemTemplate>
                     <DataTemplate x:DataType="fileservice:Notebook">
-                        <Grid >
+                        <SwipeControl LeftItems="{StaticResource left}" Tag="{x:Bind id }">
+                        <Grid>
                             <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="80"/>
+                                <ColumnDefinition Width="60"/>
                                 <ColumnDefinition Width="*"/>
                                 <ColumnDefinition Width="60"/>
-                            </Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="60"/>
+                                </Grid.ColumnDefinitions>
                             <Border Width="80" Height="80" Padding="5" >
-                                <BitmapIcon UriSource="{x:Bind firstPageUri}"/>
-                            </Border>
+                                <!--<BitmapIcon UriSource="{x:Bind firstPageUri}"/>-->
+                                    <FontIcon FontSize="25" FontWeight="ExtraBold" FontFamily="Segoe MDL2 Assets" Glyph="&#xE8A5;" />
+                                </Border>
                             <RelativePanel  Grid.Column="1" Padding="0 10 0 10">
                                 <TextBlock Padding="10" Text="{x:Bind name}" Foreground="Black" 
                            FontSize="20" RelativePanel.AlignTopWithPanel="True"/>
@@ -87,12 +118,21 @@
                            FontSize="15" RelativePanel.AlignBottomWithPanel="True" Grid.Column="1"/>
 
                             </RelativePanel>
-                            
+                                <Button Style="{StaticResource MyButtonStyle}" x:Name="ViewButton" Tag="{x:Bind id}"  
+                                    Background="Transparent" Grid.Column="2" 
+                                        Click="ViewButton_Click"
+                                    HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+                                    <TextBlock Foreground="{StaticResource WORD_DARK}">View</TextBlock>
+                                </Button>
 
-                            <Button Style="{StaticResource MyButtonStyle}" x:Name="OpenButton" Tag="{x:Bind id}"  Click="OpenButton_Click" Background="Transparent" Grid.Column="2" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+
+                                <Button Style="{StaticResource MyButtonStyle}" x:Name="OpenButton" Tag="{x:Bind id}"  
+                                    Click="OpenButton_Click" Background="Transparent" Grid.Column="3" 
+                                    HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
                                 <TextBlock Foreground="{StaticResource WORD_DARK}">Open</TextBlock>
                             </Button>
                         </Grid>
+                        </SwipeControl>
                     </DataTemplate>
                 </ListView.ItemTemplate>
                 <ListView.ItemContainerStyle>
@@ -157,17 +197,18 @@
 
         </StackPanel>
         -->
-
+        
+        <!--NOTE QUICK VIEW PANEL-->
         <Grid Grid.Column="1" Background="White">
             <ScrollViewer>
             <StackPanel>
                 <Border Background="{StaticResource Title_Background}" Height="40">
                     <TextBlock VerticalAlignment="Center" Grid.Row="0" FontSize="20" Foreground="Black" Margin="10 0 0 0">Note pages</TextBlock>
                 </Border>
-                <GridView Name="NoteGridView" ItemClick="GridView_ItemClick" Padding="10 10 10 10" Height="345"
+                <GridView Name="NoteGridView" ItemClick="GridView_ItemClick" Padding="10 10 10 10" Height="450"
                            ScrollViewer.HorizontalScrollBarVisibility="Auto"
-    ScrollViewer.HorizontalScrollMode="Enabled"
-    ScrollViewer.VerticalScrollMode="Disabled">
+                            ScrollViewer.HorizontalScrollMode="Enabled"
+                            ScrollViewer.VerticalScrollMode="Disabled">
                     
                     <GridView.ItemsPanel>
                         <ItemsPanelTemplate>
@@ -191,7 +232,7 @@
                                     <TextBlock Text="{x:Bind date}" 
                                FontSize="18" Foreground="Gray"/>
                                 </Border>
-                                <Border Height="240" Width="200" Grid.Row="2">
+                                <Border Height="400" Width="283" Grid.Row="2">
                                     <BitmapIcon UriSource="{x:Bind strokeUri}"/>
                                     <!-- 
                             <Image Source="{x:Bind strokeUri}"/>
@@ -211,8 +252,8 @@
                     <TextBlock VerticalAlignment="Center" Grid.Row="0" FontSize="20" Foreground="Black" Margin="10 0 0 0">Photos and annotations</TextBlock>
                 </Border>
 
-                <GridView Name="ImageAnnotationGridView"  Padding="10 10 10 10" Height="400"
-                           ScrollViewer.HorizontalScrollBarVisibility="Auto"
+                <GridView Name="ImageAnnotationGridView"  Padding="10 10 10 10" Height="250"
+                           ScrollViewer.HorizontalScrollBarVisibility="Auto"  AllowFocusOnInteraction="False" SelectionMode="None"
     ScrollViewer.HorizontalScrollMode="Enabled"
     ScrollViewer.VerticalScrollMode="Disabled">
 
@@ -224,14 +265,14 @@
 
                     <GridView.ItemTemplate>
                         <DataTemplate x:DataType="fileservice:ImageAndAnnotation">
-                            <customcontrol:AddInControl name="{x:Bind name}" notebookId="{x:Bind notebookId}" viewOnly="True" pageId="{x:Bind pageId}"></customcontrol:AddInControl>
-                        </DataTemplate>
+                                <Viewbox Stretch="Uniform" Width="200">
+                                    <customcontrol:AddInControl name="{x:Bind name}" notebookId="{x:Bind notebookId}" 
+                                                                viewOnly="True" CommentID="{x:Bind commentID}"
+                                                                pageId="{x:Bind pageId}"/>
+                                </Viewbox>
+                            </DataTemplate>
                     </GridView.ItemTemplate>
-                    <GridView.Items>
-                        <GridViewItem BorderThickness="1" BorderBrush="Black">
-                            <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE710;" Foreground="{StaticResource WORD_DARK}" FontSize="72" FontWeight="ExtraBold"/>
-                        </GridViewItem>
-                    </GridView.Items>
+                    
                 </GridView>
 
                 <Border Name="ImageAnnotationPlaceHoder" Visibility="Visible" Height="60" Padding="10">

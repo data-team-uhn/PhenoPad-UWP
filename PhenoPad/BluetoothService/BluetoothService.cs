@@ -1,7 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 using Windows.Devices.Bluetooth;
 using Windows.Devices.Bluetooth.Rfcomm;
@@ -11,8 +8,7 @@ using Windows.Networking.Sockets;
 using Windows.Storage.Streams;
 using Windows.UI.Core;
 using System.Diagnostics;
-using Windows.Devices.SerialCommunication;
-using Windows.Networking.Connectivity;
+using System.Threading;
 
 namespace PhenoPad.BluetoothService
 {
@@ -20,17 +16,20 @@ namespace PhenoPad.BluetoothService
     {
         // A pointer back to the main page is required to display status messages.
         private MainPage rootPage = MainPage.Current;
-
-        RfcommDeviceService _service;
-        StreamSocket _socket;
+        RfcommDeviceService _service = null;
+        StreamSocket _socket = null;
         private DeviceWatcher deviceWatcher = null;
         private DataWriter dataWriter = null;
+        public string rpi_ipaddr = null;
+        //private DataReader readPacket = null;
+        private CancellationTokenSource cancellationSource;
         private RfcommDeviceService blueService = null;
         private BluetoothDevice bluetoothDevice = null;
 
         public bool initialized = false;
 
         public static BluetoothService sharedBluetoothService;
+
         public static BluetoothService getBluetoothService()
         {
             if (sharedBluetoothService == null)
@@ -47,55 +46,164 @@ namespace PhenoPad.BluetoothService
         public async Task Initialize()
         {
             rootPage = MainPage.Current;
-            if (this.initialized == false)
+            bool blueConnected = await checkConnection();
+            if (!blueConnected)
             {
+                rootPage.bluetoothprogress.Visibility = Windows.UI.Xaml.Visibility.Visible;
+                rootPage.bluetoothicon.Visibility = Windows.UI.Xaml.Visibility.Collapsed;
+                rootPage.NotifyUser("Connecting to Raspberry Pi through Bluetooth.", NotifyType.StatusMessage, 3);
                 await InitiateConnection();
-            } else
+                while (!initialized)
+                {//continuously loop until we connect to raspberry pi
+                    LogService.MetroLogger.getSharedLogger().Info("Could not discover Bluetooh device, trying again...");
+                    StopWatcher();
+                    await InitiateConnection();
+                }
+            }
+            else
             {
-                Debug.WriteLine("Bluetooth has been initialized from another page");
-                await rootPage.Dispatcher.RunAsync(CoreDispatcherPriority.High, async () =>
-                {
-                    // rootPage.bluetoothInitialized(true);
-                });
+                rootPage.NotifyUser("Bluetooth is connected.", NotifyType.StatusMessage, 2);
+                rootPage.bluetoonOn = true;
             }
         }
         
+        /// <summary>
+        /// Initiate bluetooth connection with Raspberry Pi
+        /// </summary>
         private async Task InitiateConnection()
         {
             var serviceInfoCollection = await DeviceInformation.FindAllAsync(RfcommDeviceService.GetDeviceSelector(RfcommServiceId.SerialPort), new string[] { "System.Devices.AepService.AepId" });
-
-            Debug.WriteLine(DeviceInformation.FindAllAsync(RfcommDeviceService.GetDeviceSelector(RfcommServiceId.SerialPort)));
-
+            //Debug.WriteLine("line 71");
             foreach (var serviceInfo in serviceInfoCollection)
             {
                 var deviceInfo = await DeviceInformation.CreateFromIdAsync((string)serviceInfo.Properties["System.Devices.AepService.AepId"]);
+                if (deviceInfo.Name == "raspberrypi")
+                {
+                    DeviceAccessStatus accessStatus = DeviceAccessInformation.CreateFromId(deviceInfo.Id).CurrentStatus;
+                    if (accessStatus == DeviceAccessStatus.DeniedByUser)
+                    {
+                        rootPage.NotifyUser("This app does not have access to connect to the remote device (please grant access in Settings > Privacy > Other Devices", NotifyType.ErrorMessage, 3);
+                        return;
+                    }
+                    try
+                    {
+                        bluetoothDevice = await BluetoothDevice.FromIdAsync(deviceInfo.Id);
+                        if (bluetoothDevice == null)
+                        {
+                            LogService.MetroLogger.getSharedLogger().Error("Bluetooth Device returned null. Access Status = " + accessStatus.ToString());
+                            return;
+                        }
+                        var attempNum = 1;
+                        for (; attempNum <= 5; attempNum++)
+                        {
+                            var rfcommServices = await bluetoothDevice.GetRfcommServicesForIdAsync(RfcommServiceId.FromUuid(Constants.RfcommChatServiceUuid), BluetoothCacheMode.Uncached);
 
-                System.Diagnostics.Debug.WriteLine($"Device name is: '{deviceInfo.Name}' and Id is: '{deviceInfo.Id}'");
+                            if (rfcommServices.Services.Count > 0)
+                            {
+                                LogService.MetroLogger.getSharedLogger().Info("Found rfcommService.");
+                                blueService = rfcommServices.Services[0];
+                                break;
+                            }
+                            else
+                            {
+                                await Task.Delay(TimeSpan.FromSeconds(3));
+                            }
+                        }
+                        if (attempNum == 6)
+                        {
+                            LogService.MetroLogger.getSharedLogger().Error("Bluetooth connection attempt exceeded 5, trying again later ...");
+                            rootPage.audioButton.IsEnabled = true;
+                            rootPage.audioButton.IsChecked = false;
+                            rootPage.bluetoonOn = false;
+                            return;
+                        }
+
+
+                        //========================================
+                        StopWatcher();
+                        lock (this)
+                        {
+                            _socket = new StreamSocket();
+                        }
+                        try
+                        {
+                            await _socket.ConnectAsync(blueService.ConnectionHostName, blueService.ConnectionServiceName);
+                            //SetChatUI(attributeReader.ReadString(serviceNameLength), bluetoothDevice.Name);
+                            dataWriter = new DataWriter(_socket.OutputStream);
+                            //readPacket = new DataReader(_socket.InputStream);
+                        }
+                        catch (Exception ex) // ERROR_ELEMENT_NOT_FOUND
+                        {
+                            LogService.MetroLogger.getSharedLogger().Error(ex.Message);
+                        }
+                        // send hand shake
+                        try
+                        {
+                            string temp = "HAND_SHAKE";
+                            //dataWriter.WriteUInt32((uint)temp.Length);
+                            dataWriter.WriteString(temp);
+                            Debug.WriteLine("Writing message " + temp.ToString() + " via Bluetooth");
+                            await dataWriter.StoreAsync();
+                            this.initialized = true;
+                            rootPage.NotifyUser("Bluetooth Connected", NotifyType.StatusMessage, 1);
+                            rootPage.bluetoonOn = true;
+                            rootPage.bluetoothInitialized(true);
+                            rootPage.bluetoothicon.Visibility = Windows.UI.Xaml.Visibility.Visible;
+                            rootPage.bluetoothprogress.Visibility = Windows.UI.Xaml.Visibility.Collapsed;
+                            //rootPage.StartAudioAfterBluetooth();
+                        }
+                        catch (Exception ex) when ((uint)ex.HResult == 0x80072745)
+                        {
+                            //remote side disconnect
+                            LogService.MetroLogger.getSharedLogger().Info(ex.Message);
+                            return;
+                        }
+
+                        // keep receiving data 
+                        if (cancellationSource != null)
+                            cancellationSource.Cancel();
+                        cancellationSource = new CancellationTokenSource();
+                        CancellationToken cancellationToken = cancellationSource.Token;
+                        await Task.Run(async () =>
+                        {
+                            while (true && !cancellationToken.IsCancellationRequested)
+                            {
+                                // don't run again for 
+                                await Task.Delay(500);
+                                string result = await ReceiveMessageUsingStreamWebSocket();
+                                if (!string.IsNullOrEmpty(result))
+                                {
+                                    LogService.MetroLogger.getSharedLogger().Info(result);
+                                    string[] temp = result.Split(' ');
+                                    if (temp[0] == "ip")
+                                        rpi_ipaddr = temp[1];
+                                }
+
+                            }
+                        }, cancellationToken);
+                    }
+                    catch (Exception e)
+                    {
+                        LogService.MetroLogger.getSharedLogger().Error(e.Message);
+                        return;
+                    }
+                }
+
             }
 
-
+            //Debug.WriteLine("line 75");
             // Request additional properties
             string[] requestedProperties = new string[] { "System.Devices.Aep.DeviceAddress", "System.Devices.Aep.IsConnected" };
-
-            deviceWatcher = DeviceInformation.CreateWatcher("(System.Devices.Aep.ProtocolId:=\"{e0cbf06c-cd8b-4647-bb8a-263b43f0f974}\")",
-                                                            requestedProperties,
-                                                            DeviceInformationKind.AssociationEndpoint);
-
+            deviceWatcher = DeviceInformation.CreateWatcher("(System.Devices.Aep.ProtocolId:=\"{e0cbf06c-cd8b-4647-bb8a-263b43f0f974}\")", requestedProperties, DeviceInformationKind.AssociationEndpoint);
             // Hook up handlers for the watcher events before starting the watcher
             deviceWatcher.Added += new TypedEventHandler<DeviceWatcher, DeviceInformation>(async (watcher, deviceInfo) =>
             {
-                await rootPage.Dispatcher.RunAsync(CoreDispatcherPriority.High, async() =>
+                Debug.WriteLine("device watcher added ================================================");
+                await rootPage.Dispatcher.RunAsync(CoreDispatcherPriority.High, async () =>
                 {
-                    Debug.WriteLine(deviceInfo.Name);
-
                     // Make sure device name isn't blank
                     if (deviceInfo.Name == "raspberrypi")
                     {
-                        rootPage.NotifyUser(
-                           "Found Raspberry Pi",
-                           NotifyType.StatusMessage,
-                           3);
-
                         DeviceAccessStatus accessStatus = DeviceAccessInformation.CreateFromId(deviceInfo.Id).CurrentStatus;
                         if (accessStatus == DeviceAccessStatus.DeniedByUser)
                         {
@@ -107,28 +215,38 @@ namespace PhenoPad.BluetoothService
                             bluetoothDevice = await BluetoothDevice.FromIdAsync(deviceInfo.Id);
                             if (bluetoothDevice == null)
                             {
-                                rootPage.NotifyUser("Bluetooth Device returned null. Access Status = " + accessStatus.ToString(), NotifyType.ErrorMessage, 3);
+                                LogService.MetroLogger.getSharedLogger().Error("Bluetooth Device returned null. Access Status = " + accessStatus.ToString());
+                                return;
+                            }
+                            var attempNum = 1;
+                            for (; attempNum <= 5; attempNum++)
+                            {
+                                var rfcommServices = await bluetoothDevice.GetRfcommServicesForIdAsync(RfcommServiceId.FromUuid(Constants.RfcommChatServiceUuid), BluetoothCacheMode.Uncached);
+
+                                if (rfcommServices.Services.Count > 0)
+                                {
+                                    LogService.MetroLogger.getSharedLogger().Info("Found rfcommService.");
+                                    blueService = rfcommServices.Services[0];
+                                    break;
+                                }
+                                else
+                                {
+                                    LogService.MetroLogger.getSharedLogger().Info("Could not discover Bluetooh server on the remote device, trying again...");
+                                    await Task.Delay(500);
+                                }
+                            }
+                            if (attempNum == 6)
+                            {
+                                LogService.MetroLogger.getSharedLogger().Error("Bluetooth connection attempt exceeded 5, trying again later ...");
+                                rootPage.audioButton.IsEnabled = true;
+                                rootPage.audioButton.IsChecked = false;
+                                rootPage.bluetoonOn = false;
                                 return;
                             }
 
 
-                            var rfcommServices = await bluetoothDevice.GetRfcommServicesForIdAsync(
-                  RfcommServiceId.FromUuid(Constants.RfcommChatServiceUuid), BluetoothCacheMode.Uncached);
-
-                            if (rfcommServices.Services.Count > 0)
-                            {
-                                blueService = rfcommServices.Services[0];
-                            }
-                            else
-                            {
-                                rootPage.NotifyUser(
-                                   "Could not discover Bluetooh server on the remote device",
-                                   NotifyType.StatusMessage, 3);
-                                return;
-                            }
-
+                            //========================================
                             StopWatcher();
-
                             lock (this)
                             {
                                 _socket = new StreamSocket();
@@ -136,111 +254,127 @@ namespace PhenoPad.BluetoothService
                             try
                             {
                                 await _socket.ConnectAsync(blueService.ConnectionHostName, blueService.ConnectionServiceName);
-
                                 //SetChatUI(attributeReader.ReadString(serviceNameLength), bluetoothDevice.Name);
                                 dataWriter = new DataWriter(_socket.OutputStream);
+                                //readPacket = new DataReader(_socket.InputStream);
                             }
-                            catch (Exception ex) when ((uint)ex.HResult == 0x80070490) // ERROR_ELEMENT_NOT_FOUND
+                            catch (Exception ex) // ERROR_ELEMENT_NOT_FOUND
                             {
+                                LogService.MetroLogger.getSharedLogger().Error(ex.Message);
                             }
+                            // send hand shake
                             try
                             {
                                 string temp = "HAND_SHAKE";
-
                                 //dataWriter.WriteUInt32((uint)temp.Length);
                                 dataWriter.WriteString(temp);
                                 Debug.WriteLine("Writing message " + temp.ToString() + " via Bluetooth");
                                 await dataWriter.StoreAsync();
-
                                 this.initialized = true;
-
-                                rootPage.NotifyUser(
-                                   "Bluetooth connection has been established",
-                                   NotifyType.StatusMessage, 2);
+                                rootPage.NotifyUser("Bluetooth Connected", NotifyType.StatusMessage, 1);
+                                rootPage.bluetoonOn = true;
                                 rootPage.bluetoothInitialized(true);
+                                rootPage.bluetoothicon.Visibility = Windows.UI.Xaml.Visibility.Visible;
+                                rootPage.bluetoothprogress.Visibility = Windows.UI.Xaml.Visibility.Collapsed;
+                                //rootPage.StartAudioAfterBluetooth();
                             }
                             catch (Exception ex) when ((uint)ex.HResult == 0x80072745)
                             {
-                                // The remote device has disconnected the connection
+                                //remote side disconnect
+                                LogService.MetroLogger.getSharedLogger().Info(ex.Message);
                                 return;
                             }
+
+                            // keep receiving data 
+                            if (cancellationSource != null)
+                                cancellationSource.Cancel();
+                            cancellationSource = new CancellationTokenSource();
+                            CancellationToken cancellationToken = cancellationSource.Token;
+
+                            await Task.Run(async () =>
+                            {
+                                while (true && !cancellationToken.IsCancellationRequested)
+                                {
+                                    // don't run again for 
+                                    await Task.Delay(500);
+                                    string result = await ReceiveMessageUsingStreamWebSocket();
+                                    if (!string.IsNullOrEmpty(result))
+                                    {
+                                        LogService.MetroLogger.getSharedLogger().Info(result);
+                                        string[] temp = result.Split(' ');
+                                        if (temp[0] == "ip")
+                                            rpi_ipaddr = temp[1];
+                                    }
+
+                                }
+                            }, cancellationToken);
                         }
                         catch (Exception e)
                         {
-                            rootPage.NotifyUser(e.Message, NotifyType.ErrorMessage, 3);
+                            LogService.MetroLogger.getSharedLogger().Error(e.Message);
                             return;
                         }
-                        
-                        //ResultCollection.Add(new RfcommChatDeviceDisplay(deviceInfo));
-                        
-                        /*rootPage.NotifyUser(
-                            String.Format("{0} devices found.", ResultCollection.Count),
-                            NotifyType.StatusMessage);
-                        */
                     }
                 });
 
             });
-
-            deviceWatcher.Updated += new TypedEventHandler<DeviceWatcher, DeviceInformationUpdate>(async (watcher, deviceInfoUpdate) =>
-            {
-                await rootPage.Dispatcher.RunAsync(CoreDispatcherPriority.Low, () =>
-                {
-                    /**
-                    foreach (RfcommChatDeviceDisplay rfcommInfoDisp in ResultCollection)
-                    {
-                        if (rfcommInfoDisp.Id == deviceInfoUpdate.Id)
-                        {
-                            rfcommInfoDisp.Update(deviceInfoUpdate);
-                            break;
-                        }
-                    }**/
-                });
-            });
-
-            deviceWatcher.EnumerationCompleted += new TypedEventHandler<DeviceWatcher, Object>(async (watcher, obj) =>
-            {
-                await rootPage.Dispatcher.RunAsync(CoreDispatcherPriority.Low, () =>
-                {
-                    /**
-                    rootPage.NotifyUser(
-                        String.Format("{0} devices found. Enumeration completed. Watching for updates...", ResultCollection.Count),
-                        NotifyType.StatusMessage);**/
-                });
-            });
-
-            deviceWatcher.Removed += new TypedEventHandler<DeviceWatcher, DeviceInformationUpdate>(async (watcher, deviceInfoUpdate) =>
-            {
-                // Since we have the collection databound to a UI element, we need to update the collection on the UI thread.
-                await rootPage.Dispatcher.RunAsync(CoreDispatcherPriority.Low, () =>
-                {
-                    // Find the corresponding DeviceInformation in the collection and remove it
-                    /**
-                    foreach (RfcommChatDeviceDisplay rfcommInfoDisp in ResultCollection)
-                    {
-                        if (rfcommInfoDisp.Id == deviceInfoUpdate.Id)
-                        {
-                            ResultCollection.Remove(rfcommInfoDisp);
-                            break;
-                        }
-                    }
-
-                    rootPage.NotifyUser(
-                        String.Format("{0} devices found.", ResultCollection.Count),
-                        NotifyType.StatusMessage);
-    **/
-                });
-            });
-
-            deviceWatcher.Stopped += new TypedEventHandler<DeviceWatcher, Object>(async (watcher, obj) =>
-            {
-                await rootPage.Dispatcher.RunAsync(CoreDispatcherPriority.Low, () =>
-                {
-                    //ResultCollection.Clear();
-                });
-            });
-
             deviceWatcher.Start();
+            
+        }
+
+        public string GetPiIP()
+        {
+            return this.rpi_ipaddr;
+        }
+
+        public async Task<bool> checkConnection()
+        {
+            try
+            {
+                //dataWriter.WriteUInt32((uint)temp.Length);
+                if (dataWriter != null) {
+                    LogService.MetroLogger.getSharedLogger().Info("Checking whether the connection is still alive...");
+                    string temp = "are you alive?";
+                    dataWriter.WriteString(temp);
+                    await dataWriter.StoreAsync();
+                    return true;
+                }
+                return false;
+            }
+            catch (Exception e)
+            {
+                // The remote device has disconnected the connection
+                LogService.MetroLogger.getSharedLogger().Error(e.Message);
+                CloseConnection();
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// receive data from stream socket
+        /// </summary>
+        public async Task<String> ReceiveMessageUsingStreamWebSocket()
+        {
+            string returnMessage = String.Empty;
+            try
+            {
+                uint length = 100;     // Leave a large buffer
+
+                var readBuf = new Windows.Storage.Streams.Buffer((uint)length);
+                var readOp = await this._socket.InputStream.ReadAsync(readBuf, (uint)length, InputStreamOptions.Partial);
+
+                //await readOp;   // Don't move on until we have finished reading from server
+
+                DataReader readPacket = DataReader.FromBuffer(readBuf);
+                uint buffLen = readPacket.UnconsumedBufferLength;
+                returnMessage = readPacket.ReadString(buffLen);
+            }
+            catch (Exception exp)
+            {
+                LogService.MetroLogger.getSharedLogger().Info("failed to post a read failed with error:  " + exp.Message);
+            }
+
+            return returnMessage;
         }
 
         private void StopWatcher()
@@ -256,42 +390,75 @@ namespace PhenoPad.BluetoothService
             }
         }
 
+        public bool CloseConnection()
+        {
+            try
+            {
+                if (this.cancellationSource != null)
+                {
+                    this.cancellationSource.Cancel();
+                    this.cancellationSource = null;
+                }
+                if (dataWriter != null)
+                {
+                    dataWriter.DetachStream();
+                    dataWriter = null;
+                }
+
+
+                if (_service != null)
+                {
+                    _service.Dispose();
+                    _service = null;
+                }
+                lock (this)
+                {
+                    if (_socket != null)
+                    {
+                        _socket.Dispose();
+                        _socket = null;
+                    }
+                }
+                //StopWatcher();
+                //sharedBluetoothService = null;
+                
+                return true;
+
+            }
+            catch (Exception e) {
+                LogService.MetroLogger.getSharedLogger().Error($"Failed to close bluetooth connection:{e}:{e.Message}");
+                return false;
+            }
+
+        }
+
         public async Task sendBluetoothMessage(string message)
         {
-
+            //if bluetooth connection is not establiched,
+            //initializes the connection first
             if (this.initialized == false)
             {
                 await this.InitiateConnection();
-
                 if (this.initialized == false)
                 {
-                    rootPage.NotifyUser(
-                    "Unable to re-initialize Bluetooth device (should be raspberry pi)",
+                    rootPage.NotifyUser("Unable to re-initialize Bluetooth device (should be raspberry pi)",
                     NotifyType.StatusMessage, 2);
-
+                    rootPage.ReEnableAudioButton();
                     // Later command should attemp to re-initialize
-                    this.initialized = false;
                     return;
                 }
-            }
-
-
+            }     
             try
             {
                 dataWriter.WriteString(message);
                 Debug.WriteLine("Writing message " + message + " via Bluetooth");
-                await dataWriter.StoreAsync();
-
-                //rootPage.NotifyUser(
-                //            "Sending message \"" + message + "\"",
-                //            NotifyType.StatusMessage, 1);
+                await dataWriter.StoreAsync();              
             }
             catch (Exception ex) when ((uint)ex.HResult == 0x80072745)
             {
                 rootPage.NotifyUser(
                     "Unable to send Bluetooth command to device " + bluetoothDevice.DeviceInformation.Name,
                     NotifyType.StatusMessage, 2);
-
                 // Later command should attemp to re-initialize
                 this.initialized = false;
                 return;

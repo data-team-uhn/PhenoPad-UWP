@@ -23,25 +23,28 @@
 
     <Grid Padding="0 1 0 1">
         <Grid.Resources>
-            <Storyboard x:Name="DeletePhenotypeSB">
-                <FadeOutThemeAnimation Storyboard.TargetName="YNSwitch" />
+            <!--<Storyboard x:Name="DeletePhenotypeSB">
+                --><!--<FadeOutThemeAnimation Storyboard.TargetName="YNSwitch" Duration="0:0:0.1"/>--><!--
             </Storyboard>
             <Storyboard x:Name="AddPhenotypeSB">
-                <FadeInThemeAnimation Storyboard.TargetName="YNSwitch" />
-            </Storyboard>
+                --><!--<FadeInThemeAnimation Storyboard.TargetName="YNSwitch" Duration="0:0:0.1" />--><!--
+            </Storyboard>-->
         </Grid.Resources>
+        
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="50"/>
             <ColumnDefinition Width="*"/>
             <ColumnDefinition Width="50"/>
         </Grid.ColumnDefinitions>
 
-        <Button x:Name="AddBtn" Padding="0" Background="{x:Null}" Grid.Column="0"  Click="AddBtn_Click" Width="50" MinWidth="50" MinHeight="25" Height="25">
+        <Button x:Name="AddBtn" Padding="0" Background="{x:Null}" Grid.Column="0"  Style="{StaticResource ButtonStyle1}"
+                Click="AddBtn_Click" Width="50" MinWidth="50" MinHeight="25" Height="25">
             <SymbolIcon Symbol="Add"/>
         </Button>
 
 
-        <Grid x:Name="YNSwitch"  BorderThickness="1" Padding="0" Grid.Column="0" Visibility="Collapsed" Background="{ThemeResource BUTTON_GRAY}" Width="50" MinWidth="50" MinHeight="25" Height="25">
+        <Grid x:Name="YNSwitch"  BorderThickness="1" Padding="0" Grid.Column="0" Visibility="Collapsed" 
+              Background="{ThemeResource BUTTON_GRAY}" Width="50" MinWidth="50" MinHeight="25" Height="25">
             <!--
             <Grid.Transitions>
                 <TransitionCollection>
@@ -53,28 +56,37 @@
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>
-            <Button Style="{StaticResource MyButtonStyle}" Padding="0" Content="Y"  Name="YSwitchBtn" Click="YSwitchBtn_Click"  Grid.Column="0" Width="25" Height="25"></Button>
-            <Button Style="{StaticResource MyButtonStyle}" Padding="0" Content="N" Name="NSwitchBtn"   Click="NSwitchBtn_Click" Opacity="1.0" Grid.Column="1" Width="25" Height="25"></Button>
+            <Button Style="{StaticResource MyButtonStyle}" Padding="0" Content="Y"  Name="YSwitchBtn" 
+                    Click="YSwitchBtn_Click"  Grid.Column="0" Width="25" Height="25"></Button>
+            <Button Style="{StaticResource MyButtonStyle}" Padding="0" Content="N" Name="NSwitchBtn"   
+                    Click="NSwitchBtn_Click" Opacity="1.0" Grid.Column="1" Width="25" Height="25"></Button>
         </Grid>
 
-        <Grid Padding="0 0 0 0" Tapped="NameGrid_Tapped" Name="NameGrid" Grid.Column="1">
-            <RelativePanel  HorizontalAlignment="Stretch" VerticalAlignment="Center">
-                <TextBlock  Margin="5 0 0 0" FontSize="14" Grid.Column="1" x:Name="phenotypeNameTextBlock" Text="" VerticalAlignment="Center" >
+        <Grid Padding="0 0 0 0" Name="NameGrid" Grid.Column="1">
+            <Button Style="{StaticResource ButtonStyle1}" Click="NameGrid_Tapped" Background="Transparent" Height="25" Grid.Column="1"
+                    Padding="0" HorizontalAlignment="Left" HorizontalContentAlignment="Stretch" Width="auto">
+                <RelativePanel  HorizontalAlignment="Stretch" VerticalAlignment="Center">
+                    <TextBlock  Margin="5 0 0 0" FontSize="14" Grid.Column="1" x:Name="phenotypeNameTextBlock" Text="" VerticalAlignment="Center" >
                     <ToolTipService.ToolTip>
                         <TextBlock  x:Name="phenotypeNameTextBlockTooltip" Text="" VerticalAlignment="Center"></TextBlock>
                     </ToolTipService.ToolTip>
                 </TextBlock>
-                <Line RelativePanel.AlignVerticalCenterWith="phenotypeNameTextBlock" RelativePanel.AlignLeftWith="phenotypeNameTextBlock" RelativePanel.AlignRightWith="phenotypeNameTextBlock" Stretch="Fill" Stroke="{StaticResource Light_Red}" StrokeThickness="2" X1="1" Y1="0" HorizontalAlignment="Stretch" VerticalAlignment="Center" Name="NameCrossLine" Visibility="Collapsed"/>
-                
-            </RelativePanel>
-            
-          
-         </Grid>
+                    <Line RelativePanel.AlignVerticalCenterWith="phenotypeNameTextBlock" 
+                      RelativePanel.AlignLeftWith="phenotypeNameTextBlock" 
+                      RelativePanel.AlignRightWith="phenotypeNameTextBlock" Stretch="Fill" 
+                      Stroke="{StaticResource Light_Red}" StrokeThickness="2" X1="1" Y1="0" HorizontalAlignment="Stretch" 
+                      VerticalAlignment="Center" Name="NameCrossLine" Visibility="Collapsed"/>
+
+                </RelativePanel>
+
+            </Button>
+        </Grid>
         <StackPanel Orientation="Horizontal" Grid.Column="2" FlowDirection="RightToLeft">
             <Button Background="Transparent" Style="{StaticResource MyButtonStyle}" RelativePanel.AlignRightWithPanel="True" x:Name="DetailButton"  Grid.Column="2" Foreground="Gray" Click="DetailButton_Click" Width="25" MinWidth="25" MinHeight="25" Height="25" Padding="0">
                 <SymbolIcon Symbol="More"/>
             </Button>
-            <Button x:Name="DeleteBtn"   Background="{x:Null}" Foreground="LightCoral" Click="DeleteBtn_Click" Width="25" MinWidth="25" MinHeight="25" Height="25" Padding="0">
+            <Button x:Name="DeleteBtn"   Background="{x:Null}" Foreground="LightCoral" Click="DeleteBtn_Click" Width="25" 
+                    MinWidth="25" MinHeight="25" Height="25" Padding="0">
                 <SymbolIcon Symbol="Delete"/>
             </Button>
         </StackPanel>

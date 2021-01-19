@@ -32,6 +32,7 @@ using System.Collections.Specialized;
 using System.Runtime.CompilerServices;
 using Windows.Media.Core;
 using Windows.UI.Core;
+using System.Xml.Serialization;
 
 namespace PhenoPad
 {
@@ -82,13 +83,28 @@ namespace PhenoPad
                 //phenosTask.Start();*/
             }
         }
-        
-        public TimeInterval Interval { get; set; }
+        public double start;
+        public double end;
+        [XmlIgnore]
+        private TimeInterval _interval;
+        [XmlIgnore]
+        public TimeInterval Interval {
+            get {
+                return _interval;
+            }
+            set {
+                _interval = value;
+                start = value.start;
+                end = value.end;
+            }
+        }
         public int ConversationIndex { get; set; }
+        public DateTime DisplayTime;
 
         //public string DisplayTime { get; set; }
 
         // Bind to phenotype display in conversation
+        [XmlIgnore]
         public ObservableCollection<Phenotype> phenotypesInText { get; set; }
 
         // Now that we support more than 2 users, we need to have speaker index
@@ -117,6 +133,10 @@ namespace PhenoPad
             }
         }
 
+        public void fileterMessage() {
+            // TODO need to filter useless phrases of message for better display
+        }
+
         public int PhenoColumn
         {
             get
@@ -131,22 +151,20 @@ namespace PhenoPad
                 }
             }
         }
-
+        
         public event PropertyChangedEventHandler PropertyChanged = delegate { };
 
         // This method is called by the Set accessor of each property.
         // The CallerMemberName attribute that is applied to the optional propertyName
         // parameter causes the property name of the caller to be substituted as an argument.
-        private void NotifyPropertyChanged([CallerMemberName] String propertyName = "")
+        private async void NotifyPropertyChanged([CallerMemberName] String propertyName = "")
         {
             if (PropertyChanged != null)
             {
-                Windows.ApplicationModel.Core.CoreApplication.MainView.CoreWindow.Dispatcher.RunAsync(CoreDispatcherPriority.Normal,
-                () =>
+                await Windows.ApplicationModel.Core.CoreApplication.MainView.CoreWindow.Dispatcher.RunAsync(CoreDispatcherPriority.Normal,() =>
                 {
                     PropertyChanged(this, new PropertyChangedEventArgs(propertyName));
-                }
-                );
+                });
             }
         }
     }
@@ -185,7 +203,7 @@ namespace PhenoPad
 
             string now = DateTime.Today.ToString("D");
 
-            if (m.Interval != null && m.Interval.start != -1)
+            if ((m.Interval != null && m.Interval.start != -1))
             {
                 double start_time = m.Interval.start;
                 double end_time = m.Interval.end;
@@ -204,6 +222,14 @@ namespace PhenoPad
                     end_minute.ToString("D2") + ":" + end_second.ToString("D2") + "." + end_mili.ToString("D2");
 
                 return now + "\tConversation(" + m.ConversationIndex + ")\t" + result;
+            }
+            //for displaying historical conversations
+            else if (m.IsFinal) {
+                //gets the date in mm/dd/yyyy HH:MM AM/PM format
+                string date = String.Format("{0:g}", m.DisplayTime);
+                //determines whos speaking: todo: clsssify who is doctor/patient
+                string speaker = m.Speaker == 0 ? "Doctor" : "Patient:" + m.Speaker;
+                return date+"  "+ " Session #" + m.ConversationIndex+", by Speaker "+ m.Speaker;
             }
             else
             {
@@ -231,6 +257,8 @@ namespace PhenoPad
 
         public bool HasMoreItems { get; } = true;
 
+        //===========================================================
+
         public IAsyncOperation<LoadMoreItemsResult> LoadMoreItemsAsync(uint count)
         {
             this.CreateMessages(count);
@@ -242,14 +270,14 @@ namespace PhenoPad
                 }).AsAsyncOperation();
         }
 
-        private void CreateMessages(uint count)
+        public void CreateMessages(uint count)
         {
             for (uint i = 0; i < count; i++)
             {
                 this.Insert(0, new TextMessage()
                 {
                     Body = $"{messageCount}: {CreateRandomMessage()}",
-                    Speaker = (messageCount++) % 3,
+                    Speaker = (messageCount++) % 2,
                     //DisplayTime = DateTime.Now.ToString(),
                     IsFinal = true
                 });
@@ -495,38 +523,45 @@ namespace PhenoPad
     public sealed partial class SpeechPage : Page
     {
         public static SpeechPage Current;
+        public static MainPage mainpage;
         public PhenotypeManager PhenoMana => PhenotypeManager.getSharedPhenotypeManager();
+        private int doctor = 0;
+        private int curSpeakerCount = 2;
+        private string loadedMedia = String.Empty;
 
+
+        //=================================METHODS==============================================
         public SpeechPage()
         {
             this.InitializeComponent();
-            SpeechPage.Current = this;
-
-            chatView.ItemsSource = SpeechManager.getSharedSpeechManager().conversation;
+            Current = this;
+            mainpage = MainPage.Current;
+            chatView.ItemsSource = mainpage.conversations;
+            //chatView.ItemsSource = SpeechManager.getSharedSpeechManager().conversation;
             chatView.ContainerContentChanging += OnChatViewContainerContentChanging;
-            realtimeChatView.ItemsSource = SpeechManager.getSharedSpeechManager().realtimeConversation;
+            //realtimeChatView.Children.Add(MainPage.Current.speechQuickView.c);
 
             SpeechManager.getSharedSpeechManager().EngineHasResult += SpeechPage_EngineHasResult;
             SpeechManager.getSharedSpeechManager().RecordingCreated += SpeechPage_RecordingCreated;
         }
 
-        private string loadedMedia = String.Empty;
-        private void SpeechPage_RecordingCreated(SpeechManager sender, Windows.Storage.StorageFile args)
-        {
-            Windows.ApplicationModel.Core.CoreApplication.MainView.CoreWindow.Dispatcher.RunAsync(CoreDispatcherPriority.Normal,
-            () =>
-            {
-                this._mediaPlayerElement.Source = MediaSource.CreateFromStorageFile(args);
-                        this._mediaPlayerElement.Visibility = Visibility.Visible;
-                        this.mediaText.Visibility = Visibility.Visible;
-                        this.loadedMedia = args.Name;
-                        this.mediaText.Text = args.Name;
-            }
-            );
+        public void updateChat() {
+            chatView.ItemsSource = MainPage.Current.conversations;
         }
 
-        private int doctor = 0;
-        private int curSpeakerCount = 2;
+        private void SpeechPage_RecordingCreated(SpeechManager sender, Windows.Storage.StorageFile args)
+        {
+            //Windows.ApplicationModel.Core.CoreApplication.MainView.CoreWindow.Dispatcher.RunAsync(CoreDispatcherPriority.Normal,
+            //() =>
+            //{
+                this._mediaPlayerElement.Source = MediaSource.CreateFromStorageFile(args);
+                this._mediaPlayerElement.Visibility = Visibility.Visible;
+                this.mediaText.Visibility = Visibility.Visible;
+                this.loadedMedia = args.Name;
+                this.mediaText.Text = args.Name;
+            //}
+            //);
+        }
 
         private void SpeechPage_EngineHasResult(SpeechManager sender, SpeechEngineInterpreter args)
         {
@@ -543,11 +578,11 @@ namespace PhenoPad
 
             if (message.IsNotFinal)
             {
-                args.ItemContainer.HorizontalAlignment = Windows.UI.Xaml.HorizontalAlignment.Right;
+                args.ItemContainer.HorizontalAlignment = HorizontalAlignment.Right;
             }
             else
             {
-                args.ItemContainer.HorizontalAlignment = (message.Speaker == doctor) ? Windows.UI.Xaml.HorizontalAlignment.Right : Windows.UI.Xaml.HorizontalAlignment.Left;
+                args.ItemContainer.HorizontalAlignment = (message.Speaker == doctor) ? HorizontalAlignment.Right : HorizontalAlignment.Left;
             }
 
             /*if (message.Speaker != 99 && message.Speaker != -1 && message.Speaker > maxSpeaker)
@@ -622,11 +657,12 @@ namespace PhenoPad
                 Debug.WriteLine(m.Body);
 
                 // check for current source
-                Windows.Storage.StorageFolder storageFolder =
-                    Windows.Storage.ApplicationData.Current.LocalFolder;
-                var savedFile =
-                    await storageFolder.GetFileAsync("sample_" + m.ConversationIndex + ".wav");
-
+                var savedFile = await FileService.FileManager.getSharedFileManager().GetNoteFile(
+                        FileService.FileManager.getSharedFileManager().currentNoteboookId,
+                        "", 
+                        FileService.NoteFileType.Audio, 
+                        "audio_" + m.ConversationIndex);
+                    
                 if (savedFile.Name != this.loadedMedia)
                 {
                     this._mediaPlayerElement.Source = MediaSource.CreateFromStorageFile(savedFile);
@@ -648,12 +684,9 @@ namespace PhenoPad
             }
         }
 
-        /**
-         * true = up
-         * false = down
-         */
         private String changeNumSpeakers(String text, bool direction)
         {
+            //true = up, false = down
             int proposed = Int32.Parse(text);
             if (direction)
             {

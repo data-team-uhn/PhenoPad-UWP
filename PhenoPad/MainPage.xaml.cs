@@ -43,109 +43,35 @@ using System.Threading;
 
 using PhenoPad.BluetoothService;
 using Windows.System.Threading;
+using System.IO;
+using Windows.Storage;
+using Windows.Media.Editing;
+using System.Runtime.InteropServices.WindowsRuntime;
+using MetroLog;
+using Microsoft.Toolkit.Uwp.UI.Animations;
+using PhenoPad.LogService;
 
 namespace PhenoPad
 {
-    // MyScript 
-    public class FlyoutCommand : System.Windows.Input.ICommand
+    public enum NotifyType
     {
-        public delegate void InvokedHandler(FlyoutCommand command);
-
-        public string Id { get; set; }
-        private InvokedHandler _handler = null;
-
-        public FlyoutCommand(string id, InvokedHandler handler)
-        {
-            Id = id;
-            _handler = handler;
-        }
-
-        public bool CanExecute(object parameter)
-        {
-            return _handler != null;
-        }
-
-        public void Execute(object parameter)
-        {
-            _handler(this);
-        }
-
-        public event EventHandler CanExecuteChanged;
-    }
-
-    public class CalligraphicPen : InkToolbarCustomPen
-    {
-        public CalligraphicPen()
-        {
-        }
-
-        protected override InkDrawingAttributes CreateInkDrawingAttributesCore(Brush brush, double strokeWidth)
-        {
-
-            InkDrawingAttributes inkDrawingAttributes = new InkDrawingAttributes();
-            inkDrawingAttributes.PenTip = PenTipShape.Circle;
-            inkDrawingAttributes.IgnorePressure = false;
-            SolidColorBrush solidColorBrush = (SolidColorBrush)brush;
-
-            if (solidColorBrush != null)
-            {
-                inkDrawingAttributes.Color = solidColorBrush.Color;
-            }
-
-            inkDrawingAttributes.Size = new Size(strokeWidth, 2.0f * strokeWidth);
-            //inkDrawingAttributes.Size = new Size(strokeWidth, strokeWidth);
-            inkDrawingAttributes.PenTipTransform = System.Numerics.Matrix3x2.CreateRotation((float)(Math.PI * 45 / 180));
-
-            return inkDrawingAttributes;
-        }
-        
-    }
-
-    // private MainPage rootPage = MainPage.Current;
+        StatusMessage,
+        ErrorMessage
+    };
 
     /// <summary>
-    /// This page shows the code to configure the InkToolbar.
+    /// A Page used for note taking along with toolbars and different services.
+    /// Note: Each Notebook instance will have its own MainPage instance when editing.
     /// </summary>
     public sealed partial class MainPage : Page, INotifyPropertyChanged
     {
-
-        private bool _videoOn = false;
-        public bool VideoOn
-        {
-            get
-            {
-                return this._videoOn;
-            }
-
-            set
-            {
-                if (value != this._videoOn)
-                {
-                    this._videoOn = value;
-                    NotifyPropertyChanged("VideoOn");
-                }
-            }
-        }
-
-        private bool _audioOn;
-        public bool AudioOn
-        {
-            get
-            {
-                return this._audioOn;
-            }
-
-            set
-            {
-                if (value != this._audioOn)
-                {
-                    this._audioOn = value;
-                    NotifyPropertyChanged("AudioOn");
-                }
-            }
-        }
+        //This partial class mainly contains event handler for interface interactions 
+        //such as buttons, pointer movements and display notices.
+        //Other parts of the logical controls including web socket/video/audio are moved to other partial class files.
+        #region Attributes definitions
 
         public event PropertyChangedEventHandler PropertyChanged;
+
         private void NotifyPropertyChanged(string info)
         {
             if (PropertyChanged != null)
@@ -154,28 +80,8 @@ namespace PhenoPad
             }
         }
 
-
         Symbol LassoSelect = (Symbol)0xEF20;
         Symbol TouchWriting = (Symbol)0xED5F;
-        
-        // The speech recognizer used throughout this sample.
-        private SpeechRecognizer speechRecognizer;
-
-        public PhenotypeManager PhenoMana => PhenotypeManager.getSharedPhenotypeManager();
-
-        // Keep track of whether the continuous recognizer is currently running, so it can be cleaned up appropriately.
-        private bool isListening;
-
-        // Keep track of existing text that we've accepted in ContinuousRecognitionSession_ResultGenerated(), so
-        // that we can combine it and Hypothesized results to show in-progress dictation mid-sentence.
-        private StringBuilder dictatedTextBuilder;
-
-        /// <summary>
-        /// This HResult represents the scenario where a user is prompted to allow in-app speech, but 
-        /// declines. This should only happen on a Phone device, where speech is enabled for the entire device,
-        /// not per-app.
-        /// </summary>
-        private static uint HResultPrivacyStatementDeclined = 0x80045509;
 
         private List<NotePageControl> notePages;
         private List<Button> pageIndexButtons;
@@ -185,348 +91,134 @@ namespace PhenoPad
         public int curPageIndex = -1;
         public static MainPage Current;
         private string curPageId = "";
-        private string notebookId = "";
+        public string notebookId = "";
         private Notebook notebookObject;
         public static readonly string TypeMode = "Typing Mode";
         public static readonly string WritingMode = "Handwriting Mode";
-        public static readonly string ViewMode = "View Mode";
+        public static readonly string ViewMode = "Previewing Mode";
         private string currentMode = WritingMode;
+        private bool ifViewMode = false;
 
-        public string RPI_ADDRESS { get; } = "http://192.168.0.19:8000";
-        public BluetoothService.BluetoothService bluetoothService = null;
-        public UIWebSocketClient uiClinet = null;
+        private int num = 0;
+        public bool abbreviation_enabled;
 
-        public SpeechManager speechManager = SpeechManager.getSharedSpeechManager();
+        private SemaphoreSlim notifySemaphoreSlim = new SemaphoreSlim(1);
+        #endregion
 
-        private bool loadFromDisk = false;
-
+        //******************************END OF ATTRIBUTES DEFINITION***************************************
+        
         public MainPage()
-        {
+        {/// <summary>Creates and initializes a new MainPage instance.</summary>
             Current = this;
             this.InitializeComponent();
 
             isListening = false;
             dictatedTextBuilder = new StringBuilder();
-           
+
             _simpleorientation = SimpleOrientationSensor.GetDefault();
             // Assign an event handler for the sensor orientation-changed event 
             if (_simpleorientation != null)
             {
                 _simpleorientation.OrientationChanged += new TypedEventHandler<SimpleOrientationSensor, SimpleOrientationSensorOrientationChangedEventArgs>(OrientationChanged);
             }
-            
+
             // Hide default title bar.
             var coreTitleBar = CoreApplication.GetCurrentView().TitleBar;
             coreTitleBar.ExtendViewIntoTitleBar = false;
-            
-            
+            ApplicationViewTitleBar titleBar = ApplicationView.GetForCurrentView().TitleBar;
+            titleBar.ButtonBackgroundColor = Colors.Black;
+            titleBar.ButtonInactiveBackgroundColor = Colors.Black;
+
+
             // We want to react whenever speech engine has new results
-            this.speechManager.EngineHasResult += SpeechManager_EngineHasResult;
+            // this.speechManager.EngineHasResult += SpeechManager_EngineHasResult;
 
             //scrollViewer.RegisterPropertyChangedCallback(ScrollViewer.ZoomFactorProperty, OnPropertyChanged);
 
             //showTextGrid.PointerPressed += new PointerEventHandler(showTextGrid_PointerPressed);
             modeTextBlock.PointerReleased += new PointerEventHandler(modeTextBlock_PointerReleased);
             modeTextBlock.PointerCanceled += new PointerEventHandler(modeTextBlock_PointerExited);
-            modeTextBlock.PointerCaptureLost += new PointerEventHandler(modeTextBlock_PointerExited);
             modeTextBlock.PointerEntered += new PointerEventHandler(modeTextBlock_PointerEntered);
             modeTextBlock.PointerExited += new PointerEventHandler(modeTextBlock_PointerExited);
+            //adding event handler to when erase all is clicked
+            MainPageInkBar.EraseAllClicked += InkToolbar_EraseAllClicked;
 
+            //SpeechPage initialization 
             chatView.ItemsSource = SpeechManager.getSharedSpeechManager().conversation;
             chatView.ContainerContentChanging += OnChatViewContainerContentChanging;
             realtimeChatView.ItemsSource = SpeechManager.getSharedSpeechManager().realtimeConversation;
-            
+            speechEngineRunning = false;
+            PropertyChanged += MainPage_PropertyChanged;
 
-            // save to disk every 15 seconds
-            // this.saveNotesTimer(15);
+
+            HWRAddrInput.Text = HWRService.HWRManager.getSharedHWRManager().getIPAddr();
+            string serverPath = SpeechManager.getSharedSpeechManager().getServerAddress() + ":" +
+                                SpeechManager.getSharedSpeechManager().getServerPort();
+            ASRAddrInput.Text = serverPath;
+
+            AbbreviationON_Checked(null, null);
+
+            //initializes bluetooth on first mainpage startup
+            changeSpeechEngineState_BT();
+
+            audioTimer = new DispatcherTimer();
+            //waits 3 seconds before re-enabling microphone button
+            audioTimer.Interval = TimeSpan.FromSeconds(3);
+            audioTimer.Tick += onAudioStarted;
+
+            //When user clicks X while in mainpage, auto-saves all current process and exits the program.
+            Windows.UI.Core.Preview.SystemNavigationManagerPreview.GetForCurrentView().CloseRequested +=
+            async (sender, args) =>
+            {
+                args.Handled = true;
+                await confirmOnExit_Clicked();
+            };
         }
 
-        private async void InitializeNotebook()
-        {
-            PhenotypeManager.clearCache();
-            // create file structure
-            notebookId = FileManager.getSharedFileManager().createNotebookId();
-            bool result = await FileManager.getSharedFileManager().CreateNotebook(notebookId);
+        /// <summary>
+        /// Prompts the user for exiting confirmation and saves the most recently edited notebook
+        /// if user attempts to exit while editing, exit apps after
+        /// </summary>
+        private async Task confirmOnExit_Clicked() {
+            //no need to ask user if already at note overview page
+            if (Frame.CurrentSourcePageType == typeof(PageOverview))
+                Application.Current.Exit();
 
-            if (!result)
-                NotifyUser("Failed to create file structure, notes may not be saved.", NotifyType.ErrorMessage, 2);
-            else
-                notebookObject = await FileManager.getSharedFileManager().GetNotebookObjectFromXML(notebookId);
-
-            if(notebookObject != null)
-                noteNameTextBox.Text = notebookObject.name;
-
-            notePages = new List<NotePageControl>();
-            pageIndexButtons = new List<Button>();
-            NotePageControl aPage = new NotePageControl();
-            notePages.Add(aPage);
-            inkCanvas = aPage.inkCan;
-            MainPageInkBar.TargetInkCanvas = inkCanvas;
-            curPage = aPage;
-            // var screenSize = HelperFunctions.GetCurrentDisplaySize();
-            //aPage.Height = screenSize.Height;
-            //aPage.Width = screenSize.Width;
-            curPageIndex = 0;
-            PageHost.Content = curPage;
-            addNoteIndex(curPageIndex);
-            setNotePageIndex(curPageIndex);
-
-            currentMode = WritingMode;
-            modeTextBlock.Text = WritingMode;
-
-            // create file sturcture for this page
-            await FileManager.getSharedFileManager().CreateNotePage(notebookObject, curPageIndex.ToString());
-        }
-
-        private async void InitializeNotebookFromDisk()
-        {
-            PhenotypeManager.clearCache();
-            List<string> pageIds = await FileService.FileManager.getSharedFileManager().GetPageIdsByNotebook(notebookId);
-            notebookObject = await FileManager.getSharedFileManager().GetNotebookObjectFromXML(notebookId);
-
-            if (notebookObject != null)
-                noteNameTextBox.Text = notebookObject.name;
-
-            List<Phenotype> phenos = await FileManager.getSharedFileManager().GetSavedPhenotypeObjectsFromXML(notebookId);
-            if (phenos != null && phenos.Count > 0)
+            var messageDialog = new MessageDialog("Save and exit?");
+            messageDialog.Title = "PhenoPad";
+            messageDialog.Commands.Add(new UICommand("Save") { Id = 0 });
+            messageDialog.Commands.Add(new UICommand("Don't Save") { Id = 1 });
+            messageDialog.Commands.Add(new UICommand("Cancel") { Id = 2 });
+            // Set the command that will be invoked by default
+            messageDialog.DefaultCommandIndex = 2;
+            // Set the command to be invoked when escape is pressed
+            messageDialog.CancelCommandIndex = 2;
+            // Show the message dialog
+            var result = await messageDialog.ShowAsync();
+            if ((int)result.Id == 0)
             {
-                PhenotypeManager.getSharedPhenotypeManager().addPhenotypesFromFile(phenos);
+                LogService.MetroLogger.getSharedLogger().Info("Saving and exiting app ...");
+                //only saves the notes if in editing stage
+                if (notebookId != null)
+                    await this.saveNoteToDisk();
+                Application.Current.Exit();
             }
-
-            
-            if (pageIds == null || pageIds.Count == 0)
-            {
-                NotifyUser("Did not find anything in this notebook, will create a new one.", NotifyType.ErrorMessage, 2);
-                this.InitializeNotebook();
-            }
-
-            notePages = new List<NotePageControl>();
-            pageIndexButtons = new List<Button>();
-
-            for (int i = 0; i < pageIds.Count; ++i)
-            {
-                NotePageControl aPage = new NotePageControl();
-                notePages.Add(aPage);
-                aPage.pageId = pageIds[i];
-                aPage.notebookId = notebookId;
-                await FileManager.getSharedFileManager().LoadNotePageStroke(notebookId, pageIds[i], aPage);
-                addNoteIndex(i);
-
-                List<ImageAndAnnotation> imageAndAnno = await FileManager.getSharedFileManager().GetImgageAndAnnotationObjectFromXML(notebookId, pageIds[i]);
-                if(imageAndAnno != null)
-                    foreach (var ia in imageAndAnno)
-                    {
-                        aPage.addImageAndAnnotationControl(ia.name, ia.canvasLeft, ia.canvasTop, true);
-                    }
-            }
-
-            inkCanvas = notePages[0].inkCan;
-            MainPageInkBar.TargetInkCanvas = inkCanvas;
-            curPage = notePages[0];
-            curPageIndex = 0;
-            PageHost.Content = curPage;
-            setNotePageIndex(curPageIndex);
-
-            
-        }
-
-        private void saveNotesTimer(int seconds)
-        {
-            TimeSpan period = TimeSpan.FromSeconds(seconds);
-
-            ThreadPoolTimer PeriodicTimer = ThreadPoolTimer.CreatePeriodicTimer((source) =>
-            {
-                this.saveNoteToDisk();
-                /**
-                Dispatcher.RunAsync(CoreDispatcherPriority.High,
-                    () =>
-                    {
-                        NotifyUser("Note " + this.noteNameTextBox.Text + " has been saved", NotifyType.StatusMessage, 1);
-                    });
-                **/
-
-            }, period);
-        }
-
-        /**
-         * Save everything to disk, include: 
-         * handwritten strokes, typing words, photos and annotations, drawing, collected phenotypes
-         * 
-         */
-        private async Task<bool> saveNoteToDisk()
-        {
-            bool isSuccessful = true;
-            bool result;
-
-            for (int i = 0; i < notePages.Count; ++i)
-            {
-                // handwritten strokes
-                result = await FileManager.getSharedFileManager().SaveNotePageStrokes(notebookId, i.ToString(), notePages[i]);
-
-                // save photos and annotations to disk
-                result = await FileManager.getSharedFileManager().SaveNotePageDrawingAndPhotos(notebookId, i.ToString(), notePages[i]);
-            }
-
-            // collected phenotypes
-            result = await FileManager.getSharedFileManager().saveCollectedPhenotypesToFile(notebookId);
-            if (result)
-                Debug.WriteLine("Successfully save collected phenotypes.");
-            else
-            {
-                Debug.WriteLine("Failed to save collected phenotypes.");
-                isSuccessful = false;
-            }
-             
-            return isSuccessful;
-        }
-
-        /**
-        * Load everything from disk, include: 
-        * handwritten strokes, typing words, photos and annotations, drawing, collected phenotypes
-        * 
-        */
-        private async Task<bool> loadNoteFromDisk()
-        {
-            bool isSuccessful = true;
-            bool result;
-
-            for (int i = 0; i < notePages.Count; ++i)
-            {
-                // handwritten strokes
-                result = await FileManager.getSharedFileManager().SaveNotePageStrokes(notebookId, i.ToString(), notePages[i]);
-            }
-
-            // collected phenotypes
-            result = await FileManager.getSharedFileManager().saveCollectedPhenotypesToFile(notebookId);
-            if (result)
-                Debug.WriteLine("Successfully save collected phenotypes.");
-            else
-            {
-                Debug.WriteLine("Failed to save collected phenotypes.");
-                isSuccessful = false;
-            }
-
-            return isSuccessful;
-        }
-
-
-
-        private void modeTextBlock_PointerExited(object sender, PointerRoutedEventArgs e)
-        {
-            if (!ifViewMode)
-            {
-                curPage.hideRecognizedTextCanvas();
-                modeTextBlock.Text = currentMode;
-
-            }
-        }
-
-        private void modeTextBlock_PointerEntered(object sender, PointerRoutedEventArgs e)
-        {
-            if (!ifViewMode)
-            {
-                curPage.showRecognizedTextCanvas();
-                modeTextBlock.Text = ViewMode;
-            }
-        }
-
-        private bool ifViewMode = false;
-        private void modeTextBlock_PointerReleased(object sender, PointerRoutedEventArgs e)
-        {
-            if (!ifViewMode)
-            {
-                curPage.showRecognizedTextCanvas();
-                ifViewMode = true;
-                modeTextBlock.Text = ViewMode;
+            else if ((int)result.Id == 1) {
+                LogService.MetroLogger.getSharedLogger().Info("Exiting app without saving ...");
+                Application.Current.Exit();
             }
             else
             {
-                curPage.hideRecognizedTextCanvas();
-                ifViewMode = false;
-                modeTextBlock.Text = currentMode;
+                LogService.MetroLogger.getSharedLogger().Info("Canceled Exiting app");
             }
         }
 
-        private void showTextGrid_PointerPressed(object sender, PointerRoutedEventArgs e)
+        /// <summary>
+        /// Initializes display for the loaded page
+        /// </summary>
+        private void Page_Loaded(object sender, RoutedEventArgs e)
         {
-            
-        }
-
-        /**
-        private void CoreTitleBar_LayoutMetricsChanged(CoreApplicationViewTitleBar sender, object args)
-        {
-            UpdateTitleBarLayout(sender);
-        }
-
-        private void UpdateTitleBarLayout(CoreApplicationViewTitleBar coreTitleBar)
-        {
-            
-        }
-
-        private void CoreTitleBar_IsVisibleChanged(CoreApplicationViewTitleBar sender, object args)
-        {
-            if (sender.IsVisible)
-            {
-                fakeTileBar.Visibility = Visibility.Visible;
-            }
-            else
-            {
-                fakeTileBar.Visibility = Visibility.Collapsed;
-            }
-        }
-        **/
-
-        // Update text to display latest sentence
-        // TODO : Feels like there exists more legitimate wasy to do this
-        private void SpeechManager_EngineHasResult(SpeechManager sender, SpeechEngineInterpreter args)
-        {
-            //this.cmdBarTextBlock.Text = args.latestSentence;
-        }
-        
-        private void OnPropertyChanged(DependencyObject sender, DependencyProperty dp)
-        {
-            Debug.WriteLine(sender.GetValue(dp));
-        }
-
-        private async void OrientationChanged(object sender, SimpleOrientationSensorOrientationChangedEventArgs e)
-        {
-              await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () =>
-             {
-                SimpleOrientation orientation = e.Orientation;
-            
-                switch (orientation)
-                {
-                    case SimpleOrientation.NotRotated:
-                    case SimpleOrientation.Rotated180DegreesCounterclockwise:
-                        VisualStateManager.GoToState(this, "LandscapeState", false);
-                        break;
-                    case SimpleOrientation.Rotated90DegreesCounterclockwise:
-                    case SimpleOrientation.Rotated270DegreesCounterclockwise:
-                        VisualStateManager.GoToState(this, "PortraitState", false);
-                        break;
-                }
-            /**
-                var displayInformation = DisplayInformation.GetForCurrentView();
-                switch (displayInformation.CurrentOrientation)
-                {
-                    case DisplayOrientations.Landscape:
-                    case DisplayOrientations.LandscapeFlipped:
-                        VisualStateManager.GoToState(this, "LandscapeState", false);
-                        break;
-                    case DisplayOrientations.Portrait:
-                    case DisplayOrientations.PortraitFlipped:
-                        VisualStateManager.GoToState(this, "PortraitState", false);
-                        break;
-                }
-            **/
-            if(curPage != null)
-                curPage.DrawBackgroundLines();
-           });
-        }
-
-
-        private async void Page_Loaded(object sender, RoutedEventArgs e)
-        {
+            //setting the view state of page display
             var displayInformation = DisplayInformation.GetForCurrentView();
             switch (displayInformation.CurrentOrientation)
             {
@@ -548,86 +240,226 @@ namespace PhenoPad
             }
 
             // Draw background lines
-            if(curPage != null)
+            if (curPage != null)
                 curPage.DrawBackgroundLines();
 
-            // Prompt the user for permission to access the microphone. This request will only happen
-            // once, it will not re-prompt if the user rejects the permission.
-           // bool permissionGained = await AudioCapturePermissions.RequestMicrophonePermission();
-           // if (permissionGained)
-          // {
-                //micButton.IsEnabled = true;
-                //await InitializeRecognizer(SpeechRecognizer.SystemSpeechLanguage);
-            //}
-           // else
-            //{
-               // this.cmdBarTextBlock.Text = "Permission to access capture resources was not given by the user, reset the application setting in Settings->Privacy->Microphone.";
-                //micButton.IsEnabled = false;
-            //}
-
             
-        }
-        protected override void OnNavigatedFrom(NavigationEventArgs e)
-        {
-            this.Frame.BackStack.Clear();
-            PhenotypeManager.getSharedPhenotypeManager().phenotypesCandidates.Clear();
-        }
-        protected override void OnNavigatedTo(NavigationEventArgs e)
-        {
-            //BackButton.IsEnabled = this.Frame.CanGoBack;
 
-            var nid = e.Parameter as string;
-            if (nid == "__new__")
+        }
+
+        /// <summary>
+        /// Clears all page index records in the StackPanel.
+        /// </summary>
+        private void clearPageIndexPanel()
+        {
+            if (pageIndexPanel.Children.Count() > 1)
             {
-                this.loadFromDisk = false;
+                while (pageIndexPanel.Children.Count() > 1)
+                    pageIndexPanel.Children.RemoveAt(0);
+            }
+        }
+
+        /// <summary>
+        /// Sets the ink bar controller to the current ink canvas.
+        /// </summary>
+        private void setPageIndexText()
+        {
+            MainPageInkBar.TargetInkCanvas = inkCanvas;
+        }
+
+        //  ************Switching between editing / view mode *********************
+        #region Switching between Editing / View Mode
+        /// <summary>
+        /// Switches back editing mode panel
+        /// </summary>
+        private void modeTextBlock_PointerExited(object sender, PointerRoutedEventArgs e)
+        {
+            if (!ifViewMode && curPage != null)
+            {
+                curPage.hideRecognizedTextCanvas();
+      
+                modeTextBlock.Text = currentMode;
+            }
+        }
+
+        /// <summary>
+        /// Switches to view mode panel
+        /// </summary>
+        private void modeTextBlock_PointerEntered(object sender, PointerRoutedEventArgs e)
+        {
+            if (!ifViewMode && curPage != null)
+            {
+                curPage.showRecognizedTextCanvas();
+                modeTextBlock.Text = ViewMode;
+            }
+        }
+
+        /// <summary>
+        /// Switching between edit / view mode after clicking mode text block
+        /// </summary>
+        private void modeTextBlock_PointerReleased(object sender, PointerRoutedEventArgs e)
+        {
+            if (!ifViewMode)
+            {
+                curPage.showRecognizedTextCanvas();
+                ifViewMode = true;
+                modeTextBlock.Text = ViewMode;
             }
             else
             {
+                curPage.hideRecognizedTextCanvas();
+                ifViewMode = false;
+                modeTextBlock.Text = currentMode;
+            }
+        }
+
+        private void showTextGrid_PointerPressed(object sender, PointerRoutedEventArgs e)
+        {
+            //not yet implemented
+        }
+        #endregion
+
+        // *************Page Display / navigations **************************
+
+
+        /// <summary>
+        /// Redrawing background lines when display orientation is changed.
+        /// </summary>
+        private async void OrientationChanged(object sender, SimpleOrientationSensorOrientationChangedEventArgs e)
+        {
+            await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () =>
+            {
+                SimpleOrientation orientation = e.Orientation;
+
+                switch (orientation)
+                {
+                    case SimpleOrientation.NotRotated:
+                    case SimpleOrientation.Rotated180DegreesCounterclockwise:
+                        VisualStateManager.GoToState(this, "LandscapeState", false);
+                        break;
+                    case SimpleOrientation.Rotated90DegreesCounterclockwise:
+                    case SimpleOrientation.Rotated270DegreesCounterclockwise:
+                        VisualStateManager.GoToState(this, "PortraitState", false);
+                        break;
+                }
+                /**
+                    var displayInformation = DisplayInformation.GetForCurrentView();
+                    switch (displayInformation.CurrentOrientation)
+                    {
+                        case DisplayOrientations.Landscape:
+                        case DisplayOrientations.LandscapeFlipped:
+                            VisualStateManager.GoToState(this, "LandscapeState", false);
+                            break;
+                        case DisplayOrientations.Portrait:
+                        case DisplayOrientations.PortraitFlipped:
+                            VisualStateManager.GoToState(this, "PortraitState", false);
+                            break;
+                    }
+                **/
+                if (curPage != null)
+                    curPage.DrawBackgroundLines();
+            });
+        }
+
+        /// <summary>
+        /// Initializes the Notebook when user navigated to MainPage.
+        /// </summary>
+        protected async override void OnNavigatedTo(NavigationEventArgs e)
+        {
+            LoadingPopup.IsOpen = true;
+
+            var nid = e.Parameter as string;
+            StorageFile file = e.Parameter as StorageFile;
+
+            if (nid == "__new__") {
+                Debug.WriteLine("create new");
+                this.loadFromDisk = false;
+                await Dispatcher.RunAsync(CoreDispatcherPriority.High, this.InitializeNotebook);
+            }
+            else if (e.Parameter == null || file != null)
+            {//is a file for importing EHR
+                Debug.WriteLine("create EHR");
+                await Dispatcher.RunAsync(CoreDispatcherPriority.High, () => { this.InitializeEHRNote(file); });
+            }
+            else
+            {//is a valid note to load
+                Debug.WriteLine("loading");
                 this.loadFromDisk = true;
                 this.notebookId = nid;
+                FileManager.getSharedFileManager().currentNoteboookId = nid;
+                await Dispatcher.RunAsync(CoreDispatcherPriority.High, this.InitializeNotebookFromDisk);
             }
-            if (loadFromDisk) // Load notes from file
-            {
-                this.InitializeNotebookFromDisk();
-            }
-            else // Create new notebook
-            {
-                this.InitializeNotebook();
-            }
+            await Task.Delay(TimeSpan.FromSeconds(3));
+            LoadingPopup.IsOpen = false;
+            return;                
         }
+
+        /// <summary>
+        /// Clearing all cache and index records before leaving MainPage.
+        /// </summary>
         protected async override void OnNavigatingFrom(NavigatingCancelEventArgs e)
         {
-            //dispatcherTimer.Stop();
-            if (this.speechRecognizer != null)
-            {
-                if (isListening)
-                {
-                    await this.speechRecognizer.ContinuousRecognitionSession.CancelAsync();
-                    isListening = false;
+
+            // Microsoft ASR, not used for now
+            //if (this.speechRecognizer != null)
+            //{
+            //    if (isListening)
+            //    {
+            //        await this.speechRecognizer.ContinuousRecognitionSession.CancelAsync();
+            //        isListening = false;
+            //    }
+
+            //    //cmdBarTextBlock.Text = "";
+
+            //    speechRecognizer.ContinuousRecognitionSession.Completed -= ContinuousRecognitionSession_Completed;
+            //    speechRecognizer.ContinuousRecognitionSession.ResultGenerated -= ContinuousRecognitionSession_ResultGenerated;
+            //    speechRecognizer.HypothesisGenerated -= SpeechRecognizer_HypothesisGenerated;
+            //    speechRecognizer.StateChanged -= SpeechRecognizer_StateChanged;
+
+            //    this.speechRecognizer.Dispose();
+            //    this.speechRecognizer = null;
+            //}
+            await Dispatcher.RunAsync(CoreDispatcherPriority.High, async ()=> {
+                if (speechEngineRunning)
+                {//close all audio services before navigating
+                    Debug.WriteLine("on leaving mainpage");
+                    if (bluetoonOn)
+                    {
+                        Debug.WriteLine("disconnecting audio before leaving bluetooth");
+
+                        //await BluetoothService.BluetoothService.getBluetoothService().sendBluetoothMessage("audio stop");
+                        //becaise we are no longer in mainpage, does not need to reload past conversation
+                        await SpeechManager.getSharedSpeechManager().StopASRResults(false);
+                    }
+                    else
+                    {
+                        Debug.WriteLine("disconnecting audio before leaving internal microphone");
+                        AudioStreamButton_Clicked();
+                        //bool result = await SpeechManager.getSharedSpeechManager().EndAudio(notebookId);
+                        //Debug.WriteLine(result);
+                    }
+
                 }
-
-                //cmdBarTextBlock.Text = "";
-
-                speechRecognizer.ContinuousRecognitionSession.Completed -= ContinuousRecognitionSession_Completed;
-                speechRecognizer.ContinuousRecognitionSession.ResultGenerated -= ContinuousRecognitionSession_ResultGenerated;
-                speechRecognizer.HypothesisGenerated -= SpeechRecognizer_HypothesisGenerated;
-                speechRecognizer.StateChanged -= SpeechRecognizer_StateChanged;
-
-                this.speechRecognizer.Dispose();
-                this.speechRecognizer = null;
-            }
-
-            
-            if (speechEngineRunning)
-            {
-                this.speechManager.EndAudio();
-                speechEngineRunning = false;
-            }
-
-            //cmdBarTextBlock.Visibility = Visibility.Collapsed;
+                if (curPage != null) {
+                    curPage.Visibility = Visibility.Collapsed;
+                    await saveNoteToDisk();
+                }
+                PhenotypeManager.getSharedPhenotypeManager().clearCache();
+                //PhenotypeManager.getSharedPhenotypeManager().phenotypesCandidates.Clear();
+                SpeechManager.getSharedSpeechManager().cleanUp();
+                CloseCandidate();
+                notePages = null;
+                notebookId = null;
+                // clear page index panel
+                clearPageIndexPanel();
+                inkCanvas = null;
+                curPage = null;
+            });
         }
 
-        
+        /// <summary>
+        /// Redrawing background lines when note page size is changed.
+        /// </summary>
         private void OnSizeChanged(object sender, SizeChangedEventArgs e)
         {
             //HelperFunctions.UpdateCanvasSize(RootGrid, outputGrid, inkCanvas);
@@ -646,15 +478,69 @@ namespace PhenoPad
             curPage.DrawBackgroundLines();
         }
 
-        // This is the recommended way to implement inking with touch on Windows.
-        // Since touch is reserved for navigation (pan, zoom, rotate, etc.),
-        // if you’d like your app to have inking with touch, it is recommended
-        // that it is enabled via CustomToggle like in this scenario, with the
-        // same icon and tooltip.
+        /// <summary>
+        /// Makes virtual keyboard disappear
+        /// </summary>
+        private void LoseFocus(object sender)
+        {
+            var control = sender as Control;
+            var isTabStop = control.IsTabStop;
+            control.IsTabStop = false;
+            control.IsEnabled = false;
+            control.IsEnabled = true;
+            control.IsTabStop = isTabStop;
+        }
+
+        /// <summary>
+        /// Sets the display color of all note page buttons
+        /// </summary>
+        /// <param name="index"></param>
+        private void setNotePageIndex(int index)
+        {
+            foreach (var btn in pageIndexButtons)
+            {
+                btn.Background = new SolidColorBrush(Colors.WhiteSmoke);
+                btn.Foreground = new SolidColorBrush(Colors.Gray);
+            }
+            pageIndexButtons.ElementAt(index).Background = Application.Current.Resources["Button_Background"] as SolidColorBrush;
+            pageIndexButtons.ElementAt(index).Foreground = new SolidColorBrush(Colors.Black);
+        }
+
+        /// <summary>
+        /// Adds a new button to page index after creating a new page
+        /// </summary>
+        private void addNoteIndex(int index)
+        {
+            Button btn = new Button();
+            btn.Click += IndexBtn_Click;
+            btn.Background = new SolidColorBrush(Colors.WhiteSmoke);
+            btn.Foreground = new SolidColorBrush(Colors.Black);
+            btn.Padding = new Thickness(0, 0, 0, 0);
+            btn.Content = "" + (index + 1);
+            btn.Width = 30;
+            btn.Height = 30;
+            pageIndexButtons.Add(btn);
+            if (pageIndexPanel.Children.Count >= 1)
+                pageIndexPanel.Children.Insert(pageIndexPanel.Children.Count - 1, btn);
+            setNotePageIndex(index);
+
+        }
+
+        // ************** Tool Toggle event handlers ********************
+        #region Tool Toggles
+        /// <summary>
+        /// Toggling the touch writing function under handwritting mode.
+        /// </summary>
         private void Toggle_Custom(object sender, RoutedEventArgs e)
         {
+            // This is the recommended way to implement inking with touch on Windows.
+            // Since touch is reserved for navigation (pan, zoom, rotate, etc.),
+            // if you’d like your app to have inking with touch, it is recommended
+            // that it is enabled via CustomToggle like in this scenario, with the
+            // same icon and tooltip.
             if (toggleButton.IsChecked == true)
             {
+
                 curPage.inkCan.InkPresenter.InputDeviceTypes |= CoreInputDeviceTypes.Touch;
                 //toggleButton.Background = MyColors.TITLE_BAR_WHITE_COLOR_BRUSH;
             }
@@ -664,11 +550,10 @@ namespace PhenoPad
                 //toggleButton.Background = MyColors.Button_Background;
             }
         }
-       
-        
 
-       
-
+        /// <summary>
+        /// Toggles lasso function under hand writting mode.
+        /// </summary>
         private void ToolButton_Lasso(object sender, RoutedEventArgs e)
         {
             // By default, pen barrel button or right mouse button is processed for inking
@@ -688,15 +573,11 @@ namespace PhenoPad
                     EraserButton.IsEnabled = true;
                 }
             }
-           
-            
         }
 
-       
-
-       
-
-
+        /// <summary>
+        /// Not yet implemented
+        /// </summary>
         private void CurrentToolChanged(InkToolbar sender, object args)
         {
             /**
@@ -705,59 +586,51 @@ namespace PhenoPad
             ButtonCut.IsEnabled = enabled;
             ButtonCopy.IsEnabled = enabled;
             ButtonPaste.IsEnabled = enabled;
-            **/ 
+            **/
         }
 
-
-       
-
-        private void AppBarButton_Click(object sender, object e)
+        /// <summary>
+        /// Not yet implemented
+        /// </summary>
+        private void AudioToggleSwitch_Toggled(object sender, RoutedEventArgs e)
         {
+            // Same as audio button click :D
+            //if (this.audioSwitch.IsOn == false)
+            //{
+            //AudioStreamButton_Clicked(null, null);
+            //}
+            //changeSpeechEngineState(!this.AudioOn);
+            throw new NotImplementedException();
+        }
 
-           
-        }
-        
-        private void VideoButton_Click(object sender, object e)
+        /// <summary>
+        /// Toggles the video button
+        /// </summary>
+        private async void VideoToggleSwitch_Toggled(object sender, RoutedEventArgs e)
         {
-           
+            await videoStreamStatusUpdateAsync(this._videoOn);
         }
+
+        /// <summary>
+        /// Not yet implemented
+        /// </summary>
         private void HPNameTextBlock_PointerReleased(object sender, PointerRoutedEventArgs e)
         {
-            
+            throw new NotImplementedException();
+        }
+        #endregion
+
+
+        //***************************Button click handlers******************************
+        #region Button Click Handler
+        private void AppBarButton_Click(object sender, object e)
+        {
+            throw new NotImplementedException("AppBarButton_Click");
         }
 
-        static class
-        HelperFunctions
+        private void VideoButton_Click(object sender, object e)
         {
-            public static void UpdateCanvasSize(FrameworkElement root, FrameworkElement output, FrameworkElement inkCanvas)
-            {
-                output.Width = root.ActualWidth;
-                output.Height = root.ActualHeight / 2;
-                inkCanvas.Width = root.ActualWidth;
-                inkCanvas.Height = root.ActualHeight / 2;
-            }
-
-            public static Size GetCurrentDisplaySize()
-            {
-                var displayInformation = DisplayInformation.GetForCurrentView();
-                TypeInfo t = typeof(DisplayInformation).GetTypeInfo();
-                var props = t.DeclaredProperties.Where(x => x.Name.StartsWith("Screen") && x.Name.EndsWith("InRawPixels")).ToArray();
-                var w = props.Where(x => x.Name.Contains("Width")).First().GetValue(displayInformation);
-                var h = props.Where(x => x.Name.Contains("Height")).First().GetValue(displayInformation);
-                var size = new Size(System.Convert.ToDouble(w), System.Convert.ToDouble(h));
-                switch (displayInformation.CurrentOrientation)
-                {
-                    case DisplayOrientations.Landscape:
-                    case DisplayOrientations.LandscapeFlipped:
-                        size = new Size(Math.Max(size.Width, size.Height), Math.Min(size.Width, size.Height));
-                        break;
-                    case DisplayOrientations.Portrait:
-                    case DisplayOrientations.PortraitFlipped:
-                        size = new Size(Math.Min(size.Width, size.Height), Math.Max(size.Width, size.Height));
-                        break;
-                }
-                return size;
-            }
+            throw new NotImplementedException("VideoButton_Click");
         }
 
         // Handwriting recognition
@@ -803,18 +676,13 @@ namespace PhenoPad
             else
             {
                 OverviewPopUp.IsOpen = false;
-                
+
             }
             if (SpeechPopUp.IsOpen)
             {
                 SpeechPopUp.IsOpen = false;
                 SpeechButton.IsChecked = false;
             }
-        }
-
-        private void MenuFlyoutItem_Click(object sender, RoutedEventArgs e)
-        {
-
         }
 
         private void SpeechButton_Click(object sender, RoutedEventArgs e)
@@ -829,7 +697,7 @@ namespace PhenoPad
             }
             else
             {
-                SpeechPopUp.IsOpen = false;  
+                SpeechPopUp.IsOpen = false;
             }
 
             if (OverviewPopUp.IsOpen)
@@ -839,351 +707,36 @@ namespace PhenoPad
             }
         }
 
-        
-
-        ////////Speech recognition
-
-        /// <summary>
-        /// Initialize Speech Recognizer and compile constraints.
-        /// </summary>
-        /// <param name="recognizerLanguage">Language to use for the speech recognizer</param>
-        /// <returns>Awaitable task.</returns>
-        private async Task InitializeRecognizer(Language recognizerLanguage)
+        public async void ReEnableAudioButton(object sender = null, object e = null)
         {
-            if (speechRecognizer != null)
-            {
-                // cleanup prior to re-initializing this scenario.
-                speechRecognizer.StateChanged -= SpeechRecognizer_StateChanged;
-                speechRecognizer.ContinuousRecognitionSession.Completed -= ContinuousRecognitionSession_Completed;
-                speechRecognizer.ContinuousRecognitionSession.ResultGenerated -= ContinuousRecognitionSession_ResultGenerated;
-                speechRecognizer.HypothesisGenerated -= SpeechRecognizer_HypothesisGenerated;
-
-                this.speechRecognizer.Dispose();
-                this.speechRecognizer = null;
-            }
-
-            this.speechRecognizer = new SpeechRecognizer(recognizerLanguage);
-
-            // Provide feedback to the user about the state of the recognizer. This can be used to provide visual feedback in the form
-            // of an audio indicator to help the user understand whether they're being heard.
-            speechRecognizer.StateChanged += SpeechRecognizer_StateChanged;
-
-            // Apply the dictation topic constraint to optimize for dictated freeform speech.
-            var dictationConstraint = new SpeechRecognitionTopicConstraint(SpeechRecognitionScenario.Dictation, "dictation");
-            speechRecognizer.Constraints.Add(dictationConstraint);
-            SpeechRecognitionCompilationResult result = await speechRecognizer.CompileConstraintsAsync();
-            if (result.Status != SpeechRecognitionResultStatus.Success)
-            {
-                //rootPage.NotifyUser("Grammar Compilation Failed: " + result.Status.ToString(), NotifyType.ErrorMessage);
-                Console.WriteLine("Grammar Compilation Failed: " + result.Status.ToString());
-                //micButton.IsEnabled = false;
-            }
-
-            // Handle continuous recognition events. Completed fires when various error states occur. ResultGenerated fires when
-            // some recognized phrases occur, or the garbage rule is hit. HypothesisGenerated fires during recognition, and
-            // allows us to provide incremental feedback based on what the user's currently saying.
-            speechRecognizer.ContinuousRecognitionSession.Completed += ContinuousRecognitionSession_Completed;
-            speechRecognizer.ContinuousRecognitionSession.ResultGenerated += ContinuousRecognitionSession_ResultGenerated;
-            speechRecognizer.HypothesisGenerated += SpeechRecognizer_HypothesisGenerated;
+            await Task.Delay(TimeSpan.FromSeconds(1));
+            audioButton.IsEnabled = true;
+            audioButton.IsChecked = false;
+            audioStatusText.Text = "OFF";
         }
 
-        /// <summary>
-        /// Handle events fired when error conditions occur, such as the microphone becoming unavailable, or if
-        /// some transient issues occur.
-        /// </summary>
-        /// <param name="sender">The continuous recognition session</param>
-        /// <param name="args">The state of the recognizer</param>
-        private async void ContinuousRecognitionSession_Completed(SpeechContinuousRecognitionSession sender, SpeechContinuousRecognitionCompletedEventArgs args)
-        {
-            if (args.Status != SpeechRecognitionResultStatus.Success)
-            {
-                // If TimeoutExceeded occurs, the user has been silent for too long. We can use this to 
-                // cancel recognition if the user in dictation mode and walks away from their device, etc.
-                // In a global-command type scenario, this timeout won't apply automatically.
-                // With dictation (no grammar in place) modes, the default timeout is 20 seconds.
-                if (args.Status == SpeechRecognitionResultStatus.TimeoutExceeded)
-                {
-                    await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () =>
-                    {
-                        //rootPage.NotifyUser("Automatic Time Out of Dictation", NotifyType.StatusMessage);
-                        Console.WriteLine("Automatic Time Out of Dictation");
-                        //cmdBarTextBlock.Text = dictatedTextBuilder.ToString();
-                        isListening = false;
-                    });
-                }
-                else
-                {
-                    await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () =>
-                    {
-                        //rootPage.NotifyUser("Continuous Recognition Completed: " + args.Status.ToString(), NotifyType.StatusMessage);
-                        Console.WriteLine("Continuous Recognition Completed: " + args.Status.ToString());
-                        isListening = false;
-                    });
-                }
-            }
-                
-            
-        }
-
-        /// <summary>
-        /// While the user is speaking, update the textbox with the partial sentence of what's being said for user feedback.
-        /// </summary>
-        /// <param name="sender">The recognizer that has generated the hypothesis</param>
-        /// <param name="args">The hypothesis formed</param>
-        private async void SpeechRecognizer_HypothesisGenerated(SpeechRecognizer sender, SpeechRecognitionHypothesisGeneratedEventArgs args)
-        {
-            string hypothesis = args.Hypothesis.Text;
-
-            // Update the textbox with the currently confirmed text, and the hypothesis combined.
-            string textboxContent = dictatedTextBuilder.ToString() + " " + hypothesis + " ...";
-            await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () =>
-            {
-                //cmdBarTextBlock.Text = textboxContent;
-                //cmdBarTextBlock.Text = hypothesis;
-            });
-                       
-        }
-
-        /// <summary>
-        /// Handle events fired when a result is generated. Check for high to medium confidence, and then append the
-        /// string to the end of the stringbuffer, and replace the content of the textbox with the string buffer, to
-        /// remove any hypothesis text that may be present.
-        /// </summary>
-        /// <param name="sender">The Recognition session that generated this result</param>
-        /// <param name="args">Details about the recognized speech</param>
-        private async void ContinuousRecognitionSession_ResultGenerated(SpeechContinuousRecognitionSession sender, SpeechContinuousRecognitionResultGeneratedEventArgs args)
-        {
-            // We may choose to discard content that has low confidence, as that could indicate that we're picking up
-            // noise via the microphone, or someone could be talking out of earshot.
-            if (args.Result.Confidence == SpeechRecognitionConfidence.Medium ||
-                args.Result.Confidence == SpeechRecognitionConfidence.High)
-            {
-                dictatedTextBuilder.Append(args.Result.Text + " ");
-
-                await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, async () =>
-                {
-
-                    //cmdBarTextBlock.Text = dictatedTextBuilder.ToString();
-                    //cmdBarTextBlock.Text = args.Result.Text;
-                    //SpeechManager.getSharedSpeechManager().AddNewMessage(args.Result.Text);
-                    //List<Phenotype> annoResults = await PhenotypeManager.getSharedPhenotypeManager().annotateByNCRAsync("");
-                    //if (annoResults != null)
-                    {
-                        //PhenotypeManager.getSharedPhenotypeManager().addPhenotypeInSpeech(annoResults);
-
-                        /**
-                        AnnoPhenoStackPanel.Children.Clear();
-                        foreach (Phenotype ap in annoResults)
-                        {
-                            Button tb = new Button();
-                            tb.Content= ap.name;
-                            tb.Margin = new Thickness(5, 5, 0, 0);
-                            
-                            if (PhenotypeManager.getSharedPhenotypeManager().checkIfSaved(ap))
-                                tb.BorderBrush = new SolidColorBrush(Colors.Black);
-                            tb.Click += delegate (object s, RoutedEventArgs e)
-                            {
-                                ap.state = 1;
-                                PhenotypeManager.getSharedPhenotypeManager().addPhenotype(ap, SourceType.Speech);
-                                tb.BorderBrush = new SolidColorBrush(Colors.Black);
-                            };
-                            AnnoPhenoStackPanel.Children.Add(tb);
-                        }
-                         **/
-                    }
-                });
-            }
-            else
-            {
-                // In some scenarios, a developer may choose to ignore giving the user feedback in this case, if speech
-                // is not the primary input mechanism for the application.
-                // Here, just remove any hypothesis text by resetting it to the last known good.
-                await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () =>
-                {
-                    //cmdBarTextBlock.Text = dictatedTextBuilder.ToString();
-                    string discardedText = args.Result.Text;
-                    if (!string.IsNullOrEmpty(discardedText))
-                    {
-                        discardedText = discardedText.Length <= 25 ? discardedText : (discardedText.Substring(0, 25) + "...");
-
-                        Console.WriteLine("Discarded due to low/rejected Confidence: " + discardedText);
-                    }
-                });
-            }
-        }
-
-        private void Tb_PointerReleased(object sender, PointerRoutedEventArgs e)
-        {
-            throw new NotImplementedException();
-        }
-
-        /// <summary>
-        /// Provide feedback to the user based on whether the recognizer is receiving their voice input.
-        /// </summary>
-        /// <param name="sender">The recognizer that is currently running.</param>
-        /// <param name="args">The current state of the recognizer.</param>
-        private async void SpeechRecognizer_StateChanged(SpeechRecognizer sender, SpeechRecognizerStateChangedEventArgs args)
-        {
-            await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () => {
-                //this.NotifyUser(args.State.ToString(), NotifyType.StatusMessage);
-                Console.WriteLine(args.State.ToString());
-            });
-        }
-
-        bool speechEngineRunning = false;
-        private async void AudioStreamButton_Clicked(object sender, RoutedEventArgs e) {
-            changeSpeechEngineState(this.AudioOn);
-        }
-
-        private async void changeSpeechEngineState_BT(bool state)
-        {
-            //SpeechStreamSocket sss = new SpeechStreamSocket();
-            //sss.connect();
-            Task speechManagerTask;
-            if (state == true)
-            {
-                //speechManagerTask = SpeechManager.getSharedSpeechManager().StartAudio();
-                //this.cmdBarTextBlock.Visibility = Visibility.Visible;
-                speechEngineRunning = !speechEngineRunning;
-
-                //await speechManagerTask;
-
-                await BluetoothService.BluetoothService.getBluetoothService().sendBluetoothMessage("audio start");
-            }
-            else
-            {
-                //speechManagerTask = SpeechManager.getSharedSpeechManager().EndAudio();
-                //this.cmdBarTextBlock.Visibility = Visibility.Collapsed;
-                speechEngineRunning = !speechEngineRunning;
-                //cmdBarTextBlock.Text = "";
-
-                await BluetoothService.BluetoothService.getBluetoothService().sendBluetoothMessage("audio end");
-            }
-
-            // Note that we have a giant loop in speech manager so that after it is done
-            // there won't be any audio processing going on
-            //speechEngineRunning = false;
-            //this.AudioOn = false;
-            //testButton.IsChecked = false;
-        }
-
-        private async void changeSpeechEngineState(bool state)
-        {
-            //SpeechStreamSocket sss = new SpeechStreamSocket();
-            //sss.connect();
-            Task speechManagerTask;
-            if (speechEngineRunning == false)
-            {
-                speechManagerTask = SpeechManager.getSharedSpeechManager().StartAudio();
-           
-                speechEngineRunning = !speechEngineRunning;
-                
-                await speechManagerTask;
-
-                //await BluetoothService.BluetoothService.getBluetoothService().sendBluetoothMessage("audio start");
-            }
-            else
-            {
-                speechManagerTask = SpeechManager.getSharedSpeechManager().EndAudio();
-                //this.cmdBarTextBlock.Visibility = Visibility.Collapsed;
-                speechEngineRunning = !speechEngineRunning;
-                //cmdBarTextBlock.Text = "";
-
-                //await BluetoothService.BluetoothService.getBluetoothService().sendBluetoothMessage("audio end");
-            }
-
-            // Note that we have a giant loop in speech manager so that after it is done
-            // there won't be any audio processing going on
-            speechEngineRunning = false;
-            //this.AudioOn = false;
-            //testButton.IsChecked = false;
-        }
-
-        private async void MicButton_Click(object sender, RoutedEventArgs e)
-        {
-            //micButton.IsEnabled = false;
-            if (isListening == false)
-            {
-                // The recognizer can only start listening in a continuous fashion if the recognizer is currently idle.
-                // This prevents an exception from occurring.
-                if (speechRecognizer.State == SpeechRecognizerState.Idle)
-                {
-                    
-
-                    try
-                    {
-                        isListening = true;
-                        await speechRecognizer.ContinuousRecognitionSession.StartAsync();
-                    }
-                    catch (Exception ex)
-                    {
-                        if ((uint)ex.HResult == HResultPrivacyStatementDeclined)
-                        {
-                            //Show a UI link to the privacy settings.
-                            //hlOpenPrivacySettings.Visibility = Visibility.Visible;
-                        }
-                        else
-                        {
-                            var messageDialog = new Windows.UI.Popups.MessageDialog(ex.Message, "Exception");
-                            await messageDialog.ShowAsync();
-                        }
-
-                        isListening = false;
-
-                    }
-                }
-            }
-            else
-            {
-                isListening = false;
-               
-                if (speechRecognizer.State != SpeechRecognizerState.Idle)
-                {
-                    // Cancelling recognition prevents any currently recognized speech from
-                    // generating a ResultGenerated event. StopAsync() will allow the final session to 
-                    // complete.
-                    try
-                    {
-                        await speechRecognizer.ContinuousRecognitionSession.StopAsync();
-
-                        Console.WriteLine("Speech recognition stopped.");
-                        // Ensure we don't leave any hypothesis text behind
-                        //cmdBarTextBlock.Text = dictatedTextBuilder.ToString();
-                    }
-                    catch (Exception exception)
-                    {
-                        var messageDialog = new Windows.UI.Popups.MessageDialog(exception.Message, "Exception");
-                        await messageDialog.ShowAsync();
-                    }
-                }
-            }
-            //micButton.IsEnabled = true;
-        }
-
-        private void PageOverviewButton_Click(object sender, RoutedEventArgs e)
-        {
-
-        }
-
+        //=======================================SWITCHING NOTE PAGES========================================
         private async void AddPageButton_Click(object sender, RoutedEventArgs e)
         {
-            NotePageControl aPage = new NotePageControl();
+            //defining a new string name for the page and creates a new page controller to bind
+            string newPageName = (notePages.Count).ToString();
+            NotePageControl aPage = new NotePageControl(this.notebookId, newPageName);
             notePages.Add(aPage);
             inkCanvas = aPage.inkCan;
             curPage = aPage;
-            //var screenSize = HelperFunctions.GetCurrentDisplaySize();
-            //aPage.Height = screenSize.Height;
-            //aPage.Width = screenSize.Width;
             curPageIndex = notePages.Count - 1;
 
-          
+            CloseCandidate();
             PageHost.Content = curPage;
 
             setPageIndexText();
             addNoteIndex(curPageIndex);
-
-            await FileService.FileManager.getSharedFileManager().CreateNotePage(notebookObject, curPageIndex.ToString());
-
+            PhenoMana.phenotypesCandidates.Clear();
+            await FileManager.getSharedFileManager().CreateNotePage(notebookObject, curPageIndex.ToString());
+            //auto-saves whenever a new page is created, this operation doesn't need a timer since 
+            //we assume the user will not spam adding pages...
+            await this.saveNoteToDisk();
+            curPage.Visibility = Visibility.Visible;
         }
 
         private void NextPageButton_Click(object sender, RoutedEventArgs e)
@@ -1218,63 +771,9 @@ namespace PhenoPad
             }
         }
 
-        private void setPageIndexText()
-        {
-            MainPageInkBar.TargetInkCanvas = inkCanvas;
-        }
-        
-
-        /*private void TakePhoto_Click(object sender, RoutedEventArgs e)
-        {
-            CameraCanvas.Visibility = Visibility.Visible;
-            captureControl.setUp();
-        }
-
-        private async void PhotoButton_Click(object sender, RoutedEventArgs e)
-        {
-            string imagename = FileManager.getSharedFileManager().CreateUniqueName();
-            var imageSource = await captureControl.TakePhotoAsync(notebookId, curPageIndex.ToString(), imagename + ".jpg");
-            if(imageSource != null)
-            {
-                curPage.AddImageControl(imagename, imageSource);
-
-            }
-        }
-
-        private void CameraClose_Click(object sender, RoutedEventArgs e)
-        {
-            CameraCanvas.Visibility = Visibility.Collapsed;
-            captureControl.unSetUp();
-        }*/
-
-        private void setNotePageIndex(int index)
-        {
-            foreach (var btn in pageIndexButtons)
-            {
-                btn.Background = new SolidColorBrush(Colors.WhiteSmoke);
-                btn.Foreground = new SolidColorBrush(Colors.Gray);
-             }
-            pageIndexButtons.ElementAt(index).Background = Application.Current.Resources["Button_Background"] as SolidColorBrush;
-            pageIndexButtons.ElementAt(index).Foreground = new SolidColorBrush(Colors.Black);
-        }
-
-        private void addNoteIndex(int index)
-        {
-            Button btn = new Button();
-            btn.Click += IndexBtn_Click;
-            btn.Background = new SolidColorBrush(Colors.WhiteSmoke);
-            btn.Foreground = new SolidColorBrush(Colors.Black);
-            btn.Padding = new Thickness(0, 0, 0, 0);
-            btn.Content = "" + (index+1);
-            btn.Width = 30;
-            btn.Height = 30;
-            pageIndexButtons.Add(btn);
-            if (pageIndexPanel.Children.Count >= 1)
-                pageIndexPanel.Children.Insert(pageIndexPanel.Children.Count-1, btn);
-            setNotePageIndex(index);
-
-        }
-
+        /// <summary>
+        /// Called when user clicks on a notepage index button
+        /// </summary>
         private void IndexBtn_Click(object sender, RoutedEventArgs e)
         {
             var button = (Button)sender;
@@ -1285,7 +784,7 @@ namespace PhenoPad
             }
             button.Background = Application.Current.Resources["Button_Background"] as SolidColorBrush;
             button.Foreground = new SolidColorBrush(Colors.WhiteSmoke);
-            
+
             curPageIndex = Int32.Parse(button.Content.ToString()) - 1;
             var aPage = notePages.ElementAt(curPageIndex);
             inkCanvas = aPage.inkCan;
@@ -1293,344 +792,123 @@ namespace PhenoPad
             //PageHostContentTrans.HorizontalOffset = 100;
             //(PageHost.ContentTransitions.ElementAt(0) as ContentThemeTransition).HorizontalOffset = 500;
             PageHost.Content = curPage;
-
+            CloseCandidate();
             setPageIndexText();
             setNotePageIndex(curPageIndex);
+            PhenoMana.phenotypesCandidates.Clear();
+
+            if (curPage.ehrPage == null)
+                aPage.initialAnalyze();
+            else
+                aPage.ehrPage.AnalyzePhenotype();
+            
+            aPage.Visibility = Visibility.Visible;
+        }
+
+        //=======================================NOTE SAVING INTERFACES=====================================
+
+        /// <summary>
+        /// Invoked when user clicks export note button from drop down menu
+        /// </summary>
+        private async void SaveNote_Click(object sender, RoutedEventArgs e)
+        {
+            int saved = await saveImageToDisk();
+            switch (saved)
+            {
+                case 1:
+                    NotifyUser("Your note has been saved.", NotifyType.StatusMessage, 2);
+                    break;
+                case 0:
+                    NotifyUser("Your note couldn't be saved.", NotifyType.ErrorMessage, 2);
+                    break;
+                default:
+                    break;
+
+            }
         }
 
         /// <summary>
-        /// Display a message to the user.
-        /// This method may be called from any thread.
+        /// Invoked when user clicks the "load note" button from drop down menu
         /// </summary>
-        /// <param name="strMessage"></param>
-        /// <param name="type"></param>
-        public void NotifyUser(string strMessage, NotifyType type, int seconds)
-        {
-            // If called from the UI thread, then update immediately.
-            // Otherwise, schedule a task on the UI thread to perform the update.
-            if (Dispatcher.HasThreadAccess)
-            {
-                UpdateStatusAsync(strMessage, type, seconds);
-            }
-            else
-            {
-                var task = Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () => UpdateStatusAsync(strMessage, type, seconds));
-            }
-        }
-
-        private async void UpdateStatusAsync(string strMessage, NotifyType type, int seconds)
-        {
-            switch (type)
-            {
-                case NotifyType.StatusMessage:
-                    StatusBorder.Background = new SolidColorBrush(Windows.UI.Colors.Turquoise);
-                    break;
-                case NotifyType.ErrorMessage:
-                    StatusBorder.Background = new SolidColorBrush(Windows.UI.Colors.Tomato);
-                    break;
-            }
-
-            StatusBlock.Text = strMessage;
-
-            // Collapse the StatusBlock if it has no text to conserve real estate.
-           // StatusBorder.Visibility = (StatusBlock.Text != String.Empty) ? Visibility.Visible : Visibility.Collapsed;
-            if (StatusBlock.Text != String.Empty)
-            {
-                //StatusBorder.Visibility = Visibility.Visible;
-                StatusBorderEnterStoryboard.Begin();
-            }
-            else
-            {
-                //StatusBorder.Visibility = Visibility.Collapsed;
-                StatusBorderExitStoryboard.Begin();
-            }
-
-            await Task.Delay(1000 * seconds);
-            //StatusBorder.Visibility = Visibility.Collapsed;
-            StatusBorderExitStoryboard.Begin();
-        }
-
-        
-        private async void SaveNote_Click(object sender, RoutedEventArgs e)
-        {
-            // Get all strokes on the InkCanvas.
-            IReadOnlyList<InkStroke> currentStrokes = inkCanvas.InkPresenter.StrokeContainer.GetStrokes();
-
-            // Strokes present on ink canvas.
-            if (currentStrokes.Count > 0)
-            {
-                // Let users choose their ink file using a file picker.
-                // Initialize the picker.
-                Windows.Storage.Pickers.FileSavePicker savePicker =
-                    new Windows.Storage.Pickers.FileSavePicker();
-                savePicker.SuggestedStartLocation =
-                    Windows.Storage.Pickers.PickerLocationId.DocumentsLibrary;
-                savePicker.FileTypeChoices.Add(
-                    "GIF with embedded ISF",
-                    new List<string>() { ".gif" });
-                savePicker.DefaultFileExtension = ".gif";
-                savePicker.SuggestedFileName = "InkSample";
-
-                // Show the file picker.
-                Windows.Storage.StorageFile file =
-                    await savePicker.PickSaveFileAsync();
-                // When chosen, picker returns a reference to the selected file.
-                if (file != null)
-                {
-                    // Prevent updates to the file until updates are 
-                    // finalized with call to CompleteUpdatesAsync.
-                    Windows.Storage.CachedFileManager.DeferUpdates(file);
-                    // Open a file stream for writing.
-                    IRandomAccessStream stream = await file.OpenAsync(Windows.Storage.FileAccessMode.ReadWrite);
-                    // Write the ink strokes to the output stream.
-                    using (IOutputStream outputStream = stream.GetOutputStreamAt(0))
-                    {
-                        await inkCanvas.InkPresenter.StrokeContainer.SaveAsync(outputStream);
-                        await outputStream.FlushAsync();
-                    }
-                    stream.Dispose();
-
-                    // Finalize write so other apps can update file.
-                    Windows.Storage.Provider.FileUpdateStatus status =
-                        await Windows.Storage.CachedFileManager.CompleteUpdatesAsync(file);
-
-                    if (status == Windows.Storage.Provider.FileUpdateStatus.Complete)
-                    {
-                        // File saved.
-                        NotifyUser("Your note has been saved.", NotifyType.StatusMessage, 2);
-                    }
-                    else
-                    {
-                        // File couldn't be saved.
-                        NotifyUser("Your note couldn't be saved.", NotifyType.ErrorMessage, 2);
-                    }
-                }
-                // User selects Cancel and picker returns null.
-                else
-                {
-                    // Operation cancelled.
-                }
-            }
-        }
-        
         private async void LoadNote_Click(object sender, RoutedEventArgs e)
         {
-            // Let users choose their ink file using a file picker.
-            // Initialize the picker.
-            Windows.Storage.Pickers.FileOpenPicker openPicker =
-                new Windows.Storage.Pickers.FileOpenPicker();
-            openPicker.SuggestedStartLocation =
-                Windows.Storage.Pickers.PickerLocationId.DocumentsLibrary;
-            openPicker.FileTypeFilter.Add(".gif");
-            // Show the file picker.
-            Windows.Storage.StorageFile file = await openPicker.PickSingleFileAsync();
-            // User selects a file and picker returns a reference to the selected file.
-            if (file != null)
-            {
-                // Open a file stream for reading.
-                IRandomAccessStream stream = await file.OpenAsync(Windows.Storage.FileAccessMode.Read);
-                // Read from file.
-                using (var inputStream = stream.GetInputStreamAt(0))
-                {
-                    await inkCanvas.InkPresenter.StrokeContainer.LoadAsync(inputStream);
-                    NotifyUser("The note has been loaded.", NotifyType.StatusMessage, 2);
-                    await curPage.StartAnalysisAfterLoad();
-
-                }
-                stream.Dispose();
-            }
-            // User selects Cancel and picker returns null.
+            bool is_loaded = await loadStrokefromGif();
+            if (is_loaded)
+                NotifyUser("The note has been loaded.", NotifyType.StatusMessage, 2);
             else
-            {
-                // Operation cancelled.
-            }
+                NotifyUser("Failed to load note", NotifyType.ErrorMessage, 2);
         }
 
+        /// <summary>
+        /// Invoked when user clicks "load an image".
+        /// </summary>
         private async void LoadImage_Click(object sender, RoutedEventArgs e)
         {
-            // Let users choose their ink file using a file picker.
-            // Initialize the picker.
-            Windows.Storage.Pickers.FileOpenPicker openPicker =
-                new Windows.Storage.Pickers.FileOpenPicker();
-            openPicker.SuggestedStartLocation =
-                Windows.Storage.Pickers.PickerLocationId.DocumentsLibrary;
-            openPicker.FileTypeFilter.Add(".gif");
-            openPicker.FileTypeFilter.Add(".png");
-            openPicker.FileTypeFilter.Add(".jpg");
-            openPicker.FileTypeFilter.Add(".tif");
-            // Show the file picker.
-            Windows.Storage.StorageFile file = await openPicker.PickSingleFileAsync();
-            // User selects a file and picker returns a reference to the selected file.
-            if (file != null)
-            {
-                // Open a file stream for reading.
-                IRandomAccessStream stream = await file.OpenAsync(Windows.Storage.FileAccessMode.Read);
-                // Read from file.
-                using (var inputStream = stream.GetInputStreamAt(0))
-                {
-                    BitmapDecoder decoder = await BitmapDecoder.CreateAsync(stream);
-                    SoftwareBitmap softwareBitmap = await decoder.GetSoftwareBitmapAsync();
-                    SoftwareBitmap softwareBitmapBGR8 = SoftwareBitmap.Convert(softwareBitmap,
-                    BitmapPixelFormat.Bgra8,
-                    BitmapAlphaMode.Premultiplied);
-                    SoftwareBitmapSource bitmapSource = new SoftwareBitmapSource();
-                    await bitmapSource.SetBitmapAsync(softwareBitmapBGR8);
-                    curPage.AddImageControl("FIXME",bitmapSource);
-                }
-                stream.Dispose();
-            }
-            // User selects Cancel and picker returns null.
+            bool is_loaded = await loadImagefromDisk();
+            if (is_loaded)
+                NotifyUser("The note has been loaded.", NotifyType.StatusMessage, 2);
             else
-            {
-                // Operation cancelled.
-            }
+                NotifyUser("Failed to load note", NotifyType.ErrorMessage, 2);
         }
 
         private async void SaveNoteToImage_Click(object sender, RoutedEventArgs e)
         {
-            // Get all strokes on the InkCanvas.
-            IReadOnlyList<InkStroke> currentStrokes = inkCanvas.InkPresenter.StrokeContainer.GetStrokes();
-
-            // Strokes present on ink canvas.
-            if (currentStrokes.Count > 0)
+            int saved = await saveImageToDisk();
+            switch (saved)
             {
-                CanvasDevice device = CanvasDevice.GetSharedDevice();
-                CanvasRenderTarget renderTarget = new CanvasRenderTarget(device, (int)curPage.PAGE_WIDTH, (int)curPage.PAGE_HEIGHT, 96);
-                using (var ds = renderTarget.CreateDrawingSession())
-                {
-                    ds.Clear(Colors.White);
-                    ds.DrawInk(currentStrokes);
-                }
-                // Let users choose their ink file using a file picker.
-                // Initialize the picker.
-                Windows.Storage.Pickers.FileSavePicker savePicker =
-                    new Windows.Storage.Pickers.FileSavePicker();
-                savePicker.SuggestedStartLocation =
-                    Windows.Storage.Pickers.PickerLocationId.DocumentsLibrary;
-                savePicker.FileTypeChoices.Add(
-                    "Images",
-                    new List<string>() { ".gif", ".jpg", ".tif", ".png" });
-                savePicker.DefaultFileExtension = ".jpg";
-                savePicker.SuggestedFileName = "InkImage";
-
-                // Show the file picker.
-                Windows.Storage.StorageFile file =
-                    await savePicker.PickSaveFileAsync();
-                // When chosen, picker returns a reference to the selected file.
-                if (file != null)
-                {
-                    // Prevent updates to the file until updates are 
-                    // finalized with call to CompleteUpdatesAsync.
-                    Windows.Storage.CachedFileManager.DeferUpdates(file);
-                    // Open a file stream for writing.
-                    IRandomAccessStream stream = await file.OpenAsync(Windows.Storage.FileAccessMode.ReadWrite);
-                    // Write the ink strokes to the output stream.
-                    using (IOutputStream outputStream = stream.GetOutputStreamAt(0))
-                    {
-                        await renderTarget.SaveAsync(stream, CanvasBitmapFileFormat.Jpeg, 1f);
-                    }
-                    stream.Dispose();
-
-                    // Finalize write so other apps can update file.
-                    Windows.Storage.Provider.FileUpdateStatus status =
-                        await Windows.Storage.CachedFileManager.CompleteUpdatesAsync(file);
-
-                    if (status == Windows.Storage.Provider.FileUpdateStatus.Complete)
-                    {
-                        // File saved.
-                        NotifyUser("Your note has been saved.", NotifyType.StatusMessage, 2);
-                    }
-                    else
-                    {
-                        // File couldn't be saved.
-                        NotifyUser("Your note couldn't be saved.", NotifyType.ErrorMessage, 2);
-                    }
-                }
-                // User selects Cancel and picker returns null.
-                else
-                {
-                    // Operation cancelled.
-                }
+                case 1:
+                    NotifyUser("Your note has been saved.", NotifyType.StatusMessage, 2);
+                    break;
+                case 0:
+                    NotifyUser("Your note couldn't be saved.", NotifyType.ErrorMessage, 2);
+                    break;
+                default:
+                    break;
             }
         }
 
-        private void MenuFlyoutItem_Click_1(object sender, RoutedEventArgs e)
+        private void Settings_Click(object sender, RoutedEventArgs e)
         {
-
+            AppSetting.Visibility = Visibility.Visible;
         }
 
-        private async Task<string> InputTextDialogAsync(string title, string content)
-        {
-            TextBox inputTextBox = new TextBox();
-            inputTextBox.AcceptsReturn = false;
-            inputTextBox.Height = 32;
-            ContentDialog dialog = new ContentDialog();
-            dialog.Content = inputTextBox;
-            dialog.Title = title;
-            dialog.IsSecondaryButtonEnabled = true;
-            dialog.PrimaryButtonText = "Ok";
-            dialog.SecondaryButtonText = "Cancel";
-            inputTextBox.Text = content;
-            if (await dialog.ShowAsync() == ContentDialogResult.Primary)
-                return inputTextBox.Text;
-            else
-                return "";
+        private void ChangeServerHWR_Click(object sender, RoutedEventArgs e) {
+            string newAddr = HWRAddrInput.Text;
+            HWRService.HWRManager.getSharedHWRManager().setIPAddr(new Uri(newAddr));
+            NotifyUser("HWR Server address has been changed",NotifyType.StatusMessage,1);
         }
-        private async void ChangeServer_Click(object sender, RoutedEventArgs e)
-        {
-            //string text = await InputTextDialogAsync("Change a server: ", "");
-            /*
-            if(text != "" && text != string.Empty)
-                SpeechManager.getSharedSpeechManager().setServerAddress(text);
-            */
-            
-            string serverPath = SpeechManager.getSharedSpeechManager().getServerAddress() + ":" + SpeechManager.getSharedSpeechManager().getServerPort();
 
-            string text = await InputTextDialogAsync("Change a server. Server Address (or sickkids): ", serverPath);
-
+        private void ChangeServerASR_Click(object sender, RoutedEventArgs e) {
+            string text = ASRAddrInput.Text;
             string ipResult = "";
             string portResult = "";
 
-            if (text.ToLower().IndexOf("sickkid") != -1)
-            {
-                //SpeechManager.getSharedSpeechManager().setServerAddress("speechengine.ccm.sickkids.ca");
-                //SpeechManager.getSharedSpeechManager().setServerPort("8888");
-
-                ipResult = "phenopad.ccm.sickkids.ca";
-                portResult = "8888";
-            } else
-            {
-                if (text != "" && text != string.Empty)
-                {
-                    int colonIndex = text.IndexOf(':');
-
-                    // Only entered server address
-                    if (colonIndex == -1)
-                    {
-                        //SpeechManager.getSharedSpeechManager().setServerAddress(text.Trim());
-
-                        ipResult = text.Trim();
-                        portResult = "8888";
-                    }
-                    // address and port both here
-                    else
-                    {
-                        //SpeechManager.getSharedSpeechManager().setServerAddress(text.Substring(0, colonIndex).Trim());
-                        //SpeechManager.getSharedSpeechManager().setServerPort(text.Substring(colonIndex + 1).Trim());
-
-                        ipResult = text.Substring(0, colonIndex).Trim();
-                        portResult = text.Substring(colonIndex + 1).Trim();
-                    }
-                }
+            int colonIndex = text.IndexOf(':');
+            if (text != string.Empty && colonIndex != -1)
+            {               
+                ipResult = text.Substring(0, colonIndex).Trim();
+                portResult = text.Substring(colonIndex + 1).Trim();
             }
-
+            else {
+                NotifyUser("Invalid ASR address, will use default setting", NotifyType.ErrorMessage, 2);
+                ipResult = SpeechManager.DEFAULT_SERVER;
+                portResult = SpeechManager.DEFAULT_PORT;
+                ASRAddrInput.Text = SpeechManager.DEFAULT_SERVER + ":" + SpeechManager.DEFAULT_PORT;
+            }
             SpeechManager.getSharedSpeechManager().setServerAddress(ipResult);
             SpeechManager.getSharedSpeechManager().setServerPort(portResult);
-
             AppConfigurations.saveSetting("serverIP", ipResult);
             AppConfigurations.saveSetting("serverPort", portResult);
+            NotifyUser("ASR Server address has been changed", NotifyType.StatusMessage, 1);
         }
 
+        private void SettingsClose_Click(object sender, RoutedEventArgs e) {
+            AppSetting.Visibility = Visibility.Collapsed;
+        }
+
+        /// <summary>
+        /// Invoked when user clicks on the type mode button
+        /// </summary>
         private void KeyboardButton_Click(object sender, RoutedEventArgs e)
         {
             curPage.hideRecognizedTextCanvas();
@@ -1639,6 +917,8 @@ namespace PhenoPad
             modeTextBlock.Text = TypeMode;
             writeButton.IsChecked = false;
             keyboardButton.IsChecked = true;
+            curPage.inkCan.InkPresenter.InputDeviceTypes = CoreInputDeviceTypes.None;
+            toggleButton.IsChecked = false;
             boldButton.Visibility = Visibility.Visible;
             italicButton.Visibility = Visibility.Visible;
             underlineButton.Visibility = Visibility.Visible;
@@ -1646,6 +926,9 @@ namespace PhenoPad
             curPage.showTextEditGrid();
         }
 
+        /// <summary>
+        /// Invoked when user clicks on hand write mode button
+        /// </summary>
         private void WriteButton_Click(object sender, RoutedEventArgs e)
         {
             curPage.hideRecognizedTextCanvas();
@@ -1655,28 +938,30 @@ namespace PhenoPad
 
             keyboardButton.IsChecked = false;
             writeButton.IsChecked = true;
+
+            curPage.inkCan.InkPresenter.InputDeviceTypes = CoreInputDeviceTypes.Pen | CoreInputDeviceTypes.Mouse;
             boldButton.Visibility = Visibility.Collapsed;
             italicButton.Visibility = Visibility.Collapsed;
             underlineButton.Visibility = Visibility.Collapsed;
             MainPageInkBar.Visibility = Visibility.Visible;
             curPage.hideTextEditGrid();
         }
-        
-        private void MyScriptButton_Click(object sender, RoutedEventArgs e)
-        {
-            /**
-            if (myScriptEditor.Visibility == Visibility.Collapsed)
-            {
-                myScriptEditor.Visibility = Visibility.Visible;
-                myScriptEditor.NewFile();
-            }
-            else
-            {
-                myScriptEditor.Visibility = Visibility.Collapsed;
-            }
-    **/
-            
-        }
+
+    //    private void MyScriptButton_Click(object sender, RoutedEventArgs e)
+    //    {
+    //        /**
+    //        if (myScriptEditor.Visibility == Visibility.Collapsed)
+    //        {
+    //            myScriptEditor.Visibility = Visibility.Visible;
+    //            myScriptEditor.NewFile();
+    //        }
+    //        else
+    //        {
+    //            myScriptEditor.Visibility = Visibility.Collapsed;
+    //        }
+    //**/
+
+    //    }
 
         private void FullscreenButton_Click(object sender, RoutedEventArgs e)
         {
@@ -1702,13 +987,18 @@ namespace PhenoPad
                 }
             }
         }
-        public void OpenCandidate()
-        {
-            OpenCandidatePanelButton.IsChecked = true;
-            CandidatePanelStackPanel.Visibility = Visibility.Visible;
-            OpenCandidatePanelButtonIcon.Glyph = "\uE8BB";
 
-            candidatePhenoListView.ScrollIntoView(candidatePhenoListView.Items.ElementAt(0));
+        private async void SaveButton_Click(object sender, RoutedEventArgs e)
+        {
+            bool result = await saveNoteToDisk();
+            if (result)
+            {
+                NotifyUser("Successfully saved to disk.", NotifyType.StatusMessage, 2);
+            }
+            else
+            {
+                NotifyUser("Failed to save to disk.", NotifyType.ErrorMessage, 2);
+            }
         }
 
         private void OpenCandidate_Click(object sender, RoutedEventArgs e)
@@ -1716,23 +1006,57 @@ namespace PhenoPad
             if (OpenCandidatePanelButton.IsChecked == true)
             {
                 CandidatePanelStackPanel.Visibility = Visibility.Visible;
-                OpenCandidatePanelButtonIcon.Glyph = "\uE8BB";
-                OpenCandidatePanelButtonIcon.Foreground = new SolidColorBrush(Colors.DarkGray);
+                OpenCandidateIcon.Visibility = Visibility.Collapsed;
+                CloseCandidateIcon.Visibility = Visibility.Visible;
+                // OpenCandidatePanelButtonIcon.Glyph = "\uE8BB";
+                // OpenCandidatePanelButtonIcon.Foreground = new SolidColorBrush(Colors.DarkGray);
             }
-            else {
+            else
+            {
                 CandidatePanelStackPanel.Visibility = Visibility.Collapsed;
-                 OpenCandidatePanelButtonIcon.Glyph = "\uE82F";
-                OpenCandidatePanelButtonIcon.Foreground = new SolidColorBrush(Colors.Gold);
+                // OpenCandidatePanelButtonIcon.Glyph = "\uE82F";
+                // OpenCandidatePanelButtonIcon.Foreground = new SolidColorBrush(Colors.Gold);
+                OpenCandidateIcon.Visibility = Visibility.Visible;
+                CloseCandidateIcon.Visibility = Visibility.Collapsed;
             }
-            
+
+        }
+
+        public bool CandidateIsOpened() {
+            return CandidatePanelStackPanel.Visibility == Visibility.Visible;
+        }
+
+        public void OpenCandidate()
+        {
+            if (candidatePhenoListView.Items.Count() > 0)
+            {
+                OpenCandidatePanelButton.IsChecked = true;
+                CandidatePanelStackPanel.Visibility = Visibility.Visible;
+                OpenCandidateIcon.Visibility = Visibility.Collapsed;
+                CloseCandidateIcon.Visibility = Visibility.Visible;
+                // OpenCandidatePanelButtonIcon.Foreground = new SolidColorBrush(Colors.DarkGray);
+                // OpenCandidatePanelButtonIcon.Glyph = "\uE8BB";
+                candidatePhenoListView.ScrollIntoView(candidatePhenoListView.Items.ElementAt(0));
+            }
+        }
+
+        public void CloseCandidate() {
+            CandidatePanelStackPanel.Visibility = Visibility.Collapsed;
+            OpenCandidateIcon.Visibility = Visibility.Visible;
+            OpenCandidatePanelButton.Visibility = Visibility.Visible;
+            OpenCandidatePanelButton.IsChecked = false;
+            CloseCandidateIcon.Visibility = Visibility.Collapsed;
         }
 
         private void OverViewToggleButton_Click(object sender, RoutedEventArgs e)
-        {   if (MainSplitView.IsPaneOpen == false)
+        {
+            if (MainSplitView.IsPaneOpen == false)
             {
                 MainSplitView.IsPaneOpen = true;
                 QuickViewButtonSymbol.Symbol = Symbol.Clear;
                 speechQuickView.Visibility = Visibility.Collapsed;
+                //pastchatView.Visibility = Visibility.Collapsed;
+                //pastSpeechView.Visibility = Visibility.Collapsed;
             }
             else
             {
@@ -1741,6 +1065,8 @@ namespace PhenoPad
                     OverViewToggleButton.IsChecked = true;
                     SpeechToggleButton.IsChecked = false;
                     speechQuickView.Visibility = Visibility.Collapsed;
+                    //pastchatView.Visibility = Visibility.Collapsed;
+                    //pastSpeechView.Visibility = Visibility.Collapsed;
                 }
                 else
                 {
@@ -1757,7 +1083,9 @@ namespace PhenoPad
             {
                 MainSplitView.IsPaneOpen = true;
                 QuickViewButtonSymbol.Symbol = Symbol.Clear;
+                //pastSpeechView.Visibility = Visibility.Visible;
                 speechQuickView.Visibility = Visibility.Visible;
+                //pastchatView.Visibility = Visibility.Visible;
             }
             else
             {
@@ -1765,7 +1093,9 @@ namespace PhenoPad
                 {
                     OverViewToggleButton.IsChecked = false;
                     SpeechToggleButton.IsChecked = true;
+                    //pastSpeechView.Visibility = Visibility.Visible;
                     speechQuickView.Visibility = Visibility.Visible;
+                    //pastchatView.Visibility = Visibility.Visible;
                 }
                 else
                 {
@@ -1793,13 +1123,19 @@ namespace PhenoPad
                 SpeechToggleButton.IsChecked = false;
             }
         }
-        
+
         private async void BackButton_Click(object sender, RoutedEventArgs e)
         {
+
+            LoadingPopup.IsOpen = true;
+            // save note
+            //await this.saveNoteToDisk();
+            UIWebSocketClient.getSharedUIWebSocketClient().disconnect();
+            await Task.Delay(TimeSpan.FromSeconds(1));
+            LoadingPopup.IsOpen = false;
             //On_BackRequested();
             this.Frame.Navigate(typeof(PageOverview));
-            UIWebSocketClient.getSharedUIWebSocketClient().disconnect();
-            await this.saveNoteToDisk();
+
         }
         // Handles system-level BackRequested events and page-level back button Click events
         private bool On_BackRequested()
@@ -1814,105 +1150,125 @@ namespace PhenoPad
 
         private void PreviewButton_Click(object sender, RoutedEventArgs e)
         {
-            var mediaFlyout = (Flyout)this.Resources["MultimediaPreviewFlyout"];
-            mediaFlyout.ShowAt((FrameworkElement)sender);
-           
-        }
-
-        private async void SaveButton_Click(object sender, RoutedEventArgs e)
-        {
-            bool result = await saveNoteToDisk();
-            if (result)
+            if (MultimediaPreviewGrid.Visibility == Visibility.Collapsed)
             {
-                Debug.WriteLine("Successfully saved to disk.");
+                PreviewMultiMedia();
             }
-            else
+            MultimediaPreviewGrid.Visibility = MultimediaPreviewGrid.Visibility == Visibility.Visible? Visibility.Collapsed : Visibility.Visible;
+        }
+
+        private void MultimediaClose_Click(object sender, RoutedEventArgs e)
+        {
+            MultimediaPreviewGrid.Visibility = Visibility.Collapsed;
+            if (videoStreamWebSocket != null)
+                videoStreamWebSocket.Close(1000, "no reason:)");
+        }
+
+        private void FullscreenBtn_Click(object sender, RoutedEventArgs e)
+        {
+
+        }
+
+        //private void MyscriptBtn_Click(object sender, RoutedEventArgs e)
+        //{
+        //    // myScriptEditor.Visibility = MyscriptBtn.IsChecked != null && (bool)MyscriptBtn.IsChecked ? Visibility.Visible : Visibility.Collapsed;
+        //}
+
+        private void PrintButton_Click(object sender, RoutedEventArgs e)
+        {
+            try
             {
-                Debug.WriteLine("Failed to save to disk.");
-                NotifyUser("Failed to save to disk.", NotifyType.ErrorMessage, 2);
+                curPage.printPage();
             }
-        }
-
-        private async void noteNameTextBox_KeyDown(object sender, KeyRoutedEventArgs e)
-        {
-            if (e.Key == Windows.System.VirtualKey.Enter)
+            catch (Exception ee)
             {
-                if (notebookObject != null && !string.IsNullOrEmpty(noteNameTextBox.Text))
-                {
-                    notebookObject.name = noteNameTextBox.Text;
-                    await FileManager.getSharedFileManager().SaveToMetaFile(notebookObject);
-                    LoseFocus(sender);
-                }
+                Debug.WriteLine(ee.Message);
             }
         }
 
-        /// <summary>
-        /// Makes virtual keyboard disappear
-        /// </summary>
-        /// <param name="sender"></param>
-        private void LoseFocus(object sender)
+       
+        private void SurfaceMicRadioButton_Checked(object sender = null, RoutedEventArgs e = null)
         {
-            var control = sender as Control;
-            var isTabStop = control.IsTabStop;
-            control.IsTabStop = false;
-            control.IsEnabled = false;
-            control.IsEnabled = true;
-            control.IsTabStop = isTabStop;
+            ConfigService.ConfigService.getConfigService().UseInternalMic();
+            this.audioButton.IsEnabled = true;
+            //this.serverConnectButton.IsEnabled = false;
+            this.StreamButton.IsEnabled = false;
+            SurfaceMicRadioBtn.IsChecked = true;
+            //this.StreamButton.IsEnabled = true;
+           // NotifyUser("Using Surface microphone", NotifyType.StatusMessage, 2);
         }
 
-        private void AudioToggleSwitch_Toggled(object sender, RoutedEventArgs e)
+        private void ExterMicRadioButton_Checked(object sender = null, RoutedEventArgs e = null)
         {
-            // Same as audio button click :D
-            //if (this.audioSwitch.IsOn == false)
-            //{
-            //AudioStreamButton_Clicked(null, null);
-            //}
-            //changeSpeechEngineState(!this.AudioOn);
+            ConfigService.ConfigService.getConfigService().UseExternalMic();
+            this.StreamButton.IsEnabled = false;
+            this.shutterButton.IsEnabled = false;
+            this.audioButton.IsEnabled = true;
+            ExternalMicRadioBtn.IsChecked = true;
+            //NotifyUser("Using external microphone", NotifyType.StatusMessage, 2);
         }
 
-        private async void VideoToggleSwitch_Toggled(object sender, RoutedEventArgs e)
-        {
-            await videoStreamStatusUpdateAsync(this._videoOn);
+        private void AbbreviationON_Checked(object sender, RoutedEventArgs e) {
+            this.abbreviation_enabled = true;
+            AbbrONBtn.IsChecked = true;
+        }
+        private void AbbreviationOFF_Checked(object sender, RoutedEventArgs e) {
+            this.abbreviation_enabled = false;
+            AbbrOFFBtn.IsChecked = true;
         }
 
-        private async void StreamButton_Click(object sender, RoutedEventArgs e)
+        private async void OpenFileFolder_Click(object sender, RoutedEventArgs e)
         {
-            await videoStreamStatusUpdateAsync(!this._videoOn);
+            await Windows.System.Launcher.LaunchFolderAsync(await StorageFolder.GetFolderFromPathAsync(ApplicationData.Current.LocalFolder.Path));
         }
 
-        private async Task videoStreamStatusUpdateAsync(bool desiredStatus)
+        //Invoked when click on bluetoon button;
+        //private async void ServerConnectButton_Click(object sender = null, RoutedEventArgs e= null)
+        //{
+        //    if (!bluetoonOn)
+        //    {
+        //        BluetoothProgresssBox.Text = "Connecting to Raspberry Pi";
+        //        serverConnectButton.IsEnabled = false;
+        //        BluetoothProgress.IsActive = true;
+        //        BluetoothComplete.Visibility = Visibility.Collapsed;
+        //        uiClinet = UIWebSocketClient.getSharedUIWebSocketClient();
+        //        bool uiResult = await uiClinet.ConnectToServer();
+        //        if (!uiResult)
+        //        {
+        //            LogService.MetroLogger.getSharedLogger().Error("UIClient failed to connect.");
+        //        }
+        //        this.bluetoothService = BluetoothService.BluetoothService.getBluetoothService();
+        //        await this.bluetoothService.Initialize();
+                
+        //    }
+        //    else {
+        //        uiClinet.disconnect();
+        //        bool result = this.bluetoothService.CloseConnection();               
+        //        if (result)
+        //        {
+        //            this.bluetoothService = null;
+        //            this.bluetoonOn = false;
+        //            bluetoothInitialized(false);
+        //            setStatus("bluetooth");
+        //            BluetoothProgresssBox.Text = "Disconnected Raspberry Pi";
+        //            BluetoothComplete.Visibility = Visibility.Visible;
+        //            BluetoothProgress.IsActive = false;
+                    
+        //            NotifyUser("Bluetooth Connection disconnected.", NotifyType.StatusMessage, 2);
+        //        }
+        //        else {
+        //            NotifyUser("Bluetooth Connection failed to disconnect.", NotifyType.ErrorMessage, 2);
+        //        }                
+        //    }
+
+        //}
+
+        private void CameraButton_Click(object sender, RoutedEventArgs e)
         {
-            if (this.bluetoothService == null)
-            {
-                NotifyUser("Could not reach Bluetooth device, try to connect again",
-                                   NotifyType.ErrorMessage, 2);
-                this.VideoOn = false;
 
-                //this.bluetoothInitialized(false);
-                this.StreamButton.IsChecked = false;
-                this.videoSwitch.IsOn = false;
-                return;
-            }
-
-            Debug.WriteLine("Sending message");
-            
-            if (desiredStatus)
-            {
-                await this.bluetoothService.sendBluetoothMessage("camera start");
-            }
-            else
-            {
-                await this.bluetoothService.sendBluetoothMessage("camera stop");
-            }
-            //this.videoSwitch.IsOn = desiredStatus;
-            //this.StreamButton.IsChecked = desiredStatus;
-
-            Debug.WriteLine("Setting status value to " + (this.bluetoothService.initialized && desiredStatus).ToString());
-            this.VideoOn = this.bluetoothService.initialized && desiredStatus;
-        }
-
-        private async void CameraButton_Click(object sender, RoutedEventArgs e)
-        {
+            // add image
+            curPage.addImageAndAnnotationControlFromBitmapImage(latestImageString);
+            /***
             if (this.bluetoothService == null)
             {
                 NotifyUser("Could not reach Bluetooth device, try to connect again",
@@ -1922,115 +1278,291 @@ namespace PhenoPad
             }
 
             await this.bluetoothService.sendBluetoothMessage("camera picture");
+            ****/
         }
 
-        public void bluetoothInitialized(bool val)
+        private async void StreamButton_Click(object sender, RoutedEventArgs e)
         {
-            this.StreamButton.IsEnabled = val;
-            this.videoSwitch.IsEnabled = val;
-            this.shutterButton.IsEnabled = val;
-            this.cameraButton.IsEnabled = val;
-
-            if (val)
+            if (StreamButton.IsChecked == true)
             {
-                setStatus("bluetooth");
-            }
-        }
-
-        /*private void BluetoothButton_Click(object sender, RoutedEventArgs e)
-        {
-            this.bluetoothService = BluetoothService.BluetoothService.getBluetoothService();
-            this.bluetoothService.Initialize();
-        }*/
-        
-        private async void ServerConnectButton_Click(object sender, RoutedEventArgs e)
-        {
-            uiClinet = UIWebSocketClient.getSharedUIWebSocketClient();
-            await uiClinet.ConnectToServer();
-
-            this.bluetoothService = BluetoothService.BluetoothService.getBluetoothService();
-            await this.bluetoothService.Initialize();
-        }
-
-        public void setStatus(string item)
-        {
-            if (item == "bluetooth")
-            {
-                this.BluetoothProgress.IsActive = false;
-                this.BluetoothComplete.Visibility = Visibility.Visible;
-            }
-            else if (item == "diarization")
-            {
-                this.DiarizationProgress.IsActive = false;
-                this.DiarizationComplete.Visibility = Visibility.Visible;
-            }
-            else if (item == "recognition")
-            {
-                this.RecognitionProgress.IsActive = false;
-                this.RecognitionComplete.Visibility = Visibility.Visible;
-            }
-            else if (item == "ready")
-            {
-                this.audioButton.IsEnabled = true;
-                //this.audioSwitch.IsEnabled = true;
-            }
-        }
-
-
-        private int doctor = 0;
-        private void OnChatViewContainerContentChanging(ListViewBase sender, ContainerContentChangingEventArgs args)
-        {
-            if (args.InRecycleQueue) return;
-            TextMessage message = (TextMessage)args.Item;
-
-            // Only display message on the right when speaker index = 0
-            //args.ItemContainer.HorizontalAlignment = (message.Speaker == 0) ? Windows.UI.Xaml.HorizontalAlignment.Right : Windows.UI.Xaml.HorizontalAlignment.Left;
-
-            if (message.IsNotFinal)
-            {
-                args.ItemContainer.HorizontalAlignment = Windows.UI.Xaml.HorizontalAlignment.Right;
+                await videoStreamStatusUpdateAsync(true);
+                cameraStatusText.Text = "ON";
             }
             else
             {
-                args.ItemContainer.HorizontalAlignment = (message.Speaker == doctor) ? Windows.UI.Xaml.HorizontalAlignment.Right : Windows.UI.Xaml.HorizontalAlignment.Left;
+                await videoStreamStatusUpdateAsync(false);
+                cameraStatusText.Text = "OFF";
+            }
+        }
+
+        /// <summary>
+        /// Event Handler for when user click erase all ink button
+        /// </summary>
+        private void InkToolbar_EraseAllClicked(InkToolbar sender, object args)
+        {
+            //calling auto-saving handler to save erased result
+            LogService.MetroLogger.getSharedLogger().Info("Cleared all ink strokes of this note page.");
+            this.curPage.on_stroke_changed();
+            PhenotypeManager.getSharedPhenotypeManager().phenotypesCandidates.Clear();
+            //more clearing caches
+
+        }
+
+
+        #endregion
+
+        //***************************Other event handlers********************************
+        #region other event handlers
+        /// <summary>
+        /// Handle property changed event, including status flag of mic and camera
+        /// </summary>
+        private void MainPage_PropertyChanged(object sender, PropertyChangedEventArgs e)
+        {
+            Debug.WriteLine("Property " + e.PropertyName + " changed.");
+        }
+
+        /// <summary>
+        /// Handle denpendency property changed event, including status flag of mic and camera
+        /// </summary>
+        private void OnPropertyChanged(DependencyObject sender, DependencyProperty dp)
+        {
+            Debug.WriteLine(sender.GetValue(dp));
+        }
+
+        /// <summary>
+        /// Display a message to the user.
+        /// This method may be called from any thread.
+        /// </summary>
+        public void NotifyUser(string strMessage, NotifyType type, int seconds)
+        {
+            // If called from the UI thread, then update immediately.
+            // Otherwise, schedule a task on the UI thread to perform the update.
+            if (Dispatcher.HasThreadAccess)
+            {
+                UpdateStatusAsync(strMessage, type, seconds);
+            }
+            else
+            {
+                var task = Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () => UpdateStatusAsync(strMessage, type, seconds));
+            }
+        }
+
+        /// <summary>
+        /// Updates the notice message to StatusBlock using a semaphore.
+        /// </summary>
+        private async void UpdateStatusAsync(string strMessage, NotifyType type, int seconds)
+        {
+            await notifySemaphoreSlim.WaitAsync();
+            try
+            {
+                switch (type)
+                {
+                    case NotifyType.StatusMessage:
+                        StatusBorder.Background = new SolidColorBrush(Colors.Turquoise);
+                        break;
+                    case NotifyType.ErrorMessage:
+                        StatusBorder.Background = new SolidColorBrush(Colors.Tomato);
+                        break;
+                }
+
+                StatusBlock.Text = strMessage;
+
+                // Collapse the StatusBlock if it has no text to conserve real estate.
+                // StatusBorder.Visibility = (StatusBlock.Text != String.Empty) ? Visibility.Visible : Visibility.Collapsed;
+                if (StatusBlock.Text != String.Empty)
+                {
+
+                    StatusBorder.Visibility = Visibility.Visible;
+                    await StatusBorderEnterStoryboard.BeginAsync();
+                }
+                else
+                {
+                    await StatusBorderExitStoryboard.BeginAsync();
+                    StatusBorder.Visibility = Visibility.Collapsed;
+                }
+
+                await Task.Delay(1000 * seconds);
+                await StatusBorderExitStoryboard.BeginAsync();
+                StatusBorder.Visibility = Visibility.Collapsed;
+
+            }
+            catch (Exception e)
+            {
+                LogService.MetroLogger.getSharedLogger().Error(e+e.Message);
+            }
+            finally
+            {
+                notifySemaphoreSlim.Release();
             }
 
-            /*if (message.Speaker != 99 && message.Speaker != -1 && message.Speaker > maxSpeaker)
-            {
-                Debug.WriteLine("Detected speaker " + message.Speaker.ToString());
-                for (var i = maxSpeaker + 1; i <= message.Speaker; i++)
-                {
-                    ComboBoxItem item = new ComboBoxItem();
-                    item.Background = (Windows.UI.Xaml.Media.Brush)Application.Current.Resources["Background_" + i.ToString()];
-                    item.Content = "Speaker " + (i + 1).ToString();
-                    this.speakerBox.Items.Add(item);
-                }
-                maxSpeaker = (int)message.Speaker;
-            }*/
         }
 
-        
+        /// <summary>
+        /// Returns the user's input in a dialog input box.
+        /// </summary>
+        private async Task<string> InputTextDialogAsync(string title, string content)
+        {
+            TextBox inputTextBox = new TextBox();
+            inputTextBox.AcceptsReturn = false;
+            inputTextBox.Height = 32;
+            ContentDialog dialog = new ContentDialog();
+            dialog.Content = inputTextBox;
+            dialog.Title = title;
+            dialog.IsSecondaryButtonEnabled = true;
+            dialog.PrimaryButtonText = "Ok";
+            dialog.SecondaryButtonText = "Cancel";
+            inputTextBox.Text = content;
+            if (await dialog.ShowAsync() == ContentDialogResult.Primary)
+                return inputTextBox.Text;
+            else
+                return "";
+        }
 
+        /// <summary>
+        /// Changes the name of the current Notebook based on user's input
+        /// </summary>
+        private async void noteNameTextBox_KeyDown(object sender, KeyRoutedEventArgs e)
+        {
+            try
+            {
+                if (e.Key == Windows.System.VirtualKey.Enter)
+                {
+                    if (notebookObject != null && !string.IsNullOrEmpty(noteNameTextBox.Text))
+                    {
+                        LogService.MetroLogger.getSharedLogger().Info("Saving new notebook name ... ");
+                        notebookObject.name = noteNameTextBox.Text;
+                        bool result = await FileManager.getSharedFileManager().SaveToMetaFile(notebookObject);
+                        if (result)
+                            LogService.MetroLogger.getSharedLogger().Info("Done saving new notebook name.");
+                        LoseFocus(sender);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                LogService.MetroLogger.getSharedLogger().Error($"Failed to save new notebook name:{ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// Handles when user finish typing new note name but didn't press enter key
+        /// </summary>
+        private async void noteNameTextBox_LostFocus(object sender, RoutedEventArgs args)
+        {
+            try {
+                if (notebookObject != null && !string.IsNullOrEmpty(noteNameTextBox.Text))
+                {
+                    LogService.MetroLogger.getSharedLogger().Info("Saving new notebook name ... ");
+                    notebookObject.name = noteNameTextBox.Text;
+                    bool result = await FileManager.getSharedFileManager().SaveToMetaFile(notebookObject);
+                    if (result)
+                        LogService.MetroLogger.getSharedLogger().Info("Done saving new notebook name.");
+                }
+            }
+            catch (Exception ex)
+            {
+                LogService.MetroLogger.getSharedLogger().Error($"Failed to save new notebook name:{ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// Handles when multimedia preview is closed
+        /// </summary>
+        private void MultimediaPreviewFlyout_Closed(object sender, object e)
+        {
+            // this.StreamView = new WebView();
+            //videoStreamWebSocket.Close(1000, "no reason:)");
+            throw new NotImplementedException("MultimediaPreviewFlyout_Closed");
+        }
+
+        /// <summary>
+        /// Handles when multimedia preview is opened
+        /// </summary>
         private void MultimediaPreviewFlyout_Opened(object sender, object e)
         {
-            this.StreamView.Navigate(new Uri(RPI_ADDRESS));
+            throw new NotImplementedException("MultimediaPreviewFlyout_Opened");
         }
 
-        private void FullscreenBtn_Click(object sender, RoutedEventArgs e)
+
+
+        #endregion
+
+        #region FOR TESTING/DEMO ONLY
+        /// <summary>
+        /// Temporarily disables/enables abbreviation detection for HWR
+        /// </summary>
+        private void AppBarButton_Click_1(object sender, RoutedEventArgs e)
         {
 
+            //curPage.changeLineHeight();
+        }
+        #endregion
+
+
+    }
+    //================================= END OF MAINAPGE ==========================================/
+
+    /// <summary>
+    /// Configurates pen tool including size, shape, color, etc.
+    /// </summary>
+    public class CalligraphicPen : InkToolbarCustomPen
+    {
+        /// <summary>
+        /// Creates a new ClligraphicPen instance.
+        /// </summary>
+        public CalligraphicPen()
+        {
         }
 
-        private void MyscriptBtn_Click(object sender, RoutedEventArgs e)
+        /// <summary>
+        /// Create and returns new ink attributes and sets defult shape,color and size.
+        /// </summary>
+        protected override InkDrawingAttributes CreateInkDrawingAttributesCore(Brush brush, double strokeWidth)
         {
-           // myScriptEditor.Visibility = MyscriptBtn.IsChecked != null && (bool)MyscriptBtn.IsChecked ? Visibility.Visible : Visibility.Collapsed;
+
+            InkDrawingAttributes inkDrawingAttributes = new InkDrawingAttributes();
+            inkDrawingAttributes.PenTip = PenTipShape.Circle;
+            inkDrawingAttributes.IgnorePressure = false;
+            SolidColorBrush solidColorBrush = (SolidColorBrush)brush;
+
+            if (solidColorBrush != null)
+            {
+                inkDrawingAttributes.Color = solidColorBrush.Color;
+            }
+
+            inkDrawingAttributes.Size = new Size(strokeWidth, 2.0f * strokeWidth);
+            //inkDrawingAttributes.Size = new Size(strokeWidth, strokeWidth);
+            inkDrawingAttributes.PenTipTransform = System.Numerics.Matrix3x2.CreateRotation((float)(Math.PI * 45 / 180));
+
+            return inkDrawingAttributes;
         }
+
     }
 
-    public enum NotifyType
+    // MyScript 
+    public class FlyoutCommand : System.Windows.Input.ICommand
     {
-        StatusMessage,
-        ErrorMessage
-    };
+        public delegate void InvokedHandler(FlyoutCommand command);
 
+        public string Id { get; set; }
+        private InvokedHandler _handler = null;
+
+        public FlyoutCommand(string id, InvokedHandler handler)
+        {
+            Id = id;
+            _handler = handler;
+        }
+
+        public bool CanExecute(object parameter)
+        {
+            return _handler != null;
+        }
+
+        public void Execute(object parameter)
+        {
+            _handler(this);
+        }
+
+        public event EventHandler CanExecuteChanged;
+    }
 }

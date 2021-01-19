@@ -88,6 +88,14 @@ namespace PhenoPad.CustomControl
             );
 
         private int localState;
+        public TimeSpan timespan;
+
+        public static readonly DependencyProperty phenotypeTimeSpanProperty = DependencyProperty.Register(
+            "phenotypeTimeSpan",
+            typeof(string),
+            typeof(TextBlock),
+            new PropertyMetadata(null)
+            );
 
         public PhenotypeControl()
         {
@@ -105,6 +113,16 @@ namespace PhenoPad.CustomControl
             sourceType = p.sourceType;
 
         }
+        /// <summary>
+        /// Setting a timespan for UI element for view mode
+        /// </summary>
+        /// <param name="time"></param>
+        public void setTimeSpan(TimeSpan time)
+        {
+            timespan = time;
+            Debug.WriteLine($"timespan of {Name} is {timespan} ...");
+        }
+
         // Add a phenotype
         private void AddBtn_Click(object sender, RoutedEventArgs e)
         {
@@ -125,7 +143,7 @@ namespace PhenoPad.CustomControl
             //else
             //    PhenotypeManager.getSharedPhenotypeManager().updatePhenoStateById(phenotypeId, -1, sourceType);
             setPhenotypeState(-1);
-             PhenotypeManager.getSharedPhenotypeManager().removeById(phenotypeId, SourceType.Saved);
+             PhenotypeManager.getSharedPhenotypeManager().removeByIdAsync(phenotypeId, SourceType.Saved);
         }
         
         private void YSwitchBtn_Click(object sender, RoutedEventArgs e)
@@ -206,14 +224,12 @@ namespace PhenoPad.CustomControl
             var recogPhenoFlyout = (Flyout)this.Resources["PhenotypeDetailFlyout"];
             recogPhenoFlyout.ShowAt((Button)sender);
             //Row pinfo = await PhenotypeManager.getSharedPhenotypeManager().getDetailById(phenotypeId);
-
-
             //phenotypeDetailControl.setByPhenotypeInfo(pinfo);
             phenotypeDetailControl.navigateTo(phenotypeId);
 
         }
 
-        private void NameGrid_Tapped(object sender, TappedRoutedEventArgs e)
+        private void NameGrid_Tapped(object sender, RoutedEventArgs e)
         {
             switch (localState)
             {

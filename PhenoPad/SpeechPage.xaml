@@ -84,44 +84,23 @@
                             <ColumnDefinition Width="Auto"/>
                             <ColumnDefinition Width="Auto" />
                         </Grid.ColumnDefinitions>
-
-                        <!--
-                        
-                        <Polygon
-                            Grid.Row="1"
-                            Grid.Column="{Binding TextColumn}"
-                            Fill="{Binding Converter={StaticResource bcConverter}}"
-                            HorizontalAlignment="Left"
-                            Points="0,0 0,18 18,18"
-                            Visibility="{x:Bind OnLeft}"
-                            Margin="0,0,10,0">
-                        </Polygon>
-
-                        <Polygon
-                            Grid.Row="1"
-                            Grid.Column="{Binding TextColumn}"
-                            Fill="{Binding Converter={StaticResource bcConverter}}"
-                            HorizontalAlignment="Right"
-                            Points="18,0 18,18 0,18"
-                            Visibility="{x:Bind OnRight}"
-                            Margin="0,0,10,0"/>
-                        -->
                         
                         <!--Finalized message color-->
                         <Grid
                             Grid.Row="0"
                             Grid.Column="{Binding TextColumn}"
+                            MinWidth="300"
+                            MaxWidth="600"
                             Background="{Binding Converter={StaticResource bcConverter}}"
                             Visibility="{x:Bind Path=IsFinal}"/>
 
                         <!--Not finalized message color-->
-                        <Grid
+                            <Grid
                             Grid.Row="0"
                             Grid.Column="{Binding TextColumn}"
                             Background="{StaticResource Background_Temp}"
                             Visibility="{x:Bind Path=IsNotFinal}"/>
-
-                        <Grid
+                            <Grid
                             Grid.Row="0"
                             Grid.Column="{Binding TextColumn}">
                             <Grid.RowDefinitions>
@@ -129,7 +108,7 @@
                                 <RowDefinition Height="Auto"/>
                             </Grid.RowDefinitions>
 
-                            <TextBlock
+                                    <TextBlock
                                 Text="{x:Bind Body}"
                                 Grid.Row="0"
                                 Grid.Column="0"
@@ -150,10 +129,12 @@
                                     Text="{Binding Converter={StaticResource intervalConverter}}"
                                     TextWrapping="Wrap"
                                     Padding="3" 
+                                    HorizontalAlignment="Left"
                                     Foreground="Black"
                                 />
                             </Button>
                         </Grid>
+
 
                         <ListView x:Name="phenoFromConversationListView" 
                                     Grid.Column="{Binding PhenoColumn}"
@@ -186,7 +167,7 @@
                 <RowDefinition Height="6*"/>
             </Grid.RowDefinitions>
 
-            <Grid Name="QuickView1" BorderBrush="#EEEEEE" BorderThickness="2,2,2,2">
+            <Grid Name="QuickView1" Grid.RowSpan="2" BorderBrush="#EEEEEE" BorderThickness="2,2,2,2">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="25"/>
                     <RowDefinition Height="*"/>
@@ -212,7 +193,9 @@
                 </ListView>
             </Grid>
 
-            <local:ChatListView x:Name="realtimeChatView" Grid.Row="1" Grid.Column="0" 
+            
+
+            <!--<local:ChatListView x:Name="realtimeChatView" Grid.Row="1" Grid.Column="0" 
                             IncrementalLoadingThreshold="2" Margin="2" 
                             BorderBrush="LightGray" BorderThickness="2"
                             ScrollViewer.VerticalScrollBarVisibility="Hidden">
@@ -238,7 +221,7 @@
                     <DataTemplate x:DataType="local:TextMessage">
                         <Grid Margin="6">
 
-                            <!--Right/Bottom polygon-->
+                            --><!--Right/Bottom polygon-->
                             <!--<Polygon
                             Grid.Row="1"
                             Fill="LightSlateGray"
@@ -247,7 +230,7 @@
                             Visibility="Visible"
                             Margin="0,0,10,0"/>-->
 
-                            <!--Message color-->
+                            <!--Message color--><!--
                             <Grid
                             Grid.Row="0"
                             Background="LightGray"/>
@@ -284,16 +267,16 @@
                         </Grid>
                     </DataTemplate>
                 </ListView.ItemTemplate>
-            </local:ChatListView>
+            </local:ChatListView>-->
             
         </Grid>
         
 
         <!-- To allow doctor to identify "himself"-->
-        <Grid  Grid.Row="1" Grid.ColumnSpan="2">
+        <Grid  Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2">
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="Auto"/>
-                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="4*"/>
+                <ColumnDefinition Width="6*"/>
             </Grid.ColumnDefinitions>
 
             <StackPanel Orientation="Horizontal" Grid.Column="0" Padding="5,3,3,3">
@@ -339,34 +322,17 @@
             </StackPanel>
 
             <StackPanel Orientation="Horizontal" Grid.Column="1" Padding="5,3,3,3"
-                        HorizontalAlignment="Center">
+                        HorizontalAlignment="Left">
                 <TextBlock x:Name="mediaText"  Text="Recorded Audio" 
-                    Margin="0" 
+                    Margin="5" 
                     Padding="5,5,5,1"
                            Visibility="Collapsed"/>
                 <MediaPlayerElement x:Name="_mediaPlayerElement" 
                                     AreTransportControlsEnabled="True" 
-                                    HorizontalAlignment="Stretch"  Grid.Column="1"
-                                Visibility="Collapsed" Height="96" Width="863"
-                                    />
+                                    Margin="5"
+                                    HorizontalAlignment="Stretch"  Visibility="Collapsed" 
+                                    Height="Auto" Width="Auto"/>
             </StackPanel>
-            <!--<Grid
-                Grid.Column="1">
-                <Border Padding="25,3,15,3"
-                        Background="{StaticResource Background_Temp}"
-                        HorizontalAlignment="Right">
-                    <TextBlock x:Name="tempSentenceTextBlock"
-                            Text="Temp text"
-                            Grid.Row="0"
-                            Grid.Column="0"
-                            TextWrapping="Wrap"
-                            FontSize="14"
-                            VerticalAlignment="Center"
-                            Foreground="WhiteSmoke"
-                            Visibility="Collapsed"
-                            />
-                </Border>
-            </Grid>-->
 
         </Grid>
     </Grid>
