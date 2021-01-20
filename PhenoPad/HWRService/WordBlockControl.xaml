@@ -24,12 +24,16 @@
                         </Style>
                     </ListView.ItemContainerStyle>
                 </ListView>
-                <TextBox x:Name="AlternativeInput" MinHeight="40" LostFocus="ReplaceAlternative" />
+                <StackPanel x:Name="AlternativeStack" Orientation="Vertical"/>
+                <TextBox x:Name="AlternativeInput" MinHeight="40" IsFocusEngaged="False" LostFocus="ReplaceAlternative" />
             </StackPanel>
         </Flyout>
     </UserControl.Resources>
 
-    <Grid>
-        <TextBlock x:Name="WordBlock" Text="{x:Bind current}" x:FieldModifier="public" FontSize="26" Tapped="ShowWordCandidate" />
+    <Grid Background="Transparent">
+        <TextBlock x:Name="WordBlock" x:FieldModifier="public"  
+                   Text="{x:Bind current}" VerticalAlignment="Center" FontSize="28" 
+                   Tapped="ShowWordCandidate" />
+        <Button Visibility="Collapsed" Style="{StaticResource ButtonStyle1}"/>
     </Grid>
 </UserControl>

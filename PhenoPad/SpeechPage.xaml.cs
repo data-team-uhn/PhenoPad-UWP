@@ -1,30 +1,15 @@
-﻿//*********************************************************
-//
-// Copyright (c) Microsoft. All rights reserved.
-// This code is licensed under the MIT License (MIT).
-// THIS CODE IS PROVIDED *AS IS* WITHOUT WARRANTY OF
-// ANY KIND, EITHER EXPRESS OR IMPLIED, INCLUDING ANY
-// IMPLIED WARRANTIES OF FITNESS FOR A PARTICULAR
-// PURPOSE, MERCHANTABILITY, OR NON-INFRINGEMENT.
-//
-//*********************************************************
-
-using PhenoPad.SpeechService;
+﻿using PhenoPad.SpeechService;
 using System;
-using System.Collections;
 using System.Collections.ObjectModel;
 using System.Threading.Tasks;
 using Windows.Foundation;
 using Windows.Foundation.Metadata;
-using Windows.System;
 using Windows.UI;
 using Windows.UI.ViewManagement;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
 using Windows.UI.Xaml.Data;
-using Windows.UI.Xaml.Input;
 using System.Diagnostics;
-
 using PhenoPad.PhenotypeService;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -33,9 +18,487 @@ using System.Runtime.CompilerServices;
 using Windows.Media.Core;
 using Windows.UI.Core;
 using System.Xml.Serialization;
+using PhenoPad.FileService;
+using Windows.UI.Popups;
+using Windows.UI.Xaml.Input;
+using System.Linq;
 
 namespace PhenoPad
 {
+    public sealed partial class SpeechPage : Page
+    {
+        public static SpeechPage Current;
+        public static MainPage mainpage;
+        public PhenotypeManager PhenoMana => PhenotypeManager.getSharedPhenotypeManager();
+        private int doctor = 0;
+        private int curSpeakerCount = 2;
+        private string loadedMedia = String.Empty;
+        private List<AudioFile> savedAudio;
+        private List<Phenotype> phenoInSpeech = new List<Phenotype>();
+        private DispatcherTimer playbackTimer;
+
+        //ATTRIBUTES FOR EDITING TRANSCRIPT
+        private string originText;
+        private TextMessage selectedTM;
+        private TextBlock selectedTB;
+
+
+        //=================================METHODS==============================================
+        public SpeechPage()
+        {
+            this.InitializeComponent();
+            playbackTimer = new DispatcherTimer();
+            playbackTimer.Tick += PlaybackTimer_Tick;
+            Current = this;
+            mainpage = MainPage.Current;
+            phenoInSpeech = new List<Phenotype>();
+            chatView.ItemsSource = mainpage.conversations;
+            //chatView.ItemsSource = SpeechManager.getSharedSpeechManager().conversation;
+            chatView.ContainerContentChanging += OnChatViewContainerContentChanging;
+            //realtimeChatView.Children.Add(MainPage.Current.speechQuickView.c);
+            savedAudio = new List<AudioFile>();
+            SpeechManager.getSharedSpeechManager().EngineHasResult += SpeechPage_EngineHasResult;
+            SpeechManager.getSharedSpeechManager().RecordingCreated += SpeechPage_RecordingCreated;
+            this.Tapped += HidePopups;
+        }
+
+        public void PlaybackTimer_Tick(object sender, object e)
+        {
+            //stops mediaplayback when timer ticks
+            playbackTimer.Stop();
+            if (_mediaPlayerElement.MediaPlayer != null)
+                _mediaPlayerElement.MediaPlayer.Pause();
+        }
+
+        private void HidePopups(object sender, TappedRoutedEventArgs e)
+        {
+            //PhenotypePopup.Visibility = Visibility.Collapsed;
+            ChatEditPopup.Visibility = Visibility.Collapsed;
+        }
+
+        public async void LoadSavedAudio()
+        {
+            List<string> audioNames = MainPage.Current.SavedAudios;
+            AudioDropdownList.ItemsSource = audioNames;
+            //if (audioNames.Count > 0) {
+            //    AudioDropdownList.SelectedIndex = 0;
+            //    var audioFile = await FileManager.getSharedFileManager().GetSavedAudioFile(MainPage.Current.notebookId, audioNames[0]);
+            //    if (audioFile != null)
+            //    {
+            //        _mediaPlayerElement.Source = MediaSource.CreateFromStorageFile(audioFile);
+            //        _mediaPlayerElement.Visibility = Visibility.Visible;
+            //    }
+            //}
+            UpdateLayout();
+        }
+
+        public void updateChat()
+        {
+            chatView.ItemsSource = MainPage.Current.conversations;
+            if (MainPage.Current != null && !MainPage.Current.speechEngineRunning)
+                LoadSavedAudio();
+            UpdateLayout();
+        }
+
+        private void SpeechPage_RecordingCreated(SpeechManager sender, Windows.Storage.StorageFile args)
+        {
+            //Windows.ApplicationModel.Core.CoreApplication.MainView.CoreWindow.Dispatcher.RunAsync(CoreDispatcherPriority.Normal,
+            //() =>
+            //{
+            this._mediaPlayerElement.Source = MediaSource.CreateFromStorageFile(args);
+            this._mediaPlayerElement.Visibility = Visibility.Visible;
+            this.mediaText.Visibility = Visibility.Visible;
+            this.loadedMedia = args.Name;
+            this.mediaText.Text = args.Name;
+            //}
+            //);
+        }
+
+        private void SpeechPage_EngineHasResult(SpeechManager sender, SpeechEngineInterpreter args)
+        {
+            //this.tempSentenceTextBlock.Text = args.tempSentence;
+        }
+
+        private void OnChatViewContainerContentChanging(ListViewBase sender, ContainerContentChangingEventArgs args)
+        {
+            if (args.InRecycleQueue) return;
+            TextMessage message = (TextMessage)args.Item;
+
+            // Only display message on the right when speaker index = 0
+            //args.ItemContainer.HorizontalAlignment = (message.Speaker == 0) ? Windows.UI.Xaml.HorizontalAlignment.Right : Windows.UI.Xaml.HorizontalAlignment.Left;
+
+            if (message.IsNotFinal)
+            {
+                args.ItemContainer.HorizontalAlignment = HorizontalAlignment.Right;
+            }
+            else
+            {
+                args.ItemContainer.HorizontalAlignment = (message.Speaker == doctor) ? HorizontalAlignment.Right : HorizontalAlignment.Left;
+            }
+
+            /*if (message.Speaker != 99 && message.Speaker != -1 && message.Speaker > maxSpeaker)
+            {
+                Debug.WriteLine("Detected speaker " + message.Speaker.ToString());
+                for (var i = maxSpeaker + 1; i <= message.Speaker; i++)
+                {
+                    ComboBoxItem item = new ComboBoxItem();
+                    item.Background = (Windows.UI.Xaml.Media.Brush)Application.Current.Resources["Background_" + i.ToString()];
+                    item.Content = "Speaker " + (i + 1).ToString();
+                    this.speakerBox.Items.Add(item);
+                }
+                maxSpeaker = (int)message.Speaker;
+            }*/
+        }
+
+        private void BackButton_Click(object sender, Windows.UI.Xaml.RoutedEventArgs e)
+        {
+            Frame rootFrame = Window.Current.Content as Frame;
+            if (rootFrame.CanGoBack)
+            {
+                rootFrame.GoBack();
+
+                if (ApiInformation.IsTypePresent("Windows.UI.ViewManagement.ApplicationView"))
+                {
+                    var titleBar = ApplicationView.GetForCurrentView().TitleBar;
+                    if (titleBar != null)
+                    {
+                        titleBar.BackgroundColor = Colors.White;
+                        titleBar.ButtonBackgroundColor = Colors.White;
+                    }
+                }
+            }
+        }
+
+        private void speakerBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            ComboBox senderBox = (ComboBox)sender;
+            doctor = senderBox.SelectedIndex;
+            if (senderBox.SelectedItem != null)
+            {
+                senderBox.Background = ((ComboBoxItem)(senderBox.SelectedItem)).Background;
+            }
+
+            // Do not change combobox label after selection
+            //speakerTxt.Text = "doctor: " + (doctor + 1).ToString();
+
+            for (int i = 0; i < SpeechManager.getSharedSpeechManager().conversation.Count; i++)
+            //foreach (TextMessage item in chatView.ItemsSource.Items)
+            {
+                if (SpeechManager.getSharedSpeechManager().conversation[i].IsNotFinal)
+                {
+                    SpeechManager.getSharedSpeechManager().conversation[i].OnLeft = false;
+                }
+                else
+                {
+                    SpeechManager.getSharedSpeechManager().conversation[i].OnLeft = (SpeechManager.getSharedSpeechManager().conversation[i].Speaker != doctor);
+                }
+            }
+
+            var temp = chatView.ItemsSource;
+            chatView.ItemsSource = null;
+            chatView.ItemsSource = temp;
+        }
+
+        private void TextBlockDoubleTapped(object sender, RoutedEventArgs e) {
+
+            TextBlock tb = ((TextBlock)sender);
+            string body = tb.Text;
+            originText = body.Trim();
+            var element_Visual_Relative = tb.TransformToVisual(root);
+            Point pos = element_Visual_Relative.TransformPoint(new Point(0, 0));
+            TextMessage tm = MainPage.Current.conversations.Where(x => x.Body == body).FirstOrDefault();
+            selectedTM = tm;
+            selectedTB = tb;
+            if (tm != null) {
+                Canvas.SetLeft(ChatEditPopup, pos.X);
+                Canvas.SetTop(ChatEditPopup, pos.Y);
+                ChatEditPopup.Width = tb.ActualWidth - 10;
+                ChatEditPopup.Height = tb.ActualHeight;
+                TranscriptEditBox.Document.SetText(Windows.UI.Text.TextSetOptions.None, originText);
+                ChatEditPopup.Visibility = Visibility.Visible;
+                TranscriptEditBox.Focus(FocusState.Pointer);
+            }
+
+        }
+
+        private void TextBlockTapped(object sender, RoutedEventArgs e)
+        {
+
+            TextBlock tb = ((TextBlock)sender);
+            string body = tb.Text;
+            originText = body.Trim();
+            var element_Visual_Relative = tb.TransformToVisual(root);
+            Point pos = element_Visual_Relative.TransformPoint(new Point(0, 0));
+            TextMessage tm = MainPage.Current.conversations.Where(x => x.Body == body).FirstOrDefault();
+            selectedTM = tm;
+            selectedTB = tb;
+            if (tm != null)
+            {
+                var phenos = tm.phenotypesInText;
+                speechPhenoListView.ItemsSource = phenos;
+                speechPhenoListView.UpdateLayout();
+            }
+
+        }
+
+        private async void EditBoxLostFocus(object sender, RoutedEventArgs e) {
+            string newText = "";
+            TranscriptEditBox.Document.GetText(Windows.UI.Text.TextGetOptions.None, out newText);
+            newText = newText.Trim();
+            if (newText != originText && newText!= "") {
+                selectedTM.Body = newText;
+                selectedTB.Text = newText;
+                await MainPage.Current.SaveCurrentConversationsToDisk();
+                chatView.ItemsSource = MainPage.Current.conversations;
+                UpdateLayout();
+                MainPage.Current.NotifyUser("Transcript updated", NotifyType.StatusMessage, 1);
+            }
+        }
+
+        private async void MessageAudioButtonClick(object sender, RoutedEventArgs e)
+        {
+            //only allow audio playback when there's no 
+            if (this._mediaPlayerElement != null )
+            {
+                Button srcButton = (Button)sender;
+                var m = (TextMessage)srcButton.DataContext;
+
+                // Overloaded constructor takes the arguments days, hours, minutes, seconds, miniseconds.
+                // Create a TimeSpan with miliseconds equal to the slider value.
+
+                double actual_start = Math.Max(0, m.start);
+                //by default set playback length to 1 second
+                double actual_end = Math.Max(m.start + 1, m.end);
+
+                int start_second = (int)(actual_start);
+                int end_second = (int)(actual_end);
+
+                int start_minute = start_second / 60;
+                start_second = start_second - 60 * start_minute;
+                int start_mili = (int)(100 * (actual_start - 60 * start_minute - start_second));
+
+                // check for current source
+                var savedFile = await FileManager.getSharedFileManager().GetSavedAudioFile(MainPage.Current.notebookId, m.AudioFile);
+
+
+                //gets the local audio file and plays based on saved interval
+                if (savedFile != null)
+                {
+                    if (loadedMedia != savedFile.Name)
+                    {
+                        _mediaPlayerElement.Source = MediaSource.CreateFromStorageFile(savedFile);
+                        loadedMedia = savedFile.Name;
+                        mediaText.Text = savedFile.Name;
+                    }
+                    TimeSpan ts = new TimeSpan(0, 0, start_minute, start_second, start_mili);
+                    playbackTimer.Interval = ts;
+                    //Debug.WriteLine(ts);
+                    _mediaPlayerElement.MediaPlayer.Position = ts;
+                    _mediaPlayerElement.MediaPlayer.Play();
+                    playbackTimer.Start();
+                }
+                //tries to get file from server and plays
+                else if (savedFile == null)
+                {
+                    Debug.WriteLine("requesting from server");
+                    int ind = m.ConversationIndex;
+                    MainPage.Current.PlayMedia(m.AudioFile, actual_start, actual_end);
+                }
+
+            }
+        }
+
+        private void ListButtonClick(object sender, RoutedEventArgs e) {
+
+        }
+
+        private String changeNumSpeakers(String text, bool direction)
+        {
+            //true = up, false = down
+            int proposed = Int32.Parse(text);
+            if (direction)
+            {
+                proposed++;
+                if (proposed > 5)
+                {
+                    proposed = 5;
+                }
+
+                if (proposed == 5)
+                {
+                    this.addSpeakerBtn.IsEnabled = false;
+                }
+                else
+                {
+                    this.addSpeakerBtn.IsEnabled = true;
+                }
+            }
+            else
+            {
+                proposed--;
+                if (proposed < 1)
+                {
+                    proposed = 1;
+                }
+
+                if (proposed == 1)
+                {
+                    this.removeSpeakerBtn.IsEnabled = false;
+                }
+                else
+                {
+                    this.removeSpeakerBtn.IsEnabled = true;
+                }
+            }
+
+            return proposed.ToString();
+        }
+
+        private void addSpeakerBtn_Click(object sender, RoutedEventArgs e)
+        {
+            String proposedText = this.numSpeakerBox.Text;
+            this.numSpeakerBox.Text = changeNumSpeakers(proposedText, true);
+
+            try
+            {
+                SpeechManager.getSharedSpeechManager().speechAPI.changeNumSpeakers(
+                SpeechManager.getSharedSpeechManager().speechInterpreter.worker_pid, Int32.Parse(proposedText));
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine(ex.Message);
+                Debug.WriteLine("Unable to update");
+            }
+
+            //0, Int32.Parse(proposedText));
+
+            //Debug.WriteLine("Detected speaker " + message.Speaker.ToString());
+            //for (var i = maxSpeaker + 1; i <= message.Speaker; i++)
+            //{
+
+            Debug.WriteLine("Old text: " + proposedText + "\tNew text: " + this.numSpeakerBox.Text);
+            if (proposedText != this.numSpeakerBox.Text)
+            {
+                this.adjustSpeakerCount(Int32.Parse(this.numSpeakerBox.Text));
+            }
+            //}
+            //this.maxSpeaker = (int)message.Speaker;
+        }
+
+        private void removeSpeakerBtn_Click(object sender, RoutedEventArgs e)
+        {
+            String proposedText = this.numSpeakerBox.Text;
+            this.numSpeakerBox.Text = changeNumSpeakers(proposedText, false);
+
+            try
+            {
+                SpeechManager.getSharedSpeechManager().speechAPI.changeNumSpeakers(
+                SpeechManager.getSharedSpeechManager().speechInterpreter.worker_pid, Int32.Parse(proposedText));
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine(ex.Message);
+                Debug.WriteLine("Unable to update");
+            }
+            //0, Int32.Parse(proposedText));
+
+            Debug.WriteLine("Old text: " + proposedText + "\tNew text: " + this.numSpeakerBox.Text);
+            if (proposedText != this.numSpeakerBox.Text)
+            {
+                this.adjustSpeakerCount(Int32.Parse(this.numSpeakerBox.Text));
+            }
+        }
+
+        public void setSpeakerButtonEnabled(bool enabled)
+        {
+            this.addSpeakerBtn.IsEnabled = enabled;
+            this.removeSpeakerBtn.IsEnabled = enabled;
+        }
+
+        public void adjustSpeakerCount(int newCount)
+        {
+            Debug.WriteLine("New Count: " + newCount.ToString() + "\tCurSpeaker Count: " + this.curSpeakerCount.ToString());
+            while (newCount != this.curSpeakerCount)
+            {
+                if (newCount > this.curSpeakerCount)
+                {
+                    Debug.WriteLine("Incrementing speaker count to " + newCount.ToString());
+                    this.curSpeakerCount += 1;
+                    ComboBoxItem item = new ComboBoxItem();
+                    item.Background = (Windows.UI.Xaml.Media.Brush)Application.Current.Resources["Background_" + (this.curSpeakerCount - 1).ToString()];
+                    item.Background.Opacity = 0.75;
+                    item.Content = "Speaker " + curSpeakerCount.ToString();
+
+                    this.speakerBox.Items.Add(item);
+                }
+                else
+                {
+                    Debug.WriteLine("Decrementing speaker count to " + newCount.ToString());
+                    this.curSpeakerCount -= 1;
+                    if (this.speakerBox.SelectedIndex + 1 > this.curSpeakerCount)
+                    {
+                        this.speakerBox.SelectedIndex--;
+                    }
+                    this.speakerBox.Items.RemoveAt(this.speakerBox.Items.Count - 1);
+                }
+            }
+        }
+
+        private async void AudioDropdownList_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (e.AddedItems.Count > 0)
+            {
+                string audioName = e.AddedItems[0].ToString();
+                Debug.WriteLine("selection changed"+audioName);
+                var audioFile = await FileManager.getSharedFileManager().GetSavedAudioFile(MainPage.Current.notebookId, audioName);
+                if (audioFile != null)
+                {
+                    _mediaPlayerElement.Source = MediaSource.CreateFromStorageFile(audioFile);
+                    _mediaPlayerElement.Visibility = Visibility.Visible;
+                }
+                else
+                {
+                    bool success = await TryGetAudioFromServer(audioName);
+                    Debug.WriteLine($"trygetaudiofrom server success = {success}");
+                    if (success)
+                    {
+                        audioFile = await FileManager.getSharedFileManager().GetSavedAudioFile(MainPage.Current.notebookId, audioName);
+                        _mediaPlayerElement.Source = MediaSource.CreateFromStorageFile(audioFile);
+                        _mediaPlayerElement.Visibility = Visibility.Visible;
+                    }
+                }
+            }
+        }
+
+        public async Task<bool> TryGetAudioFromServer(string name)
+        {
+            //tries to request recorded audio from sickkids server when local audio does not exist
+            try
+            {
+                var messageDialog = new MessageDialog("Getting audio file from server may take a while, continue?");
+                messageDialog.Title = "PhenoPad";
+                messageDialog.Commands.Add(new UICommand("Yes") { Id = 0 });
+                messageDialog.Commands.Add(new UICommand("No") { Id = 2 });
+                // Set the command that will be invoked by default
+                messageDialog.DefaultCommandIndex = 2;
+                // Set the command to be invoked when escape is pressed
+                messageDialog.CancelCommandIndex = 2;
+                // Show the message dialog
+                var result = await messageDialog.ShowAsync();
+                if ((int)result.Id == 0)
+                {
+                    bool success = await MainPage.Current.GetRemoteAudioAndSave(name);
+                    return success;
+                }
+            }
+            catch (Exception e)
+            {
+                LogService.MetroLogger.getSharedLogger().Error(e.Message);
+            }
+            return false;
+        }
+    }
+
     // Bindable class representing a single text message.
     // Several fields are created to save the hassel of creating binding converters :D
     public class TextMessage : INotifyPropertyChanged
@@ -53,7 +516,7 @@ namespace PhenoPad
             {
                 this._body = value;
                 this.NotifyPropertyChanged("Body");
-                
+
                 /*
                 Task<List<Phenotype>> phenosTask = PhenotypeManager.getSharedPhenotypeManager().annotateByNCRAsync(this._body);
                 
@@ -100,13 +563,27 @@ namespace PhenoPad
         }
         public int ConversationIndex { get; set; }
         public DateTime DisplayTime;
+        public string AudioFile;
 
         //public string DisplayTime { get; set; }
 
         // Bind to phenotype display in conversation
-        [XmlIgnore]
-        public ObservableCollection<Phenotype> phenotypesInText { get; set; }
+        //[XmlIgnore]
+        //public ObservableCollection<Phenotype> phenotypesInText { get; set; }
 
+
+        [XmlArray("Phenotypes")]
+        [XmlArrayItem("phenotype")]
+        public List<Phenotype> phenotypesInText;
+
+        public bool hasPhenotype { get; set; }
+        public string numPhenotype
+        {
+            get
+            {
+                return phenotypesInText.Count.ToString();
+            }
+        }
         // Now that we support more than 2 users, we need to have speaker index
         public uint Speaker { get; set; }
 
@@ -193,8 +670,7 @@ namespace PhenoPad
             throw new NotImplementedException();
         }
     }
-
-    
+  
     class IntervalDisplayConverter : IValueConverter
     {
         public object Convert(object value, Type targetType, object parameter, string language)
@@ -229,7 +705,7 @@ namespace PhenoPad
                 string date = String.Format("{0:g}", m.DisplayTime);
                 //determines whos speaking: todo: clsssify who is doctor/patient
                 string speaker = m.Speaker == 0 ? "Doctor" : "Patient:" + m.Speaker;
-                return date+"  "+ " Session #" + m.ConversationIndex+", by Speaker "+ m.Speaker;
+                return date+"-Session#" + m.ConversationIndex+"-Speaker "+ m.Speaker;
             }
             else
             {
@@ -278,6 +754,7 @@ namespace PhenoPad
                 {
                     Body = $"{messageCount}: {CreateRandomMessage()}",
                     Speaker = (messageCount++) % 2,
+                    AudioFile = SpeechManager.getSharedSpeechManager().GetAudioName(),
                     //DisplayTime = DateTime.Now.ToString(),
                     IsFinal = true
                 });
@@ -520,298 +997,4 @@ namespace PhenoPad
         }
     }
 
-    public sealed partial class SpeechPage : Page
-    {
-        public static SpeechPage Current;
-        public static MainPage mainpage;
-        public PhenotypeManager PhenoMana => PhenotypeManager.getSharedPhenotypeManager();
-        private int doctor = 0;
-        private int curSpeakerCount = 2;
-        private string loadedMedia = String.Empty;
-
-
-        //=================================METHODS==============================================
-        public SpeechPage()
-        {
-            this.InitializeComponent();
-            Current = this;
-            mainpage = MainPage.Current;
-            chatView.ItemsSource = mainpage.conversations;
-            //chatView.ItemsSource = SpeechManager.getSharedSpeechManager().conversation;
-            chatView.ContainerContentChanging += OnChatViewContainerContentChanging;
-            //realtimeChatView.Children.Add(MainPage.Current.speechQuickView.c);
-
-            SpeechManager.getSharedSpeechManager().EngineHasResult += SpeechPage_EngineHasResult;
-            SpeechManager.getSharedSpeechManager().RecordingCreated += SpeechPage_RecordingCreated;
-        }
-
-        public void updateChat() {
-            chatView.ItemsSource = MainPage.Current.conversations;
-        }
-
-        private void SpeechPage_RecordingCreated(SpeechManager sender, Windows.Storage.StorageFile args)
-        {
-            //Windows.ApplicationModel.Core.CoreApplication.MainView.CoreWindow.Dispatcher.RunAsync(CoreDispatcherPriority.Normal,
-            //() =>
-            //{
-                this._mediaPlayerElement.Source = MediaSource.CreateFromStorageFile(args);
-                this._mediaPlayerElement.Visibility = Visibility.Visible;
-                this.mediaText.Visibility = Visibility.Visible;
-                this.loadedMedia = args.Name;
-                this.mediaText.Text = args.Name;
-            //}
-            //);
-        }
-
-        private void SpeechPage_EngineHasResult(SpeechManager sender, SpeechEngineInterpreter args)
-        {
-            //this.tempSentenceTextBlock.Text = args.tempSentence;
-        }
-
-        private void OnChatViewContainerContentChanging(ListViewBase sender, ContainerContentChangingEventArgs args)
-        {
-            if (args.InRecycleQueue) return;
-            TextMessage message = (TextMessage)args.Item;
-
-            // Only display message on the right when speaker index = 0
-            //args.ItemContainer.HorizontalAlignment = (message.Speaker == 0) ? Windows.UI.Xaml.HorizontalAlignment.Right : Windows.UI.Xaml.HorizontalAlignment.Left;
-
-            if (message.IsNotFinal)
-            {
-                args.ItemContainer.HorizontalAlignment = HorizontalAlignment.Right;
-            }
-            else
-            {
-                args.ItemContainer.HorizontalAlignment = (message.Speaker == doctor) ? HorizontalAlignment.Right : HorizontalAlignment.Left;
-            }
-
-            /*if (message.Speaker != 99 && message.Speaker != -1 && message.Speaker > maxSpeaker)
-            {
-                Debug.WriteLine("Detected speaker " + message.Speaker.ToString());
-                for (var i = maxSpeaker + 1; i <= message.Speaker; i++)
-                {
-                    ComboBoxItem item = new ComboBoxItem();
-                    item.Background = (Windows.UI.Xaml.Media.Brush)Application.Current.Resources["Background_" + i.ToString()];
-                    item.Content = "Speaker " + (i + 1).ToString();
-                    this.speakerBox.Items.Add(item);
-                }
-                maxSpeaker = (int)message.Speaker;
-            }*/
-        }
-
-        private void BackButton_Click(object sender, Windows.UI.Xaml.RoutedEventArgs e)
-        {
-            Frame rootFrame = Window.Current.Content as Frame;
-            if (rootFrame.CanGoBack)
-            {
-                rootFrame.GoBack();
-
-                if (ApiInformation.IsTypePresent("Windows.UI.ViewManagement.ApplicationView"))
-                {
-                    var titleBar = ApplicationView.GetForCurrentView().TitleBar;
-                    if (titleBar != null)
-                    {
-                        titleBar.BackgroundColor = Colors.White;
-                        titleBar.ButtonBackgroundColor = Colors.White;
-                    }
-                }
-            }
-        }
-
-        private void speakerBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
-        {
-            ComboBox senderBox = (ComboBox)sender;
-            doctor = senderBox.SelectedIndex;
-            if (senderBox.SelectedItem != null)
-            {
-                senderBox.Background = ((ComboBoxItem)(senderBox.SelectedItem)).Background;
-            }
-            
-            // Do not change combobox label after selection
-            //speakerTxt.Text = "doctor: " + (doctor + 1).ToString();
-
-            for (int i = 0; i < SpeechManager.getSharedSpeechManager().conversation.Count; i++)
-            //foreach (TextMessage item in chatView.ItemsSource.Items)
-            {
-                if (SpeechManager.getSharedSpeechManager().conversation[i].IsNotFinal)
-                {
-                    SpeechManager.getSharedSpeechManager().conversation[i].OnLeft = false;
-                }
-                else
-                {
-                    SpeechManager.getSharedSpeechManager().conversation[i].OnLeft = (SpeechManager.getSharedSpeechManager().conversation[i].Speaker != doctor);
-                }
-            }
-
-            var temp = chatView.ItemsSource;
-            chatView.ItemsSource = null;
-            chatView.ItemsSource = temp;
-        }
-
-        private async void MessageButtonClick(object sender, RoutedEventArgs e)
-        {
-            if (this._mediaPlayerElement != null)
-            {
-                Button srcButton = (Button)sender;
-                var m = (TextMessage)srcButton.DataContext;
-                Debug.WriteLine(m.Body);
-
-                // check for current source
-                var savedFile = await FileService.FileManager.getSharedFileManager().GetNoteFile(
-                        FileService.FileManager.getSharedFileManager().currentNoteboookId,
-                        "", 
-                        FileService.NoteFileType.Audio, 
-                        "audio_" + m.ConversationIndex);
-                    
-                if (savedFile.Name != this.loadedMedia)
-                {
-                    this._mediaPlayerElement.Source = MediaSource.CreateFromStorageFile(savedFile);
-                    this.loadedMedia = savedFile.Name;
-                    this.mediaText.Text = savedFile.Name;
-                }
-
-                // Overloaded constructor takes the arguments days, hours, minutes, seconds, miniseconds.
-                // Create a TimeSpan with miliseconds equal to the slider value.
-
-                double actual_start = Math.Max(0, m.Interval.start - 5);
-                int start_second = (int)(actual_start);
-                int start_minute = start_second / 60;
-                start_second = start_second - 60 * start_minute;
-                int start_mili = (int)(100 * (actual_start - 60 * start_minute - start_second));
-
-                TimeSpan ts = new TimeSpan(0, 0, start_minute, start_second, start_mili);
-                this._mediaPlayerElement.MediaPlayer.Position = ts;
-            }
-        }
-
-        private String changeNumSpeakers(String text, bool direction)
-        {
-            //true = up, false = down
-            int proposed = Int32.Parse(text);
-            if (direction)
-            {
-                proposed++;
-                if (proposed > 5)
-                {
-                    proposed = 5;
-                }
-
-                if (proposed == 5)
-                {
-                    this.addSpeakerBtn.IsEnabled = false;
-                } else
-                {
-                    this.addSpeakerBtn.IsEnabled = true;
-                }
-            }
-            else
-            {
-                proposed--;
-                if (proposed < 1)
-                {
-                    proposed = 1;
-                }
-
-                if (proposed == 1)
-                {
-                    this.removeSpeakerBtn.IsEnabled = false;
-                }
-                else
-                {
-                    this.removeSpeakerBtn.IsEnabled = true;
-                }
-            }
-
-            return proposed.ToString();
-        }
-
-        private void addSpeakerBtn_Click(object sender, RoutedEventArgs e)
-        {
-            String proposedText = this.numSpeakerBox.Text;
-            this.numSpeakerBox.Text = changeNumSpeakers(proposedText, true);
-
-            try
-            {
-                SpeechManager.getSharedSpeechManager().speechAPI.changeNumSpeakers(
-                SpeechManager.getSharedSpeechManager().speechInterpreter.worker_pid, Int32.Parse(proposedText));
-            } catch (Exception ex)
-            {
-                Debug.WriteLine(ex.Message);
-                Debug.WriteLine("Unable to update");
-            }
-
-            //0, Int32.Parse(proposedText));
-
-            //Debug.WriteLine("Detected speaker " + message.Speaker.ToString());
-            //for (var i = maxSpeaker + 1; i <= message.Speaker; i++)
-            //{
-
-            Debug.WriteLine("Old text: " + proposedText + "\tNew text: " + this.numSpeakerBox.Text);
-            if (proposedText != this.numSpeakerBox.Text)
-            {
-                this.adjustSpeakerCount(Int32.Parse(this.numSpeakerBox.Text));
-            }
-            //}
-            //this.maxSpeaker = (int)message.Speaker;
-        }
-        
-        private void removeSpeakerBtn_Click(object sender, RoutedEventArgs e)
-        {
-            String proposedText = this.numSpeakerBox.Text;
-            this.numSpeakerBox.Text = changeNumSpeakers(proposedText, false);
-
-            try
-            {
-                SpeechManager.getSharedSpeechManager().speechAPI.changeNumSpeakers(
-                SpeechManager.getSharedSpeechManager().speechInterpreter.worker_pid, Int32.Parse(proposedText));
-            }
-            catch (Exception ex)
-            {
-                Debug.WriteLine(ex.Message);
-                Debug.WriteLine("Unable to update");
-            }
-            //0, Int32.Parse(proposedText));
-
-            Debug.WriteLine("Old text: " + proposedText + "\tNew text: " + this.numSpeakerBox.Text);
-            if (proposedText != this.numSpeakerBox.Text)
-            {
-                this.adjustSpeakerCount(Int32.Parse(this.numSpeakerBox.Text));
-            }
-        }
-
-        public void setSpeakerButtonEnabled(bool enabled)
-        {
-            this.addSpeakerBtn.IsEnabled = enabled;
-            this.removeSpeakerBtn.IsEnabled = enabled;
-        }
-
-        public void adjustSpeakerCount(int newCount)
-        {
-            Debug.WriteLine("New Count: " + newCount.ToString() + "\tCurSpeaker Count: " + this.curSpeakerCount.ToString());
-            while (newCount != this.curSpeakerCount)
-            {
-                if (newCount > this.curSpeakerCount)
-                {
-                    Debug.WriteLine("Incrementing speaker count to " + newCount.ToString());
-                    this.curSpeakerCount += 1;
-                    ComboBoxItem item = new ComboBoxItem();
-                    item.Background = (Windows.UI.Xaml.Media.Brush)Application.Current.Resources["Background_" + (this.curSpeakerCount - 1).ToString()];
-                    item.Background.Opacity = 0.75;
-                    item.Content = "Speaker " + curSpeakerCount.ToString();
-
-                    this.speakerBox.Items.Add(item);
-                }
-                else
-                {
-                    Debug.WriteLine("Decrementing speaker count to " + newCount.ToString());
-                    this.curSpeakerCount -= 1;
-                    if (this.speakerBox.SelectedIndex + 1 > this.curSpeakerCount)
-                    {
-                        this.speakerBox.SelectedIndex--;
-                    }
-                    this.speakerBox.Items.RemoveAt(this.speakerBox.Items.Count - 1);
-                }
-            }
-        }
-    }
 }

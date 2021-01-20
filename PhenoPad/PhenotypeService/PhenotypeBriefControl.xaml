@@ -16,19 +16,20 @@
     </UserControl.Resources>
 
     <Border CornerRadius="5">
-        <Grid Height="30" Margin="1 0 1 0" Name="NameGrid">
+        <Grid Height="35" Margin="1 0 1 0" Name="NameGrid">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="Auto"></ColumnDefinition>
                 <ColumnDefinition Width="Auto"></ColumnDefinition>
             </Grid.ColumnDefinitions>
 
 
-            <Grid Grid.Column="0" Grid.Row="0" VerticalAlignment="Center">
-                <Button Background="Transparent" Height="auto" Width="auto" 
+            <Grid Grid.Column="0" Grid.Row="0" VerticalAlignment="Center" x:Name="phenotypeGrid">
+                <Button Background="Transparent" Height="auto"
                         Style="{StaticResource ButtonStyle1}"
+                        x:Name="phenotypeNameBtn"
                         Click="phenotypeNameTextBlock_Tapped">
                     <TextBlock  
-                        VerticalAlignment="Center" FontSize="15"
+                        VerticalAlignment="Stretch" FontSize="15"
                         Grid.Column="1" x:Name="phenotypeNameTextBlock" 
                         Text="" Margin="0" Padding="1 0 1 0"
                         Foreground="Black" Opacity="0.6"/>
@@ -36,7 +37,7 @@
                 <!--<Line Stretch="Fill" Stroke="LightCoral" StrokeThickness="2" X1="1" Y1="0" 
                       HorizontalAlignment="Stretch" VerticalAlignment="Center" Name="NameCrossLine" />-->
             </Grid>
-            <Button Grid.Column="1" Grid.Row="0" x:Name="DeleteBtn" 
+            <Button Grid.Column="1" Grid.Row="0" x:Name="DeleteBtn"
                     VerticalAlignment="Center" Height="40"
                 Background="{x:Null}" Style="{StaticResource ButtonStyle1}" 
                 Click="DeleteBtn_Click">

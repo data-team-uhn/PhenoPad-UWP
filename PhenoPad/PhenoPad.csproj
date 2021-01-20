@@ -21,7 +21,7 @@
     <AppxAutoIncrementPackageRevision>False</AppxAutoIncrementPackageRevision>
     <AppxBundle>Always</AppxBundle>
     <AppxBundlePlatforms>x64</AppxBundlePlatforms>
-    <PackageCertificateThumbprint>654032A70CC4B9AECAFB9C3DDC3313B8C5706395</PackageCertificateThumbprint>
+    <PackageCertificateThumbprint>0925A1623B4A831F66F639BA2470CCA3BE57E9CB</PackageCertificateThumbprint>
     <AppxPackageDir>C:\Users\helen\Downloads\</AppxPackageDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x86'">
@@ -109,11 +109,9 @@
       <DependentUpon>App.xaml</DependentUpon>
     </Compile>
     <Compile Include="AppConfigurations.cs" />
-    <Compile Include="AudioCapturePermissions.cs" />
+    <Compile Include="FileService\AudioMeta.cs" />
+    <Compile Include="SpeechService\AudioCapturePermissions.cs" />
     <Compile Include="BluetoothService\BluetoothService.cs" />
-    <Compile Include="BrowsePage.xaml.cs">
-      <DependentUpon>BrowsePage.xaml</DependentUpon>
-    </Compile>
     <Compile Include="ConfigService\ConfigService.cs" />
     <Compile Include="CustomControl\AddInAnnotationControl.cs" />
     <Compile Include="CustomControl\AddInImageControl.xaml.cs">
@@ -131,37 +129,40 @@
     <Compile Include="CustomControl\EHRPageControl.xaml.cs">
       <DependentUpon>EHRPageControl.xaml</DependentUpon>
     </Compile>
+    <Compile Include="CustomControl\NoteLineViewControl.xaml.cs">
+      <DependentUpon>NoteLineViewControl.xaml</DependentUpon>
+    </Compile>
     <Compile Include="CustomControl\NotePageControl.xaml.cs">
       <DependentUpon>NotePageControl.xaml</DependentUpon>
     </Compile>
-    <Compile Include="CustomControl\NotePageControl_HWR.cs" />
     <Compile Include="CustomControl\NotePageControl_InkAnalysis.cs" />
-    <Compile Include="CustomControl\NotePageControl_Notetext.cs" />
-    <Compile Include="CustomControl\NotePhraseControl.xaml.cs">
+    <Compile Include="HWRService\NotePhraseControl.xaml.cs">
       <DependentUpon>NotePhraseControl.xaml</DependentUpon>
     </Compile>
-    <Compile Include="CustomControl\PhenotypeBriefControl.xaml.cs">
+    <Compile Include="PhenotypeService\PhenotypeBriefControl.xaml.cs">
       <DependentUpon>PhenotypeBriefControl.xaml</DependentUpon>
     </Compile>
-    <Compile Include="CustomControl\PhenotypeDetail.xaml.cs">
+    <Compile Include="PhenotypeService\PhenotypeDetail.xaml.cs">
       <DependentUpon>PhenotypeDetail.xaml</DependentUpon>
     </Compile>
-    <Compile Include="CustomControl\WordBlockControl.xaml.cs">
+    <Compile Include="HWRService\WordBlockControl.xaml.cs">
       <DependentUpon>WordBlockControl.xaml</DependentUpon>
     </Compile>
+    <Compile Include="FileService\AudioFile.cs" />
     <Compile Include="FileService\EHRFormats.cs" />
     <Compile Include="FileService\FileManager.cs" />
     <Compile Include="FileService\FileServerClient.cs" />
     <Compile Include="FileService\Notebook.cs" />
     <Compile Include="FileService\ImageAndAnnotation.cs" />
     <Compile Include="FileService\NotePage.cs" />
+    <Compile Include="FileService\RecognizedPhrases.cs" />
     <Compile Include="Gestures\Category.cs" />
     <Compile Include="Gestures\GestureManager.cs" />
     <Compile Include="Gestures\NBestList.cs" />
     <Compile Include="Gestures\ProgressEvent.cs" />
     <Compile Include="Gestures\Recognizer.cs" />
     <Compile Include="Gestures\Unistroke.cs" />
-    <Compile Include="HelperFunctions.cs" />
+    <Compile Include="resources\HelperFunctions.cs" />
     <Compile Include="HWRService\HWRManager.cs" />
     <Compile Include="LogService\FileLoggingSessionScenario.cs" />
     <Compile Include="LogService\MetroLogger.cs" />
@@ -187,7 +188,7 @@
     <Compile Include="OverviewPage.xaml.cs">
       <DependentUpon>OverviewPage.xaml</DependentUpon>
     </Compile>
-    <Compile Include="CustomControl\PhenotypeControl.xaml.cs">
+    <Compile Include="PhenotypeService\PhenotypeControl.xaml.cs">
       <DependentUpon>PhenotypeControl.xaml</DependentUpon>
     </Compile>
     <Compile Include="MainPage.xaml.cs">
@@ -203,6 +204,7 @@
     <Compile Include="SpeechService\SpeechEngineJSON.cs" />
     <Compile Include="SpeechService\SpeechRESTAPI.cs" />
     <Compile Include="Styles\MyColors.cs" />
+    <Compile Include="WebSocketService\SpeechResultsSocket.cs" />
     <Compile Include="WebSocketService\UIWebSocketClient.cs" />
     <Compile Include="WebSocketService\SpeechStreamSocket.cs" />
     <Compile Include="WobbrockLib\CircleR.cs" />
@@ -255,10 +257,6 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
-    <Page Include="BrowsePage.xaml">
-      <SubType>Designer</SubType>
-      <Generator>MSBuild:Compile</Generator>
-    </Page>
     <Page Include="CustomControl\AddInImageControl.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
@@ -279,23 +277,27 @@
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
+    <Page Include="CustomControl\NoteLineViewControl.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
     <Page Include="CustomControl\NotePageControl.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
-    <Page Include="CustomControl\NotePhraseControl.xaml">
+    <Page Include="HWRService\NotePhraseControl.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
-    <Page Include="CustomControl\PhenotypeBriefControl.xaml">
+    <Page Include="PhenotypeService\PhenotypeBriefControl.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>
-    <Page Include="CustomControl\PhenotypeDetail.xaml">
+    <Page Include="PhenotypeService\PhenotypeDetail.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
-    <Page Include="CustomControl\WordBlockControl.xaml">
+    <Page Include="HWRService\WordBlockControl.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
@@ -319,7 +321,7 @@
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
-    <Page Include="CustomControl\PhenotypeControl.xaml">
+    <Page Include="PhenotypeService\PhenotypeControl.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>

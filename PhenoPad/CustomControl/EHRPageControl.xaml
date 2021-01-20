@@ -4,8 +4,6 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-    xmlns:phenotypeservice="using:PhenoPad.PhenotypeService"
-    xmlns:customcontrol="using:PhenoPad.CustomControl"
     mc:Ignorable="d"
     VerticalAlignment="Stretch" 
     HorizontalAlignment="Stretch"
@@ -62,7 +60,7 @@
             <!--Text Box for imported EHR file-->
         
             <RichEditBox Style="{StaticResource MyRichEditBoxStyle}"                         
-                         Background="Yellow" x:Name="EHRTextBox" 
+                         Background="White" x:Name="EHRTextBox" 
                          x:FieldModifier="public"
                          TextWrapping="Wrap"
                          Opacity="0.8"
@@ -92,12 +90,7 @@
         <!--insert text pop up-->
         <Canvas x:Name="popupCanvas" x:FieldModifier="public" Grid.ColumnSpan="2">
 
-            <!--<Button Style="{StaticResource ButtonStyle1}" x:Name="DeleteComment" Visibility="Collapsed" 
-                    Click="RemoveComment" Background="WhiteSmoke">
-                <SymbolIcon Foreground="PaleVioletRed" Symbol="Clear"/>
-            </Button>-->
-
-            <RelativePanel x:Name="inputgrid" Canvas.ZIndex="999" Visibility="Visible" Opacity="0">
+            <RelativePanel x:Name="inputgrid" Canvas.ZIndex="999" Visibility="Collapsed" Opacity="0">
 
                 <Grid Grid.Row="1" Background="WhiteSmoke" BorderBrush="DarkGray"
                         BorderThickness="1" CornerRadius="10" x:Name="inputRootGrid">

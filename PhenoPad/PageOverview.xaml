@@ -6,15 +6,16 @@
     xmlns:fileservice="using:PhenoPad.FileService"
     xmlns:customcontrol="using:PhenoPad.CustomControl"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:playback="using:Windows.Media.Playback"
     mc:Ignorable="d"
     NavigationCacheMode="Required">
+
     <Page.Resources>
         <ResourceDictionary>
             <ResourceDictionary.ThemeDictionaries>
                 <ResourceDictionary x:Key="Default">
-                    
+
                 </ResourceDictionary>
             </ResourceDictionary.ThemeDictionaries>
 
@@ -32,7 +33,7 @@
             <ColumnDefinition Width="*"></ColumnDefinition>
         </Grid.ColumnDefinitions>
 
-       
+
         <Grid>
             <Grid.RowDefinitions>
                 <RowDefinition Height="100"></RowDefinition>
@@ -71,7 +72,7 @@
                         <ColumnDefinition Width="1*"/>
                         <ColumnDefinition Width="1.2*"/>
                     </Grid.ColumnDefinitions>
-                    
+
                     <TextBlock Grid.Column="0" Name="AllNotesTextBlock" Foreground="Black" Margin="5 10 0 5"  FontSize="30">All notes</TextBlock>
                     <Button Grid.Column="2" Style="{StaticResource MyButtonStyle}" x:Name="UploadButton"  Click="UploadServerButton_Click" Background="Transparent" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
                         <TextBlock Foreground="{StaticResource WORD_DARK}">Upload</TextBlock>
@@ -82,7 +83,7 @@
                 </Grid>
                 <AutoSuggestBox QueryIcon="Find" HorizontalAlignment="Stretch" Margin="5 0 5 0" RelativePanel.AlignVerticalCenterWithPanel="True" Name="autoSuggestBox" PlaceholderText="Search" TextChanged="autosuggesttextchanged" QuerySubmitted="autosuggestquerysubmitted" ></AutoSuggestBox>
             </StackPanel>
-            
+
             <ListView  Margin="5"  x:Name="notebookList" ItemClick="notebookList_ItemClick" 
                        IsItemClickEnabled="True" Grid.ColumnSpan="2" Grid.Row="2"
                        ScrollViewer.HorizontalScrollMode="Disabled"
@@ -100,24 +101,23 @@
                 <ListView.ItemTemplate>
                     <DataTemplate x:DataType="fileservice:Notebook">
                         <SwipeControl LeftItems="{StaticResource left}" Tag="{x:Bind id }">
-                        <Grid>
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="60"/>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="60"/>
-                                <ColumnDefinition Width="60"/>
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="60"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="60"/>
+                                    <ColumnDefinition Width="60"/>
                                 </Grid.ColumnDefinitions>
-                            <Border Width="80" Height="80" Padding="5" >
-                                <!--<BitmapIcon UriSource="{x:Bind firstPageUri}"/>-->
+                                <Border Width="80" Height="80" Padding="5" >
+                                    <!--<BitmapIcon UriSource="{x:Bind firstPageUri}"/>-->
                                     <FontIcon FontSize="25" FontWeight="ExtraBold" FontFamily="Segoe MDL2 Assets" Glyph="&#xE8A5;" />
                                 </Border>
-                            <RelativePanel  Grid.Column="1" Padding="0 10 0 10">
-                                <TextBlock Padding="10" Text="{x:Bind name}" Foreground="Black" 
-                           FontSize="20" RelativePanel.AlignTopWithPanel="True"/>
-                                <TextBlock Padding="10" Text="{x:Bind date}" Foreground="Gray" 
-                           FontSize="15" RelativePanel.AlignBottomWithPanel="True" Grid.Column="1"/>
-
-                            </RelativePanel>
+                                <RelativePanel  Grid.Column="1" Padding="0 10 0 10">
+                                    <TextBlock Padding="10" Text="{x:Bind name}" Foreground="Black" 
+                                            FontSize="20" RelativePanel.AlignTopWithPanel="True"/>
+                                    <TextBlock Padding="10" Text="{x:Bind date}" Foreground="Gray" 
+                                            FontSize="15" RelativePanel.AlignBottomWithPanel="True" Grid.Column="1"/>
+                                </RelativePanel>
                                 <Button Style="{StaticResource MyButtonStyle}" x:Name="ViewButton" Tag="{x:Bind id}"  
                                     Background="Transparent" Grid.Column="2" 
                                         Click="ViewButton_Click"
@@ -125,16 +125,16 @@
                                     <TextBlock Foreground="{StaticResource WORD_DARK}">View</TextBlock>
                                 </Button>
 
-
                                 <Button Style="{StaticResource MyButtonStyle}" x:Name="OpenButton" Tag="{x:Bind id}"  
                                     Click="OpenButton_Click" Background="Transparent" Grid.Column="3" 
                                     HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
-                                <TextBlock Foreground="{StaticResource WORD_DARK}">Open</TextBlock>
-                            </Button>
-                        </Grid>
+                                    <TextBlock Foreground="{StaticResource WORD_DARK}">Open</TextBlock>
+                                </Button>
+                            </Grid>
                         </SwipeControl>
                     </DataTemplate>
                 </ListView.ItemTemplate>
+
                 <ListView.ItemContainerStyle>
                     <Style TargetType="ListViewItem">
                         <Setter Property="HorizontalContentAlignment" Value="Stretch" />
@@ -145,19 +145,11 @@
                                     <ListViewItemPresenter
                                       ContentTransitions="{TemplateBinding ContentTransitions}"
                                       SelectionCheckMarkVisualEnabled="True"
-                                      CheckBrush="{ThemeResource SystemControlForegroundBaseMediumHighBrush}"
-                                      CheckBoxBrush="{ThemeResource SystemControlForegroundBaseMediumHighBrush}"
-                                      DragBackground="{ThemeResource ListViewItemDragBackgroundThemeBrush}"
-                                      DragForeground="{ThemeResource ListViewItemDragForegroundThemeBrush}"
                                       FocusBorderBrush="{ThemeResource SystemControlForegroundAltHighBrush}"
                                       FocusSecondaryBorderBrush="{ThemeResource SystemControlForegroundBaseHighBrush}"
                                       PlaceholderBackground="{ThemeResource ListViewItemPlaceholderBackgroundThemeBrush}"
                                       PointerOverBackground="{ThemeResource SystemControlHighlightListLowBrush}"
-                                      PointerOverForeground="{ThemeResource SystemControlHighlightAltBaseHighBrush}"
-                                      
-                                      SelectedBackground="{ThemeResource SystemControlHighlightListLowBrush}"
-                                      SelectedForeground="{ThemeResource SystemControlHighlightAltBaseHighBrush}"
-                                      SelectedPointerOverBackground="{ThemeResource SystemControlHighlightListLowBrush}"
+                                      PointerOverForeground="{ThemeResource SystemControlHighlightAltBaseHighBrush}"                                    
                                       PressedBackground="{ThemeResource SystemControlHighlightListMediumBrush}"
                                       SelectedPressedBackground="{ThemeResource SystemControlHighlightListAccentHighBrush}"
                                       DisabledOpacity="{ThemeResource ListViewItemDisabledThemeOpacity}"
@@ -174,131 +166,137 @@
                 </ListView.ItemContainerStyle>
             </ListView>
         </Grid>
-        
-       <!-- 
-        <StackPanel Grid.Column="0" Padding="30 20 30 20 ">
-            <TextBlock Text="New note" FontSize="28" Foreground="{StaticResource WORD_DARK}"/>
-            <TextBlock Text="Patient name" Margin="0 20 0 5"></TextBlock>
-            <TextBox></TextBox>
 
-            <TextBlock Text="Gender" Margin="0 20 0 5"></TextBlock>
-            <StackPanel Orientation="Horizontal">
-                <RadioButton Content="Female"></RadioButton>
 
-                <RadioButton Content="Male"></RadioButton>
-            </StackPanel>
-
-            <TextBlock Text="Date" Margin="0 20 0 5"></TextBlock>
-            <DatePicker></DatePicker>
-
-            <Button Margin="0 30 0 5" Background="{StaticResource WORD_DARK}" Foreground="White" Name="CreateButton" Click="CreateButton_Click">
-                <TextBlock Text="Create" FontSize="18"></TextBlock>
-            </Button>
-
-        </StackPanel>
-        -->
-        
         <!--NOTE QUICK VIEW PANEL-->
         <Grid Grid.Column="1" Background="White">
             <ScrollViewer>
-            <StackPanel>
-                <Border Background="{StaticResource Title_Background}" Height="40">
-                    <TextBlock VerticalAlignment="Center" Grid.Row="0" FontSize="20" Foreground="Black" Margin="10 0 0 0">Note pages</TextBlock>
-                </Border>
-                <GridView Name="NoteGridView" ItemClick="GridView_ItemClick" Padding="10 10 10 10" Height="450"
+                <StackPanel>
+                    <Border Background="{StaticResource Title_Background}" Height="40">
+                        <TextBlock VerticalAlignment="Center" Grid.Row="0" FontSize="20" Foreground="Black" Margin="10 0 0 0">Note pages</TextBlock>
+                    </Border>
+                    <GridView Name="NoteGridView" ItemClick="GridView_ItemClick" Padding="10 10 10 10" Height="450"
                            ScrollViewer.HorizontalScrollBarVisibility="Auto"
                             ScrollViewer.HorizontalScrollMode="Enabled"
                             ScrollViewer.VerticalScrollMode="Disabled">
-                    
-                    <GridView.ItemsPanel>
-                        <ItemsPanelTemplate>
-                            <ItemsWrapGrid Orientation="Vertical" />
-                        </ItemsPanelTemplate>
-                    </GridView.ItemsPanel>
 
-                    <GridView.ItemTemplate>
-                        <DataTemplate x:DataType="fileservice:NotePage">
-                            <Grid Padding="5" BorderThickness="1" BorderBrush="Black">
-                                <Grid.RowDefinitions>
-                                    <RowDefinition Height="38"></RowDefinition>
-                                    <RowDefinition Height="28"></RowDefinition>
-                                    <RowDefinition Height="*"></RowDefinition>
-                                </Grid.RowDefinitions>
-                                <Border Background="White" Grid.Row="0" Height="300" Width="240">
-                                    <TextBlock Text="{x:Bind name}" 
+                        <GridView.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <ItemsWrapGrid Orientation="Vertical" />
+                            </ItemsPanelTemplate>
+                        </GridView.ItemsPanel>
+
+                        <GridView.ItemTemplate>
+                            <DataTemplate x:DataType="fileservice:NotePage">
+                                <Grid Padding="5" BorderThickness="1" BorderBrush="Black">
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="38"></RowDefinition>
+                                        <RowDefinition Height="28"></RowDefinition>
+                                        <RowDefinition Height="*"></RowDefinition>
+                                    </Grid.RowDefinitions>
+                                    <Border Background="White" Grid.Row="0" Height="300" Width="240">
+                                        <TextBlock Text="{x:Bind name}" 
                                FontSize="28" Foreground="{StaticResource WORD_DARK}"/>
-                                </Border>
-                                <Border Background="White" Grid.Row="1" Height="300" Width="240">
-                                    <TextBlock Text="{x:Bind date}" 
+                                    </Border>
+                                    <Border Background="White" Grid.Row="1" Height="300" Width="240">
+                                        <TextBlock Text="{x:Bind date}" 
                                FontSize="18" Foreground="Gray"/>
-                                </Border>
-                                <Border Height="400" Width="283" Grid.Row="2">
-                                    <BitmapIcon UriSource="{x:Bind strokeUri}"/>
-                                    <!-- 
-                            <Image Source="{x:Bind strokeUri}"/>
-                            -->
-                                </Border>
-                            </Grid>
-                        </DataTemplate>
-                    </GridView.ItemTemplate>
-                    <GridView.Items>
-                        <GridViewItem BorderThickness="1" BorderBrush="Black">
-                            <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE710;" Foreground="{StaticResource WORD_DARK}" FontSize="72" FontWeight="ExtraBold"/>
-                        </GridViewItem>
-                    </GridView.Items>
-                </GridView>
+                                    </Border>
+                                    <Border Height="400" Width="283" Grid.Row="2">
+                                        <BitmapIcon UriSource="{x:Bind strokeUri}"/>
+                                    </Border>
+                                    <Border Height="400" Width="283" Grid.Row="2">
+                                        <TextBlock Padding="10" TextWrapping="WrapWholeWords" FontSize="8" Text="{x:Bind EHR}"/>
+                                    </Border>
+                                </Grid>
+                            </DataTemplate>
+                        </GridView.ItemTemplate>
+                        <GridView.Items>
+                            <GridViewItem BorderThickness="1" BorderBrush="Black">
+                                <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE710;" 
+                                      Foreground="{StaticResource WORD_DARK}" FontSize="72" FontWeight="ExtraBold"/>
+                            </GridViewItem>
+                        </GridView.Items>
+                    </GridView>
 
-                <Border Background="{StaticResource Title_Background}" Height="40">
-                    <TextBlock VerticalAlignment="Center" Grid.Row="0" FontSize="20" Foreground="Black" Margin="10 0 0 0">Photos and annotations</TextBlock>
-                </Border>
+                    <Border Background="{StaticResource Title_Background}" Height="40">
+                        <TextBlock VerticalAlignment="Center" Grid.Row="0" FontSize="20" Foreground="Black" 
+                               Margin="10 0 0 0">Annotations/Photos/Videos</TextBlock>
+                    </Border>
 
-                <GridView Name="ImageAnnotationGridView"  Padding="10 10 10 10" Height="250"
+                    <GridView Name="ImageAnnotationGridView"  Padding="10 10 10 10" Height="250"
                            ScrollViewer.HorizontalScrollBarVisibility="Auto"  AllowFocusOnInteraction="False" SelectionMode="None"
-    ScrollViewer.HorizontalScrollMode="Enabled"
-    ScrollViewer.VerticalScrollMode="Disabled">
+                            ScrollViewer.HorizontalScrollMode="Enabled"
+                            ScrollViewer.VerticalScrollMode="Disabled">
 
-                    <GridView.ItemsPanel>
-                        <ItemsPanelTemplate>
-                            <ItemsWrapGrid Orientation="Vertical" />
-                        </ItemsPanelTemplate>
-                    </GridView.ItemsPanel>
+                        <GridView.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <ItemsWrapGrid Orientation="Vertical" />
+                            </ItemsPanelTemplate>
+                        </GridView.ItemsPanel>
 
-                    <GridView.ItemTemplate>
-                        <DataTemplate x:DataType="fileservice:ImageAndAnnotation">
+                        <GridView.ItemTemplate>
+                            <DataTemplate x:DataType="fileservice:ImageAndAnnotation">
                                 <Viewbox Stretch="Uniform" Width="200">
                                     <customcontrol:AddInControl name="{x:Bind name}" notebookId="{x:Bind notebookId}" 
                                                                 viewOnly="True" CommentID="{x:Bind commentID}"
                                                                 pageId="{x:Bind pageId}"/>
                                 </Viewbox>
                             </DataTemplate>
-                    </GridView.ItemTemplate>
-                    
-                </GridView>
+                        </GridView.ItemTemplate>
+                    </GridView>
 
-                <Border Name="ImageAnnotationPlaceHoder" Visibility="Visible" Height="60" Padding="10">
-                    <TextBlock VerticalAlignment="Center" Grid.Row="0" FontSize="20" Foreground="Black" Margin="10 0 0 0">No images or drawings found.</TextBlock>
-                </Border>
+                    <Border Name="ImageAnnotationPlaceHoder" Visibility="Visible" Height="60" Padding="10">
+                        <TextBlock VerticalAlignment="Center" Grid.Row="0" FontSize="20" Foreground="Black" Margin="10 0 0 0">No images or drawings found.</TextBlock>
+                    </Border>
 
-                <Border Background="{StaticResource Title_Background}" Height="40">
-                    <TextBlock VerticalAlignment="Center" Grid.Row="0" FontSize="20" Foreground="Black" Margin="10 0 0 0">Audio</TextBlock>
-                </Border>
+                    <Border Background="{StaticResource Title_Background}" Height="40">
+                        <TextBlock VerticalAlignment="Center" Grid.Row="0" FontSize="20" Foreground="Black" Margin="10 0 0 0">Audios</TextBlock>
+                    </Border>
+                    <GridView Name="AudioGridView" Padding="10 10 10 10" Height="200"                              
+                           ScrollViewer.HorizontalScrollBarVisibility="Auto"
+                            ScrollViewer.HorizontalScrollMode="Enabled"
+                            ScrollViewer.VerticalScrollMode="Disabled">
 
-                <Border Name="AudioPlaceHoder" Visibility="Visible" Height="60" Padding="10">
-                    <TextBlock VerticalAlignment="Center" Grid.Row="0" FontSize="20" Foreground="Black" Margin="10 0 0 0">No audio files found.</TextBlock>
-                </Border>
-                
-                <Border Background="{StaticResource Title_Background}" Height="40" >
-                    <TextBlock VerticalAlignment="Center" Grid.Row="0" FontSize="20" Foreground="Black" Margin="10 0 0 0">Video</TextBlock>
-                </Border>
-                <Border Name="VideoPlaceHoder" Visibility="Visible" Height="60" Padding="10">
-                    <TextBlock VerticalAlignment="Center" Grid.Row="0" FontSize="20" Foreground="Black" Margin="10 0 0 0">No video files found.</TextBlock>
-                </Border>
+                        <GridView.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <ItemsWrapGrid Orientation="Vertical" />
+                            </ItemsPanelTemplate>
+                        </GridView.ItemsPanel>
 
+                        <GridView.ItemTemplate>
+                            <DataTemplate x:DataType="fileservice:AudioFile">
+                                <Grid Padding="5">
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="*"></RowDefinition>
+                                        <RowDefinition Height="20"></RowDefinition>
+                                        <RowDefinition Height="20"></RowDefinition>
+                                    </Grid.RowDefinitions>
 
-            </StackPanel>
+                                    <MediaPlayerElement AreTransportControlsEnabled="True" AutoPlay="False" 
+                                                        Grid.Row="0" Source="{x:Bind source}" />
+                                    <TextBlock Grid.Row="1" Text="{x:Bind name}" FontSize="18" Foreground="{StaticResource WORD_DARK}"/>
+                                    <TextBlock Grid.Row="2" Text="{x:Bind date}"  FontSize="12" Foreground="Gray"/>
+                                    
+                                </Grid>
+                            </DataTemplate>
+                        </GridView.ItemTemplate>
+                        <GridView.Items>
+                            <GridViewItem BorderThickness="1" BorderBrush="Black">
+                                <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE710;" 
+                                      Foreground="{StaticResource WORD_DARK}" FontSize="72" FontWeight="ExtraBold"/>
+                            </GridViewItem>
+                        </GridView.Items>
+                    </GridView>
+
+                    <Border Name="AudioPlaceHoder" Visibility="Visible" Height="60" Padding="10">
+                        <TextBlock VerticalAlignment="Center" Grid.Row="0" FontSize="20" Foreground="Black" Margin="10 0 0 0">No audio files found.</TextBlock>
+                    </Border>
+
+                </StackPanel>
             </ScrollViewer>
         </Grid>
-        
+
         <Grid Name="MessageGrid" Grid.Column="1" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Background="White">
             <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="50" Foreground="LightGray">Select a note to preview</TextBlock>
         </Grid>

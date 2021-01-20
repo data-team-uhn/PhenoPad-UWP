@@ -172,15 +172,15 @@ namespace PhenoPad.WebSocketService
                             {
                                 if (json.server_status.waiting_for_server.Contains("ASR") == false)
                                 {
-                                    MainPage.Current.setStatus("recognition");
+                                    //MainPage.Current.setStatus("recognition");
                                 }
                                 if (json.server_status.waiting_for_server.Contains("Diarization") == false)
                                 {
-                                    MainPage.Current.setStatus("diarization");
+                                    //MainPage.Current.setStatus("diarization");
                                 }
                                 if (json.server_status.ready)
                                 {
-                                    MainPage.Current.setStatus("ready");
+                                    //MainPage.Current.setStatus("ready");
                                 }
                             }
                         });

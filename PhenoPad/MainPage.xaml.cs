@@ -5,51 +5,31 @@ using Windows.UI.Input.Inking;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
 using Windows.UI.Xaml.Media;
-using Windows.UI.Xaml.Shapes;
 using PhenoPad.PhenotypeService;
 using Windows.UI.Xaml.Input;
 using System.Collections.Generic;
 using Windows.UI.Popups;
-using System.Collections.ObjectModel;
 using System.Threading.Tasks;
 using Windows.Foundation.Metadata;
 using Windows.UI.ViewManagement;
-using Windows.UI.Input.Inking.Analysis;
 using Windows.UI.Xaml.Navigation;
-using Windows.Media.SpeechRecognition;
 using System.Text;
-using Windows.Globalization;
 using PhenoPad.SpeechService;
 using Windows.Devices.Sensors;
 using Windows.UI;
 using System.Diagnostics;
 using PhenoPad.CustomControl;
 using Windows.Graphics.Display;
-using System.Reflection;
 using System.Linq;
-using Windows.UI.Xaml.Media.Animation;
-using Windows.Storage.Pickers;
-using Windows.Storage.Streams;
 using PhenoPad.WebSocketService;
 using Windows.ApplicationModel.Core;
-using PhenoPad.Styles;
-using Windows.Graphics.Imaging;
-using Windows.UI.Xaml.Media.Imaging;
-using Microsoft.Graphics.Canvas;
 using PhenoPad.FileService;
-using Windows.UI.Xaml.Data;
 using System.ComponentModel;
 using System.Threading;
-
-using PhenoPad.BluetoothService;
-using Windows.System.Threading;
-using System.IO;
 using Windows.Storage;
-using Windows.Media.Editing;
-using System.Runtime.InteropServices.WindowsRuntime;
-using MetroLog;
 using Microsoft.Toolkit.Uwp.UI.Animations;
 using PhenoPad.LogService;
+using Microsoft.Toolkit.Uwp.UI.Controls;
 
 namespace PhenoPad
 {
@@ -69,7 +49,6 @@ namespace PhenoPad
         //such as buttons, pointer movements and display notices.
         //Other parts of the logical controls including web socket/video/audio are moved to other partial class files.
         #region Attributes definitions
-
         public event PropertyChangedEventHandler PropertyChanged;
 
         private void NotifyPropertyChanged(string info)
@@ -98,10 +77,11 @@ namespace PhenoPad
         public static readonly string ViewMode = "Previewing Mode";
         private string currentMode = WritingMode;
         private bool ifViewMode = false;
+        public CancellationTokenSource cancelService;
 
-        private int num = 0;
+        //private int num = 0;
         public bool abbreviation_enabled;
-
+        public List<Phenotype> showingPhenoSpeech;
         private SemaphoreSlim notifySemaphoreSlim = new SemaphoreSlim(1);
         #endregion
 
@@ -126,8 +106,8 @@ namespace PhenoPad
             var coreTitleBar = CoreApplication.GetCurrentView().TitleBar;
             coreTitleBar.ExtendViewIntoTitleBar = false;
             ApplicationViewTitleBar titleBar = ApplicationView.GetForCurrentView().TitleBar;
-            titleBar.ButtonBackgroundColor = Colors.Black;
-            titleBar.ButtonInactiveBackgroundColor = Colors.Black;
+            //titleBar.ButtonBackgroundColor = Colors.Black;
+            //titleBar.ButtonInactiveBackgroundColor = Colors.Black;
 
 
             // We want to react whenever speech engine has new results
@@ -155,31 +135,63 @@ namespace PhenoPad
             string serverPath = SpeechManager.getSharedSpeechManager().getServerAddress() + ":" +
                                 SpeechManager.getSharedSpeechManager().getServerPort();
             ASRAddrInput.Text = serverPath;
+            PhenoSuggestionAddr.Text = PhenotypeManager.SUGGESTION_ADDR;
+            DiffDiagnosisAddr.Text = PhenotypeManager.DIFFERENTIAL_ADDR;
+            PhenoDetailAddr.Text = PhenotypeManager.PHENOTYPEINFO_ADDR;
 
             AbbreviationON_Checked(null, null);
+            InitBTConnectionSemaphore = new SemaphoreSlim(1);
+            InitializeBTConnection();
 
-            //initializes bluetooth on first mainpage startup
-            changeSpeechEngineState_BT();
+            this.SavedAudios = new List<string>();
+            showingPhenoSpeech = new List<Phenotype>();
+            conversations = new List<TextMessage>();
 
+            playbackSem = new SemaphoreSlim(1);
             audioTimer = new DispatcherTimer();
             //waits 3 seconds before re-enabling microphone button
             audioTimer.Interval = TimeSpan.FromSeconds(3);
             audioTimer.Tick += onAudioStarted;
+
+            isReading = false;
+            readTimer = new DispatcherTimer();
+            readTimer.Interval = TimeSpan.FromSeconds(1.5);
+            readTimer.Tick += EndAudioStream;
+
+            cancelService = new CancellationTokenSource();
+            this.Tapped += HideUIs;
 
             //When user clicks X while in mainpage, auto-saves all current process and exits the program.
             Windows.UI.Core.Preview.SystemNavigationManagerPreview.GetForCurrentView().CloseRequested +=
             async (sender, args) =>
             {
                 args.Handled = true;
-                await confirmOnExit_Clicked();
+                bool result = await confirmOnExit_Clicked();
+                if (result)
+                {
+                    Debug.WriteLine("Successful, will exit app ...");
+                    Application.Current.Exit();
+                }
+                args.Handled = false;
             };
+        }
+
+        //******************************END OF CONSTRUCTORS************************************************
+
+        private void HideUIs(object sender, TappedRoutedEventArgs e)
+        {
+            PhenotypePopup.Visibility = Visibility.Collapsed;
+        }
+
+        private async void InitializeBTConnection() {
+            var success = await changeSpeechEngineState_BT();
         }
 
         /// <summary>
         /// Prompts the user for exiting confirmation and saves the most recently edited notebook
         /// if user attempts to exit while editing, exit apps after
         /// </summary>
-        private async Task confirmOnExit_Clicked() {
+        private async Task<bool> confirmOnExit_Clicked() {
             //no need to ask user if already at note overview page
             if (Frame.CurrentSourcePageType == typeof(PageOverview))
                 Application.Current.Exit();
@@ -197,20 +209,27 @@ namespace PhenoPad
             var result = await messageDialog.ShowAsync();
             if ((int)result.Id == 0)
             {
-                LogService.MetroLogger.getSharedLogger().Info("Saving and exiting app ...");
+                bool saved = false;
                 //only saves the notes if in editing stage
                 if (notebookId != null)
-                    await this.saveNoteToDisk();
-                Application.Current.Exit();
+                {
+                    await Dispatcher.RunAsync(CoreDispatcherPriority.High, async () =>{
+                        MetroLogger.getSharedLogger().Info("Saving ...");
+                        saved = await saveNoteToDisk();
+                        if (speechEngineRunning)
+                            await KillAudioService();
+                    });
+                    await Task.Delay(TimeSpan.FromSeconds(2));
+                }
+                if (saved)
+                    return true;
             }
             else if ((int)result.Id == 1) {
-                LogService.MetroLogger.getSharedLogger().Info("Exiting app without saving ...");
-                Application.Current.Exit();
+                MetroLogger.getSharedLogger().Info("Exiting app without saving ...");
+                return true;
             }
-            else
-            {
-                LogService.MetroLogger.getSharedLogger().Info("Canceled Exiting app");
-            }
+            MetroLogger.getSharedLogger().Info("Canceled Exiting app");
+            return false;
         }
 
         /// <summary>
@@ -242,30 +261,8 @@ namespace PhenoPad
             // Draw background lines
             if (curPage != null)
                 curPage.DrawBackgroundLines();
-
-            
-
         }
 
-        /// <summary>
-        /// Clears all page index records in the StackPanel.
-        /// </summary>
-        private void clearPageIndexPanel()
-        {
-            if (pageIndexPanel.Children.Count() > 1)
-            {
-                while (pageIndexPanel.Children.Count() > 1)
-                    pageIndexPanel.Children.RemoveAt(0);
-            }
-        }
-
-        /// <summary>
-        /// Sets the ink bar controller to the current ink canvas.
-        /// </summary>
-        private void setPageIndexText()
-        {
-            MainPageInkBar.TargetInkCanvas = inkCanvas;
-        }
 
         //  ************Switching between editing / view mode *********************
         #region Switching between Editing / View Mode
@@ -361,11 +358,10 @@ namespace PhenoPad
             });
         }
 
-        /// <summary>
-        /// Initializes the Notebook when user navigated to MainPage.
-        /// </summary>
         protected async override void OnNavigatedTo(NavigationEventArgs e)
         {
+            /// Initializes the Notebook when user navigated to MainPage.
+
             LoadingPopup.IsOpen = true;
 
             var nid = e.Parameter as string;
@@ -394,49 +390,22 @@ namespace PhenoPad
             return;                
         }
 
-        /// <summary>
-        /// Clearing all cache and index records before leaving MainPage.
-        /// </summary>
         protected async override void OnNavigatingFrom(NavigatingCancelEventArgs e)
         {
+            /// Clearing all cache and index records before leaving MainPage.
 
-            // Microsoft ASR, not used for now
-            //if (this.speechRecognizer != null)
-            //{
-            //    if (isListening)
-            //    {
-            //        await this.speechRecognizer.ContinuousRecognitionSession.CancelAsync();
-            //        isListening = false;
-            //    }
-
-            //    //cmdBarTextBlock.Text = "";
-
-            //    speechRecognizer.ContinuousRecognitionSession.Completed -= ContinuousRecognitionSession_Completed;
-            //    speechRecognizer.ContinuousRecognitionSession.ResultGenerated -= ContinuousRecognitionSession_ResultGenerated;
-            //    speechRecognizer.HypothesisGenerated -= SpeechRecognizer_HypothesisGenerated;
-            //    speechRecognizer.StateChanged -= SpeechRecognizer_StateChanged;
-
-            //    this.speechRecognizer.Dispose();
-            //    this.speechRecognizer = null;
-            //}
             await Dispatcher.RunAsync(CoreDispatcherPriority.High, async ()=> {
+
                 if (speechEngineRunning)
                 {//close all audio services before navigating
-                    Debug.WriteLine("on leaving mainpage");
                     if (bluetoonOn)
                     {
-                        Debug.WriteLine("disconnecting audio before leaving bluetooth");
-
-                        //await BluetoothService.BluetoothService.getBluetoothService().sendBluetoothMessage("audio stop");
                         //becaise we are no longer in mainpage, does not need to reload past conversation
                         await SpeechManager.getSharedSpeechManager().StopASRResults(false);
                     }
                     else
                     {
-                        Debug.WriteLine("disconnecting audio before leaving internal microphone");
                         AudioStreamButton_Clicked();
-                        //bool result = await SpeechManager.getSharedSpeechManager().EndAudio(notebookId);
-                        //Debug.WriteLine(result);
                     }
 
                 }
@@ -444,16 +413,18 @@ namespace PhenoPad
                     curPage.Visibility = Visibility.Collapsed;
                     await saveNoteToDisk();
                 }
-                PhenotypeManager.getSharedPhenotypeManager().clearCache();
-                //PhenotypeManager.getSharedPhenotypeManager().phenotypesCandidates.Clear();
+                SpeechPage.Current.PlaybackTimer_Tick(null,null);
                 SpeechManager.getSharedSpeechManager().cleanUp();
                 CloseCandidate();
                 notePages = null;
                 notebookId = null;
                 // clear page index panel
-                clearPageIndexPanel();
+                //clearPageIndexPanel();
                 inkCanvas = null;
                 curPage = null;
+                curPageIndex = -1;
+                showAddIn(new List<ImageAndAnnotation>());
+                PhenotypeManager.getSharedPhenotypeManager().clearCache();
             });
         }
 
@@ -491,40 +462,6 @@ namespace PhenoPad
             control.IsTabStop = isTabStop;
         }
 
-        /// <summary>
-        /// Sets the display color of all note page buttons
-        /// </summary>
-        /// <param name="index"></param>
-        private void setNotePageIndex(int index)
-        {
-            foreach (var btn in pageIndexButtons)
-            {
-                btn.Background = new SolidColorBrush(Colors.WhiteSmoke);
-                btn.Foreground = new SolidColorBrush(Colors.Gray);
-            }
-            pageIndexButtons.ElementAt(index).Background = Application.Current.Resources["Button_Background"] as SolidColorBrush;
-            pageIndexButtons.ElementAt(index).Foreground = new SolidColorBrush(Colors.Black);
-        }
-
-        /// <summary>
-        /// Adds a new button to page index after creating a new page
-        /// </summary>
-        private void addNoteIndex(int index)
-        {
-            Button btn = new Button();
-            btn.Click += IndexBtn_Click;
-            btn.Background = new SolidColorBrush(Colors.WhiteSmoke);
-            btn.Foreground = new SolidColorBrush(Colors.Black);
-            btn.Padding = new Thickness(0, 0, 0, 0);
-            btn.Content = "" + (index + 1);
-            btn.Width = 30;
-            btn.Height = 30;
-            pageIndexButtons.Add(btn);
-            if (pageIndexPanel.Children.Count >= 1)
-                pageIndexPanel.Children.Insert(pageIndexPanel.Children.Count - 1, btn);
-            setNotePageIndex(index);
-
-        }
 
         // ************** Tool Toggle event handlers ********************
         #region Tool Toggles
@@ -637,7 +574,7 @@ namespace PhenoPad
 
         private void NotesButton_Click(object sender, RoutedEventArgs e)
         {
-            NotesButton.IsChecked = true;
+            //NotesButton.IsChecked = true;
             if (OverviewPopUp.IsOpen)
             {
                 OverviewButton.IsChecked = false;
@@ -664,7 +601,7 @@ namespace PhenoPad
 
         private void OverviewButton_Click(object sender, RoutedEventArgs e)
         {
-            NotesButton.IsChecked = false;
+            //NotesButton.IsChecked = false;
             if (!OverviewPopUp.IsOpen)
             {
                 OverivePopUpPage.Width = Window.Current.Bounds.Width;
@@ -687,7 +624,7 @@ namespace PhenoPad
 
         private void SpeechButton_Click(object sender, RoutedEventArgs e)
         {
-            NotesButton.IsChecked = false;
+            //NotesButton.IsChecked = false;
             if (!SpeechPopUp.IsOpen)
             {
                 SpeechPopUpPage.Width = Window.Current.Bounds.Width;
@@ -707,17 +644,26 @@ namespace PhenoPad
             }
         }
 
-        public async void ReEnableAudioButton(object sender = null, object e = null)
-        {
-            await Task.Delay(TimeSpan.FromSeconds(1));
-            audioButton.IsEnabled = true;
-            audioButton.IsChecked = false;
-            audioStatusText.Text = "OFF";
-        }
 
         //=======================================SWITCHING NOTE PAGES========================================
-        private async void AddPageButton_Click(object sender, RoutedEventArgs e)
+        public void AddNewNotePage(string state = "") {
+            if (state == "next")
+            {
+                if (curPageIndex == notePages.Count - 1)
+                    AddPageButton_Click();
+                else
+                    NextPageButton_Click();
+            }
+            else if (state == "previous")
+            {
+                PreviousPageButton_Click();
+            }
+        }
+
+        private async void AddPageButton_Click(object sender = null, RoutedEventArgs e = null)
         {
+            PageHostContentTrans.Edge = Windows.UI.Xaml.Controls.Primitives.EdgeTransitionLocation.Bottom;
+            curPage.Visibility = Visibility.Collapsed;
             //defining a new string name for the page and creates a new page controller to bind
             string newPageName = (notePages.Count).ToString();
             NotePageControl aPage = new NotePageControl(this.notebookId, newPageName);
@@ -728,82 +674,216 @@ namespace PhenoPad
 
             CloseCandidate();
             PageHost.Content = curPage;
+            showAddIn(new List<ImageAndAnnotation>());
+            setPageIndexText(curPageIndex);
 
-            setPageIndexText();
-            addNoteIndex(curPageIndex);
-            PhenoMana.phenotypesCandidates.Clear();
+            //addNoteIndex(curPageIndex);
             await FileManager.getSharedFileManager().CreateNotePage(notebookObject, curPageIndex.ToString());
             //auto-saves whenever a new page is created, this operation doesn't need a timer since 
             //we assume the user will not spam adding pages...
             await this.saveNoteToDisk();
             curPage.Visibility = Visibility.Visible;
+            curPage.ScrollToTop();
         }
 
-        private void NextPageButton_Click(object sender, RoutedEventArgs e)
+        private async void NextPageButton_Click(object sender = null, RoutedEventArgs e = null)
         {
+            PageHostContentTrans.Edge = Windows.UI.Xaml.Controls.Primitives.EdgeTransitionLocation.Bottom;
+
             if (curPageIndex < notePages.Count - 1)
             {
+                curPage.Visibility = Visibility.Collapsed;
                 curPageIndex++;
                 var aPage = notePages.ElementAt(curPageIndex);
                 inkCanvas = aPage.inkCan;
                 curPage = aPage;
-                //PageHostContentTrans.HorizontalOffset = 100;
-                //(PageHost.ContentTransitions.ElementAt(0) as ContentThemeTransition).HorizontalOffset = 500;
                 PageHost.Content = curPage;
-
-                setPageIndexText();
+                setPageIndexText(curPageIndex);
+                int count = PhenoMana.ShowPhenoCandAtPage(curPageIndex);
+                if (count <= 0)
+                    CloseCandidate();
+                else
+                    OpenCandidate();
+                curPage.Visibility = Visibility.Visible;
+                var addins = await curPage.GetAllAddInObjects();
+                showAddIn(addins);
+                curPage.ScrollToTop();
+                return;
             }
+            NotifyUser("This is the last page", NotifyType.StatusMessage, 1);
         }
 
-        private void PreviousPageButton_Click(object sender, RoutedEventArgs e)
+        private async void PreviousPageButton_Click(object sender=null, RoutedEventArgs e=null)
         {
+            PageHostContentTrans.Edge = Windows.UI.Xaml.Controls.Primitives.EdgeTransitionLocation.Top;
+
             if (curPageIndex > 0)
             {
+                curPage.Visibility = Visibility.Collapsed;
                 curPageIndex--;
                 var aPage = notePages.ElementAt(curPageIndex);
                 inkCanvas = aPage.inkCan;
                 curPage = aPage;
-                //PageHostContentTrans.HorizontalOffset = -100;
-                //(PageHost.ContentTransitions.ElementAt(0) as ContentThemeTransition).HorizontalOffset = -500;
                 PageHost.Content = curPage;
+                setPageIndexText(curPageIndex);
+                int count = PhenoMana.ShowPhenoCandAtPage(curPageIndex);
+                if (count <= 0)
+                    CloseCandidate();
+                else
+                    OpenCandidate();
+                curPage.Visibility = Visibility.Visible;
+                var addins = await curPage.GetAllAddInObjects();
+                showAddIn(addins);
+                curPage.ScrollToTop();
+                return;
+            }
+        }
 
-                setPageIndexText();
+        private void clearPageIndexPanel()
+        {
+            /// <summary>
+            /// Clears all page index records in the StackPanel.
+            /// </summary>
+
+            if (pageIndexPanel.Children.Count() > 1)
+            {
+                while (pageIndexPanel.Children.Count() > 1)
+                    pageIndexPanel.Children.RemoveAt(0);
+            }
+        }
+
+        private void setPageIndexText(int index)
+        {
+            /// <summary>
+            /// Sets the ink bar controller to the current ink canvas.
+            /// </summary>
+            MainPageInkBar.TargetInkCanvas = inkCanvas;
+            curPageIndexBlock.Content = $"{index + 1}";
+        }
+
+        public async void ShowAllPagePanel(object sender, RoutedEventArgs args) {
+
+            NoteGridView.ItemsSource = new List<NotePage>();
+            var curNotebook = MainPage.Current.notebookObject;
+            List<NotePage> pages = await FileManager.getSharedFileManager().GetAllNotePageObjects(curNotebook.id);
+
+            if (pages != null)
+            {
+                NoteGridView.ItemsSource = pages;
+            }
+            else
+                Debug.WriteLine("oops pages are null");
+
+            AllPagesPanel.ShowAt((Button)sender);
+        }
+
+        public async void AllPageItem_Click(object sender, ItemClickEventArgs args) {
+
+            int index;
+            Int32.TryParse((((NotePage)args.ClickedItem).id),out index);
+
+            if (index > curPageIndex)
+                PageHostContentTrans.Edge = Windows.UI.Xaml.Controls.Primitives.EdgeTransitionLocation.Bottom;
+            else
+                PageHostContentTrans.Edge = Windows.UI.Xaml.Controls.Primitives.EdgeTransitionLocation.Top;
+
+            if (index >= 0 && index < notePages.Count && index != curPageIndex)
+            {
+                curPage.Visibility = Visibility.Collapsed;
+                curPageIndex = index;
+                var aPage = notePages.ElementAt(curPageIndex);
+                inkCanvas = aPage.inkCan;
+                curPage = aPage;
+                PageHost.Content = curPage;
+                setPageIndexText(curPageIndex);
+                int count = PhenoMana.ShowPhenoCandAtPage(curPageIndex);
+                if (count <= 0)
+                    CloseCandidate();
+                else
+                    OpenCandidate();
+                curPage.Visibility = Visibility.Visible;
+                var addins = await curPage.GetAllAddInObjects();
+                showAddIn(addins);
+                //curPage.ScrollToTop();
+                return;
             }
         }
 
         /// <summary>
-        /// Called when user clicks on a notepage index button
+        /// Sets the display color of all note page buttons
         /// </summary>
-        private void IndexBtn_Click(object sender, RoutedEventArgs e)
-        {
-            var button = (Button)sender;
-            foreach (var btn in pageIndexButtons)
-            {
-                btn.Background = new SolidColorBrush(Colors.WhiteSmoke);
-                btn.Foreground = Application.Current.Resources["Button_Background"] as SolidColorBrush;
-            }
-            button.Background = Application.Current.Resources["Button_Background"] as SolidColorBrush;
-            button.Foreground = new SolidColorBrush(Colors.WhiteSmoke);
+        //private void setNotePageIndex(int index)
+        //{
+        //    curPageIndexBlock.Text = $"{index + 1}";
+        //    foreach (var btn in pageIndexButtons)
+        //    {
+        //        btn.Background = new SolidColorBrush(Colors.WhiteSmoke);
+        //        btn.Foreground = new SolidColorBrush(Colors.Gray);
+        //    }
+        //    pageIndexButtons.ElementAt(index).Background = Application.Current.Resources["Button_Background"] as SolidColorBrush;
+        //    pageIndexButtons.ElementAt(index).Foreground = new SolidColorBrush(Colors.Black);
+        //}
 
-            curPageIndex = Int32.Parse(button.Content.ToString()) - 1;
-            var aPage = notePages.ElementAt(curPageIndex);
-            inkCanvas = aPage.inkCan;
-            curPage = aPage;
-            //PageHostContentTrans.HorizontalOffset = 100;
-            //(PageHost.ContentTransitions.ElementAt(0) as ContentThemeTransition).HorizontalOffset = 500;
-            PageHost.Content = curPage;
-            CloseCandidate();
-            setPageIndexText();
-            setNotePageIndex(curPageIndex);
-            PhenoMana.phenotypesCandidates.Clear();
+        /// <summary>
+        /// Adds a new button to page index after creating a new page
+        /// </summary>
+        //private void addNoteIndex(int index)
+        //{
+        //    Button btn = new Button();
+        //    btn.Click += IndexBtn_Click;
+        //    btn.Background = new SolidColorBrush(Colors.WhiteSmoke);
+        //    btn.Foreground = new SolidColorBrush(Colors.Black);
+        //    btn.Padding = new Thickness(0, 0, 0, 0);
+        //    btn.Content = "" + (index + 1);
+        //    btn.Width = 30;
+        //    btn.Height = 30;
+        //    pageIndexButtons.Add(btn);
+        //    if (pageIndexPanel.Children.Count >= 1)
+        //        pageIndexPanel.Children.Insert(pageIndexPanel.Children.Count - 1, btn);
+        //    setNotePageIndex(index);
 
-            if (curPage.ehrPage == null)
-                aPage.initialAnalyze();
-            else
-                aPage.ehrPage.AnalyzePhenotype();
-            
-            aPage.Visibility = Visibility.Visible;
-        }
+        //}
+
+
+        //private async void IndexBtn_Click(object sender, RoutedEventArgs e)
+        //{
+        //    /// <summary>
+        //    /// Called when user clicks on a notepage index button
+        //    /// </summary>
+
+        //    var button = (Button)sender;
+        //    foreach (var btn in pageIndexButtons)
+        //    {
+        //        btn.Background = new SolidColorBrush(Colors.WhiteSmoke);
+        //        btn.Foreground = Application.Current.Resources["Button_Background"] as SolidColorBrush;
+        //    }
+        //    button.Background = Application.Current.Resources["Button_Background"] as SolidColorBrush;
+        //    button.Foreground = new SolidColorBrush(Colors.WhiteSmoke);
+
+        //    curPageIndex = Int32.Parse(button.Content.ToString()) - 1;
+        //    var aPage = notePages.ElementAt(curPageIndex);
+        //    inkCanvas = aPage.inkCan;
+        //    curPage = aPage;
+        //    PageHost.Content = curPage;
+        //    setPageIndexText(curPageIndex);
+        //    //setNotePageIndex(curPageIndex);
+        //    //shows add-in icons into side bar
+        //    var addins = await curPage.GetAllAddInObjects();
+        //    showAddIn(addins);
+
+        //    int count = PhenoMana.ShowPhenoCandAtPage(curPageIndex);
+        //    if (count <= 0)
+        //        CloseCandidate();
+        //    else
+        //        OpenCandidate();
+
+
+        //    //if (curPage.ehrPage == null)
+        //    //else
+        //    //    aPage.ehrPage.AnalyzePhenotype();
+
+        //    aPage.Visibility = Visibility.Visible;
+        //}
 
         //=======================================NOTE SAVING INTERFACES=====================================
 
@@ -872,6 +952,14 @@ namespace PhenoPad
             AppSetting.Visibility = Visibility.Visible;
         }
 
+        private async void ClearRecogBtn_Click(object sender, RoutedEventArgs e) {
+            LoadingPopup.IsOpen = true;
+            LoadingPopup.Visibility = Visibility.Visible;
+            await Current.curPage.ClearAndRecognizePage();
+            await Task.Delay(TimeSpan.FromSeconds(2));
+
+        }
+
         private void ChangeServerHWR_Click(object sender, RoutedEventArgs e) {
             string newAddr = HWRAddrInput.Text;
             HWRService.HWRManager.getSharedHWRManager().setIPAddr(new Uri(newAddr));
@@ -900,6 +988,24 @@ namespace PhenoPad
             AppConfigurations.saveSetting("serverIP", ipResult);
             AppConfigurations.saveSetting("serverPort", portResult);
             NotifyUser("ASR Server address has been changed", NotifyType.StatusMessage, 1);
+        }
+
+        private void PhenoSuggestionAddr_Click(object sender, RoutedEventArgs e)
+        {
+            PhenotypeManager.SUGGESTION_ADDR = PhenoSuggestionAddr.Text;
+            NotifyUser("Phenotype suggestion server address has been changed.",NotifyType.StatusMessage,1);
+        }
+
+        private void DiffDiagnosisAddr_Click(object sender, RoutedEventArgs e)
+        {
+            PhenotypeManager.DIFFERENTIAL_ADDR = DiffDiagnosisAddr.Text;
+            NotifyUser("Differential diagnosis server address has been changed.", NotifyType.StatusMessage, 1);
+        }
+
+        private void PhenoDetailAddr_Click(object sender, RoutedEventArgs e)
+        {
+            PhenotypeManager.PHENOTYPEINFO_ADDR = PhenoDetailAddr.Text;
+            NotifyUser("Phenotype detail server address has been changed.", NotifyType.StatusMessage, 1);
         }
 
         private void SettingsClose_Click(object sender, RoutedEventArgs e) {
@@ -947,22 +1053,6 @@ namespace PhenoPad
             curPage.hideTextEditGrid();
         }
 
-    //    private void MyScriptButton_Click(object sender, RoutedEventArgs e)
-    //    {
-    //        /**
-    //        if (myScriptEditor.Visibility == Visibility.Collapsed)
-    //        {
-    //            myScriptEditor.Visibility = Visibility.Visible;
-    //            myScriptEditor.NewFile();
-    //        }
-    //        else
-    //        {
-    //            myScriptEditor.Visibility = Visibility.Collapsed;
-    //        }
-    //**/
-
-    //    }
-
         private void FullscreenButton_Click(object sender, RoutedEventArgs e)
         {
             var view = ApplicationView.GetForCurrentView();
@@ -1001,13 +1091,43 @@ namespace PhenoPad
             }
         }
 
+        private void ExpandButton_Click(object sender, RoutedEventArgs e) {
+
+            if (ExpandButton.IsChecked == true)
+            {
+                CandidateGrid.Width = this.Width - 120;
+                UpdateLayout();
+
+                Grid.SetRowSpan(CandidatePanelStackPanel, 1);
+                ScrollViewer.SetHorizontalScrollMode(candidatePhenoListView, ScrollMode.Enabled);
+                ScrollViewer.SetVerticalScrollMode(candidatePhenoListView, ScrollMode.Disabled);
+                //WrapPanel wp = new WrapPanel();
+                //wp.Orientation = Orientation.Horizontal;
+                //wp.FlowDirection = FlowDirection.LeftToRight;
+
+                //candidatePhenoListView.ItemsPanelRoot.SetValue(Width, 9999);
+            }
+            else {
+                CandidateGrid.Width = this.Width - 120;
+                UpdateLayout();
+
+                Grid.SetRowSpan(CandidatePanelStackPanel, 2);
+                ScrollViewer.SetHorizontalScrollMode(candidatePhenoListView, ScrollMode.Disabled);
+                ScrollViewer.SetVerticalScrollMode(candidatePhenoListView, ScrollMode.Enabled);
+            }
+        }
+
         private void OpenCandidate_Click(object sender, RoutedEventArgs e)
         {
+            CandidateGrid.Width = this.Width - 120;
+            UpdateLayout();
+
             if (OpenCandidatePanelButton.IsChecked == true)
             {
                 CandidatePanelStackPanel.Visibility = Visibility.Visible;
                 OpenCandidateIcon.Visibility = Visibility.Collapsed;
                 CloseCandidateIcon.Visibility = Visibility.Visible;
+                ExpandButton.Visibility = Visibility.Visible;
                 // OpenCandidatePanelButtonIcon.Glyph = "\uE8BB";
                 // OpenCandidatePanelButtonIcon.Foreground = new SolidColorBrush(Colors.DarkGray);
             }
@@ -1017,6 +1137,7 @@ namespace PhenoPad
                 // OpenCandidatePanelButtonIcon.Glyph = "\uE82F";
                 // OpenCandidatePanelButtonIcon.Foreground = new SolidColorBrush(Colors.Gold);
                 OpenCandidateIcon.Visibility = Visibility.Visible;
+                ExpandButton.Visibility = Visibility.Collapsed;
                 CloseCandidateIcon.Visibility = Visibility.Collapsed;
             }
 
@@ -1037,6 +1158,7 @@ namespace PhenoPad
                 // OpenCandidatePanelButtonIcon.Foreground = new SolidColorBrush(Colors.DarkGray);
                 // OpenCandidatePanelButtonIcon.Glyph = "\uE8BB";
                 candidatePhenoListView.ScrollIntoView(candidatePhenoListView.Items.ElementAt(0));
+                ExpandButton.Visibility = Visibility.Visible;
             }
         }
 
@@ -1046,6 +1168,10 @@ namespace PhenoPad
             OpenCandidatePanelButton.Visibility = Visibility.Visible;
             OpenCandidatePanelButton.IsChecked = false;
             CloseCandidateIcon.Visibility = Visibility.Collapsed;
+            if (ExpandButton.IsChecked == true)
+                ExpandButton_Click(null, null);
+            ExpandButton.Visibility = Visibility.Collapsed;
+
         }
 
         private void OverViewToggleButton_Click(object sender, RoutedEventArgs e)
@@ -1126,7 +1252,8 @@ namespace PhenoPad
 
         private async void BackButton_Click(object sender, RoutedEventArgs e)
         {
-
+            cancelService.Cancel();
+            cancelService = new CancellationTokenSource();
             LoadingPopup.IsOpen = true;
             // save note
             //await this.saveNoteToDisk();
@@ -1135,6 +1262,7 @@ namespace PhenoPad
             LoadingPopup.IsOpen = false;
             //On_BackRequested();
             this.Frame.Navigate(typeof(PageOverview));
+         
 
         }
         // Handles system-level BackRequested events and page-level back button Click events
@@ -1168,11 +1296,6 @@ namespace PhenoPad
         {
 
         }
-
-        //private void MyscriptBtn_Click(object sender, RoutedEventArgs e)
-        //{
-        //    // myScriptEditor.Visibility = MyscriptBtn.IsChecked != null && (bool)MyscriptBtn.IsChecked ? Visibility.Visible : Visibility.Collapsed;
-        //}
 
         private void PrintButton_Click(object sender, RoutedEventArgs e)
         {
@@ -1301,11 +1424,11 @@ namespace PhenoPad
         private void InkToolbar_EraseAllClicked(InkToolbar sender, object args)
         {
             //calling auto-saving handler to save erased result
-            LogService.MetroLogger.getSharedLogger().Info("Cleared all ink strokes of this note page.");
+            //NotifyUser("");
             this.curPage.on_stroke_changed();
+            curPage.ClearAllParsedText();
             PhenotypeManager.getSharedPhenotypeManager().phenotypesCandidates.Clear();
             //more clearing caches
-
         }
 
 
@@ -1333,7 +1456,7 @@ namespace PhenoPad
         /// Display a message to the user.
         /// This method may be called from any thread.
         /// </summary>
-        public void NotifyUser(string strMessage, NotifyType type, int seconds)
+        public void NotifyUser(string strMessage, NotifyType type, double seconds)
         {
             // If called from the UI thread, then update immediately.
             // Otherwise, schedule a task on the UI thread to perform the update.
@@ -1350,7 +1473,7 @@ namespace PhenoPad
         /// <summary>
         /// Updates the notice message to StatusBlock using a semaphore.
         /// </summary>
-        private async void UpdateStatusAsync(string strMessage, NotifyType type, int seconds)
+        private async void UpdateStatusAsync(string strMessage, NotifyType type, double seconds)
         {
             await notifySemaphoreSlim.WaitAsync();
             try
@@ -1381,14 +1504,14 @@ namespace PhenoPad
                     StatusBorder.Visibility = Visibility.Collapsed;
                 }
 
-                await Task.Delay(1000 * seconds);
+                await Task.Delay(TimeSpan.FromSeconds(seconds));
                 await StatusBorderExitStoryboard.BeginAsync();
                 StatusBorder.Visibility = Visibility.Collapsed;
 
             }
             catch (Exception e)
             {
-                LogService.MetroLogger.getSharedLogger().Error(e+e.Message);
+                MetroLogger.getSharedLogger().Error(e+e.Message);
             }
             finally
             {
@@ -1482,9 +1605,109 @@ namespace PhenoPad
         {
             throw new NotImplementedException("MultimediaPreviewFlyout_Opened");
         }
+        #endregion
 
+        #region ADDIN PANEL HANDLERS
 
+        public void showAddIn(List<ImageAndAnnotation> images)
+        {
+            /// <summary>
+            /// Refreshes the listitem source of current page add-ins in the addin preview dock 
+            /// </summary>
 
+            try
+            {
+                badgeGrid.Visibility = Visibility.Collapsed;
+
+                if (images.Count > 0)
+                {
+                    addinlist.Visibility = Visibility.Visible;
+                    List<ImageAndAnnotation> addins = images.Where(x => x.commentID == -1).ToList();
+                    addinlist.ItemsSource = addins;
+                    if (addins.Count > 0)
+                    {
+                        NumIcon.Text = $"{addins.Count}";
+                        badgeGrid.Visibility = Visibility.Visible;
+                    }
+                }
+                else
+                {
+                    addinlist.ItemsSource = new List<ImageAndAnnotation>();
+                    //addinlist.Visibility = Visibility.Collapsed;
+                    NumIcon.Text = "";
+                }
+            }
+            catch (Exception e)
+            {
+                MetroLogger.getSharedLogger().Error($"Failed to refresh addin icon list:{e}{e.Message}");
+            }
+        }
+
+        public async Task quickShowDock()
+        {/// <summary>Quick plays addin dock sliding animation</summary>
+            if (slide.X == 250)
+            {
+                await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, async () =>
+                {
+                    await addinShowAnimation.BeginAsync();
+
+                });
+                await Task.Delay(TimeSpan.FromSeconds(0.3));
+
+                await addinHideAnimation.BeginAsync();
+            }
+            else if (slide.X == 0)
+            {
+                await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, async () => {
+                    await addinHideAnimation.BeginAsync();
+                });
+
+            }
+            return;
+        }
+
+        public async void AddinsButton_Click(object sender, RoutedEventArgs e)
+        {
+            /// <summary>
+            /// Refreshes and show the list of addins within a notepage
+            /// </summary>
+
+            if (slide.X == 250)
+                await addinShowAnimation.BeginAsync();
+            else
+                await addinHideAnimation.BeginAsync();
+        }
+
+        /// <summary>
+        /// Toggles the in dock status of an addin and show/hides it from main canvas
+        /// </summary>
+        public async void addInIcon_Click(object sender, RoutedEventArgs e)
+        {
+            //gets the clicked addin name and search for the specific addin
+            //in user canvas, then hides its panel
+            Viewbox icon = (Viewbox)((Button)sender).Content;
+            AddInControl icon_addin = (AddInControl)icon.Child;
+            string name = icon_addin.name;
+            List<AddInControl> addinlist = await curPage.GetAllAddInControls();
+            AddInControl addin = addinlist.Where(x => x.name == name).ToList()[0];
+            addin.Maximize_Addin();
+        }
+
+        /// <summary>
+        /// Refetch updated meta XML data for addins and uses showAddIn() to refresh preview dock.
+        /// </summary>
+        public async Task refreshAddInList()
+        {
+            try
+            {
+                List<ImageAndAnnotation> imageAndAnno = await FileManager.getSharedFileManager().
+                                              GetImgageAndAnnotationObjectFromXML(notebookId, curPage.pageId);
+                showAddIn(imageAndAnno);
+            }
+            catch (Exception)
+            {
+            }
+        }
         #endregion
 
         #region FOR TESTING/DEMO ONLY
@@ -1539,30 +1762,30 @@ namespace PhenoPad
 
     }
 
-    // MyScript 
-    public class FlyoutCommand : System.Windows.Input.ICommand
-    {
-        public delegate void InvokedHandler(FlyoutCommand command);
+    //// MyScript 
+    //public class FlyoutCommand : System.Windows.Input.ICommand
+    //{
+    //    public delegate void InvokedHandler(FlyoutCommand command);
 
-        public string Id { get; set; }
-        private InvokedHandler _handler = null;
+    //    public string Id { get; set; }
+    //    private InvokedHandler _handler = null;
 
-        public FlyoutCommand(string id, InvokedHandler handler)
-        {
-            Id = id;
-            _handler = handler;
-        }
+    //    public FlyoutCommand(string id, InvokedHandler handler)
+    //    {
+    //        Id = id;
+    //        _handler = handler;
+    //    }
 
-        public bool CanExecute(object parameter)
-        {
-            return _handler != null;
-        }
+    //    public bool CanExecute(object parameter)
+    //    {
+    //        return _handler != null;
+    //    }
 
-        public void Execute(object parameter)
-        {
-            _handler(this);
-        }
+    //    public void Execute(object parameter)
+    //    {
+    //        _handler(this);
+    //    }
 
-        public event EventHandler CanExecuteChanged;
-    }
+    //    public event EventHandler CanExecuteChanged;
+    //}
 }

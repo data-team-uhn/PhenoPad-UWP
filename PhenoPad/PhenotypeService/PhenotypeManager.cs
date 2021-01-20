@@ -9,6 +9,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Xml;
+using Windows.UI.Core;
 using Windows.UI.Xaml;
 using Windows.Web.Http;
 
@@ -25,7 +26,10 @@ namespace PhenoPad.PhenotypeService
         public ObservableCollection<Phenotype> suggestedPhenotypes;
         public ObservableCollection<Disease> predictedDiseases;
         public ObservableCollection<Phenotype> phenotypesInNote;
-        
+        public static string PHENOTYPEINFO_ADDR = "https://playground.phenotips.org/rest/vocabularies/hpo/";
+        public static string DIFFERENTIAL_ADDR = "https://services.phenotips.org/get/PhenoTips/DiseasePredictService2?format=json&limit=15";
+        //original https://playground.phenotips.org/get/PhenoTips/DiffDiagnosisService?format=json&limit=15
+        public static string SUGGESTION_ADDR = "https://services.phenotips.org/get/PhenoTips/DiffDiagnosisService?format=json&limit=15";
         public ObservableCollection<Phenotype> phenotypesInSpeech;
         public ObservableCollection<Phenotype> phenotypesSpeechCandidates;
 
@@ -69,6 +73,19 @@ namespace PhenoPad.PhenotypeService
             phenotypesInSpeech.Clear();
             phenotypesCandidates.Clear();
             //rootPage = MainPage.Current;
+        }
+
+        public int ShowPhenoCandAtPage(int pgId) {
+            var curPageCand = phenotypesCandidates.Where(x => x.pageSource == pgId).OrderBy(x=>x.state).ToList();
+            if (curPageCand == null)
+                return 0;
+            foreach (var p in curPageCand) {
+                Phenotype pp = p.Clone();
+                phenotypesCandidates.Remove(p);
+                phenotypesCandidates.Insert(0, pp);
+                //addPhenotypeCandidate(p, p.sourceType);
+            }
+            return curPageCand.Count;
         }
 
         public async void autosaver_tick(object sender = null, object e = null) {
@@ -122,33 +139,54 @@ namespace PhenoPad.PhenotypeService
             }
             autosavetimer.Start();
         }
-        public void addPhenotypeCandidate(Phenotype pheno, SourceType from)
-        {
-            Phenotype temp = phenotypesCandidates.Where(x => x == pheno).FirstOrDefault();
-            if(temp != null)
-                phenotypesCandidates.Remove(temp);
-            Phenotype pp = pheno.Clone();
 
-            temp = savedPhenotypes.Where(x => x == pheno).FirstOrDefault();
-            if (temp != null)
-                pp.state = temp.state;
-            phenotypesCandidates.Insert(0, pp);
+        public async void addPhenotypeCandidate(Phenotype pheno, SourceType from)
+        {//addes a phenotype tag to the candidate list UI
 
-            if (from == SourceType.Speech)
+            await Windows.ApplicationModel.Core.CoreApplication.MainView.CoreWindow.Dispatcher.RunAsync(CoreDispatcherPriority.Normal,() =>
             {
-                temp = phenotypesInSpeech.Where(x => x == pheno).FirstOrDefault();
-                if (temp == null)
+                Phenotype pp = pheno.Clone();
+                Phenotype temp = null;
+                Phenotype tempInCand = phenotypesCandidates.Where(x => x == pheno).FirstOrDefault();
+          
+                temp = savedPhenotypes.Where(x => x == pheno).FirstOrDefault();
+                if (temp != null)
+                    pp.state = temp.state;
+                else
+                    pp.state = -1;
+
+                if (from == SourceType.Speech)
                 {
-                    phenotypesInSpeech.Insert(0, pp);
+                    temp = phenotypesInSpeech.Where(x => x == pheno).FirstOrDefault();
+                    if (temp != null)
+                        temp.state = pheno.state;
+                    else
+                        phenotypesInSpeech.Insert(0, pp);
                 }
-                else {
-                    temp.state = pheno.state;
+                else if (from == SourceType.Notes) {
+                    temp = phenotypesInNote.Where(x => x == pheno).FirstOrDefault();
+                    if (temp != null)
+                        temp.state = pheno.state;
+                    else
+                        phenotypesInNote.Insert(0, pp);
                 }
-            }           
-           
-            MainPage.Current.OpenCandidate();
-            //autosavetimer.Start();
-            return;
+
+
+                //phenotype is not saved and not in candidate list
+                if (temp == null && tempInCand == null)
+                    phenotypesCandidates.Insert(0, pp);
+                //phenotype is in candidate list, only reinserts it if the ordering is really behind
+                else if (tempInCand != null && phenotypesCandidates.IndexOf(tempInCand) > 5) {
+                    phenotypesCandidates.Remove(pheno);
+                    phenotypesCandidates.Insert(0, pp);
+                }
+
+                if (!MainPage.Current.CandidateIsOpened())
+                    MainPage.Current.OpenCandidate();
+                return;
+
+            });
+
         }
 
         public void addPhenotype(Phenotype pheno, SourceType from)
@@ -157,7 +195,7 @@ namespace PhenoPad.PhenotypeService
                 return;
 
             pheno.sourceType = from;
-            OperationLogger.getOpLogger().Log(OperationType.Phenotype, from.ToString(), "added", pheno.name);
+            //OperationLogger.getOpLogger().Log(OperationType.Phenotype, from.ToString(), "added", pheno.name);
 
             Phenotype temp = savedPhenotypes.Where(x => x == pheno).FirstOrDefault();
             if (temp == null)
@@ -223,16 +261,32 @@ namespace PhenoPad.PhenotypeService
 
                 if (from == SourceType.Notes)
                 {
-                        phenotypesInNote.Add(pheno);
+                    phenotypesInNote.Add(pheno);
                 }
                 if (from == SourceType.Speech)
                 {
-                        phenotypesInSpeech.Add(pheno);
-                   
+                    phenotypesInSpeech.Add(pheno);               
                 }
             }
-            MainPage.Current.NotifyUser("Saved phenotypes are loaded.", NotifyType.StatusMessage, 2);
+            MainPage.Current.NotifyUser("Saved phenotypes are loaded.", NotifyType.StatusMessage, 1);
             updateSuggestionAndDifferential();
+        }
+
+        public void addPhenotypeCandidateFromFile(List<Phenotype> phenos) {
+            foreach (Phenotype p in phenos) {
+                //addPhenotypeCandidate(p, p.sourceType);
+                Phenotype pp = p.Clone();
+                //only insert at front if it is a saved phenotype with valid state
+                if (p.state == -1)
+                    phenotypesCandidates.Add(pp);
+                else
+                    phenotypesCandidates.Insert(0, pp);
+            }
+            if (phenos.Count > 0) {
+                MainPage.Current.NotifyUser("Phenotype candidates are loaded.", NotifyType.StatusMessage, 1);
+                MainPage.Current.OpenCandidate();
+                updateSuggestionAndDifferential();
+            }
         }
 
         public async void updateSuggestionAndDifferential()
@@ -247,7 +301,6 @@ namespace PhenoPad.PhenotypeService
                 }
             }
             
-
             List<Disease> dis = await predictDisease();
             predictedDiseases.Clear();
             if (dis != null)
@@ -257,9 +310,7 @@ namespace PhenoPad.PhenotypeService
                     predictedDiseases.Add(d);
                 }
             }
-
             autosavetimer.Start();
-
         }
 
         public bool deletePhenotypeByIndex(int idx)
@@ -297,6 +348,25 @@ namespace PhenoPad.PhenotypeService
                 phenotypesCandidates.Remove(temp);
                 phenotypesCandidates.Insert(0, pp);
             }
+
+            //updates the phenotype states in saved text conversations
+            var tm = MainPage.Current.conversations.Where(x => x.phenotypesInText.Contains(pheno)).ToList();
+            int count = 0;
+            if (tm.Count > 0)
+            {
+                foreach (var m in tm)
+                {
+                    var ph = m.phenotypesInText.Where(x => x == pheno).FirstOrDefault();
+                    m.phenotypesInText.Remove(ph);
+                    count++;
+                }
+                Debug.WriteLine($"removed {count} phenotype states in textmessages");
+            }
+
+            //updates the phenotype states in ongoing conversation
+            SpeechService.SpeechManager.getSharedSpeechManager().speechInterpreter.DeletePhenotype(pheno);
+
+
             autosavetimer.Start();
             return false;
         }
@@ -319,56 +389,24 @@ namespace PhenoPad.PhenotypeService
             if (temp != null)
                 temp.state = pheno.state;
 
+            //updates the phenotype states in saved text conversations
+            var tm = MainPage.Current.conversations.Where(x => x.phenotypesInText.Contains(pheno)).ToList();
+            int count = 0;
+            if (tm.Count > 0) {
+                foreach (var m in tm) {
+                    var ph = m.phenotypesInText.Where(x => x == pheno).FirstOrDefault();
+                    ph.state = pheno.state;
+                    count++;
+                }
+                Debug.WriteLine($"updated {count} phenotype states in textmessages");
+            }
+
+            //updates the phenotype states in ongoing conversation
+            SpeechService.SpeechManager.getSharedSpeechManager().speechInterpreter.UpdatePhenotypeState(pheno);
+
+
             //autosavetimer.Start();
         }
-
-        //public void removeByIdAsync(string pid, SourceType type)
-        //{
-        //    //if (type == SourceType.Saved)
-        //    //{
-        //        Phenotype temp = savedPhenotypes.Where(x => x.hpId == pid).FirstOrDefault();
-        //        if (temp != null)
-        //            savedPhenotypes.Remove(temp);
-        //   //}
-        //    //if (type == SourceType.Speech)
-        //    //{
-        //        temp = phenotypesInSpeech.Where(x => x.hpId == pid).FirstOrDefault();
-        //        if (temp != null)
-        //            phenotypesInSpeech.Remove(temp);
-        //    //}
-        //   // if (type == SourceType.Notes)
-        //    //{
-        //        temp = phenotypesInNote.Where(x => x.hpId == pid).FirstOrDefault();
-        //    if (temp != null)
-        //    {
-        //        phenotypesInNote.Remove(temp);
-        //    }
-        //    //}
-
-        //    // if deletion is from suggest, then we should remove it, otherwise set it state to -1
-        //    temp = phenotypesCandidates.Where(x => x.hpId == pid).FirstOrDefault();
-
-        //    if (temp != null)
-        //    {
-        //        if (type == SourceType.Suggested)
-        //        {
-        //            phenotypesCandidates.Remove(temp);
-        //        }
-        //        else
-        //        {
-        //            Phenotype pp = temp.Clone();
-        //            pp.state = -1;
-        //            int ind = phenotypesCandidates.IndexOf(temp);
-        //            phenotypesCandidates.Remove(temp);
-        //            phenotypesCandidates.Insert(ind, pp);
-        //        }
-        //    }
-
-        //    OperationLogger.getOpLogger().Log(OperationType.Phenotype, type.ToString(), "removed", temp.name);
-
-        //    autosavetimer.Start();
-
-        //}
 
         public void removeByIdAsync(string pid, SourceType type)
         {
@@ -385,6 +423,24 @@ namespace PhenoPad.PhenotypeService
             {
                 target = temp;
                 phenotypesInSpeech.Remove(temp);
+                //updates the phenotype states in saved text conversations
+                var tm = MainPage.Current.conversations.Where(x => x.phenotypesInText.Contains(temp)).ToList();
+                int count = 0;
+                if (tm.Count > 0)
+                {
+                    foreach (var m in tm)
+                    {
+                        var ph = m.phenotypesInText.Where(x => x == temp).FirstOrDefault();
+                        m.phenotypesInText.Remove(ph);
+                        count++;
+                    }
+                    Debug.WriteLine($"removed {count} phenotype states in textmessages");
+                }
+
+                //updates the phenotype states in ongoing conversation
+                SpeechService.SpeechManager.getSharedSpeechManager().speechInterpreter.DeletePhenotype(temp);
+
+
             }
 
             temp = phenotypesInNote.Where(x => x.hpId == pid).FirstOrDefault();
@@ -411,9 +467,10 @@ namespace PhenoPad.PhenotypeService
                     //phenotypesCandidates.Insert(ind, pp);
                 }
             }
+
             //target is null only when deleting a phenotype with state -1 in the curline recognition bar
             if (target != null)
-                OperationLogger.getOpLogger().Log(OperationType.Phenotype, type.ToString(), "removed", target.name);
+                //OperationLogger.getOpLogger().Log(OperationType.Phenotype, type.ToString(), "removed", target.name);
 
             autosavetimer.Start();
 
@@ -462,8 +519,7 @@ namespace PhenoPad.PhenotypeService
                     ind = phenotypesInNote.IndexOf(temp);
                     phenotypesInNote.Remove(temp);
                     phenotypesInNote.Insert(ind, pp);
-                    MainPage.Current.curPage.updatePhenotypeLine(pp, ind);
-
+                    //MainPage.Current.curPage.updatePhenotypeLine(pp, ind);
                 }
             }
             temp = phenotypesInSpeech.Where(x => x.hpId == pid).FirstOrDefault();
@@ -474,6 +530,7 @@ namespace PhenoPad.PhenotypeService
                // if (type != SourceType.Speech)
                 {
                     Phenotype pp = temp.Clone();
+                   
                     ind = phenotypesInSpeech.IndexOf(temp);
                     phenotypesInSpeech.Remove(temp);
                     phenotypesInSpeech.Insert(ind, pp);
@@ -494,10 +551,10 @@ namespace PhenoPad.PhenotypeService
             switch (state)
             {
                 case 1:
-                    OperationLogger.getOpLogger().Log(OperationType.Phenotype, type.ToString(), "Y", target.name);
+                    //OperationLogger.getOpLogger().Log(OperationType.Phenotype, type.ToString(), "Y", target.name);
                     break;
                 case 0:
-                    OperationLogger.getOpLogger().Log(OperationType.Phenotype, type.ToString(), "N", target.name);
+                    //OperationLogger.getOpLogger().Log(OperationType.Phenotype, type.ToString(), "N", target.name);
                     break;
                 case -1:
                     //shouldn't reach this case but added checker just in case
@@ -505,6 +562,21 @@ namespace PhenoPad.PhenotypeService
                     break;
             }
             updateSuggestionAndDifferential();
+            if (temp == null)
+                return;
+
+
+            //updates the phenotype states in saved text conversations
+            foreach (var mess in MainPage.Current.conversations) {
+                var pheno = mess.phenotypesInText.Where(x => x.hpId == pid).FirstOrDefault();
+                if (pheno != null) {
+                    pheno.state = state;
+                }
+            }
+
+            //updates the phenotype states in ongoing conversation
+            SpeechService.SpeechManager.getSharedSpeechManager().speechInterpreter.UpdatePhenotypeState(temp);
+            SpeechPage.Current.UpdateLayout();
 
 
         }
@@ -603,6 +675,7 @@ namespace PhenoPad.PhenotypeService
                 foreach (var row in result.rows)
                 {
                     Phenotype pheno = new Phenotype(row);
+                    pheno.pageSource = MainPage.Current.curPageIndex;
                     Phenotype temp = savedPhenotypes.Where(x => x.hpId == pheno.hpId).FirstOrDefault();
                     if (temp != null)
                     {
@@ -656,25 +729,25 @@ namespace PhenoPad.PhenotypeService
                 httpResponse = await httpClient.GetAsync(requestUri);
                 httpResponse.EnsureSuccessStatusCode();
                 httpResponseBody = await httpResponse.Content.ReadAsStringAsync();
-                var result = JsonConvert.DeserializeObject<NCRResult>(httpResponseBody);
 
+                var result = JsonConvert.DeserializeObject<NCRResult>(httpResponseBody);
                 Dictionary<string, Phenotype> returnResult = new Dictionary<string, Phenotype>();
                 foreach (var res in result.matches)
                 {
                     var keystr = str.Substring(res.start, res.end - res.start);
                     if (!returnResult.ContainsKey(keystr))
                     {
-                    returnResult.Add(keystr, new Phenotype(res));
-                    // Debug.WriteLine("Annotation:\t" + str.Substring(res.start, res.end - res.start) + "\t" + res.names[0]);
+                        Phenotype pp = new Phenotype(res);
+                        if (MainPage.Current != null)
+                            pp.pageSource = MainPage.Current.curPageIndex;
+                        returnResult.Add(keystr, pp);
                     }
                 }
-              
                 return returnResult;
             }
             catch (Exception ex)
             {
                 httpResponseBody = "Error: " + ex.HResult.ToString("X") + " Message: " + ex.Message;
-                MainPage.Current.NotifyUser(httpResponseBody, NotifyType.ErrorMessage, 3);
                 MetroLogger.getSharedLogger().Error("Failed to annotate by NCR, " + httpResponseBody);
             }
             return null;
@@ -702,7 +775,7 @@ namespace PhenoPad.PhenotypeService
                 throw new Exception("Invalid header value: " + header);
             }
 
-            var urlstr = "https://playground.phenotips.org/get/PhenoTips/DiffDiagnosisService?format=json&limit=15";
+            var urlstr = SUGGESTION_ADDR;
             /**
             foreach (var p in savedPhenotypes)
             {
@@ -742,6 +815,7 @@ namespace PhenoPad.PhenotypeService
                 foreach (var p in result)
                 {
                     Phenotype pheno = new Phenotype(p);
+                    pheno.pageSource = MainPage.Current.curPageIndex;
                     phenotypes.Add(pheno);
                 }
                 return phenotypes;
@@ -757,7 +831,7 @@ namespace PhenoPad.PhenotypeService
         public async Task<List<Disease>> predictDisease()
         {
             //Create an HTTP client object
-            Windows.Web.Http.HttpClient httpClient = new Windows.Web.Http.HttpClient();
+            HttpClient httpClient = new HttpClient();
 
             //Add a user-agent header to the GET request. 
             var headers = httpClient.DefaultRequestHeaders;
@@ -776,16 +850,11 @@ namespace PhenoPad.PhenotypeService
                 throw new Exception("Invalid header value: " + header);
             }
 
-            var urlstr = "https://playground.phenotips.org/get/PhenoTips/DiseasePredictService?format=json&limit=15";
-            /**
-            foreach (var p in savedPhenotypes)
-            {
-                urlstr += "&symptom=" + p.hpId;
-            }**/
+            var urlstr = DIFFERENTIAL_ADDR;
             Uri requestUri = new Uri(urlstr);
 
             //Send the GET request asynchronously and retrieve the response as a string.
-            Windows.Web.Http.HttpResponseMessage httpResponse = new Windows.Web.Http.HttpResponseMessage();
+            HttpResponseMessage httpResponse = new HttpResponseMessage();
             string httpResponseBody = "";
 
             try
@@ -802,15 +871,15 @@ namespace PhenoPad.PhenotypeService
                 httpResponse = await httpClient.PostAsync(requestUri, formContent);
                 httpResponse.EnsureSuccessStatusCode();
                 httpResponseBody = await httpResponse.Content.ReadAsStringAsync();
-
+                //Debug.WriteLine($"differential diagnosis: code={httpResponse.StatusCode}, Body = {httpResponseBody}" );
                 var result = JsonConvert.DeserializeObject<List<Disease>>(httpResponseBody);
 
                 return result;
             }
             catch (Exception ex)
             {
-                httpResponseBody = "Error: " + ex.HResult.ToString("X") + " Message: " + ex.Message;
-                LogService.MetroLogger.getSharedLogger().Error("Failed to give differential diagnosis, " + httpResponseBody);
+                string errormsg = " Message: " + ex.Message + " Body: " + httpResponseBody;
+                MetroLogger.getSharedLogger().Error("Failed to give differential diagnosis, " + errormsg);
             }
             return null;
         }
@@ -837,10 +906,10 @@ namespace PhenoPad.PhenotypeService
                 throw new Exception("Invalid header value: " + header);
             }
 
-            Uri requestUri = new Uri("https://playground.phenotips.org/rest/vocabularies/hpo/" + id);
+            Uri requestUri = new Uri(PHENOTYPEINFO_ADDR + id);
 
             //Send the GET request asynchronously and retrieve the response as a string.
-            Windows.Web.Http.HttpResponseMessage httpResponse = new Windows.Web.Http.HttpResponseMessage();
+            HttpResponseMessage httpResponse = new HttpResponseMessage();
             string httpResponseBody = "";
 
             try

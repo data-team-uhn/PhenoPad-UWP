@@ -1,197 +1,1159 @@
 ﻿using PhenoPad.PhenotypeService;
 using System;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using System.IO;
 using System.Linq;
-using System.Runtime.InteropServices.WindowsRuntime;
 using Windows.Foundation;
-using Windows.Foundation.Collections;
 using Windows.UI.Core;
 using Windows.UI.Input.Inking;
 using Windows.UI.Input.Inking.Analysis;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
-using Windows.UI.Xaml.Controls.Primitives;
-using Windows.UI.Xaml.Data;
 using Windows.UI.Xaml.Input;
 using Windows.UI.Xaml.Media;
-using Windows.UI.Xaml.Navigation;
 using Windows.UI.Xaml.Shapes;
 using PhenoPad.HWRService;
-using PhenoPad.Styles;
-using Windows.UI.Input.Inking.Core;
 using System.Diagnostics;
 using System.Threading.Tasks;
-using Windows.UI;
-using Windows.Media.Capture;
-using Windows.Storage;
-using Windows.Storage.Streams;
-using Windows.Graphics.Imaging;
-using Windows.UI.Xaml.Media.Imaging;
-using PhenoPad.PhotoVideoService;
-using Windows.UI.Notifications;
-using Windows.ApplicationModel.Core;
-using System.Threading;
-using System.Collections;
-using Windows.UI.Xaml.Documents;
-using Windows.UI.Text;
 using PhenoPad.FileService;
-using System.Numerics;
-using Windows.UI.Xaml.Hosting;
-using Windows.Graphics.Display;
 using PhenoPad.LogService;
-using MetroLog;
 using Windows.UI.Xaml.Media.Animation;
+using Windows.System;
 
 namespace PhenoPad.CustomControl
 {
+    //CLASS WITH FUNCTIONS DEDICATED FOR NOTE TAKING STROKE INK ANALYSIS
+    public enum NodeType{
+        InkWord,
+        InkLine,
+        Both
+    }
+
     public sealed partial class NotePageControl : UserControl
     {
-        DispatcherTimer recognizeTimer;
-        List<HWRRecognizedText> cur_result;
-        // ================================= INK RECOGNITION ==============================================                      
-        /// <summary>
-        /// PS:10/9/2018 this method is currently not used as the timer tick is commented out
-        /// </summary>
-        private void recognizeLine(int line, bool serverRecog = false)
+        public DispatcherTimer RawStrokeTimer;
+        DispatcherTimer EraseTimer;
+        List<InkStroke> RawStrokes;
+        InkAnalyzer strokeAnalyzer;
+        int lastWordCount;
+        int lastWordIndex;
+        Rect lastStrokeBound;
+        List<int> linesErased = new List<int>();
+        private Dictionary<int, NotePhraseControl> phrases = new Dictionary<int, NotePhraseControl>();
+
+        #region InkCanvas interactions
+
+        private void InkCanvas_Tapped(object sender, TappedRoutedEventArgs e)
         {
-            if (line < 0)
+            ClearSelectionAsync();
+            Point pos = e.GetPosition(inkCanvas);
+            Rect pointerRec = new Rect(pos.X, pos.Y, 1, 1);
+            int lineNum = getLineNumByRect(pointerRec);
+
+            if (!phrases.ContainsKey(lineNum))
                 return;
-            SelectAndAnnotateByLineNum(line, serverRecog);
+            bool hovering = false;
+
+            //gets the hit WBC and setup UI for hit word
+            var wb = phrases[lineNum].GetHitWBC(pos);
+            if (wb != null)
+            {
+                foreach (var wbs in wb.strokes)
+                {
+                    var s = inkCan.InkPresenter.StrokeContainer.GetStrokeById(wbs.Id);
+                    SetSelectedStrokeStyle(s);
+                }
+                hovering = true;
+
+                curLineWordsStackPanel.Children.Clear();
+                foreach (var b in wb.GetCurWordCandidates())
+                {
+                    curLineWordsStackPanel.Children.Add(b);
+                }
+
+                TextBox tb = new TextBox();
+                tb.Width = 40;
+                tb.Height = curLineWordsStackPanel.ActualHeight * 0.7;
+                tb.KeyDown += (object sender1, KeyRoutedEventArgs e1) =>
+                {
+                    if (e1.Key.Equals(VirtualKey.Enter))
+                    {
+                        this.Focus(FocusState.Programmatic);
+                    }
+                };
+                tb.LostFocus += (object sender1, RoutedEventArgs e1) =>
+                {
+                    if (tb.Text.Length > 0)
+                    {
+                        wb.ChangeAlterFromTextInput(tb.Text);
+                    }
+                    HideCurLineStackPanel();
+                };
+                curLineWordsStackPanel.Children.Add(tb);
+                curWordPhenoControlGrid.Visibility = Visibility.Collapsed;
+                curLineWordsStackPanel.Visibility = Visibility.Visible;
+                curLineResultPanel.Visibility = Visibility.Visible;
+                Canvas.SetLeft(curLineResultPanel, wb.BoundingRect.X);
+                Canvas.SetTop(curLineResultPanel, (lineNum - 1) * LINE_HEIGHT);
+                return;
+            }
+            if (!hovering)
+                HideCurLineStackPanel();
         }
 
-        /// <summary>
-        /// Analyze the currently hovering line.
-        /// PS:10/9/2018 this method is currently not used as the timer tick is commented out
-        /// </summary>
-        private void LineAnalysisDispatcherTimer_Tick(object sender, object e)
+        private void InkCanvas_DoubleTapped(object sender, DoubleTappedRoutedEventArgs e)
         {
-            var pointerPosition = Windows.UI.Core.CoreWindow.GetForCurrentThread().PointerPosition;
-            var x = pointerPosition.X - Window.Current.Bounds.X;
-            var y = pointerPosition.Y - Window.Current.Bounds.Y;
-            int curLine = (int)y / (int)LINE_HEIGHT;
-            if (curLine != hoveringLine)
+            var position = e.GetPosition(inkCanvas);
+            ClearSelectionAsync();
+
+            //FOR DEBUGGING PURPOSES
+            //int count = inkCan.InkPresenter.StrokeContainer.GetStrokes().Count;
+            //var lines = inkAnalyzer.AnalysisRoot.FindNodes(InkAnalysisNodeKind.InkWord);
+            //int allLineCount = 0;
+            //foreach (var l in lines)
+            //{
+            //    allLineCount += l.GetStrokeIds().Count;
+            //}
+            //Debug.WriteLine($"Number of stroked missed by Inkword = {count - allLineCount}");
+            //Debug.WriteLine($"Number of words = {lines.Count}");
+            //Debug.WriteLine($"Number of lines =  {inkAnalyzer.AnalysisRoot.FindNodes(InkAnalysisNodeKind.Line).Count}");
+            //Debug.WriteLine($"Number of listitem =  {inkAnalyzer.AnalysisRoot.FindNodes(InkAnalysisNodeKind.ListItem).Count}");
+            //Debug.WriteLine($"Number of drawing =  {inkAnalyzer.AnalysisRoot.FindNodes(InkAnalysisNodeKind.InkDrawing).Count}");
+            //Debug.WriteLine($"Number of inkbullet =  {inkAnalyzer.AnalysisRoot.FindNodes(InkAnalysisNodeKind.InkBullet).Count}");
+
+            string text = "";
+            recognizedText.Clear();
+            Rect pointerRec = new Rect(position.X, position.Y, 1, 1);
+            int lineNum = getLineNumByRect(pointerRec);
+            if (!phrases.ContainsKey(lineNum))
+                return;
+            var inlines = phrases[lineNum].GetHitWBCPhrase(position);
+            if (inlines != null)
             {
-                hoveringLine = curLine;
-                recognizeLine(hoveringLine);
+                var strokes = inlines.SelectMany(x => x.strokes).ToList();
+                foreach (var stroke in strokes)
+                {
+                    var s = inkCan.InkPresenter.StrokeContainer.GetStrokeById(stroke.Id);
+                    s.Selected = true;
+                    SetSelectedStrokeStyle(s);
+                }
+                List<Rect> rects = strokes.Select(x => x.BoundingRect).OrderBy(x=>x.X+x.Width).ToList();
+                double left = rects.FirstOrDefault().X;
+                double right = rects.LastOrDefault().X + rects.LastOrDefault().Width;
+                boundingRect = new Rect(left - 5, lineNum * LINE_HEIGHT, right - left + 10, LINE_HEIGHT);
+
+                foreach (var w in inlines)
+                {
+                    recognizedText.Add(w.ConvertToHWRRecognizedText());
+                    text += w.current + " ";
+                }
+                RecognizeSelection(text);
             }
         }
 
-        /// <summary>
-        /// PS:10/9/2018 this method is currently not used as the timer tick is commented out
-        /// </summary>
-        public async void SelectAndAnnotateByLineNum(int line, bool server)
+        #endregion
+
+        #region stroke event handlers
+
+        private async void InkPresenter_StrokesErased(InkPresenter sender, InkStrokesErasedEventArgs args)
         {
-            await deleteSemaphoreSlim.WaitAsync();
-            try
-            {
-                var xFrom = 0;
-                var xTo = inkCanvas.ActualWidth;
-                var yFrom = line * LINE_HEIGHT - 0.2 * LINE_HEIGHT;
-                yFrom = yFrom < 0 ? 0 : yFrom;
-                var yTo = (line + 1) * LINE_HEIGHT + 1.0 * LINE_HEIGHT;
-                Polyline lasso = new Polyline();
-                lasso.Points.Add(new Point(xFrom, yFrom));
-                lasso.Points.Add(new Point(xFrom, yTo));
-                lasso.Points.Add(new Point(xTo, yTo));
-                lasso.Points.Add(new Point(xTo, yFrom));
-                lasso.Points.Add(new Point(xFrom, yFrom));
-                Rect selectRect = Rect.Empty;
-
-                selectRect = inkCanvas.InkPresenter.StrokeContainer.SelectWithPolyLine(lasso.Points);
-
-                //double panelLeft = 0;
-                if (!selectRect.Equals(Rect.Empty))
+            await Windows.ApplicationModel.Core.CoreApplication.MainView.CoreWindow.Dispatcher.RunAsync(CoreDispatcherPriority.Normal,
+                () =>
                 {
-                    var shouldRecognize = false;
-                    foreach (var ss in inkCanvas.InkPresenter.StrokeContainer.GetStrokes())
-                        if (ss.Selected)
-                        {
-                            if (ss.BoundingRect.Top > (line + 1) * LINE_HEIGHT || ss.BoundingRect.Bottom < line * LINE_HEIGHT)
-                            {
-                                ss.Selected = false;
-                            }
-                            else
-                            {
-                                shouldRecognize = true;
-                                //panelLeft = panelLeft > (ss.BoundingRect.X + ss.BoundingRect.Width) ? panelLeft : (ss.BoundingRect.X + ss.BoundingRect.Width);
-                            }
-                        }
-                    if (shouldRecognize)
+                    ClearSelectionAsync();
+                    EraseTimer.Stop();
+
+                    curLineResultPanel.Visibility = Visibility.Collapsed;
+                    curLineWordsStackPanel.Children.Clear();
+
+                    //linesErased.Clear();
+                    foreach (var stroke in args.Strokes)
                     {
-                        List<HWRRecognizedText> recognitionResults = await HWRManager.getSharedHWRManager().OnRecognizeAsync(
-                                                                        inkCanvas.InkPresenter.StrokeContainer, InkRecognitionTarget.Selected, 
-                                                                        server);
-
-                        //ClearSelection();
-                        if (recognitionResults != null)
+                        inkAnalyzer.RemoveDataForStroke(stroke.Id);
+                        if (stroke.BoundingRect.Height <= MAX_WRITING)
                         {
-                            string str = "";
-                            foreach (var rt in recognitionResults)
-                            {
-                                str += rt.selectedCandidate + " ";
+                            int line = getLineNumByRect(stroke.BoundingRect);
+                            if (StrokesInLine.ContainsKey(line) && StrokesInLine[line].Contains(stroke)) {
+                                StrokesInLine[line].Remove(stroke);
                             }
-
-                            if (!str.Equals(String.Empty))
-                            {
-                                string pname = "";
-                                if (stringsOfLines.ContainsKey(line) && stringsOfLines[line].Equals(str) && phenotypesOfLines.ContainsKey(line))
-                                {
-                                    pname = phenotypesOfLines[line].ElementAt(0).name;
-                                    // if (PhenotypeManager.getSharedPhenotypeManager().checkIfSaved(phenotypesOfLines[line].ElementAt(0)))
-                                    //ifSaved = true;
-                                }
-                                else
-                                {
-                                    List<Phenotype> result = await PhenotypeManager.getSharedPhenotypeManager().searchPhenotypeByPhenotipsAsync(str);
-                                    if (result != null && result.Count > 0)
-                                    {
-                                        phenotypesOfLines[line] = result;
-                                        stringsOfLines[line] = str;
-                                        pname = result.ElementAt(0).name;
-                                        // if (PhenotypeManager.getSharedPhenotypeManager().checkIfSaved(result.ElementAt(0)))
-                                        // ifSaved = true;
-                                    }
-                                    else
-                                        return;
-                                }
-                                /**
-                                HoverPhenoPanel.Visibility = Visibility.Visible;
-                                HoverPhenoPopupText.Text = pname;
-                                Canvas.SetTop(HoverPhenoPanel, ((double)line-0.4) * LINE_HEIGHT);
-                                Canvas.SetLeft(HoverPhenoPanel, 10);
-                                HoverPhenoPopupText.Tapped += HoverPhenoPopupText_Tapped;
-
-                                if (ifSaved)
-                                    HoverPhenoPanel.BorderThickness = new Thickness(2);
-                                else
-                                    HoverPhenoPanel.BorderThickness = new Thickness(0);
-                                **/
-
-                            }
+                            if (!linesErased.Contains(line))
+                                linesErased.Add(line);
                         }
                     }
+
+                    autosaveDispatcherTimer.Start();
+                    EraseTimer.Start();
+
+                }
+            );
+        }
+
+        private async void StrokeInput_StrokeStarted(InkStrokeInput sender, PointerEventArgs args)
+        {
+            if (!leftLasso && curStroke != null)
+            {
+                RawStrokeTimer.Stop();              
+                inkOperationAnalyzer.ClearDataForAllStrokes();
+                //checks if writing on new line and instantly recognizes if so
+                var newLine = (int)Math.Floor(args.CurrentPoint.Position.Y / LINE_HEIGHT);
+                if (newLine != showingResultOfLine)
+                {
+                    await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () => {
+                    recognizeAndSetUpUIForLine(line: null, lineInd:showingResultOfLine);
+                    });
+                    curLineCandidatePheno.Clear();
+                    curLineWordsStackPanel.Children.Clear();
+                    curLineResultPanel.Visibility = Visibility.Collapsed;
+                    UpdateLayout();
+                }
+
+            }
+            autosaveDispatcherTimer.Stop();
+        }
+
+        private void StrokeInput_StrokeEnded(InkStrokeInput sender, PointerEventArgs args)
+        {
+            autosaveDispatcherTimer.Start();
+        }
+
+        private async void InkPresenter_StrokesCollectedAsync(InkPresenter sender, InkStrokesCollectedEventArgs args)
+        {
+            if (!leftLasso)
+            {//processing strokes inputs
+                //dispatcherTimer.Stop();
+                //operationDispathcerTimer.Stop();
+                foreach (var s in args.Strokes)
+                {
+                    //Process strokes that excess maximum height for shape recognition (addin control)
+                    if (s.BoundingRect.Height > MAX_WRITING)
+                    {
+                        //MainPage.Current.NotifyUser("Stroke exceeded maximum writing",NotifyType.StatusMessage,1);
+                        inkOperationAnalyzer.AddDataForStroke(s);
+                        try
+                        {
+                            await RecognizeInkOperation();
+                        }
+                        catch (Exception e)
+                        {
+                            MetroLogger.getSharedLogger().Error($"InkPresenter_StrokesCollectedAsync in NotePageControl:{e.Message}");
+                        }
+                    }
+
+                    //Instantly analyze ink inputs
                     else
                     {
-                        if (stringsOfLines.ContainsKey(line))
-                            stringsOfLines.Remove(line);
-                        if (phenotypesOfLines.ContainsKey(line))
-                            phenotypesOfLines.Remove(line);
+                        //marking the current stroke for later server recognition
+                        int lineNum = getLineNumByRect(s.BoundingRect);
+                        if (!StrokesInLine.ContainsKey(lineNum))
+                            StrokesInLine.Add(lineNum, new List<InkStroke> { s });
+                        else
+                            StrokesInLine[lineNum].Add(s);
+                        curStroke = s;
+                        inkAnalyzer.AddDataForStroke(s);
+                        inkAnalyzer.SetStrokeDataKind(s.Id, InkAnalysisStrokeKind.Writing);
+                        recognizeAndSetUpUIForLine(line: null, lineInd: lineNum);
+                        OperationLogger.getOpLogger().Log(OperationType.Stroke, s.Id.ToString(), s.StrokeStartedTime.Value.ToString(), s.StrokeDuration.ToString(), getLineNumByRect(s.BoundingRect).ToString(), pageId.ToString());
+                        RawStrokeTimer.Start();
+                    }
+
+                }
+                //here we need instant call to analyze ink for the specified line input
+                //var result = await analyzeInk(curStroke, serverFlag: MainPage.Current.abbreviation_enabled);
+            }
+            else
+            {//processing strokes selected with left mouse lasso strokes
+                leftLossoStroke = args.Strokes;
+                foreach (var s in args.Strokes)
+                {
+                    //TODO: 
+                }
+            }
+        }
+
+        #endregion
+
+        #region Analysis timer tick event handlers
+
+        private async void EraseTimer_Tick(object sender = null, object e = null)
+        {
+            EraseTimer.Stop();
+            if (inkAnalyzer.IsAnalyzing) {               
+                EraseTimer.Start();
+                return;
+            }
+            await inkAnalyzer.AnalyzeAsync();
+            //if the canvas is completely empty after erasing, just clear all HWR
+            if (inkCan.InkPresenter.StrokeContainer.GetStrokes().Count == 0)
+                ClearAllParsedText();
+            //otherwise need to re-recognize for all lines that has been erased
+            else {
+                foreach (int line in linesErased)
+                {
+                    await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, async () => {
+                        if (phrases.ContainsKey(line))
+                        {
+                            var strokes = FindAllStrokesInLine(line);
+                            List<WordBlockControl> updated = new List<WordBlockControl>();
+                            NotePhraseControl npc = phrases[line];
+                            if (strokes.Count == 0)
+                            {
+                                npc.ClearPhrase();
+                            }
+                            else {
+                                updated = await RecognizeLineWBC(line);
+                                npc.UpdateRecognition(updated, fromServer: false, fromErase:true);
+
+                            }
+                        }
+                    });
+                }
+            }
+            linesErased.Clear();
+            Debug.WriteLine("done re recognizing after erase");
+            autosaveDispatcherTimer.Start();
+        }
+
+        private void RawStrokeTimer_Tick(object sender = null, object e = null)
+        {
+            //recognizes the last written line when timer ticks
+
+            RawStrokeTimer.Stop();
+            //await analyzeInk(curStroke, serverFlag: MainPage.Current.abbreviation_enabled);
+            int curLine = getLineNumByRect(curStroke.BoundingRect);
+            recognizeAndSetUpUIForLine(line : null, lineInd: curLine);
+        }
+
+        //private void LineAnalysisDispatcherTimer_Tick(object sender, object e)
+        //{
+        //    /// Analyze the currently hovering line.
+        //    /// PS:10/9/2018 this method is currently not used as the timer tick is commented out
+
+        //    var pointerPosition = Windows.UI.Core.CoreWindow.GetForCurrentThread().PointerPosition;
+        //    var x = pointerPosition.X - Window.Current.Bounds.X;
+        //    var y = pointerPosition.Y - Window.Current.Bounds.Y;
+        //    int curLine = (int)y / (int)LINE_HEIGHT;
+        //    if (curLine != hoveringLine)
+        //    {
+        //        hoveringLine = curLine;
+        //        recognizeLine(hoveringLine);
+        //    }
+        //}
+
+        public async void UpdateRecognitionFromServer(int lineNum, List<HWRRecognizedText> result) {
+            await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () => {
+                if (!phrases.ContainsKey(lineNum) || result == null || result.Count ==0)
+                    return;
+
+                var dict = GetPhrasesOnLine(lineNum);
+
+                if (dict.Count == 0) {
+                    return;
+                }
+
+                List<WordBlockControl> wbs = new List<WordBlockControl>();
+                for (int i = 0; i < result.Count; i++)
+                {
+                    HWRRecognizedText recognized = result[i];
+                    int ind = i;
+                    //this handles some weird error when dict count != HWR count, by default will count this word as last phrase
+                    if (i >= dict.Count)
+                        ind = dict.Count - 1;
+                    WordBlockControl wb = new WordBlockControl(lineNum, i, recognized.selectedCandidate, recognized.candidateList,recognized.strokes);
+                    //just an intuitive way to check for abbreviation
+                    if (recognized.candidateList.Count > 5)
+                        wb.is_abbr = true;
+                    wbs.Add(wb);
+                }
+
+
+                NotePhraseControl npc = phrases[lineNum];
+                npc.UpdateRecognition(wbs, fromServer: true);
+
+                //refresh current line result with the server result
+                var words = npc.words;
+                //don't show the UI if no words/results is available
+                if (words.Count == 0 || lastWordIndex >= words.Count)
+                    return;
+                //if user is still writing at the current line, update the server recognition
+                if (lineNum == showingResultOfLine && curLineResultPanel.Visibility == Visibility.Visible)
+                {
+                    curLineWordsStackPanel.Children.Clear();
+                    foreach (var tb in phrases[lineNum].GetCurLineHWR())
+                        curLineWordsStackPanel.Children.Add(tb);
+                }
+                
+            });
+        }
+
+        #endregion
+
+        #region stroke recognition/analyze/UIsettings
+        /// <summary>
+        /// Called after strokes are collected to recoginze words and shapes
+        /// </summary>
+        private async void InkAnalysisDispatcherTimer_Tick(object sender, object e)
+        {
+            dispatcherTimer.Stop();
+            Debug.WriteLine("ink analysis tick, will analyze ink ...");
+            await analyzeInk(curStroke, serverFlag: MainPage.Current.abbreviation_enabled);
+        }
+
+        private async Task<bool> analyzeInk(InkStroke lastStroke = null, bool serverFlag = false)
+        {
+            //Analyze ink strokes contained in inkAnalyzer and add phenotype candidates from fetching API
+
+            dispatcherTimer.Stop();
+            if (inkAnalyzer.IsAnalyzing)
+            {
+                Debug.WriteLine("still analyzing...");
+                dispatcherTimer.Start();
+                return false;
+            }
+
+            var result = await inkAnalyzer.AnalyzeAsync();
+            if (result.Status == InkAnalysisStatus.Updated)
+            {
+                //analyze whole line of stroke based on last written stroke
+                if (lastStroke != null)
+                {
+                    var lineNum = getLineNumByRect(lastStroke.BoundingRect);
+                    recognizeAndSetUpUIForLine(line:null, lineInd:lineNum);
+                    return true;
+                }
+                //analyze all lines within the page
+                else {
+                    Debug.WriteLine("current stroke is null, will analyze whole page ...");
+                    for (int i = 1; i < PAGE_HEIGHT / LINE_HEIGHT; i++) {
+                        int lineNum = i;
+                        if (phrases.ContainsKey(lineNum)) {
+                            Dictionary<string, Phenotype> annoResult = await PhenoMana.annotateByNCRAsync(phrases[lineNum].GetString());
+                            if (annoResult != null && annoResult.Count > 0)
+                                foreach (var pp in annoResult.Values)
+                                {
+                                    pp.sourceType = SourceType.Notes;
+                                    phrases[lineNum].phenotypes.Add(pp);
+                                    PhenoMana.addPhenotypeCandidate(pp, SourceType.Notes);
+                                }
+                        }
                     }
                 }
+                return true;
+            }
+
+            //analyze result no update, do nothing
+            Debug.WriteLine("analyze result no update");
+            return false;
+        }
+
+        private async void recognizeAndSetUpUIForLine(InkAnalysisLine line, int lineInd = -1,bool indetails = false, bool timerFlag = false)
+
+        {
+            if (line == null && lineInd == -1) {
+                Debug.WriteLine("recognizeAndSetUpUIForLine -> line null AND lineInd -1");
+                return;
+            }
+                
+
+            int lineNum = line == null? lineInd : getLineNumByRect(line.BoundingRect);
+            if (!indetails) {
+
+                // switch to another line, clear result of current line
+                if (lineNum != showingResultOfLine)
+                {
+                    //Debug.WriteLine($"Switching to a different line, line num= {lineNum}");
+                    lastWordCount = 1;
+                    lastWordIndex = 0;
+                    HideCurLineStackPanel();
+                    curLineCandidatePheno.Clear();
+                    phenoCtrlSlide.Y = 0;
+                    showingResultOfLine = lineNum;
+                    UpdateLayout();
+
+                }
+                //writing on an existing line
+                if (phrases.ContainsKey(lineNum))
+                {
+                    NotePhraseControl phrase = phrases[lineNum];
+                    lastWordCount = phrase.words.Count == 0 ? 1 : phrase.words.Count;
+                    List<WordBlockControl> results = await RecognizeLineWBC(lineNum);
+                    phrase.UpdateRecognition(results, fromServer:false);
+                }
+                //writing on a new line 
+                else
+                {
+                    //new line
+                    //Debug.WriteLine($"Created a new line = {lineNum}");
+                    NotePhraseControl phrase = new NotePhraseControl(lineNum);
+                    phrases[lineNum] = phrase;
+                    recognizedCanvas.Children.Add(phrase);
+                    Canvas.SetLeft(phrase, 0);
+                    Canvas.SetTop(phrase, lineNum * LINE_HEIGHT);
+                }
+                //OperationLogger.getOpLogger().Log(OperationType.StrokeRecognition, line.RecognizedText);
+            }
+
+            // HWR result UI
+            var words = phrases[lineNum].words;
+            //don't show the UI if no words/results is available
+            if (words.Count == 0 || lastWordIndex > words.Count)
+                return;
+
+            curLineWordsStackPanel.Children.Clear();
+            foreach (var txtblock in phrases[lineNum].GetCurLineHWR())
+                curLineWordsStackPanel.Children.Add(txtblock);
+            Canvas.SetLeft(curLineResultPanel, lastStrokeBound.X);
+            Canvas.SetTop(curLineResultPanel, (showingResultOfLine - 1) * LINE_HEIGHT - 15);
+            ShowCurLineStackPanel();
+
+
+            //// annotation and UI
+            //annotateCurrentLineAndUpdateUI(lineNum);
+
+            if (indetails)
+            {
+                curLineWordsStackPanel.Children.Clear();
+                string str = phrases[lineNum].GetString();
+                TextBlock tb = new TextBlock();
+                tb.Text = str;
+                tb.VerticalAlignment = VerticalAlignment.Center;
+                tb.FontSize = 16;
+                curLineWordsStackPanel.Children.Add(tb);
+                //PopupCommandBar.Visibility = Visibility.Collapsed;
+                recognizedPhenoBriefPanel.Visibility = Visibility.Visible;
+                //Canvas.SetLeft(PopupCommandBar, boundingRect.X);
+                //Canvas.SetTop(PopupCommandBar, boundingRect.Y - PopupCommandBar.Height);
+                //PopupCommandBar.Width = Math.Max(boundingRect.Width, PopupCommandBar.MinWidth);
+                Canvas.SetLeft(recognizedPhenoBriefPanel, Math.Max(boundingRect.X, boundingRect.X));
+                Canvas.SetTop(recognizedPhenoBriefPanel, boundingRect.Y + boundingRect.Height);
+
+                Canvas.SetLeft(curLineResultPanel, boundingRect.X);
+                Canvas.SetTop(curLineResultPanel, boundingRect.Y - LINE_HEIGHT);
+
+                //selectionCanvas.Children.Add(PopupCommandBar);
+                selectionCanvas.Children.Add(recognizedPhenoBriefPanel);
+
+                selectionRectangle.Width = boundingRect.Width;
+                selectionRectangle.Height = boundingRect.Height;
+                //selectionRectangleTranform = new TranslateTransform();
+                //selectionRectangle.RenderTransform = this.selectionRectangleTranform;
+
+                selectionCanvas.Children.Add(selectionRectangle);
+                Canvas.SetLeft(selectionRectangle, boundingRect.Left);
+                Canvas.SetTop(selectionRectangle, boundingRect.Top);
+                //TestC.Children.Add(selectionRectangle);
+
+
+                //var recogPhenoFlyout = (Flyout)this.Resources["PhenotypeSelectionFlyout"];
+                //recognizedResultTextBlock.Text = str;
+                //recogPhenoFlyout.ShowAt(selectionRectangle);
+                searchPhenotypesAndSetUpBriefView(str);
+            }
+        }
+
+        private List<double> GetPhrasesOnLine(int lineid) {
+
+            //Manually check for number of words within an inkanalysis line and returns a dictionary matching <key=phrase left, value=number of words matched>
+
+            List<double> lst = new List<double>();
+
+            var inLine = FindInkNodeInLine(lineid, NodeType.InkLine);
+            var inWords = FindInkNodeInLine(lineid, NodeType.InkWord);
+            var strokeInLine = FindAllStrokesInLine(lineid);
+
+            foreach (var phrase in inLine) {
+                double start = phrase.BoundingRect.X;
+                double end = phrase.BoundingRect.X + phrase.BoundingRect.Width;
+                var hitWords = inWords.Where(x => x.BoundingRect.X >= start && x.BoundingRect.X + x.BoundingRect.Width <= end).ToList();
+                foreach (var w in hitWords)
+                    lst.Add(start);
+            }
+            //handling mistakes and manually add first stroke bound
+            if (lst.Count == 0 && strokeInLine.Count > 0) {
+                lst.Add(strokeInLine.FirstOrDefault().BoundingRect.X);
+            }
+
+            return lst;
+        }
+
+        public void InitAnalyzeStrokes() {
+            //gets all strokes in current canvas and add them to dictionary 
+            foreach (var s in inkCan.InkPresenter.StrokeContainer.GetStrokes()) {
+                int lineNum = getLineNumByRect(s.BoundingRect);
+                if (StrokesInLine.ContainsKey(lineNum))
+                {
+                    StrokesInLine[lineNum].Add(s);
+                }
+                else {
+                    StrokesInLine.Add(lineNum, new List<InkStroke>() { s });
+                }
+            }
+            Debug.WriteLine(StrokesInLine.Keys.Count + " ==================");
+        }
+
+        private async Task<List<WordBlockControl>> RecognizeLineWBC(int lineid)
+        {
+            //don't bother if there aren't any strokes to recognize
+            if (! StrokesInLine.ContainsKey(lineid) || StrokesInLine[lineid].Count == 0)
+                return new List<WordBlockControl>();
+
+            // only one thread is allowed to use select and recognize
+            await selectAndRecognizeSemaphoreSlim.WaitAsync();
+            List<WordBlockControl> result = new List<WordBlockControl>();
+            try
+            {
+
+                //var strokeInLine = FindAllStrokesInLine(lineid);
+                var strokeInLine = StrokesInLine[lineid].OrderBy(x => x.BoundingRect.X).ToList();
+
+                lastStrokeBound = strokeInLine.FirstOrDefault().BoundingRect;
+                foreach (var s in inkCan.InkPresenter.StrokeContainer.GetStrokes())
+                    s.Selected = false;
+                foreach (var s in strokeInLine)
+                    s.Selected = true;
+
+                //recognize selected line phrase and parse each word as a WordBlockControl
+                var HWRresult = await HWRManager.getSharedHWRManager().OnRecognizeAsync(inkCanvas.InkPresenter.StrokeContainer, InkRecognitionTarget.Selected, lineid);
+
+
+                for (int i = 0; i < HWRresult.Count; i++)
+                {
+                    HWRRecognizedText recognized = HWRresult[i];
+                    WordBlockControl wb = new WordBlockControl(lineid, i, recognized.selectedCandidate, recognized.candidateList,recognized.strokes);
+                    //just an intuitive way to check for abbreviation
+                    if (recognized.candidateList.Count > 5)
+                        wb.is_abbr = true;
+                    result.Add(wb);
+                }                               
+            }
+            catch (Exception ex)
+            {
+                MetroLogger.getSharedLogger().Error($"Failed to recognize line ({lineid}):\n{ex.Message}");
             }
             finally
             {
-                deleteSemaphoreSlim.Release();
+                selectAndRecognizeSemaphoreSlim.Release();
             }
+            return result;
         }
 
-        /// <summary>
-        /// Get line number of a line node,it is given by line number of most strokes.
-        /// </summary>
+        //private async Task<List<HWRRecognizedText>> RecognizeLine(int lineid)
+        //{
+        //    /// <summary>
+        //    /// select and recognize a line by its corresponding line id
+        //    /// </summary>
+
+        //    // only one thread is allowed to use select and recognize
+        //    await selectAndRecognizeSemaphoreSlim.WaitAsync();
+        //    List<HWRRecognizedText> result = new List<HWRRecognizedText>();
+        //    try
+        //    {
+
+        //        // clear selection
+        //        foreach (var stroke in inkCanvas.InkPresenter.StrokeContainer.GetStrokes())
+        //            stroke.Selected = false;
+        //        //first setting lower/uppbound in case argument lineid refers to UI line (called from erase.tick)
+        //        double lowerbound = lineid * LINE_HEIGHT;
+        //        double upperbound = (lineid + 1) * LINE_HEIGHT;
+        //        // select storkes of this line
+        //        //var allwords = inkAnalyzer.AnalysisRoot.FindNodes(InkAnalysisNodeKind.Line).ToList();
+
+        //        var allwords = inkCan.InkPresenter.StrokeContainer.GetStrokes().ToList();
+
+        //        var inLine = allwords.Where(x => x.BoundingRect.Y + (x.BoundingRect.Height / 5) >= lowerbound && x.BoundingRect.Y + (x.BoundingRect.Height / 5) <= upperbound).OrderBy(x => x.BoundingRect.X).ToList();
+        //        if (inLine.Count == 0)
+        //        {
+        //            Debug.WriteLine($"line {lineid} has no strokes");
+        //            return new List<HWRRecognizedText>();
+        //        }
+
+        //        foreach (var x in inLine)
+        //        {
+        //            x.Selected = true;
+        //            //foreach (var sid in x.GetStrokeIds())
+        //            //    inkCanvas.InkPresenter.StrokeContainer.GetStrokeById(sid).Selected = true;
+        //        }
+
+        //        var thisLine = inkAnalyzer.AnalysisRoot.FindNodes(InkAnalysisNodeKind.Line);
+        //        //finding the overal bounding rect for setting up UI
+        //        thisLine = thisLine.Where(x => x.BoundingRect.Y + (x.BoundingRect.Height / 5) >= lowerbound && x.BoundingRect.Y + (x.BoundingRect.Height / 5) <= upperbound).OrderBy(x => x.BoundingRect.X).ToList();
+        //        if ( thisLine.Count > 0) {
+        //            lastWordPoint = new Point(thisLine.LastOrDefault().BoundingRect.X, lineid * LINE_HEIGHT);
+
+        //            //trys to get all strokes at line 
+        //            lastStrokeBound = inLine.FirstOrDefault().BoundingRect;
+
+        //        }
+
+        //        //recognize selection
+        //        result = await HWRManager.getSharedHWRManager().OnRecognizeAsync(inkCanvas.InkPresenter.StrokeContainer,InkRecognitionTarget.Selected, lineid);
+
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        MetroLogger.getSharedLogger().Error($"Failed to recognize line ({lineid}):\n{ex.Message}");
+        //    }
+        //    finally
+        //    {
+        //        selectAndRecognizeSemaphoreSlim.Release();
+        //    }
+        //    return result;
+        //}
+
+        public void ClearAllParsedText() {
+            recognizedCanvas.Children.Clear();
+            inkAnalyzer.ClearDataForAllStrokes();
+            phrases.Clear();
+        }
+
+        //private void setUpCurrentLineResultUI(int line_index)
+        //{
+
+        //}
+
+        private List<uint> GetUnrecognizedFromNode(IInkAnalysisNode wordNode, IInkAnalysisNode line) {
+            //wordNode is assumed to be the first word of line
+            List<uint> ids = new List<uint>();
+            if (line == null)
+                return ids;
+
+            foreach (var sid in line.GetStrokeIds()) {
+                var stroke = inkCan.InkPresenter.StrokeContainer.GetStrokeById(sid);
+                if (stroke.BoundingRect.X + stroke.BoundingRect.Width <= wordNode.BoundingRect.X + wordNode.BoundingRect.Width &&
+                    !wordNode.GetStrokeIds().Contains(sid))
+                {
+                    ids.Add(sid);
+                }
+                else if (stroke.BoundingRect.X >= wordNode.BoundingRect.X)
+                    return ids;
+            }
+            return ids;
+        }
+
+        public void ShowAbbreviationAlter(WordBlockControl wbc, List<string> alter)
+        {
+            alternativeListView.ItemsSource = alter;
+            alter_flyout.ShowAt(curLineResultPanel);
+        }
+
+        private void alternativeListView_ItemClick(object sender, ItemClickEventArgs e)
+        {
+
+            //var citem = (string)e.ClickedItem;
+            //int ind = alternativeListView.Items.IndexOf(citem);
+            
+            //phrases[showingResultOfLine].words[ind].current = citem;
+            //phrases[showingResultOfLine].words[ind].selected_index = phrases[showingResultOfLine].words[ind].candidates.IndexOf(citem);
+            //foreach (var w in phrases[showingResultOfLine].words)
+            //{
+            //    TextBlock tb = new TextBlock();
+            //    tb.Text = w.current;
+            //    tb.Tapped += (object s, TappedRoutedEventArgs args) => {
+            //        alternativeListView.ItemsSource = w.candidates;
+            //        alter_flyout.ShowAt(tb);
+
+            //    };
+            //    curLineWordsStackPanel.Children.Add(tb);
+            //}
+
+            //NoteLine curLine = idToNoteLine[(uint)showingResultOfLine];
+            //Dictionary<string, List<string>> dict = HWRManager.getSharedHWRManager().getDictionary();
+
+            //var citem = (string)e.ClickedItem;
+            //int ind = alternativeListView.Items.IndexOf(citem);
+            //int previous = curLine.HwrResult[showAlterOfWord].selectedIndex;
+            //string old_form = curLine.HwrResult[showAlterOfWord].selectedCandidate;
+            //string term = "";
+            //if (showAlterOfWord - 1 >= 0)
+            //    term = curLine.HwrResult[showAlterOfWord - 1].selectedCandidate;
+
+            //When changing the alternative of an abbreviation, just change result UI and re-annotate
+            //note that all words in an extended form of an abbereviation will contains at least one space
+            //this is a faster way of identifying an abbreviation, but feel free to change if there's better way of
+            //doing so.
+            //if (dict.ContainsKey(term.ToLower()) && dict[term.ToLower()].Contains(old_form))
+            //{
+            //    Debug.WriteLine("\nchanging alternative of an abbreviation.\n");
+            //    curLine.updateHwrResult(showAlterOfWord, ind, old_form);
+            //    string new_form = curLine.HwrResult[showAlterOfWord].selectedCandidate;
+            //    string parsed = OperationLogger.getOpLogger().ParseCandidateList(curLine.HwrResult[showAlterOfWord].candidateList);
+            //    //OperationLogger.getOpLogger().Log(OperationType.Abbreviation,curLine.Text ,term ,old_form ,new_form ,ind.ToString(),parsed);
+            //}
+            //else
+            //{
+            //    Debug.WriteLine("\nchanging a normal word in dispaly.\n");
+            //    //HWRManager.getSharedHWRManager().setRequestType(false);
+            //    await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () => {
+            //        curLine.updateHwrResult(showAlterOfWord, ind);
+            //    });
+            //    string new_form = curLine.HwrResult[showAlterOfWord].selectedCandidate;
+            //    //OperationLogger.getOpLogger().Log(OperationType.Alternative, old_form, new_form, ind.ToString());
+            //    curLine.HwrResult = await HWRManager.getSharedHWRManager().ReRecognizeAsync(curLine.HwrResult);
+
+            //}
+
+            //// HWR result UI
+            //setUpCurrentLineResultUI(curLineObject);
+            //// re-annotation and UI set-up after all HWR has been updated
+            //phenoCtrlSlide.Y = 0;
+            //curLineCandidatePheno.Clear();
+            //annotateCurrentLineAndUpdateUI(curLineObject);
+        }
+
+        public async void annotateCurrentLineAndUpdateUI(int line_index = -1)
+        {
+            //do not annotate if there aren't available resources yet
+            if (line_index == -1 || !phrases.ContainsKey(line_index))
+                return;
+
+            int lineNum = line_index;
+            // after get annotation, recognized text has also changed
+            Dictionary<string, Phenotype> annoResult = await PhenoMana.annotateByNCRAsync(phrases[lineNum].GetString());
+            //OperationLogger.getOpLogger().Log(OperationType.Recognition, idToNoteLine.GetValueOrDefault(line.Id).Text, annoResult);
+            
+            //Handles when annoResult has at least one element
+            if (annoResult != null && annoResult.Count > 0)
+            {
+                //Debug.WriteLine($"line {lineNum} annotation result = {annoResult.Count}");
+                // update global annotations
+                foreach (var anno in annoResult.ToList())
+                {
+                    if (cachedAnnotation.ContainsKey(anno.Key))
+                        cachedAnnotation[anno.Key] = anno.Value;
+                    else
+                        cachedAnnotation.Add(anno.Key, anno.Value);
+                    // add to global candidate list
+                    anno.Value.sourceType = SourceType.Notes;
+                    PhenoMana.addPhenotypeCandidate(anno.Value, SourceType.Notes);
+                }
+
+                phrases[lineNum].UpdatePhenotypes(annoResult.Values.ToList());
+
+                //don't update UI if user is already on another line
+                if (showingResultOfLine != lineNum)
+                    return;
+                //curLineCandidatePheno.Clear();
+                //foreach (var pheno in phrases[lineNum].phenotypes)
+                //    curLineCandidatePheno.Add(pheno);
+                foreach (var pheno in phrases[lineNum].phenotypes)
+                {
+                    var temp = curLineCandidatePheno.Where(x => x == pheno).FirstOrDefault();
+                    pheno.state = PhenotypeManager.getSharedPhenotypeManager().getStateByHpid(pheno.hpId);
+                    if (temp == null)
+                    {
+
+                        Debug.WriteLine("temp null will add");
+                        curLineCandidatePheno.Add(pheno);
+
+                        Debug.WriteLine("temp null added");
+
+                    }
+                    else
+                    {
+                        if (temp.state != pheno.state)
+                        {
+                            var ind = curLineCandidatePheno.IndexOf(temp);
+                            curLineCandidatePheno.Remove(temp);
+                            curLineCandidatePheno.Insert(ind, pheno);
+                        }
+                    }
+                }
+                if (curLineCandidatePheno.Count >0)
+                    curWordPhenoControlGrid.Visibility = Visibility.Visible;
+
+                if (phenoCtrlSlide.Y == 0)
+                {
+                    //phenoCtrlSlide.Y = 0;
+                    ((DoubleAnimation)curWordPhenoAnimation.Children[0]).By = -47;
+                    curWordPhenoAnimation.Begin();
+                }
+
+
+                //donno what this block does so temporarily commenting it out
+                //if (curLineCandidatePheno.Count != 0)
+                //{
+                //    if (!annotatedLines.Contains(lineNum))
+                //    {
+                //        annotatedLines.Add(lineNum);
+                //        if (!lineToRect.ContainsKey(lineNum))
+                //        {
+
+                //            Rectangle rect = new Rectangle
+                //            {
+                //                Fill = Application.Current.Resources["Button_Background"] as SolidColorBrush,
+                //                Width = 5,
+                //                Height = LINE_HEIGHT - 20
+                //            };
+                //            sideCanvas.Children.Add(rect);
+                //            Canvas.SetTop(rect, lineNum * LINE_HEIGHT + 10);
+                //            Canvas.SetLeft(rect, sideScrollView.ActualWidth / 2);
+                //            lineToRect.Add(lineNum, rect);
+                //        }
+
+                //    }
+                //}
+            }
+
+            //Handles when annoResult has no elements
+            else
+            {
+                curWordPhenoControlGrid.Visibility = Visibility.Collapsed;
+                //curWordPhenoControlGrid.Margin = new Thickness(0, 0, 0, 0);
+                phenoCtrlSlide.Y = 0;
+                if (lineToRect.ContainsKey(lineNum))
+                {
+                    try
+                    {
+                        sideCanvas.Children.Remove(lineToRect[lineNum]);
+                        lineToRect.Remove(lineNum);
+                    }
+                    catch (Exception E)
+                    {
+                        logger.Error(E.Message);
+                    }
+
+                }
+                //curWordPhenoHideAnimation.Begin();
+            }
+
+        }
+
+        public async void UpdateAnnotationAfterErase(int lineNum) {
+            Dictionary<string, Phenotype> annoResult = await PhenoMana.annotateByNCRAsync(phrases[lineNum].GetString());
+            //Handles when annoResult has at least one element
+            if (annoResult != null && annoResult.Count > 0)
+            {
+                // update global annotations
+                foreach (var anno in annoResult.ToList())
+                {
+                    if (cachedAnnotation.ContainsKey(anno.Key))
+                        cachedAnnotation[anno.Key] = anno.Value;
+                    else
+                        cachedAnnotation.Add(anno.Key, anno.Value);
+                    // add to global candidate list
+                    anno.Value.sourceType = SourceType.Notes;
+                    PhenoMana.addPhenotypeCandidate(anno.Value, SourceType.Notes);
+                }
+
+                // update current line annotation
+                var removed = phrases[lineNum].phenotypes.Except(annoResult.Values.ToList()).Select(x => x.hpId).ToArray();
+                var newAdded = annoResult.Values.ToList().Except(phrases[lineNum].phenotypes);
+                Debug.WriteLine($"removed {removed.Count()} phenotypes, added {newAdded.Count()} phenotypes");
+                foreach (var id in removed)
+                {
+                    //deletes the phenotype only if it has not been selected as Y/N
+                    var p = phrases[lineNum].phenotypes.Where(x => x.hpId == id).FirstOrDefault();
+                    if (p != null && p.state == -1)
+                    {
+                        phrases[lineNum].phenotypes.Remove(p);
+                        PhenoMana.phenotypesCandidates.Remove(p);
+                    }
+                    if (lineNum == showingResultOfLine) {
+                        curLineCandidatePheno.Remove(p);
+                    }
+                }
+                phrases[lineNum].phenotypes.AddRange(newAdded.ToList());
+                UpdateLayout();
+            }
+
+            //Handles when annoResult has no elements
+            else
+            {
+                if (phrases[lineNum].phenotypes.Count > 0)
+                {
+                    foreach (var p in phrases[lineNum].phenotypes) {
+                        if (p.state == -1)
+                            PhenoMana.phenotypesCandidates.Remove(p);
+                    }
+                    phrases[lineNum].phenotypes.Clear();
+                }
+            }
+
+
+
+        }
+
+        public async Task ClearAndRecognizePage() {
+
+            try {
+                //clears all caches and re-initiate inkanalyzer
+                recognizedCanvas.Children.Clear();
+                phrases.Clear();
+                inkAnalyzer = new InkAnalyzer();
+
+                foreach (var s in inkCan.InkPresenter.StrokeContainer.GetStrokes()) {
+                    inkAnalyzer.AddDataForStroke(s);
+                    inkAnalyzer.SetStrokeDataKind(s.Id, InkAnalysisStrokeKind.Writing);
+                }
+
+                
+                //await inkAnalyzer.AnalyzeAsync().AsTask();
+
+                for (int i = 1; i < PAGE_HEIGHT / LINE_HEIGHT; i++) {
+                    await Dispatcher.RunAsync(CoreDispatcherPriority.High, async () =>
+                    {
+                        int lineNum = i;
+                        List<WordBlockControl> result = await RecognizeLineWBC(lineNum);
+                        if (result.Count > 0)
+                        {
+                            NotePhraseControl npc = new NotePhraseControl(lineNum, result);
+                            Canvas.SetLeft(npc, 0);
+                            Canvas.SetTop(npc, lineNum * LINE_HEIGHT);
+                            phrases.Add(lineNum, npc);
+                            recognizedCanvas.Children.Add(npc);
+                        }
+                    });
+                }
+                MainPage.Current.NotifyUser("Page cleared and re-recognized", NotifyType.StatusMessage, 1);
+                MainPage.Current.LoadingPopup.IsOpen = false;
+                return;
+            }
+            catch (Exception e) {
+                LogService.MetroLogger.getSharedLogger().Error(e.Message);
+            }
+
+        }
+
+        #endregion
+
+
+        // ================================= INK RECOGNITION ==============================================                      
+        //private void recognizeLine(int line)
+        //{
+        //    /// <summary>
+        //    /// PS:10/9/2018 this method is currently not used as the timer tick is commented out
+        //    /// </summary>
+
+        //    if (line < 0)
+        //        return;
+        //    SelectAndAnnotateByLineNum(line);
+        //}
+
+        //public async void SelectAndAnnotateByLineNum(int line)
+        //{
+        //    /// <summary>
+        //    /// PS:10/9/2018 this method is currently not used as the timer tick is commented out
+        //    /// </summary>
+
+        //    await deleteSemaphoreSlim.WaitAsync();
+        //    try
+        //    {
+        //        var xFrom = 0;
+        //        var xTo = inkCanvas.ActualWidth;
+        //        var yFrom = line * LINE_HEIGHT - 0.2 * LINE_HEIGHT;
+        //        yFrom = yFrom < 0 ? 0 : yFrom;
+        //        var yTo = (line + 1) * LINE_HEIGHT + 1.0 * LINE_HEIGHT;
+        //        Polyline lasso = new Polyline();
+        //        lasso.Points.Add(new Point(xFrom, yFrom));
+        //        lasso.Points.Add(new Point(xFrom, yTo));
+        //        lasso.Points.Add(new Point(xTo, yTo));
+        //        lasso.Points.Add(new Point(xTo, yFrom));
+        //        lasso.Points.Add(new Point(xFrom, yFrom));
+        //        Rect selectRect = Rect.Empty;
+
+        //        selectRect = inkCanvas.InkPresenter.StrokeContainer.SelectWithPolyLine(lasso.Points);
+
+        //        //double panelLeft = 0;
+        //        if (!selectRect.Equals(Rect.Empty))
+        //        {
+        //            var shouldRecognize = false;
+        //            foreach (var ss in inkCanvas.InkPresenter.StrokeContainer.GetStrokes())
+        //                if (ss.Selected)
+        //                {
+        //                    if (ss.BoundingRect.Top > (line + 1) * LINE_HEIGHT || ss.BoundingRect.Bottom < line * LINE_HEIGHT)
+        //                    {
+        //                        ss.Selected = false;
+        //                    }
+        //                    else
+        //                    {
+        //                        shouldRecognize = true;
+        //                        //panelLeft = panelLeft > (ss.BoundingRect.X + ss.BoundingRect.Width) ? panelLeft : (ss.BoundingRect.X + ss.BoundingRect.Width);
+        //                    }
+        //                }
+        //            if (shouldRecognize)
+        //            {
+        //                List<HWRRecognizedText> recognitionResults = await HWRManager.getSharedHWRManager().OnRecognizeAsync(
+        //                                                                inkCanvas.InkPresenter.StrokeContainer,InkRecognitionTarget.Selected);
+
+        //                //ClearSelection();
+        //                if (recognitionResults != null)
+        //                {
+        //                    string str = "";
+        //                    foreach (var rt in recognitionResults)
+        //                    {
+        //                        str += rt.selectedCandidate + " ";
+        //                    }
+
+        //                    if (!str.Equals(String.Empty))
+        //                    {
+        //                        string pname = "";
+        //                        if (stringsOfLines.ContainsKey(line) && stringsOfLines[line].Equals(str) && phenotypesOfLines.ContainsKey(line))
+        //                        {
+        //                            pname = phenotypesOfLines[line].ElementAt(0).name;
+        //                            // if (PhenotypeManager.getSharedPhenotypeManager().checkIfSaved(phenotypesOfLines[line].ElementAt(0)))
+        //                            //ifSaved = true;
+        //                        }
+        //                        else
+        //                        {
+        //                            List<Phenotype> result = await PhenotypeManager.getSharedPhenotypeManager().searchPhenotypeByPhenotipsAsync(str);
+        //                            if (result != null && result.Count > 0)
+        //                            {
+        //                                phenotypesOfLines[line] = result;
+        //                                stringsOfLines[line] = str;
+        //                                pname = result.ElementAt(0).name;
+        //                                // if (PhenotypeManager.getSharedPhenotypeManager().checkIfSaved(result.ElementAt(0)))
+        //                                // ifSaved = true;
+        //                            }
+        //                            else
+        //                                return;
+        //                        }
+        //                        /**
+        //                        HoverPhenoPanel.Visibility = Visibility.Visible;
+        //                        HoverPhenoPopupText.Text = pname;
+        //                        Canvas.SetTop(HoverPhenoPanel, ((double)line-0.4) * LINE_HEIGHT);
+        //                        Canvas.SetLeft(HoverPhenoPanel, 10);
+        //                        HoverPhenoPopupText.Tapped += HoverPhenoPopupText_Tapped;
+
+        //                        if (ifSaved)
+        //                            HoverPhenoPanel.BorderThickness = new Thickness(2);
+        //                        else
+        //                            HoverPhenoPanel.BorderThickness = new Thickness(0);
+        //                        **/
+
+        //                    }
+        //                }
+        //            }
+        //            else
+        //            {
+        //                if (stringsOfLines.ContainsKey(line))
+        //                    stringsOfLines.Remove(line);
+        //                if (phenotypesOfLines.ContainsKey(line))
+        //                    phenotypesOfLines.Remove(line);
+        //            }
+        //        }
+        //    }
+        //    finally
+        //    {
+        //        deleteSemaphoreSlim.Release();
+        //    }
+        //}
+
+        public double GetLeftOfLine(int lineid) {
+            var allStrokes = inkCanvas.InkPresenter.StrokeContainer.GetStrokes();
+            foreach (var stroke in allStrokes)
+                stroke.Selected = false;
+
+            double lowerbound = lineid * LINE_HEIGHT;
+            double upperbound = (lineid + 1) * LINE_HEIGHT;
+            var strokeInLine = allStrokes.Where(x => x.BoundingRect.Y + (x.BoundingRect.Height / 5) >= lowerbound && x.BoundingRect.Y + (x.BoundingRect.Height / 5) <= upperbound).OrderBy(x => x.BoundingRect.X).ToList();
+            return strokeInLine.FirstOrDefault().BoundingRect.X;
+
+        }
+
         private int getLineNumOfLine(IInkAnalysisNode node)
         {
+            /// <summary>
+            /// Get line number of a line node,it is given by line number of most strokes.
+            /// </summary>
+
             int l1 = -1; int count1 = 0;
             int l2 = -1; int count2 = 0;
             int loopnum = -1;
@@ -217,33 +1179,28 @@ namespace PhenoPad.CustomControl
             return count1 > count2 ? l1 : l2;
         }
 
-        /// <summary>
-        /// Get line number by using a rectangle object.
-        /// </summary>
-        private int getLineNumByRect(Rect rect)
+        public static int getLineNumByRect(Rect rect)
         {
-            return (int)((rect.Y + rect.Height / 2) / (LINE_HEIGHT));
+            /// <summary>
+            /// Get line number by using a rectangle object.
+            /// </summary>
+
+            return (int)((rect.Y + rect.Height / 2) / (NotePageControl.LINE_HEIGHT));
         }
 
-        /// <summary>
-        /// Handwrting recognition on all selected strokes and returns string results.
-        /// </summary>
         private async Task<string> recognizeSelection()
         {
+            /// <summary>
+            /// Handwrting recognition on all selected strokes and returns string results.
+            /// </summary>
+
             //Debug.WriteLine("\n recognizeSelection triggered\n");
             IReadOnlyList<InkStroke> currentStrokes = inkCanvas.InkPresenter.StrokeContainer.GetStrokes();
             if (currentStrokes.Count > 0)
             {
                 List<HWRRecognizedText> recognitionResults = new List<HWRRecognizedText>();
-                if (MainPage.Current.abbreviation_enabled)
-                {
-                    recognitionResults = await HWRManager.getSharedHWRManager().OnRecognizeAsync
-                                                            (inkCanvas.InkPresenter.StrokeContainer, InkRecognitionTarget.Selected, true);
-                }
-                else {
-                    recognitionResults = await HWRManager.getSharedHWRManager().OnRecognizeAsync
-                                        (inkCanvas.InkPresenter.StrokeContainer, InkRecognitionTarget.Selected);
-                }
+                //don't need server recognition here
+                recognitionResults = await HWRManager.getSharedHWRManager().OnRecognizeAsync(inkCanvas.InkPresenter.StrokeContainer, InkRecognitionTarget.Selected,fromEHR:true);
                 string str = "";
                 if (recognitionResults != null)
                 {
@@ -262,34 +1219,29 @@ namespace PhenoPad.CustomControl
             return String.Empty;
         }
 
-        /// <summary>
-        /// Recognize selected strokes within the selected bounding rectangle and searches for possible phenotypes.
-        /// </summary>
         public async void RecognizeSelection(string text = "")
         {
+            /// <summary>
+            /// Recognize selected strokes within the selected bounding rectangle and searches for possible phenotypes.
+            /// </summary>
+
             selectionCanvas.Children.Clear();
 
             if (boundingRect.Width <= 0 || boundingRect.Height <= 0)
                 return;
 
             //recogPhenoFlyout.ShowAt(rectangle);
-            string str = text.Length == 0? await recognizeSelection(): text;
+            string str = text.Length == 0 ? await recognizeSelection() : text;
 
             if (!str.Equals(String.Empty) && !str.Equals(""))
             {
-                PopupCommandBar.Visibility = Visibility.Visible;
+                //PopupCommandBar.Visibility = Visibility.Visible;             
+                //Canvas.SetLeft(PopupCommandBar, boundingRect.X);
+                //Canvas.SetTop(PopupCommandBar, boundingRect.Y - PopupCommandBar.Height);
+                //PopupCommandBar.Width = Math.Max(boundingRect.Width, PopupCommandBar.MinWidth);
                 recognizedPhenoBriefPanel.Visibility = Visibility.Collapsed;
-                Canvas.SetLeft(PopupCommandBar, boundingRect.X);
-                Canvas.SetTop(PopupCommandBar, boundingRect.Y - PopupCommandBar.Height);
-                PopupCommandBar.Width = Math.Max(boundingRect.Width, PopupCommandBar.MinWidth);
-                //Canvas.SetLeft(recognizedPhenoBriefPanel, Math.Max(boundingRect.X, boundingRect.X));
-                //Canvas.SetTop(recognizedPhenoBriefPanel, boundingRect.Y + boundingRect.Height);
                 selectionRectangle.Width = boundingRect.Width;
                 selectionRectangle.Height = boundingRect.Height;
-                //selectionRectangleTranform = new TranslateTransform();
-                //selectionRectangle.RenderTransform = this.selectionRectangleTranform;
-
-
 
                 if (ehrPage != null)
                 {
@@ -305,10 +1257,10 @@ namespace PhenoPad.CustomControl
 
                 }
                 else {
-                    Canvas.SetLeft(selectionRectangle, boundingRect.Left);
-                    Canvas.SetTop(selectionRectangle, boundingRect.Top);
+                    Canvas.SetLeft(selectionRectangle, boundingRect.X);
+                    Canvas.SetTop(selectionRectangle, boundingRect.Y);
 
-                    selectionCanvas.Children.Add(PopupCommandBar);
+                    //selectionCanvas.Children.Add(PopupCommandBar);
                     selectionCanvas.Children.Add(recognizedPhenoBriefPanel);
                     selectionCanvas.Children.Add(selectionRectangle);
                     //TestC.Children.Add(selectionRectangle);
@@ -327,190 +1279,68 @@ namespace PhenoPad.CustomControl
             selectionRectangle.Visibility = Visibility.Collapsed;
         }
 
-        /// <summary>
-        /// select and recognize a line by its id
-        /// </summary>
-        private async Task<List<HWRRecognizedText>> RecognizeLine(uint lineid, bool serverFlag)
+        public void HideCurLineStackPanel()
         {
-            // only one thread is allowed to use select and recognize
-            await selectAndRecognizeSemaphoreSlim.WaitAsync();
-            try
-            {
-                // clear selection
-                var strokes = inkCanvas.InkPresenter.StrokeContainer.GetStrokes();
-                foreach (var stroke in strokes)
-                {
-                    stroke.Selected = false;
-                }
-
-                // select storkes of this line
-                var lines = inkAnalyzer.AnalysisRoot.FindNodes(InkAnalysisNodeKind.Line);
-                var thisline = lines.Where(x => x.Id == lineid).FirstOrDefault();
-                if (thisline != null)
-                {
-                    foreach (var sid in thisline.GetStrokeIds())
-                    {
-                        inkCanvas.InkPresenter.StrokeContainer.GetStrokeById(sid).Selected = true;
-                    }
-                }
-
-                //recognize selection
-                List<HWRRecognizedText> recognitionResults = await HWRManager.getSharedHWRManager().
-                    OnRecognizeAsync(inkCanvas.InkPresenter.StrokeContainer,
-                    InkRecognitionTarget.Selected, serverFlag);
-                return recognitionResults;
-            }
-            catch (Exception ex)
-            {
-                logger.Error($"Failed to recognize line ({lineid}): {ex.Message}");
-            }
-            finally
-            {
-                selectAndRecognizeSemaphoreSlim.Release();
-            }
-            return null;
+            curLineWordsStackPanel.Children.Clear();
+            curLineResultPanel.Visibility = Visibility.Collapsed;
         }
 
-
-        /// <summary>
-        /// After timer ticks, trigger server side HWR for abbreviation detection
-        /// note this method will be sending with request type = new.
-        /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
-        private async void TriggerRecogServer(object sender, object e)
-        {
-            //Debug.WriteLine("\n TRIGGER TICKED, WILL ANALYZE THROUGH SERVER...\n");
-            
-            recognizeTimer.Stop();
-            if (inkAnalyzer.IsAnalyzing)
-            {
-                //Debug.WriteLine("ink still analyzing-trigger");
-                // inkAnalyzer is being used 
-                // try again after some time by dispatcherTimer 
-                recognizeTimer.Start();
-                return;
-            }
-            // analyze 
-            var result = await inkAnalyzer.AnalyzeAsync();
-
-            if (result.Status == InkAnalysisStatus.Updated)
-            {
-                //int line = linesToAnnotate.Dequeue();
-                IReadOnlyList<IInkAnalysisNode> lineNodes = inkAnalyzer.AnalysisRoot.FindNodes(InkAnalysisNodeKind.Line);
-
-                foreach (InkAnalysisLine line in lineNodes)
-                {
-                    // current line
-                    if (curStroke != null && line.GetStrokeIds().Contains(curStroke.Id))
-                    {
-                        //Debug.WriteLine("\nfound line.");
-                        // set up for current line
-                        HWRManager.getSharedHWRManager().setRequestType(true);
-                        recognizeAndSetUpUIForLine(line, false, serverRecog:true);
-                    }
-
-                }
-            }
+        public void ShowCurLineStackPanel() {
+            if (curLineResultPanel.Visibility == Visibility.Collapsed)
+                curLineResultPanel.Visibility = Visibility.Visible;
         }
 
-        /// <summary>
-        /// set up for current line, i.e. hwr, show recognition results and show recognized phenotypes
-        /// </summary>
-        private async void recognizeAndSetUpUIForLine(InkAnalysisLine line, bool indetails = false, bool serverRecog = false)
-        {
-            if (line == null)
-                return;
-            // set current line id
-            // switch to another line, clear result of current line
-            if (line.Id != showingResultOfLine)
-            {
-                //Debug.WriteLine("Switching to a different line.");
-                curLineCandidatePheno.Clear();
-                curLineWordsStackPanel.Children.Clear();
-                HWRManager.getSharedHWRManager().clearCache();
-                //curWordPhenoControlGrid.Margin = new Thickness(0);
-                phenoCtrlSlide.Y = 0;
-                showingResultOfLine = line.Id;
-                curLineObject = line;
-            }
+        //private async void TriggerRecogServer(object sender, object e)
+        //{
+        //    /// <summary>
+        //    /// After timer ticks, trigger server side HWR for abbreviation detection
+        //    /// note this method will be sending with request type = new.
+        //    /// </summary>
 
-            if (idToNoteLine.ContainsKey(line.Id))
-            {  // existing line
-                //Debug.WriteLine("Existing line");
-                NoteLine nl = idToNoteLine[line.Id];
-                nl.HwrResult = await RecognizeLine(line.Id, serverRecog);
-                //Debug.WriteLine("recogresult="+nl.HwrResult[0].selectedCandidate);
-            }
-            else
-            {
-                //Debug.WriteLine("Creating a new line");
-                //new line
-                NoteLine nl = new NoteLine(line);
-                phenoCtrlSlide.Y = 0;
-                curLineWordsStackPanel.Children.Clear();
-                HWRManager.getSharedHWRManager().clearCache();
-                curLineCandidatePheno.Clear();
+        //    //Debug.WriteLine("\n TRIGGER TICKED, WILL ANALYZE THROUGH SERVER...\n");
 
+        //    recognizeTimer.Stop();
+        //    if (inkAnalyzer.IsAnalyzing)
+        //    {
+        //        //Debug.WriteLine("ink still analyzing-trigger");
+        //        // inkAnalyzer is being used 
+        //        // try again after some time by dispatcherTimer 
+        //        recognizeTimer.Start();
+        //        return;
+        //    }
+        //    // analyze 
+        //    var result = await inkAnalyzer.AnalyzeAsync();
 
-                // hwr
-                nl.HwrResult = await RecognizeLine(line.Id, serverRecog);
-                idToNoteLine[line.Id] = nl;
-            }
-            //OperationLogger.getOpLogger().Log(OperationType.StrokeRecognition, line.RecognizedText);
+        //    if (result.Status == InkAnalysisStatus.Updated)
+        //    {
+        //        //int line = linesToAnnotate.Dequeue();
+        //        IReadOnlyList<IInkAnalysisNode> lineNodes = inkAnalyzer.AnalysisRoot.FindNodes(InkAnalysisNodeKind.Line);
 
-            // HWR result UI
-            setUpCurrentLineResultUI(line);
-            // annotation and UI
-            annotateCurrentLineAndUpdateUI(line);
-            //logging recognized text to logger
+        //        foreach (InkAnalysisLine line in lineNodes)
+        //        {
+        //            // current line
+        //            if (curStroke != null && line.GetStrokeIds().Contains(curStroke.Id))
+        //            {
+        //                //Debug.WriteLine("\nfound line.");
+        //                // set up for current line
+        //                HWRManager.getSharedHWRManager().setRequestType(true);
+        //                recognizeAndSetUpUIForLine(line, timerFlag:false, serverRecog: true);
+        //            }
 
-            if (indetails)
-            {
-                string str = idToNoteLine[line.Id].Text;
-                PopupCommandBar.Visibility = Visibility.Collapsed;
-                recognizedPhenoBriefPanel.Visibility = Visibility.Visible;
-                Canvas.SetLeft(PopupCommandBar, boundingRect.X);
-                Canvas.SetTop(PopupCommandBar, boundingRect.Y - PopupCommandBar.Height);
-                PopupCommandBar.Width = Math.Max(boundingRect.Width, PopupCommandBar.MinWidth);
-                Canvas.SetLeft(recognizedPhenoBriefPanel, Math.Max(boundingRect.X, boundingRect.X));
-                Canvas.SetTop(recognizedPhenoBriefPanel, boundingRect.Y + boundingRect.Height);
+        //        }
+        //    }
+        //}
 
-                selectionCanvas.Children.Add(PopupCommandBar);
-                selectionCanvas.Children.Add(recognizedPhenoBriefPanel);
-
-                selectionRectangle.Width = boundingRect.Width;
-                selectionRectangle.Height = boundingRect.Height;
-                //selectionRectangleTranform = new TranslateTransform();
-                //selectionRectangle.RenderTransform = this.selectionRectangleTranform;
-
-                selectionCanvas.Children.Add(selectionRectangle);
-                Canvas.SetLeft(selectionRectangle, boundingRect.Left);
-                Canvas.SetTop(selectionRectangle, boundingRect.Top);
-                //TestC.Children.Add(selectionRectangle);
-
-
-                //var recogPhenoFlyout = (Flyout)this.Resources["PhenotypeSelectionFlyout"];
-                //recognizedResultTextBlock.Text = str;
-                //recogPhenoFlyout.ShowAt(selectionRectangle);
-                searchPhenotypesAndSetUpBriefView(str);
-            }
-        }
-
-
-
-        /// <summary>
-        /// Recognize a set of strokes as whether a shape or just drawing and handles each case
-        /// accordingly.
-        /// </summary>
         private async Task<int> RecognizeInkOperation()
         {
+            /// Recognize a set of strokes as whether a shape or just drawing and handles each case
+            /// accordingly.
+
             var result = await inkOperationAnalyzer.AnalyzeAsync();
 
             if (result.Status == InkAnalysisStatus.Updated)
             {
                 //first need to clear all previous selections to filter out strokes that don't want to be deleted
-                //ClearSelectionAsync();
                 foreach (var s in inkCanvas.InkPresenter.StrokeContainer.GetStrokes())
                     s.Selected = false;
                 //Gets all strokes from inkoperationanalyzer
@@ -520,7 +1350,6 @@ namespace PhenoPad.CustomControl
                     //user has drawn a square/rectangle for adding an add-in
                     if (drawNode.DrawingKind == InkAnalysisDrawingKind.Rectangle || drawNode.DrawingKind == InkAnalysisDrawingKind.Square)
                     {
-                        recognizeTimer.Stop();
                         foreach (var dstroke in drawNode.GetStrokeIds())
                         {
                             var stroke = inkCanvas.InkPresenter.StrokeContainer.GetStrokeById(dstroke);
@@ -532,25 +1361,20 @@ namespace PhenoPad.CustomControl
                         }
                         //dispose the strokes as don't need them anymore
                         inkOperationAnalyzer.RemoveDataForStrokes(drawNode.GetStrokeIds());
-                        inkCanvas.InkPresenter.StrokeContainer.DeleteSelected();
-                    }
-                    else
-                    {
-                        //you need this else statement for debugging reasons...
-                        //Debug.WriteLine(drawNode.DrawingKind);
+                        //inkCanvas.InkPresenter.StrokeContainer.DeleteSelected();
                     }
                 }
+
                 // delete all strokes that are too large, like drawings
                 foreach (var sid in inkOperationAnalyzer.AnalysisRoot.GetStrokeIds())
                 {
-                    //ShowToastNotification("Write smallers", "Write smaller please");
-                    //rootPage.NotifyUser("Write smaller", NotifyType.ErrorMessage, 2);
-                    //inkCanvas.InkPresenter.StrokeContainer.GetStrokeById(sid).Selected = true;
                     inkOperationAnalyzer.RemoveDataForStroke(sid);
+                    inkCan.InkPresenter.StrokeContainer.GetStrokeById(sid).Selected = true;
                 }
-                //inkCanvas.InkPresenter.StrokeContainer.DeleteSelected();
+                inkCanvas.InkPresenter.StrokeContainer.DeleteSelected();
                 return 1;
             }
+            //inkoperation has no update, does nothing
             return -1;
         }
 
@@ -621,12 +1445,10 @@ namespace PhenoPad.CustomControl
             return ((x2 - x1) * (p.Y - y1) - (y2 - y1) * (p.X - x1)) > 0;
         }
 
-
-
-
-        // Draw a polygon on the recognitionCanvas.
         private void DrawPolygon(InkAnalysisInkDrawing shape)
         {
+            // Draw a polygon on the recognitionCanvas.
+
             var points = shape.Points;
             Polygon polygon = new Polygon();
 
@@ -640,10 +1462,9 @@ namespace PhenoPad.CustomControl
             polygon.StrokeThickness = 2;
             //recognitionCanvas.Children.Add(polygon);
         }
-
-        // extract text from a paragraph perserving line breaks
         private string ExtractTextFromParagraph(InkAnalysisParagraph paragraph)
-        {
+        {   // extract text from a paragraph perserving line breaks
+
             // The paragraph.RecognizedText property also returns the text,
             // but manually walking through the lines allows us to preserve
             // line breaks.
@@ -663,12 +1484,16 @@ namespace PhenoPad.CustomControl
             }
             return String.Join("\n", lines);
         }
-        // Find line by hitting position
+
+        #region SEARCH FOR HIT STROKES/INKNODES
         private InkAnalysisLine FindHitLine(Point pt)
         {
+            // Find line by hitting position
             var lines = inkAnalyzer.AnalysisRoot.FindNodes(InkAnalysisNodeKind.Line);
+
             foreach (var line in lines)
             {
+
                 // To support ink written with angle, RotatedBoundingRect should be used in hit testing.
                 var xFrom = line.BoundingRect.X;
                 var xTo = xFrom + line.BoundingRect.Width;
@@ -677,14 +1502,21 @@ namespace PhenoPad.CustomControl
                 //if (RectHelper.Contains(line.BoundingRect, pt))
                 if (pt.X > xFrom && pt.X < xTo && pt.Y > yFrom && pt.Y < yTo)
                 {
-                    return (InkAnalysisLine)line;
+                    return ((InkAnalysisLine)line);
                 }
             }
             return null;
         }
-        // Find word by hitting position
+        private List<IInkAnalysisNode> FindHitWordsInLine(InkAnalysisLine line) {
+            Rect lineRect = line.BoundingRect;
+            var words = inkAnalyzer.AnalysisRoot.FindNodes(InkAnalysisNodeKind.InkWord);
+            var hitWords = words.Where(x => x.BoundingRect.Top >= lineRect.Top && x.BoundingRect.Bottom <= lineRect.Bottom && x.BoundingRect.X >= lineRect.X && x.BoundingRect.X + x.BoundingRect.Width <= lineRect.X + lineRect.Width).ToList();
+            return hitWords;
+        }
         private InkAnalysisInkWord FindHitWord(Point pt)
         {
+            // Find word by hitting position
+
             var words = inkAnalyzer.AnalysisRoot.FindNodes(InkAnalysisNodeKind.InkWord);
             foreach (var word in words)
             {
@@ -696,9 +1528,10 @@ namespace PhenoPad.CustomControl
             }
             return null;
         }
-        // Find paragraph by hitting position
         private InkAnalysisParagraph FindHitParagraph(Point pt)
         {
+            // Find paragraph by hitting position
+
             var paragraphs = inkAnalyzer.AnalysisRoot.FindNodes(InkAnalysisNodeKind.Paragraph);
             foreach (var paragraph in paragraphs)
             {
@@ -710,421 +1543,52 @@ namespace PhenoPad.CustomControl
             }
             return null;
         }
+        private List<InkStroke> FindAllStrokesInLine(int lineNum) {
 
+            double lowerbound = lineNum * LINE_HEIGHT;
+            double upperbound = (lineNum + 1) * LINE_HEIGHT;
+            var allStrokes = inkCan.InkPresenter.StrokeContainer.GetStrokes();
+            var strokeInLine = allStrokes.Where(x => x.BoundingRect.Y + (x.BoundingRect.Height / 5) >= lowerbound && x.BoundingRect.Y + (x.BoundingRect.Height / 5) <= upperbound).OrderBy(x => x.BoundingRect.X).ToList();
+            return strokeInLine;
+        }
+        private List<IInkAnalysisNode> FindInkNodeInLine(int lineNum,NodeType type) {
 
-        // =============================== ANALYZE INKS ==============================================//
+            double lowerbound = lineNum * LINE_HEIGHT;
+            double upperbound = (lineNum + 1) * LINE_HEIGHT;
+            List<IInkAnalysisNode> all = null;
+            if (type == NodeType.InkWord)
+                all = inkAnalyzer.AnalysisRoot.FindNodes(InkAnalysisNodeKind.InkWord).ToList();
+            else if (type == NodeType.InkLine)
+                all = inkAnalyzer.AnalysisRoot.FindNodes(InkAnalysisNodeKind.Line).ToList();
+            else if (type == NodeType.Both) {
+                all = inkAnalyzer.AnalysisRoot.FindNodes(InkAnalysisNodeKind.InkWord).ToList();
+                all.AddRange(inkAnalyzer.AnalysisRoot.FindNodes(InkAnalysisNodeKind.Line));
+            }
 
-        /// <summary>
-        /// Called upon page creation/page switch, will re-analyze everything on the current page and
-        /// change phenotype candidates accordingly.
-        /// </summary>
+            var InLine = all.Where(x => x.BoundingRect.Y + (x.BoundingRect.Height / 5) >= lowerbound && x.BoundingRect.Y + (x.BoundingRect.Height / 5) <= upperbound).OrderBy(x => x.BoundingRect.X).ToList();
+            return InLine;
+        }
+        #endregion
+
+        //analyzing on opening file
         public async void initialAnalyze()
         {
-            rootPage.NotifyUser("Analyzing current page ...", NotifyType.StatusMessage, 2);
+            /// <summary>
+            /// Called upon page creation/page switch, will re-analyze everything on the current page and
+            /// change phenotype candidates accordingly.
+            /// </summary>
+
+            rootPage.NotifyUser($"Analyzing page {pageId}...", NotifyType.StatusMessage, 2);
             inkAnalyzer = new InkAnalyzer();
             inkAnalyzer.AddDataForStrokes(inkCan.InkPresenter.StrokeContainer.GetStrokes());
             bool result = false;
             while (!result)
-                result = await analyzeInk(serverFlag:true);//will be using server side HWR upon page load
+                result = await analyzeInk(lastStroke:null,serverFlag: true);//will be using server side HWR upon page load
         }
-
-        /// <summary>
-        ///  Analyze ink strokes contained in inkAnalyzer and add phenotype candidates
-        ///  from fetching API
-        /// </summary>
-        private async Task<bool> analyzeInk(InkStroke lastStroke = null,bool serverFlag = false)
-        {
-            //if (lastStroke == null) { 
-            //    PhenoMana.phenotypesCandidates.Clear();
-            //}
-            dispatcherTimer.Stop();
-            //Debug.WriteLine("analyzing...");
-            if (inkAnalyzer.IsAnalyzing)
-            {
-                // inkAnalyzer is being used 
-                // try again after some time by dispatcherTimer 
-                dispatcherTimer.Start();
-                return false;
-            }
-            // analyze 
-            var result = await inkAnalyzer.AnalyzeAsync();
-
-            if (result.Status == InkAnalysisStatus.Updated)
-            {
-                //int line = linesToAnnotate.Dequeue();
-                IReadOnlyList<IInkAnalysisNode> lineNodes = inkAnalyzer.AnalysisRoot.FindNodes(InkAnalysisNodeKind.Line);
-
-                foreach (InkAnalysisLine line in lineNodes)
-                {
-                    // only focus on current line
-                    if (lastStroke != null)
-                    {
-                        // current line
-                        if (line.GetStrokeIds().Contains(lastStroke.Id))
-                        {
-                            // set up for current line
-                            recognizeAndSetUpUIForLine(line, serverFlag);
-                        }
-                    }
-                    // recognize all lines
-                    else
-                    {
-                        //Debug.WriteLine("Analyzing all lines...");
-                        if (!idToNoteLine.ContainsKey(line.Id))
-                        {
-                            //new line
-                            NoteLine nl = new NoteLine(line);
-                            // hwr
-                            var hwrresult = await RecognizeLine(line.Id, serverFlag);
-                            nl.HwrResult = hwrresult;
-                            idToNoteLine[line.Id] = nl;
-                            //Debug.WriteLine("fetching from API...");
-                            Dictionary<string, Phenotype> annoResult = await PhenoMana.annotateByNCRAsync(idToNoteLine.GetValueOrDefault(line.Id).Text);
-                            OperationLogger.getOpLogger().Log(OperationType.Recognition, nl.Text, annoResult);
-
-                            if (annoResult != null && annoResult.Count != 0)
-                            {
-                                int lineNum = getLineNumByRect(line.BoundingRect);
-                                if (!annotatedLines.Contains(lineNum))
-                                {
-                                    annotatedLines.Add(lineNum);
-                                    Rectangle rect = new Rectangle
-                                    {
-                                        Fill = Application.Current.Resources["Button_Background"] as SolidColorBrush,
-                                        Width = 5,
-                                        Height = LINE_HEIGHT - 20
-                                    };
-                                    sideCanvas.Children.Add(rect);
-                                    Canvas.SetTop(rect, lineNum * LINE_HEIGHT + 10);
-                                    Canvas.SetLeft(rect, 5);
-                                    if (!lineToRect.ContainsKey(lineNum))
-                                        lineToRect.Add(lineNum, rect);
-                                }
-
-                                foreach (var pp in annoResult.Values)
-                                {
-                                    pp.sourceType = SourceType.Notes;
-                                    PhenoMana.addPhenotypeCandidate(pp, SourceType.Notes);
-                                }
-                            }
-                        }
-                    }
-
-
-                }
-                return true;
-            }
-            return false;
-        }
-
-        /// <summary>
-        /// Dynamic programming for caluculating best alignment of two string list
-        /// http://www.biorecipes.com/DynProgBasic/code.html
-        /// </summary>
-        /// <param name="newList"></param>
-        /// <param name="oldList"></param>
-        private (List<int>, List<int>) alignTwoStringList(List<string> newList, List<string> oldList)
-        {
-            // score matrix
-            int gap_score = 0;
-            int mismatch_score = 0;
-            int match_score = 1;
-
-            int newLen = newList.Count();
-            int oldLen = oldList.Count();
-            int[,] scoreMatrix = new int[newLen + 1, oldLen + 1];
-            int[,] tracebackMatrix = new int[newLen + 1, oldLen + 1];
-
-            // base condition
-            scoreMatrix[0, 0] = 0;
-            int ind = 0;
-            for (ind = 0; ind <= oldLen; ++ind)
-            {
-                scoreMatrix[0, ind] = 0;
-                tracebackMatrix[0, ind] = 1;
-            }
-
-            for (ind = 0; ind <= newLen; ++ind)
-            {
-                scoreMatrix[ind, 0] = 0;
-                tracebackMatrix[ind, 0] = -1;
-            }
-            tracebackMatrix[0, 0] = 0;
-
-            // recurrence 
-            int i;
-            int j;
-            for (i = 1; i <= newLen; ++i)
-                for (j = 1; j <= oldLen; ++j)
-                {
-                    // align i and j
-                    scoreMatrix[i, j] = newList[i - 1] == oldList[j - 1] ? scoreMatrix[i - 1, j - 1] + match_score : scoreMatrix[i - 1, j - 1] + mismatch_score;
-                    tracebackMatrix[i, j] = 0;
-                    // insert gap to old 
-                    if (scoreMatrix[i - 1, j] + gap_score > scoreMatrix[i, j])
-                        tracebackMatrix[i, j] = -1;
-                    // insert gap to new 
-                    if (scoreMatrix[i, j - 1] + gap_score > scoreMatrix[i, j])
-                        tracebackMatrix[i, j] = 1;
-                }
-
-            // trace back
-            List<int> newIndex = new List<int>();
-            List<int> oldIndex = new List<int>();
-
-            i = newLen;
-            j = oldLen;
-            while (i >= 0 && j >= 0)
-            {
-                switch (tracebackMatrix[i, j])
-                {
-                    case -1:
-                        newIndex.Insert(0, i - 1);
-                        oldIndex.Insert(0, -1); // gap
-                        i--;
-                        break;
-                    case 1:
-                        newIndex.Insert(0, -1); // gap
-                        oldIndex.Insert(0, j - 1);
-                        j--;
-                        break;
-                    case 0:
-                        newIndex.Insert(0, i - 1);
-                        oldIndex.Insert(0, j - 1);
-                        i--;
-                        j--;
-                        break;
-
-                }
-
-            }
-
-            // remove fake element at beginning
-            newIndex.RemoveAt(0);
-            oldIndex.RemoveAt(0);
-            if (newIndex.Count() != oldIndex.Count())
-                Debug.WriteLine("Alignment error!");
-
-            // use newIndex as base line
-            Debug.WriteLine("Alignment results: ");
-            string newString = "";
-            string oldString = "";
-            for (i = 0; i < newIndex.Count(); i++)
-            {
-                oldString += oldIndex[i] == -1 ? "_\t" : oldList[oldIndex[i]] + "\t";
-                newString += newIndex[i] == -1 ? "_\t" : newList[newIndex[i]] + "\t";
-            }
-            Debug.WriteLine("Old string:    " + oldString);
-            Debug.WriteLine("New String:    " + newString);
-            return (newIndex, oldIndex);
-
-        }
-
-        private void setUpCurrentLineResultUI(InkAnalysisLine line)
-        {
-            Dictionary<string, List<string>> dict = HWRManager.getSharedHWRManager().getDictionary();
-            //await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () => {
-            //    idToNoteLine.GetValueOrDefault(line.Id).refreshWordList();
-            //});
-            var wordlist = idToNoteLine.GetValueOrDefault(line.Id).WordStrings;
-            //foreach (string word in wordlist) {
-            //    Debug.WriteLine(word);
-            //}
-            List<HWRRecognizedText> newResult = idToNoteLine.GetValueOrDefault(line.Id).HwrResult;
-            curLineWordsStackPanel.Children.Clear();
-
-            for (int index = 0; index < newResult.Count; index++) {
-                string word = newResult[index].selectedCandidate;
-                //Debug.WriteLine(word);
-                TextBlock tb = new TextBlock();
-                tb.VerticalAlignment = VerticalAlignment.Center;
-                tb.FontSize = 16;
-                //for detecting abbreviations
-                if (index != 0 && dict.ContainsKey(wordlist[index - 1].ToLower()) && dict[wordlist[index - 1].ToLower()].Contains(word))
-                {
-                    tb.Text = $"({word})";
-                    tb.Foreground = new SolidColorBrush(Colors.DarkOrange);
-                }
-                else
-                {
-                    tb.Text = word;
-                }
-
-                curLineWordsStackPanel.Children.Add(tb);
-                //Binding event listener to each text block
-                tb.Tapped += ((object sender, TappedRoutedEventArgs e) => {
-                    int wi = curLineWordsStackPanel.Children.IndexOf((TextBlock)sender);
-                    var alterFlyout = (Flyout)this.Resources["ChangeAlternativeFlyout"];
-                    showAlterOfWord = wi;
-                    alternativeListView.ItemsSource = idToNoteLine[showingResultOfLine].HwrResult[wi].candidateList;
-                    alterFlyout.ShowAt((FrameworkElement)sender);
-                });
-            }
-
-            loading.Visibility = Visibility.Collapsed;
-            curLineWordsStackPanel.Visibility = Visibility.Visible;
-            curLineResultPanel.Visibility = Visibility.Visible;
-            Canvas.SetLeft(curLineResultPanel, line.BoundingRect.Left);
-            int lineNum = getLineNumByRect(line.BoundingRect);
-            Canvas.SetTop(curLineResultPanel, (lineNum - 1) * LINE_HEIGHT);
-        }
-
-        private async void alternativeListView_ItemClick(object sender, ItemClickEventArgs e)
-        {
-            NoteLine curLine = idToNoteLine[showingResultOfLine];
-            Dictionary<string, List<string>> dict = HWRManager.getSharedHWRManager().getDictionary();
-
-            var citem = (string)e.ClickedItem;
-            int ind = alternativeListView.Items.IndexOf(citem);
-            int previous = curLine.HwrResult[showAlterOfWord].selectedIndex;
-            string old_form = curLine.HwrResult[showAlterOfWord].selectedCandidate;
-            string term = "";
-            if (showAlterOfWord - 1 >= 0)
-                term = curLine.HwrResult[showAlterOfWord - 1].selectedCandidate;
-
-            //When changing the alternative of an abbreviation, just change result UI and re-annotate
-            //note that all words in an extended form of an abbereviation will contains at least one space
-            //this is a faster way of identifying an abbreviation, but feel free to change if there's better way of
-            //doing so.
-            if (dict.ContainsKey(term.ToLower()) && dict[term.ToLower()].Contains(old_form))
-            {
-                Debug.WriteLine("\nchanging alternative of an abbreviation.\n");
-                curLine.updateHwrResult(showAlterOfWord, ind, old_form);
-                string new_form = curLine.HwrResult[showAlterOfWord].selectedCandidate;
-                string parsed = OperationLogger.getOpLogger().ParseCandidateList(curLine.HwrResult[showAlterOfWord].candidateList);
-                OperationLogger.getOpLogger().Log(OperationType.Abbreviation,curLine.Text ,term ,old_form ,new_form ,ind.ToString(),parsed);
-            }
-            else{
-                Debug.WriteLine("\nchanging a normal word in dispaly.\n");
-                //HWRManager.getSharedHWRManager().setRequestType(false);
-                await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () => {
-                    curLine.updateHwrResult(showAlterOfWord, ind);
-                });
-                string new_form = curLine.HwrResult[showAlterOfWord].selectedCandidate;
-                OperationLogger.getOpLogger().Log(OperationType.Alternative, old_form, new_form, ind.ToString());
-                curLine.HwrResult = await HWRManager.getSharedHWRManager().ReRecognizeAsync(curLine.HwrResult);
-
-            }
-
-            // HWR result UI
-            setUpCurrentLineResultUI(curLineObject);
-            // re-annotation and UI set-up after all HWR has been updated
-            phenoCtrlSlide.Y = 0;
-            curLineCandidatePheno.Clear();
-            annotateCurrentLineAndUpdateUI(curLineObject);
-        }
-
-
-        private async void annotateCurrentLineAndUpdateUI(InkAnalysisLine line)
-        {
-            // after get annotation, recognized text has also changed
-            Dictionary<string, Phenotype> annoResult = await PhenoMana.annotateByNCRAsync(idToNoteLine.GetValueOrDefault(line.Id).Text);
-            OperationLogger.getOpLogger().Log(OperationType.Recognition, idToNoteLine.GetValueOrDefault(line.Id).Text, annoResult);
-
-            if (annoResult != null && annoResult.Count != 0)
-            {
-                // update global annotations
-                foreach (var anno in annoResult.ToList())
-                {
-                    if (cachedAnnotation.ContainsKey(anno.Key))
-                        cachedAnnotation[anno.Key] = anno.Value;
-                    else
-                        cachedAnnotation.Add(anno.Key, anno.Value);
-                    // add to global candidate list
-                    anno.Value.sourceType = SourceType.Notes;
-                    PhenoMana.addPhenotypeCandidate(anno.Value, SourceType.Notes);
-                }
-
-                // update current line annotation
-                idToNoteLine.GetValueOrDefault(line.Id).phenotypes = annoResult.Values.ToList();
-
-                /**
-                foreach (TextBlock tb in curLineWordsStackPanel.Children)
-                {
-                    var match = cachedAnnotation.Keys.Where(x => x.Split(' ').Contains(tb.Text)).FirstOrDefault();
-                    if (match != null)
-                    {
-                        tb.Foreground = Application.Current.Resources["WORD_DARK"] as SolidColorBrush;
-                    }
-                }
-                **/
-
-                curWordPhenoControlGrid.Visibility = Visibility.Visible;
-
-                if (curLineCandidatePheno.Count == 0 || phenoCtrlSlide.Y == 0)
-                {
-                    //Debug.WriteLine($"current Y offset is at {phenoCtrlSlide.Y}, visibility is {curWordPhenoControlGrid.Visibility}");
-                    phenoCtrlSlide.Y = 0;
-                    ((DoubleAnimation)curWordPhenoAnimation.Children[0]).By = - 45;
-                    curWordPhenoAnimation.Begin();
-                }
-
-
-                foreach (var pheno in annoResult.Values.ToList())
-                {
-                    var temp = curLineCandidatePheno.Where(x => x == pheno).FirstOrDefault();
-                    pheno.state = PhenotypeManager.getSharedPhenotypeManager().getStateByHpid(pheno.hpId);
-                    if (temp == null)
-                    {
-                        curLineCandidatePheno.Add(pheno);
-                    }
-                    else
-                    {
-                        if (temp.state != pheno.state)
-                        {
-                            var ind = curLineCandidatePheno.IndexOf(temp);
-                            curLineCandidatePheno.Remove(temp);
-                            curLineCandidatePheno.Insert(ind, pheno);
-
-                        }
-                    }
-                }
-
-                if (curLineCandidatePheno.Count != 0)
-                {
-                    int lineNum = getLineNumByRect(line.BoundingRect);
-                    if (!annotatedLines.Contains(lineNum))
-                    {
-                        annotatedLines.Add(lineNum);
-                        if (!lineToRect.ContainsKey(lineNum))
-                        {
-
-                            Rectangle rect = new Rectangle
-                            {
-                                Fill = Application.Current.Resources["Button_Background"] as SolidColorBrush,
-                                Width = 5,
-                                Height = LINE_HEIGHT - 20
-                            };
-                            sideCanvas.Children.Add(rect);
-                            Canvas.SetTop(rect, lineNum * LINE_HEIGHT + 10);
-                            Canvas.SetLeft(rect, sideScrollView.ActualWidth / 2);
-                            lineToRect.Add(lineNum, rect);
-                        }
-
-                    }
-                }
-            }
-            else
-            {
-                //curWordPhenoControlGrid.Margin = new Thickness(0, 0, 0, 0);
-                // phenoCtrlSlide.Y = 0;
-                int lineNum = getLineNumByRect(line.BoundingRect);
-                if (lineToRect.ContainsKey(lineNum))
-                {
-                    try
-                    {
-                        sideCanvas.Children.Remove(lineToRect[lineNum]);
-                        lineToRect.Remove(lineNum);
-                    }
-                    catch (Exception E)
-                    {
-                        logger.Error(E.Message);
-                    }
-
-                }
-                //curWordPhenoHideAnimation.Begin();
-            }
-
+        public async void initialAnalyzeNoPhenotype() {
+            inkAnalyzer = new InkAnalyzer();
+            inkAnalyzer.AddDataForStrokes(inkCan.InkPresenter.StrokeContainer.GetStrokes());
+            await inkAnalyzer.AnalyzeAsync();
 
         }
 
@@ -1137,7 +1601,6 @@ namespace PhenoPad.CustomControl
                     pp.sourceType = SourceType.Notes;
 
                 recognizedPhenoBriefListView.ItemsSource = result;
-
                 breifPhenoProgressBar.Visibility = Visibility.Collapsed;
                 recognizedPhenoBriefListView.Visibility = Visibility.Visible;
 
@@ -1150,15 +1613,15 @@ namespace PhenoPad.CustomControl
 
                 rootPage.NotifyUser("No phenotypes found in: " + str, NotifyType.ErrorMessage, 2);
             }
+            UpdateLayout();
 
         }
-
-        /// <summary>
-        /// Search Phenotypes by a given string input.
-        /// </summary>
-        /// <param name="str"></param>
         private async void searchPhenotypes(string str)
         {
+            /// <summary>
+            /// Search Phenotypes by a given string input.
+            /// </summary>
+
             List<Phenotype> result = await PhenotypeManager.getSharedPhenotypeManager().searchPhenotypeByPhenotipsAsync(str);
             if (result != null && result.Count > 0)
             {
@@ -1189,14 +1652,6 @@ namespace PhenoPad.CustomControl
 
 
 
-        }
-
-        public void updatePhenotypeLine(Phenotype pheno, int index) {
-            //var temp = curLineCandidatePheno.Where(x => x == pheno).FirstOrDefault();
-            //pheno.state = PhenotypeManager.getSharedPhenotypeManager().getStateByHpid(pheno.hpId);
-            //var ind = curLineCandidatePheno.IndexOf(temp);
-            //curLineCandidatePheno.Remove(temp);
-            //curLineCandidatePheno.Insert(ind, pheno);
         }
     }
 }

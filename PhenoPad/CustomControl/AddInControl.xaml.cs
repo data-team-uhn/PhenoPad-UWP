@@ -12,6 +12,8 @@ using System.Threading.Tasks;
 using Windows.Foundation;
 using Windows.Foundation.Collections;
 using Windows.Graphics.Imaging;
+using Windows.Media.Core;
+using Windows.Storage;
 using Windows.Storage.Streams;
 using Windows.UI;
 using Windows.UI.Input.Inking;
@@ -32,17 +34,28 @@ using Windows.UI.Xaml.Shapes;
 
 namespace PhenoPad.CustomControl
 {
-    enum Direction {
+    public enum Direction {
         TOPLEFT,
         TOPRIGHT,
         BOTTOMLEFT,
         BOTTOMRIGHT
     }
+    public enum AddinType
+    {
+        DRAWING,
+        IMAGE,
+        PHOTO,
+        VIDEO,
+        VIEWONLY,
+        EHR // EHR also has 4 types of enum, see AddInAnnotationControl.cs
+    }
+
     /// <summary>
     /// Control class for canvas add-ins after drawing a rectangle on note page, shows options of operations.
     /// </summary>
     public sealed partial class AddInControl : UserControl
     {
+
         #region attribute definition
 
         private double DEFAULT_WIDTH = 400;
@@ -60,6 +73,7 @@ namespace PhenoPad.CustomControl
             }
         }
         public InkAnalyzer inkAnalyzer = new InkAnalyzer();
+        public Visibility videoVisibility = Visibility.Collapsed;
 
         public DispatcherTimer autosaveDispatcherTimer = new DispatcherTimer();
 
@@ -77,7 +91,8 @@ namespace PhenoPad.CustomControl
 
         public ScaleTransform scaleTransform;
         public TranslateTransform dragTransform;
-        //public double scale;
+
+        public AddinType addinType;
 
         public bool hasImage;
 
@@ -130,6 +145,7 @@ namespace PhenoPad.CustomControl
         private bool _leftSide;
         private bool _rightSide;
         private double _curWidthRatio;
+        private StorageFile temp;
 
         public static readonly DependencyProperty nameProperty = DependencyProperty.Register(
          "name",
@@ -198,6 +214,22 @@ namespace PhenoPad.CustomControl
          new PropertyMetadata(null)
        );
 
+        public AddinType AddinType
+        {
+            get { return (AddinType)GetValue(addinTypeProperty); }
+            set
+            {
+                SetValue(addinTypeProperty, value);
+            }
+        }
+
+        public static readonly DependencyProperty addinTypeProperty = DependencyProperty.Register(
+         "addinType",
+         typeof(AddinType),
+         typeof(TextBlock),
+         new PropertyMetadata(null)
+       );
+
         public double imgratio
         {
             get { return (double)GetValue(imgratioProperty); }
@@ -229,6 +261,9 @@ namespace PhenoPad.CustomControl
             {
                 this.InitializeComponent();
                 commentID = -1;
+                //by default sets addinTypt to viewonly
+                addinType = AddinType.VIEWONLY;
+                videoVisibility = Visibility.Collapsed;
                 
             }
             catch (Exception e)
@@ -297,6 +332,8 @@ namespace PhenoPad.CustomControl
             }
             Canvas.SetZIndex(this, 90);
             commentbg.Visibility = Visibility.Collapsed;
+            addinType = AddinType.VIEWONLY;
+            videoVisibility = Visibility.Collapsed;
 
 
         }
@@ -443,7 +480,7 @@ namespace PhenoPad.CustomControl
             {
                 //deals with dragging speed relative to current zoom ratio of notepage
                 double deltaModifier = (1.0 / _curWidthRatio);
-                Debug.WriteLine($"cur_ratio = {_curWidthRatio} modifier magnitute = {deltaModifier}");
+                //Debug.WriteLine($"cur_ratio = {_curWidthRatio} modifier magnitute = {deltaModifier}");
                 this.dragTransform.X += e.Delta.Translation.X * deltaModifier;
                 this.dragTransform.Y += e.Delta.Translation.Y * deltaModifier;
             }
@@ -469,23 +506,24 @@ namespace PhenoPad.CustomControl
         {
             ((Panel)this.Parent).Children.Remove(this);
             await rootPage.curPage.AutoSaveAddin(null);
-            await rootPage.curPage.refreshAddInList();
+            await MainPage.Current.refreshAddInList();
             await FileManager.getSharedFileManager().DeleteAddInFile(notebookId, pageId, name);
         }
 
         public async void Minimize_Click(object sender = null, RoutedEventArgs e = null)
         {
-            this.inDock = true;
             var element_Visual_Relative = MainPage.Current.curPage.TransformToVisual(MainPage.Current);
-            Point point  = element_Visual_Relative.TransformPoint(new Point(0, 0));
+            Point point = element_Visual_Relative.TransformPoint(new Point(0, 0));
             DoubleAnimation da = (DoubleAnimation)addinPanelHideAnimation.Children.ElementAt(0);
-            da.By = point.X + MainPage.Current.curPage.ActualWidth - (this.canvasLeft + this.dragTransform.X);
+            da.By = point.X + MainPage.Current.curPage.ActualWidth - ( canvasLeft + dragTransform.X);
 
-            await MainPage.Current.curPage.AutoSaveAddin(this.name);
-            await MainPage.Current.curPage.refreshAddInList();
-            MainPage.Current.curPage.quickShowDock();
+            await MainPage.Current.curPage.AutoSaveAddin(name);
+            await MainPage.Current.refreshAddInList();
+            //await MainPage.Current.curPage.quickShowDock();
             await addinPanelHideAnimation.BeginAsync();
-            this.Visibility = Visibility.Collapsed;
+            Visibility = Visibility.Collapsed;
+            inDock = true;
+
         }
 
 
@@ -509,13 +547,14 @@ namespace PhenoPad.CustomControl
                 this.Visibility = Visibility.Visible;
                 await MainPage.Current.curPage.AutoSaveAddin(this.name);
                 await addinPanelShowAnimation.BeginAsync();
-                MainPage.Current.curPage.quickShowDock();
+                await MainPage.Current.quickShowDock();
             }
         }
 
         private void DrawingButton_Click(object sender, RoutedEventArgs e)
         {
             type = "drawing";
+            addinType = AddinType.DRAWING;
             isInitialized = true;
             //this.ControlStackPanel.Visibility = Visibility.Visible;
             categoryGrid.Visibility = Visibility.Collapsed;
@@ -530,12 +569,47 @@ namespace PhenoPad.CustomControl
             captureControl.setUp();
             //this.imageControl.deleteAsHide();
             PhotoButton.Visibility = Visibility.Visible;
+            VideoButton.Visibility = Visibility.Visible;
         }
-        
+
+        private async void VideoButton_Click(object sender, RoutedEventArgs e) {
+            addinType = AddinType.VIDEO;
+            temp = await captureControl.StartRecordingAsync(notebookId,pageId, name);
+            MainPage.Current.NotifyUser("Recording Started", NotifyType.StatusMessage, 1);
+            PhotoButton.Visibility = Visibility.Collapsed;
+            VideoButton.Visibility = Visibility.Collapsed;
+            VideoStopButton.Visibility = Visibility.Visible;
+            videoVisibility = Visibility.Visible;
+            UpdateLayout();
+
+
+        }
+
+        private async void VideoStopButton_Click(object sender, RoutedEventArgs e)
+        {
+
+            captureControl.OnTimeUpStopRecording();
+            MainPage.Current.NotifyUser("Recording Ended", NotifyType.StatusMessage, 1);
+            mediaPlayerElement.Source = MediaSource.CreateFromStorageFile(temp);
+            var properties = await temp.Properties.GetVideoPropertiesAsync();
+            imgratio = (double)properties.Width / properties.Height;
+            mediaPlayerElement.Visibility = Visibility.Visible;
+            categoryGrid.Visibility = Visibility.Collapsed;
+            PhotoButton.Visibility = Visibility.Collapsed;
+            VideoButton.Visibility = Visibility.Collapsed;
+            VideoStopButton.Visibility = Visibility.Collapsed;
+            CameraCanvas.Visibility = Visibility.Collapsed;
+            inkToolbar.Visibility = Visibility.Collapsed;
+            captureControl.unSetUp();
+            hasImage = true;
+            InitiateInkCanvas();
+        }
+
         private async void PhotoButton_Click(object sender, RoutedEventArgs e)
         {/// <summary>invoked when user is in camera preview mode and clicks on the camera button</summary>
             try
             {
+                addinType = AddinType.PHOTO;
                 var imageSource = await captureControl.TakePhotoAsync(notebookId,
                    pageId, name);
                 if (imageSource != null)
@@ -551,22 +625,24 @@ namespace PhenoPad.CustomControl
                     var fileheight = properties.Height;
                     //Resizing the add-in frame according to the image ratio
                     imgratio = (double)filewidth / fileheight;
-                    this.Height = this.Width / imgratio + 48;
-                    this.widthOrigin = this.Width;
-                    this.heightOrigin = this.Height;
-                    this.inkCan.Height = this.Height - 48;
-                    this.inkCan.Width = this.Width;
+                    Height = Width / imgratio + 48;
+                    widthOrigin = Width;
+                    heightOrigin = Height;
+                    inkCan.Height = Height - 48;
+                    inkCan.Width =  Width;
 
                     imageControl.Source = rawphoto;
                     contentGrid.Children.Add(imageControl);
                     categoryGrid.Visibility = Visibility.Collapsed;
-                    this.PhotoButton.Visibility = Visibility.Collapsed;
-                    this.CameraCanvas.Visibility = Visibility.Collapsed;
+                    PhotoButton.Visibility = Visibility.Collapsed;
+                    VideoButton.Visibility = Visibility.Collapsed;
+                    CameraCanvas.Visibility = Visibility.Collapsed;
+                    mediaPlayerElement.Visibility = Visibility.Collapsed;
                     captureControl.unSetUp();
-                    this.hasImage = true;
+                    hasImage = true;
                     InitiateInkCanvas();
                 }
-                await rootPage.curPage.AutoSaveAddin(this.name);
+                await rootPage.curPage.AutoSaveAddin(name);
 
             }
             catch (Exception ex)
@@ -583,6 +659,7 @@ namespace PhenoPad.CustomControl
 
         private async void InsertPhotoButton_Click(object sender, RoutedEventArgs e)
         {
+            addinType = AddinType.IMAGE;
             type = "photo";
             isInitialized = true;
             //this.ControlStackPanel.Visibility = Visibility.Visible;
@@ -636,6 +713,73 @@ namespace PhenoPad.CustomControl
 
         #region initializations
        
+       
+        //public async void InitializeFromImage(WriteableBitmap wb, bool onlyView = false)
+        //{/// <summary>Initialize a bitmap image to add-in canvas and calls InitiateInkCanvas</summary>
+        //    this.categoryGrid.Visibility = Visibility.Collapsed;
+
+        //    Image imageControl = new Image();
+        //    imageControl.Source = wb;
+        //    contentGrid.Children.Add(imageControl);
+        //    categoryGrid.Visibility = Visibility.Collapsed;
+
+        //    InitiateInkCanvas(onlyView);
+
+        //    // save bitmapimage to disk
+        //    var result = await FileManager.getSharedFileManager().SaveImageForNotepage(notebookId, pageId, name, wb);
+        //    await rootPage.curPage.AutoSaveAddin(this.name);
+        //}
+       
+        public async void InitializeFromDisk(bool onlyView)
+        {/// <summary>Initializing a photo to add-in through disk and calls InitiateInkCanvas</summary>
+
+            categoryGrid.Visibility = Visibility.Collapsed;
+            try
+            {
+
+                //try to load strokes from disk
+                var strokefile = await FileManager.getSharedFileManager().GetNoteFileNotCreate(notebookId, pageId,                                                                                             NoteFileType.ImageAnnotation, name);
+                if (strokefile != null)
+                {
+                    await FileManager.getSharedFileManager().loadStrokes(strokefile, inkCanvas);
+                }
+
+                //try to load image file from disk
+                var Imagefile = await FileManager.getSharedFileManager().GetNoteFileNotCreate(notebookId, pageId, NoteFileType.Image, name);
+                if (Imagefile != null)
+                {
+                    var properties = await Imagefile.Properties.GetImagePropertiesAsync();
+                    imgratio = (double)properties.Width / properties.Height;
+                    BitmapImage img = new BitmapImage(new Uri(Imagefile.Path));
+                    Image photo = new Image();
+                    photo.Source = img;
+                    photo.Visibility = Visibility.Visible;
+                    contentGrid.Children.Add(photo);
+                    categoryGrid.Visibility = Visibility.Collapsed;
+                    hasImage = true;
+                    addinType = AddinType.IMAGE;
+                }
+
+                //try to load video file from disk
+                var video = await FileManager.getSharedFileManager().GetNoteFileNotCreate(notebookId, pageId, NoteFileType.Video, name);
+                if (video != null) {
+                    var properties = await video.Properties.GetVideoPropertiesAsync();
+                    imgratio = (double)properties.Width / properties.Height;
+                    //Debug.WriteLine($"imgratio of video={imgratio}");
+                    mediaPlayerElement.Source = MediaSource.CreateFromStorageFile(video);
+                    hasImage = true;
+                    addinType = AddinType.VIDEO;
+                }
+
+                InitiateInkCanvas(onlyView);
+            }
+            catch (FileNotFoundException) { Debug.WriteLine("file not found, shouldn't reach here :"); }
+            catch (Exception e)
+            {
+                LogService.MetroLogger.getSharedLogger().Error($"{e}:{e.Message}");
+            }
+        }
+
         private void InitiateInkCanvas(bool onlyView = false, double scaleX = 1, double scaleY = 1)
         {/// <summary>Initializes inkcanvas attributes for the add-in panel based on  whether item will be editable or not.</summary>
 
@@ -643,26 +787,30 @@ namespace PhenoPad.CustomControl
             scrollViewer.Visibility = Visibility.Visible;
             inkCan.Visibility = Visibility.Visible;
 
+            //disables scroll viewer for all addins that are not drawings
             if (hasImage || onlyView)
-            {
                 hideScrollViewer();
-            }
+
 
             if (commentID != -1)
             {
+                Debug.WriteLine($"{commentID}");
                 inkCan.Height = this.Height;
                 inkCan.Width = this.Width;
                 TitleRelativePanel.Visibility = Visibility.Collapsed;
-
+                if (anno_type == AnnotationType.TextComment || anno_type == AnnotationType.TextInsert)
+                    inkCan.Visibility = Visibility.Collapsed;
             }
-            else {
+
+            else
+            {
                 if (!onlyView)
                 {// added from note page, need editing       
                  // Set supported input type to default using both moush and pen
-                    inkCanvas.InkPresenter.InputDeviceTypes =
-                        Windows.UI.Core.CoreInputDeviceTypes.Mouse |
-                        Windows.UI.Core.CoreInputDeviceTypes.Pen;
+                    inkCan.Height = Height;
+                    inkCan.Width = Width;
 
+                    inkCanvas.InkPresenter.InputDeviceTypes = Windows.UI.Core.CoreInputDeviceTypes.Pen;
                     // Set initial ink stroke attributes and updates
                     InkDrawingAttributes drawingAttributes = new InkDrawingAttributes();
                     drawingAttributes.Color = Colors.Black;
@@ -671,21 +819,28 @@ namespace PhenoPad.CustomControl
                     inkCanvas.InkPresenter.UpdateDefaultDrawingAttributes(drawingAttributes);
                     //setting current active canvas to 
                     inkToolbar.TargetInkCanvas = inkCanvas;
-                    inkToolbar.Visibility = Visibility.Visible;
+                    inkToolbar.Visibility = addinType == AddinType.VIDEO? Visibility.Collapsed: Visibility.Visible;
+                    inkCanvas.Visibility = addinType == AddinType.VIDEO? Visibility.Collapsed : Visibility.Visible;
+                    mediaPlayerElement.Visibility = addinType == AddinType.VIDEO ? Visibility.Visible: Visibility.Collapsed;
                 }
                 else
                 {// only for viewing on page overview page / addin collection dock
+
                     inkCanvas.InkPresenter.IsInputEnabled = false;
+                    Grid.SetRow(contentGrid, 0);
+                    Grid.SetRowSpan(contentGrid, 3);
+                    //TitleRelativePanel.Visibility = Visibility.Collapsed;
                     if (hasImage)
-                    {//when loading an image, had to manually adjust dimension to display full size strokes
-                        TranslateTransform tt = new TranslateTransform();
-                        //tt.Y = -24;
-                        //contentGrid.RenderTransform = tt;
-                        this.Width = 400;
-                        this.Height = (int)(this.Width / imgratio);
-                        inkCan.Height = this.Height;
-                        inkCan.Width = this.Width;
-                        Debug.WriteLine(inkCan.Width + "," + inkCan.Height);
+                    {//when loading an image, had to manually adjust dimension to display full size with no border
+
+                        Width = 400;
+                        Height = Width / imgratio;
+                        //Height = (int)(ActualWidth / imgratio);
+                        //inkCan.Width = Width;
+                        //inkCan.Height = Height;
+                        //inkCan.Width = Width;
+
+                        mediaPlayerElement.Visibility = addinType == AddinType.VIDEO ? Visibility.Visible : Visibility.Collapsed;
                     }
                     else
                     {//adjust ink canvas size/position to display full stroke view
@@ -698,70 +853,11 @@ namespace PhenoPad.CustomControl
                         inkCanvas.InkPresenter.StrokeContainer.MoveSelected(new Point(-bound.Left, -bound.Top));
                     }
                 }
-
             }
 
         }
-       
-        public async void InitializeFromImage(WriteableBitmap wb, bool onlyView = false)
-        {/// <summary>Initialize a bitmap image to add-in canvas and calls InitiateInkCanvas</summary>
-            this.categoryGrid.Visibility = Visibility.Collapsed;
 
-            Image imageControl = new Image();
-            imageControl.Source = wb;
-            contentGrid.Children.Add(imageControl);
-            categoryGrid.Visibility = Visibility.Collapsed;
 
-            InitiateInkCanvas(onlyView);
-
-            // save bitmapimage to disk
-            var result = await FileManager.getSharedFileManager().SaveImageForNotepage(notebookId, pageId, name, wb);
-            await rootPage.curPage.AutoSaveAddin(this.name);
-        }
-       
-        public async void InitializeFromDisk(bool onlyView)
-        {/// <summary>Initializing a photo to add-in through disk and calls InitiateInkCanvas</summary>
-
-            this.categoryGrid.Visibility = Visibility.Collapsed;
-            try
-            {
-                var annofile = await FileManager.getSharedFileManager().GetNoteFileNotCreate(notebookId, pageId,
-                                                                                             NoteFileType.ImageAnnotation, name);
-                if (annofile != null)
-                    await FileManager.getSharedFileManager().loadStrokes(annofile, inkCanvas);
-
-                // photo file
-                var file = await FileManager.getSharedFileManager().GetNoteFileNotCreate(notebookId, pageId, NoteFileType.Image, name);
-                if (file == null)
-                {
-                    //Initializing addin with drawing mode, reset windows to saved dimension
-                    if (commentID == -1)
-                    {
-                        inkCan.Height = this.Height - 48;
-                        inkCan.Width = this.Width;
-                    }
-                }
-                else
-                {//gets the photo file and adds to content grid
-                    var properties = await file.Properties.GetImagePropertiesAsync();
-                    imgratio = (double)properties.Width / properties.Height;
-                    BitmapImage img = new BitmapImage(new Uri(file.Path));
-                    Image photo = new Image();
-                    photo.Source = img;
-                    photo.Visibility = Visibility.Visible;
-                    contentGrid.Children.Add(photo);
-                    categoryGrid.Visibility = Visibility.Collapsed;
-                    this.hasImage = true;
-                }
-                InitiateInkCanvas(onlyView);
-            }
-            catch (FileNotFoundException) { }
-            catch (Exception e)
-            {
-                LogService.MetroLogger.getSharedLogger().Error($"{e}:{e.Message}");
-            }
-        }
-        
         private void UserControl_Loaded(object sender, RoutedEventArgs e)
         {/// <summary> When user control is loaded, sets the default size and initialize from disk.</summary>
             if (viewOnly)
@@ -769,6 +865,7 @@ namespace PhenoPad.CustomControl
                 this.Width = DEFAULT_WIDTH;
                 this.Height = DEFAULT_HEIGHT;
                 TitleRelativePanel.Visibility = Visibility.Collapsed;
+
                 InitializeFromDisk(true);
             }
         }

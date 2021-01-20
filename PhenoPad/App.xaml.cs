@@ -33,6 +33,7 @@ namespace PhenoPad
     sealed partial class App : Application
     {
         private bool _isinBackground;
+        private DispatcherTimer backgroundTimer;
         /// <summary>
         /// Initializes the singleton application object.  This is the first line of authored code
         /// executed, and as such is the logical equivalent of main() or WinMain().
@@ -40,6 +41,9 @@ namespace PhenoPad
         public App()
         {
             this.InitializeComponent();
+            backgroundTimer = new DispatcherTimer();
+            backgroundTimer.Interval = TimeSpan.FromMinutes(10);
+            backgroundTimer.Tick += TriggerAutoSaveOnBackground;
             //Binding event handlers to handle app status
             {
 
@@ -50,10 +54,20 @@ namespace PhenoPad
                 EnteredBackground += AppEnteredBackground;
                 LeavingBackground += AppLeavingBackground;
                 Suspending += OnSuspending;
-                Current.UnhandledException += OnUnhandledExceptionUI;
+                UnhandledException += OnUnhandledExceptionUI;
                 TaskScheduler.UnobservedTaskException += OnUnobservedException;
             }
 
+        }
+
+        private async void TriggerAutoSaveOnBackground(object sender, object e) {
+            backgroundTimer.Stop();
+            LogService.MetroLogger.getSharedLogger().Info("App background timer limit reached, will autosave note and end audio..");
+            await CoreApplication.MainView.CoreWindow.Dispatcher.RunAsync(CoreDispatcherPriority.High,
+            async () => {
+                await MainPage.Current.saveNoteToDisk();
+                await MainPage.Current.KillAudioService();
+            });
         }
 
         private void AppLeavingBackground(object sender, LeavingBackgroundEventArgs e)
@@ -66,6 +80,7 @@ namespace PhenoPad
         {
             MetroLogger.getSharedLogger().Info("App entered background.");
             _isinBackground = true;
+            backgroundTimer.Start();
         }
 
         private static void OnUnobservedException(object sender, UnobservedTaskExceptionEventArgs e)
@@ -81,9 +96,17 @@ namespace PhenoPad
         /// <summary>
         /// Invoked when Application receives an unhandled exception
         /// </summary>
-        private static void OnUnhandledExceptionUI(object sender, Windows.UI.Xaml.UnhandledExceptionEventArgs e)
+        private async static void OnUnhandledExceptionUI(object sender, Windows.UI.Xaml.UnhandledExceptionEventArgs e)
         {
             MetroLogger.getSharedLogger().Error($"APP has handled an Unhandled exception:{e.Exception}\n");
+            if (MainPage.Current != null)
+            {
+                await CoreApplication.MainView.CoreWindow.Dispatcher.RunAsync(CoreDispatcherPriority.High,
+                async () =>{
+                    await MainPage.Current.saveNoteToDisk();
+                    await MainPage.Current.KillAudioService();
+                });
+            }
             e.Handled = true;
         }
 
@@ -138,15 +161,12 @@ namespace PhenoPad
             }
         }
 
-
-
-
-            /// <summary>
-            /// Invoked when Navigation to a certain page fails
-            /// </summary>
-            /// <param name="sender">The Frame which failed navigation</param>
-            /// <param name="e">Details about the navigation failure</param>
-            void OnNavigationFailed(object sender, NavigationFailedEventArgs e)
+        /// <summary>
+        /// Invoked when Navigation to a certain page fails
+        /// </summary>
+        /// <param name="sender">The Frame which failed navigation</param>
+        /// <param name="e">Details about the navigation failure</param>
+        void OnNavigationFailed(object sender, NavigationFailedEventArgs e)
         {
             throw new Exception("Failed to load Page " + e.SourcePageType.FullName);
         }
@@ -162,16 +182,17 @@ namespace PhenoPad
         {
             //entering background will by default suspend app, we only need to
             //handle suspensions that happened when app is in use.
-            if (!_isinBackground) {
-                MetroLogger.getSharedLogger().Info($"App is suspended.");
-                var deferral = e.SuspendingOperation.GetDeferral();
-                if (MainPage.Current != null)
-                {
+            MetroLogger.getSharedLogger().Info($"App is suspended.");
+            var deferral = e.SuspendingOperation.GetDeferral();
+            if (MainPage.Current != null)
+            {
+                await CoreApplication.MainView.CoreWindow.Dispatcher.RunAsync(CoreDispatcherPriority.High,
+                async () => {
                     await MainPage.Current.saveNoteToDisk();
                     await MainPage.Current.KillAudioService();
-                }
-                deferral.Complete();
+                });
             }
+            deferral.Complete();
         }
 
 

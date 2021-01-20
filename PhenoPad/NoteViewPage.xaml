@@ -9,106 +9,155 @@
     xmlns:phenotypeservice="using:PhenoPad.PhenotypeService"
     xmlns:customcontrol="using:PhenoPad.CustomControl"
     mc:Ignorable="d">
+    <Page.Resources>
+            <local:BackgroundColorConverter x:Key="bcConverter" />
+            <local:IntervalDisplayConverter x:Key="intervalConverter" />
+            <Flyout x:Name="ChatRecordFlyout" Placement="Left" >
+                <Grid CornerRadius="10" Background="White">
+                    <local:ChatListView x:Name="AllChatView"
+                            IncrementalLoadingThreshold="2" Margin="10" 
+                            ScrollViewer.VerticalScrollBarVisibility="Hidden">
 
-    <Grid Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
+                        <ListView.ItemContainerStyle>
+                            <Style TargetType="ListViewItem">
+                                <Setter Property="Padding" Value="0"/>
+                                <Setter Property="Margin" Value="0"/>
+                            </Style>
+                        </ListView.ItemContainerStyle>
+
+                        <ListView.ItemContainerTransitions>
+                            <TransitionCollection/>
+                        </ListView.ItemContainerTransitions>
+
+                        <ListView.ItemTemplate>
+                            <DataTemplate x:DataType="local:TextMessage">
+                                <Grid Margin="6" CornerRadius="10">
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto" />
+                                    </Grid.RowDefinitions>
+
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+
+                                    <!--Finalized message color-->
+                                    <Grid Grid.Row="0" Grid.Column="{Binding TextColumn}"
+                                        MinWidth="200" MaxWidth="500" Visibility="{x:Bind Path=IsFinal}"
+                                        Background="{Binding Converter={StaticResource bcConverter}}"/>
+
+                                    <Grid Grid.Row="0" Grid.Column="{Binding TextColumn}">
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="Auto"/>
+                                            <RowDefinition Height="Auto"/>
+                                        </Grid.RowDefinitions>
+
+                                        <TextBlock Grid.Row="0"  Grid.Column="0"
+                                        Text="{x:Bind Body}" TextWrapping="Wrap"
+                                        MinWidth="200" MaxWidth="500"
+                                        FontSize="14" Padding="10" VerticalAlignment="Center"
+                                        Foreground="Black"/>
+
+                                        <Button Grid.Row="1" Style="{StaticResource ButtonStyle1}" Background="Transparent" HorizontalAlignment="Stretch">
+                                            <TextBlock FontSize="14" TextWrapping="Wrap" Padding="3"
+                                            Text="{Binding Converter={StaticResource intervalConverter}}"                                
+                                            HorizontalAlignment="Left"
+                                            Foreground="Black"/>
+                                        </Button>
+                                    </Grid>
+                                </Grid>
+                            </DataTemplate>
+                        </ListView.ItemTemplate>
+                    </local:ChatListView>
+                </Grid>
+            </Flyout>
+
+    </Page.Resources>
+
+    <Grid x:Name="root" Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
         <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="50"/>
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
 
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="Auto"/>
-            <ColumnDefinition Width="5*"/>
-            <ColumnDefinition Width="5*"/>
+            <ColumnDefinition Width="70"/>
+            <ColumnDefinition Width="*"/>
         </Grid.ColumnDefinitions>
-        <Grid Name="TopMenuRelativePanel" Grid.Row="0" Grid.ColumnSpan="3" 
-              Height="45"
+        
+        <!--TOP MENU BAR-->
+        <Grid Name="TopMenuRelativePanel" Grid.Row="0" Grid.ColumnSpan="2" 
               Background="{StaticResource TITLE_BAR_WHITE}">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="200"></ColumnDefinition>
-                <ColumnDefinition Width="*"></ColumnDefinition>
-                <ColumnDefinition Width="Auto"></ColumnDefinition>
-            </Grid.ColumnDefinitions>
-            <StackPanel Orientation="Horizontal" Grid.Column="0" Grid.ColumnSpan="2" >
-                <Button Name="BackButton" Width="40"  
+            
+            
+            <StackPanel Orientation="Horizontal" Spacing="30" >
+                
+                <Button Name="BackButton"
                         Click="BackButton_Clicked"
+                        Width="70"
                         Background="{StaticResource Button_Background}" 
                         BorderThickness="0" VerticalAlignment="Stretch">
-                    <SymbolIcon Symbol="Back"></SymbolIcon>
+                    <SymbolIcon Symbol="Back"/>
                 </Button>
-                <TextBox Name="noteNameTextBox" FontSize="18" Text="" Margin="5 0 0 0" 
-                         BorderThickness="0" Background="Transparent" 
-                         IsEnabled="False" 
-                         VerticalAlignment="Center"/>
+                
+                <TextBlock Name="noteNameTextBox" FontSize="18" Text="" VerticalAlignment="Center"/>
+            </StackPanel>
+            
+            <StackPanel Orientation="Horizontal" Spacing=" 30" Margin="5 5 30 5"  HorizontalAlignment="Right">
+                <ComboBox HorizontalAlignment="Right" VerticalAlignment="Center" PlaceholderText="Sort by" Width="100">
+                    <x:String>Datetime</x:String>
+                    <x:String>Line Number</x:String>
+                </ComboBox>
+                <StackPanel Orientation="Horizontal" Spacing="5" VerticalAlignment="Center">
+                    <SymbolIcon Symbol="Find"/>
+                    <TextBox x:Name="searchInpput" Width="300"/>
+                    <Button Content="Find" Style="{StaticResource ButtonStyle1}" x:Name="searchButtin" Width="auto"/>
+                </StackPanel>
+
 
             </StackPanel>
         </Grid>
-        <!--Timeline/category bar-->
-        <Grid Grid.Column="0" Grid.Row="1" >
-            <ListView ScrollViewer.VerticalScrollBarVisibility="Hidden" x:Name="TimeListView" Padding="3 0" 
-                      >
-                <ListView.Header>
-                    <controls:ScrollHeader Mode="Sticky" TargetListViewBase="{x:Bind PhenoListView}">
-                        <StackPanel Background="White">
-                            <TextBlock  Foreground="{StaticResource WORD_DARKER}" Text="Timeline" FontSize="16" 
-                                        FontWeight="SemiBold" Padding="5"/>
-                        </StackPanel>
-                    </controls:ScrollHeader>
-                </ListView.Header>
+        
+        <!--SIDE FILTER BAR-->
+        <StackPanel BorderThickness="0 0 1 0" BorderBrush="{StaticResource TITLE_BAR_WHITE}" 
+                    HorizontalAlignment="Right" Padding="0 30 0 30"
+                    x:Name="FilterStack" Orientation="Vertical" 
+                    Grid.Row="1" Grid.Column="0" Spacing="10">
+            <ToggleButton Style="{StaticResource MyToggleButtonStyle}" Width="40" Height="100"/>
+            <ToggleButton Style="{StaticResource MyToggleButtonStyle}" Width="40" Height="100"/>
+            <ToggleButton Style="{StaticResource MyToggleButtonStyle}" Width="40" Height="100"/>
+        </StackPanel>
+        
+        <!--OVERVIEW CONTENT PANEL-->
+        <ScrollViewer Visibility="Collapsed" ZoomMode="Disabled" VerticalScrollMode="Enabled" Grid.Row="1" Grid.Column="1">
+            <controls:WrapPanel Grid.Row="1" Grid.Column="1" Orientation="Vertical" x:Name="NoteLineStack" 
+                    Padding="10"
+                Background="Yellow"/>
+        </ScrollViewer>
+        <ListView IsItemClickEnabled="False" Padding="10" Grid.Row="1" Grid.Column="1" x:Name="aaa">
+            
 
-                <ListView.ItemTemplate>
-                    <DataTemplate x:DataType="phenotypeservice:Phenotype">
-                        <TextBlock Text="{x:Bind time}"/>
-                    </DataTemplate>
-                </ListView.ItemTemplate>
-                <ListView.ItemContainerStyle>
-                    <Style TargetType="ListViewItem">
-                        <Setter Property="HorizontalContentAlignment" Value="Stretch" />
-                        <Setter Property="Margin" Value="0,0,0,0" />
-                        <Setter Property="Padding" Value="5,0,0,0" />
-                        <Setter Property="MinHeight" Value="20" />
-                    </Style>
-                </ListView.ItemContainerStyle>
-            </ListView>
+        </ListView>
 
+        <Popup Grid.Row="0" Grid.RowSpan="2" Grid.Column="2" x:Name="ViewLoadingPopup" x:FieldModifier="public" IsOpen="True"
+               HorizontalAlignment="Center" VerticalAlignment="Center" Width="{x:Bind Width}" Height="{x:Bind Height}"
+               Margin="-250 -250 0 0">
+            <Grid Width="200" Height="200" CornerRadius="10" 
+                      
+                      Background="WhiteSmoke">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
 
-        </Grid>
-        <!--Phenotypes section-->
-        <Grid Grid.Column="1" Grid.Row="1">
-            <ListView ScrollViewer.VerticalScrollBarVisibility="Hidden" x:Name="PhenoListView" Padding="3 0" 
-                      >
-                <ListView.Header>
-                    <controls:ScrollHeader Mode="Sticky" TargetListViewBase="{x:Bind PhenoListView}">
-                        <StackPanel Background="White">
-                            <TextBlock  Foreground="{StaticResource WORD_DARKER}" Text="Saved phenotypes" FontSize="16" FontWeight="SemiBold" Padding="5"/>
-                        </StackPanel>
-                    </controls:ScrollHeader>
-                </ListView.Header>
-
-                <ListView.ItemTemplate>
-                    <DataTemplate x:DataType="phenotypeservice:Phenotype">
-                        <customcontrol:PhenotypeControl phenotypeName="{x:Bind name}" 
-                                                        phenotypeId="{x:Bind hpId}" 
-                                                        phenotypeState="{x:Bind state}" 
-                                                        sourceType="Saved"/>
-                    </DataTemplate>
-                </ListView.ItemTemplate>
-                <ListView.ItemContainerStyle>
-                    <Style TargetType="ListViewItem">
-                        <Setter Property="HorizontalContentAlignment" Value="Stretch" />
-                        <Setter Property="Margin" Value="0,0,0,0" />
-                        <Setter Property="Padding" Value="5,0,0,0" />
-                        <Setter Property="MinHeight" Value="20" />
-                    </Style>
-                </ListView.ItemContainerStyle>
-            </ListView>
-
-        </Grid>
-        <!--Strokes Section-->
-        <Grid Grid.Column="2" Grid.Row="1" Background="LightGray" >
-            <StackPanel x:Name="strokesGrid" Orientation="Vertical" Spacing="10"/>
-
-        </Grid>
-
+                <ProgressRing VerticalAlignment="Center" HorizontalAlignment="Center" Grid.Row="0" Margin="-40 0 0 0" IsActive="True">
+                    <ProgressRing.RenderTransform>
+                        <ScaleTransform ScaleX="3" ScaleY="3"/>
+                    </ProgressRing.RenderTransform>
+                </ProgressRing>
+                <TextBlock Grid.Row="1" VerticalAlignment="Center" HorizontalAlignment="Center" FontSize="26" Text="Loading"/>
+            </Grid>
+        </Popup>
     </Grid>
+    
 </Page>

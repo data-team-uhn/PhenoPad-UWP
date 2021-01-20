@@ -1,33 +1,19 @@
-﻿using MetroLog;
-using PhenoPad.FileService;
+﻿using PhenoPad.FileService;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Globalization;
-using System.IO;
 using System.Linq;
-using System.Numerics;
-using System.Runtime.InteropServices.WindowsRuntime;
 using Windows.ApplicationModel.Core;
-using Windows.Foundation;
-using Windows.Foundation.Collections;
 using Windows.Storage;
 using Windows.UI;
-using Windows.UI.Composition;
 using Windows.UI.Core;
 using Windows.UI.ViewManagement;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
-using Windows.UI.Xaml.Controls.Primitives;
-using Windows.UI.Xaml.Data;
-using Windows.UI.Xaml.Hosting;
-using Windows.UI.Xaml.Input;
-using Windows.UI.Xaml.Media;
-using Windows.UI.Xaml.Media.Imaging;
 using Windows.UI.Xaml.Navigation;
 using Windows.Storage.Pickers;
-using System.Threading.Tasks;
 using Windows.UI.Popups;
+using System.Threading.Tasks;
 
 // The Blank Page item template is documented at https://go.microsoft.com/fwlink/?LinkId=234238
 
@@ -46,24 +32,8 @@ namespace PhenoPad
 
             this.InitializeComponent();
             CoreApplication.GetCurrentView().TitleBar.ExtendViewIntoTitleBar = false;
-
             LoadAllNotes();
-
-            //hide_titlebar();
-
             // https://stackoverflow.com/questions/43699256/how-to-use-acrylic-accent-in-windows-10-creators-update/43711413#43711413
-
-
-        }
-
-        private void hide_titlebar() {
-            //draw into the title bar
-            CoreApplication.GetCurrentView().TitleBar.ExtendViewIntoTitleBar = true;
-
-            //remove the solid-colored backgrounds behind the caption controls and system back button
-            ApplicationViewTitleBar titleBar = ApplicationView.GetForCurrentView().TitleBar;
-            titleBar.ButtonBackgroundColor = Colors.Transparent;
-            titleBar.ButtonInactiveBackgroundColor = Colors.Transparent;
         }
 
         #region note loading
@@ -72,7 +42,7 @@ namespace PhenoPad
         {
             reloadNotebookList();
         }
-        public async void reloadNotebookList()
+        public async Task reloadNotebookList()
         {
             notebooks = await FileManager.getSharedFileManager().GetAllNotebookObjects();
             if (notebooks != null)
@@ -87,7 +57,16 @@ namespace PhenoPad
             this.Frame.Navigate(typeof(MainPage));
         }
 
-  
+        private void AudioGridView_ItemClick(object sender, ItemClickEventArgs e)
+        {
+            //Frame rootFrame = Window.Current.Content as Frame;
+            var clickAudio = e.ClickedItem as AudioFile;
+            MediaPlayerElement player = new MediaPlayerElement();
+            player.MediaPlayer.Source = clickAudio.source;
+            player.MediaPlayer.Play();
+
+        }
+
         private void CreateButton_Click(object sender, RoutedEventArgs e)
         {
             LogService.MetroLogger.getSharedLogger().Info("Creating a new note...");
@@ -151,10 +130,24 @@ namespace PhenoPad
             {
                 ImageAnnotationGridView.ItemsSource = new List<ImageAndAnnotation>();
                 ImageAnnotationGridView.Visibility = Visibility.Collapsed;
-
                 ImageAnnotationPlaceHoder.Visibility = Visibility.Visible;
             }
 
+            List<AudioFile> audios = await FileManager.getSharedFileManager().GetAllAudioFileObjects(clickNotebook.id);
+            if (audios.Count > 0)
+            {
+                AudioGridView.Visibility = Visibility.Visible;
+                AudioPlaceHoder.Visibility = Visibility.Collapsed;
+                AudioGridView.ItemsSource = audios;
+            }
+            else
+            {
+                AudioGridView.ItemsSource = new List<AudioFile>();
+                AudioGridView.Visibility = Visibility.Collapsed;
+                AudioPlaceHoder.Visibility = Visibility.Visible;
+            }
+
+            UpdateLayout();
         }
 
         private void OpenButton_Click(object sender, RoutedEventArgs e)
@@ -167,23 +160,22 @@ namespace PhenoPad
             }
         }
 
-        private async void ViewButton_Click(object sender, RoutedEventArgs e) {
+        private void ViewButton_Click(object sender, RoutedEventArgs e) {
 
-            var messageDialog = new MessageDialog("This function is still under development!");
-            messageDialog.Title = "PhenoPad";
-            messageDialog.Commands.Add(new UICommand("OK") { Id = 0 });
+            //var messageDialog = new MessageDialog("This function is still under development!");
+            //messageDialog.Title = "PhenoPad";
+            //messageDialog.Commands.Add(new UICommand("OK") { Id = 0 });
             // Set the command that will be invoked by default
-            messageDialog.DefaultCommandIndex = 0;
+            //messageDialog.DefaultCommandIndex = 0;
             // Set the command to be invoked when escape is pressed
-            messageDialog.CancelCommandIndex = 0;
+            //messageDialog.CancelCommandIndex = 0;
             // Show the message dialog
-            var result = await messageDialog.ShowAsync();
+            //var result = await messageDialog.ShowAsync();
 
-
-            //var notebookId = (sender as Button).Tag;
-            //LogService.MetroLogger.getSharedLogger().Info($"Viewing notebook ID { notebookId }");
-            //if (notebookId != null)
-            //    this.Frame.Navigate(typeof(NoteViewPage), notebookId);
+            var notebookId = (sender as Button).Tag;
+            LogService.MetroLogger.getSharedLogger().Info($"Viewing notebook ID { notebookId }");
+            if (notebookId != null)
+                this.Frame.Navigate(typeof(NoteViewPage), notebookId);
         }
 
         private async void UploadServerButton_Click(object sender, RoutedEventArgs e)
@@ -245,16 +237,15 @@ namespace PhenoPad
         #region navigation handlers
         protected override async void OnNavigatedTo(NavigationEventArgs e)
         {
-            await Dispatcher.RunAsync(CoreDispatcherPriority.High, () =>
+            await Dispatcher.RunAsync(CoreDispatcherPriority.High, async () =>
             {
-                CoreApplication.GetCurrentView().TitleBar.ExtendViewIntoTitleBar = false;
-                //Changes the background color of title bar back to default
-                ApplicationViewTitleBar titleBar = ApplicationView.GetForCurrentView().TitleBar;
-                titleBar.ButtonBackgroundColor = Colors.Black;
-                titleBar.ButtonInactiveBackgroundColor = Colors.Black;
+                await reloadNotebookList();
             });
-            //await Dispatcher.RunAsync(CoreDispatcherPriority.High, hide_titlebar);
-            reloadNotebookList();    
+            CoreApplication.GetCurrentView().TitleBar.ExtendViewIntoTitleBar = false;
+            //Changes the background color of title bar back to default
+            ApplicationViewTitleBar titleBar = ApplicationView.GetForCurrentView().TitleBar;
+            titleBar.ButtonBackgroundColor = Colors.Transparent;
+            titleBar.ButtonInactiveBackgroundColor = Colors.Transparent;
         }
         protected override void OnNavigatedFrom(NavigationEventArgs e)
         {

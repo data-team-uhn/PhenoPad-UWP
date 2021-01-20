@@ -1,52 +1,27 @@
 ﻿using System;
-using Windows.Foundation;
 using Windows.UI.Core;
 using Windows.UI.Input.Inking;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
-using Windows.UI.Xaml.Media;
-using Windows.UI.Xaml.Shapes;
 using PhenoPad.PhenotypeService;
-using Windows.UI.Xaml.Input;
 using System.Collections.Generic;
 using Windows.UI.Popups;
-using System.Collections.ObjectModel;
 using System.Threading.Tasks;
-using Windows.Foundation.Metadata;
-using Windows.UI.ViewManagement;
-using Windows.UI.Input.Inking.Analysis;
-using Windows.UI.Xaml.Navigation;
-using Windows.Media.SpeechRecognition;
-using System.Text;
-using Windows.Globalization;
 using PhenoPad.SpeechService;
-using Windows.Devices.Sensors;
 using Windows.UI;
 using System.Diagnostics;
 using PhenoPad.CustomControl;
-using Windows.Graphics.Display;
-using System.Reflection;
-using System.Linq;
-using Windows.UI.Xaml.Media.Animation;
 using Windows.Storage.Pickers;
 using Windows.Storage.Streams;
-using PhenoPad.WebSocketService;
 using Windows.ApplicationModel.Core;
-using PhenoPad.Styles;
 using Windows.Graphics.Imaging;
 using Windows.UI.Xaml.Media.Imaging;
 using Microsoft.Graphics.Canvas;
 using PhenoPad.FileService;
-using Windows.UI.Xaml.Data;
 using System.ComponentModel;
 using System.Threading;
 using PhenoPad.LogService;
-using PhenoPad.BluetoothService;
-using Windows.System.Threading;
-using System.IO;
 using Windows.Storage;
-using Windows.Media.Editing;
-using System.Runtime.InteropServices.WindowsRuntime;
 
 namespace PhenoPad
 {
@@ -68,9 +43,10 @@ namespace PhenoPad
         public async void InitializeNotebook()
         {
             LoadingPopup.IsOpen = true;
-            //NotifyUser("Creating Notebook...",NotifyType.StatusMessage,3);
             MetroLogger.getSharedLogger().Info("Initialize a new notebook.");
             PhenoMana.clearCache();
+            conversations = new List<TextMessage>();
+            SpeechPage.Current.updateChat();
 
             // Tries to create a file structure for the new notebook.
             {
@@ -97,8 +73,7 @@ namespace PhenoPad
             curPage = aPage;
             curPageIndex = 0;
             PageHost.Content = curPage;
-            addNoteIndex(curPageIndex);
-            setNotePageIndex(curPageIndex);
+            setPageIndexText(0);
 
             currentMode = WritingMode;
             modeTextBlock.Text = WritingMode;
@@ -111,6 +86,7 @@ namespace PhenoPad
             await FileManager.getSharedFileManager().CreateNotePage(notebookObject, curPageIndex.ToString());
             OperationLogger.getOpLogger().SetCurrentNoteID(notebookId);
 
+            ExpandButton.Visibility = Visibility.Collapsed;
             await Task.Delay(TimeSpan.FromSeconds(3));
             LoadingPopup.IsOpen = false;
             curPage.Visibility = Visibility.Visible;
@@ -144,19 +120,34 @@ namespace PhenoPad
                 else
                     ExterMicRadioButton_Checked();
 
-
                 //if (notebookObject != null)
                 noteNameTextBox.Text = notebookObject.name;
 
-                //Gets the possible stored conversation transcripts from XML meta
+                //Gets the possible stored conversation transcripts and audio names from XML meta
                 conversations =  await FileManager.getSharedFileManager().GetSavedTranscriptsFromXML(notebookId);
-                pastchatView.ItemsSource = conversations;
-                SpeechPage.Current.updateChat();
+                if (conversations != null)
+                    Current.conversations = conversations;
+                else
+                    Current.conversations = new List<TextMessage>();
+                //pastchatView.ItemsSource = conversations;
+                List<string> audioNames = await FileManager.getSharedFileManager().GetSavedAudioNamesFromXML(notebookId);
+                if (audioNames != null)
+                    this.SavedAudios = audioNames;
+                Debug.WriteLine("mainpage audionames null" + audioNames == null);
 
+                SpeechPage.Current.updateChat();
                 //Gets all saved phenotypes from XML meta
                 List<Phenotype> phenos = await FileManager.getSharedFileManager().GetSavedPhenotypeObjectsFromXML(notebookId);
                 if (phenos != null && phenos.Count > 0)
                     PhenotypeManager.getSharedPhenotypeManager().addPhenotypesFromFile(phenos);
+
+                //Gets all phenotype candidates from XML meta
+                bool init_analyze = false;
+                List<Phenotype> phenocand = await FileManager.getSharedFileManager().GetSavedPhenotypeObjectsFromXML(notebookId,NoteFileType.PhenotypeCandidates);
+                if (phenocand != null && phenocand.Count > 0)
+                    PhenotypeManager.getSharedPhenotypeManager().addPhenotypeCandidateFromFile(phenocand);
+                else if (phenocand == null)
+                    init_analyze = true;
 
                 // Process loading note pages one by one
                 notePages = new List<NotePageControl>();
@@ -174,18 +165,14 @@ namespace PhenoPad
                     aPage.setTextNoteEditBox(text);
                     //check if there's an EHR file in the page
                     StorageFile ehr = await FileManager.getSharedFileManager().GetNoteFileNotCreate(notebookId, i.ToString(), NoteFileType.EHR);
-                    if (ehr == null) {
-                        Debug.WriteLine("EHR null");
-                    }
-                    else
-                    {
+                    if (ehr != null) {
                         has_EHR = true;
                         await aPage.SwitchToEHR(ehr);
                     }
 
-                    //load strokes
+                    //load strokes and parse strokes to line to dictionary
                     bool result = await FileManager.getSharedFileManager().LoadNotePageStroke(notebookId, pageIds[i], aPage);
-                    addNoteIndex(i);
+                    aPage.InitAnalyzeStrokes();
                     
                     //load image/drawing addins
                     List<ImageAndAnnotation> imageAndAnno = await FileManager.getSharedFileManager().GetImgageAndAnnotationObjectFromXML(notebookId, pageIds[i]);
@@ -193,24 +180,37 @@ namespace PhenoPad
                     }
                     else
                     {
-                        //shows add-in icons into side bar
-                        aPage.showAddIn(imageAndAnno);
                         //loop to add actual add-in to canvas but hides it depending on its inDock value
                         foreach (var ia in imageAndAnno)
                             aPage.loadAddInControl(ia);
+                    }
+
+                    List<RecognizedPhrases> recogPhrases = await FileManager.getSharedFileManager().GetRecognizedPhraseFromXML(notebookId, pageIds[i]);
+                    if (recogPhrases != null && recogPhrases.Count > 0)
+                        aPage.loadRecognizedPhrases(recogPhrases);
+
+                    //if no saved phenotype candidates, initial analyze on each page 
+                    if (init_analyze)
+                        aPage.initialAnalyze();
+                    else {
+                        aPage.initialAnalyzeNoPhenotype();
                     }
                 }
                 curPage = notePages[0];
                 curPageIndex = 0;
                 PageHost.Content = curPage;
-                setNotePageIndex(curPageIndex);
+                setPageIndexText(curPageIndex);
+                //setNotePageIndex(curPageIndex);
+                //shows add-in icons into side bar
+                var addins = await curPage.GetAllAddInObjects();
+                showAddIn(addins);
+
 
                 //setting initial page to first page and auto-start analyzing strokes
                 if (!has_EHR)
                 {
                     //initializing for regular note page
                     inkCanvas = notePages[0].inkCan;
-                    curPage.initialAnalyze();
                 }
                 else {
                     //current implementation assumes if there's ehr, it must be on first page
@@ -219,8 +219,12 @@ namespace PhenoPad
                     //curPage.ehrPage.SlideCommentsToSide();
                 }
                 OperationLogger.getOpLogger().SetCurrentNoteID(notebookId);
+                var count = PhenoMana.ShowPhenoCandAtPage(curPageIndex);
+                if (count <= 0)
+                    CloseCandidate();
+
                 MainPageInkBar.TargetInkCanvas = inkCanvas;
-                await Task.Delay(TimeSpan.FromSeconds(3));
+                await Task.Delay(TimeSpan.FromSeconds(2));
                 LoadingPopup.IsOpen = false;
                 curPage.Visibility = Visibility.Visible;
             }
@@ -237,7 +241,10 @@ namespace PhenoPad
             }
 
         }
-
+        
+        /// <summary>
+        /// Initializes the EHR Text file from a picked .txt file
+        /// </summary>
         public async void InitializeEHRNote(StorageFile file)
         {
             PhenoMana.clearCache();
@@ -265,13 +272,19 @@ namespace PhenoPad
             notePages = new List<NotePageControl>();
             pageIndexButtons = new List<Button>();
 
+            //initializes audio microphone service
+            bool cur_mic = ConfigService.ConfigService.getConfigService().IfUseExternalMicrophone();
+            if (cur_mic == false)
+                SurfaceMicRadioButton_Checked();
+            else
+                ExterMicRadioButton_Checked();
+
             NotePageControl aPage = new NotePageControl(notebookId, "0");
             notePages.Add(aPage);
             curPage = aPage;
             curPageIndex = 0;
             PageHost.Content = curPage;
-            addNoteIndex(curPageIndex);
-            setNotePageIndex(curPageIndex);
+            setPageIndexText(0);
             // create file sturcture for this page
             await FileManager.getSharedFileManager().CreateNotePage(notebookObject, curPageIndex.ToString());
 
@@ -279,6 +292,8 @@ namespace PhenoPad
             inkCanvas = curPage.ehrPage.annotations;
             MainPageInkBar.TargetInkCanvas = inkCanvas;
             OperationLogger.getOpLogger().SetCurrentNoteID(notebookId);
+            var addins = await curPage.GetAllAddInObjects();
+            showAddIn(addins);
 
             currentMode = WritingMode;
             modeTextBlock.Text = WritingMode;
@@ -319,9 +334,7 @@ namespace PhenoPad
                 foreach (var page in notePages)
                 {
                     await CoreApplication.MainView.CoreWindow.Dispatcher.RunAsync(
-                        CoreDispatcherPriority.Normal,
-                        async () =>
-                        {
+                        CoreDispatcherPriority.Normal, async () => {
                             flag = await page.SaveToDisk();
                             if (!flag)
                             {
@@ -331,15 +344,14 @@ namespace PhenoPad
                         }
                     );
                 }
+                //save the transcripts from past speeches;
+                await Current.SaveCurrentConversationsToDisk();
                 // collected phenotypes
                 result2 = await FileManager.getSharedFileManager().saveCollectedPhenotypesToFile(notebookId);
-                if (!result2)
-                    MetroLogger.getSharedLogger().Error($"Failed to save collected phenotypes");
+                result2 &= await FileManager.getSharedFileManager().SaveAudioNamesToXML(notebookId, SavedAudios);
 
                 if (! (pgResult && result2))
                     MetroLogger.getSharedLogger().Info($"Some parts of notebook {notebookId} failed to save.");
-
-
             }
             catch (NullReferenceException)
             {
@@ -605,7 +617,7 @@ namespace PhenoPad
         /// </summary>
         public async void updatePastConversation() {
             conversations = await FileManager.getSharedFileManager().GetSavedTranscriptsFromXML(notebookId);
-            pastchatView.ItemsSource = conversations;
+            //pastchatView.ItemsSource = conversations;
             SpeechPage.Current.updateChat();
         }
     }

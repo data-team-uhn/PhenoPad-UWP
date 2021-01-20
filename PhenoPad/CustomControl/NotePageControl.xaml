@@ -3,13 +3,11 @@
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-    
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"  
     xmlns:customcontrol="using:PhenoPad.CustomControl"
     xmlns:phenotypeservice="using:PhenoPad.PhenotypeService"
-    xmlns:fileservice="using:PhenoPad.FileService"
     xmlns:local="using:PhenoPad.CustomControl"
-    xmlns:controls="using:Microsoft.Toolkit.Uwp.UI.Controls"
+    xmlns:Control="using:Microsoft.Toolkit.Uwp.UI.Controls"
     mc:Ignorable="d"
     VerticalAlignment="Stretch" 
     HorizontalAlignment="Stretch"
@@ -30,34 +28,35 @@
                                  By="45"
                                  Duration="0:0:0.01" />
             </Storyboard>
-            
-            <Flyout x:Key="PhenotypeSelectionFlyout" Placement="Bottom"  Closed="PhenotypeSelectionFlyoutClosed">
-            <StackPanel>
-                <TextBox Name="recognizedResultTextBlock" KeyDown="recognizedResultTextBlock_KeyDown" 
-                         GotFocus ="recognizedResultTextBlock_GotFocus" SelectionChanged="recognizedResultTextBlock_SelectionChanged"></TextBox>
 
-                <!--
-                <ListView x:Name="recognizedResultListView" ItemsSource="{x:Bind recognizedText}" 
-                          ScrollViewer.VerticalScrollMode="Disabled" 
-                          ScrollViewer.HorizontalScrollMode="Enabled" 
-                          ScrollViewer.HorizontalScrollBarVisibility="Auto" 
-                          ScrollViewer.IsHorizontalRailEnabled="True">
-                    <ListView.ItemTemplate>
-                        <DataTemplate x:DataType="hwrservice:HWRRecognizedText">
-                            <ComboBox SelectedValue="{x:Bind selectedCandidate, Mode=TwoWay}"
-                                      SelectedValuePath="selectedCandidate"
-                                      ItemsSource="{x:Bind candidateList}" />
-                        </DataTemplate>
-                    </ListView.ItemTemplate>
-                </ListView>
-                -->
-                <!--
-                <ListView x:Name="recognizedCandidateListView" ItemsSource="{x:Bind recognizedText}" Margin="0, 10">
-                    <ListView.ItemTemplate>
-                        <DataTemplate x:DataType="hwrservice:HWRRecognizedText">
-                -->
+            <Flyout x:Key="PhenotypeSelectionFlyout" Placement="Bottom" 
+                    OverlayInputPassThroughElement="{Binding ElementName=PopupDeleteButton}" 
+                    Closed="PhenotypeSelectionFlyoutClosed">
+                <Flyout.FlyoutPresenterStyle>
+                    <Style TargetType="FlyoutPresenter">
+                        <Setter Property="ScrollViewer.ZoomMode" Value="Disabled"/>
+                        <Setter Property="Width" Value="{Binding ElementName=recognizedPhenoListView, Path=ActualWidth, Mode=OneWay}"/>
+                    </Style>
+                </Flyout.FlyoutPresenterStyle>
                 
-                <ListView x:Name="candidateListView" Visibility="Collapsed" 
+                <StackPanel>
+
+                    <RelativePanel  MinWidth="60" Padding="3" HorizontalAlignment="Stretch">
+
+                            <Button Foreground="PaleVioletRed" Style="{StaticResource ButtonStyle1}"
+                                    ToolTipService.ToolTip="Delete strokes"
+                                    Click="PopupDeleteButton_Click" Background="WhiteSmoke" 
+                                    Padding="0" RelativePanel.AlignLeftWithPanel="True">
+                                <SymbolIcon Symbol="Delete" Height="30" Width="30"/>
+                            </Button>
+                            
+                    </RelativePanel>
+
+                    <TextBox Name="recognizedResultTextBlock" KeyDown="recognizedResultTextBlock_KeyDown" 
+                         IsReadOnly="True" Width="auto"
+                         GotFocus ="recognizedResultTextBlock_GotFocus" SelectionChanged="recognizedResultTextBlock_SelectionChanged"/>
+
+                    <ListView x:Name="candidateListView" Visibility="Collapsed" 
                           Margin="0, 10" ScrollViewer.VerticalScrollMode="Disabled" 
                           ScrollViewer.HorizontalScrollMode="Enabled"
                           ScrollViewer.HorizontalScrollBarVisibility="Auto" 
@@ -65,7 +64,7 @@
                           >
                     <ListView.ItemsPanel>
                         <ItemsPanelTemplate>
-                            <StackPanel Orientation="Horizontal"  Padding="0"/>
+                            <StackPanel Orientation="Horizontal" Width="auto"  Padding="0"/>
                         </ItemsPanelTemplate>
                     </ListView.ItemsPanel>
                     <ListView.ItemTemplate>
@@ -83,33 +82,18 @@
                             <Setter Property="Padding" Value="0,0,0,0" />
                             <Setter Property="MinHeight" Value="20" />
                             <Setter Property="MinWidth" Value="20" />
-                        </Style>
+                            </Style>
                     </ListView.ItemContainerStyle>
                 </ListView>
-                <!--
-                        </DataTemplate>
-                    </ListView.ItemTemplate>
-                    <ListView.ItemContainerStyle>
-                        <Style TargetType="ListViewItem">
-                            <Setter Property="HorizontalContentAlignment" Value="Left" />
-                            <Setter Property="VerticalContentAlignment" Value="Center" />
-                            <Setter Property="Margin" Value="0,0,0,0" />
-                            <Setter Property="Padding" Value="0,0,0,0" />
-                            <Setter Property="MinHeight" Value="20" />
-                            <Setter Property="MinWidth" Value="20" />
-                        </Style>
-                    </ListView.ItemContainerStyle>
-                </ListView>
-                -->
                 <RelativePanel  Height="300">
-                    <ListView x:Name="recognizedPhenoListView"  Height="300" HorizontalAlignment="Stretch" Visibility="Collapsed">
+                    <ListView x:Name="recognizedPhenoListView" Width="auto" Height="auto" HorizontalAlignment="Stretch" Visibility="Collapsed">
                         <ListView.ItemTemplate>
                             <DataTemplate x:DataType="phenotypeservice:Phenotype">
-                                <local:PhenotypeControl phenotypeName="{x:Bind name}" 
+                                    <local:PhenotypeControl phenotypeName="{x:Bind name}" 
                                                         phenotypeId="{x:Bind hpId}" 
                                                         phenotypeState="{x:Bind state}" 
-                                                        sourceType="Notes"></local:PhenotypeControl>
-                            </DataTemplate>
+                                                        sourceType="Notes"/>
+                                </DataTemplate>
                         </ListView.ItemTemplate>
                         <ListView.ItemContainerStyle>
                             <Style TargetType="ListViewItem">
@@ -119,7 +103,7 @@
                                 <Setter Property="Padding" Value="0,0,0,0" />
                                 <Setter Property="MinHeight" Value="20" />
                                 <Setter Property="MinWidth" Value="200" />
-                                    <Setter Property="MaxWidth" Value="400" />
+                                    <Setter Property="Width" Value="auto" />
                                 </Style>
                         </ListView.ItemContainerStyle>
                     </ListView>
@@ -129,7 +113,7 @@
                 
             </Flyout>
             
-            <Flyout x:Key="ChangeAlternativeFlyout" Placement="Top">
+            <Flyout x:Name="alter_flyout" x:Key="ChangeAlternativeFlyout" Placement="Top">
                 <StackPanel Padding="0" Margin="3" Width="auto">
                     <ListView x:Name="alternativeListView" IsItemClickEnabled="True"
                               ItemClick="alternativeListView_ItemClick" Width="auto">
@@ -146,63 +130,9 @@
                 </StackPanel>
             </Flyout>
 
-            <Storyboard x:Name="addinHideAnimation">
-                <DoubleAnimation Storyboard.TargetName="slide" 
-                                 Storyboard.TargetProperty="X"
-                                 By="250"  
-                                 Duration="0:0:0.1">
-                    <DoubleAnimation.EasingFunction>
-                        <CircleEase EasingMode="EaseOut" />
-                    </DoubleAnimation.EasingFunction>
-                </DoubleAnimation>
-                <DoubleAnimation Storyboard.TargetName="Buttonslide" 
-                                 Storyboard.TargetProperty="X"
-                                 By="250"  
-                                 Duration="0:0:0.1">
-                    <DoubleAnimation.EasingFunction>
-                        <CircleEase EasingMode="EaseOut" />
-                    </DoubleAnimation.EasingFunction>
-                </DoubleAnimation>
-                <DoubleAnimation Storyboard.TargetName="textslide" 
-                                 Storyboard.TargetProperty="X"
-                                 By="250"  
-                                 Duration="0:0:0.1">
-                    <DoubleAnimation.EasingFunction>
-                        <CircleEase EasingMode="EaseOut" />
-                    </DoubleAnimation.EasingFunction>
-                </DoubleAnimation>
-            </Storyboard>
-            
-            <Storyboard x:Name="addinShowAnimation">
-                <DoubleAnimation Storyboard.TargetName="slide" 
-                                 Storyboard.TargetProperty="X"
-                                 By="-250"  
-                                 Duration="0:0:0.1">
-                    <DoubleAnimation.EasingFunction>
-                        <CircleEase EasingMode="EaseIn" />
-                    </DoubleAnimation.EasingFunction>
-                </DoubleAnimation>
-                <DoubleAnimation Storyboard.TargetName="Buttonslide" 
-                                 Storyboard.TargetProperty="X"
-                                 By="-250"  
-                                 Duration="0:0:0.1">
-                    <DoubleAnimation.EasingFunction>
-                        <CircleEase EasingMode="EaseIn" />
-                    </DoubleAnimation.EasingFunction>
-                </DoubleAnimation>
-                <DoubleAnimation Storyboard.TargetName="textslide" 
-                                 Storyboard.TargetProperty="X"
-                                 By="-250"  
-                                 Duration="0:0:0.1">
-                    <DoubleAnimation.EasingFunction>
-                        <CircleEase EasingMode="EaseIn" />
-                    </DoubleAnimation.EasingFunction>
-                </DoubleAnimation>
-            </Storyboard>
-
-
         </ResourceDictionary>
     </UserControl.Resources>
+    
     <Grid Name="rootGrid">
         <Grid x:Name="NoteGrid" >
             <Grid.ColumnDefinitions>
@@ -218,15 +148,12 @@
                           ViewChanged="ScrollView_ViewChanged" 
                           VerticalScrollBarVisibility="Hidden" >
                 <Grid Padding="0 100 0 0">
-                <Canvas  Height="{x:Bind PAGE_HEIGHT}" Width="{x:Bind PAGE_WIDTH}" Name="sideCanvas">
-
-                
-                </Canvas>
+                    <Canvas  Height="{x:Bind PAGE_HEIGHT}" Width="{x:Bind PAGE_WIDTH}" Name="sideCanvas"/>
                 </Grid>
             </ScrollViewer>
-        
+            <!--scroll viewer for note mode-->
             <ScrollViewer Grid.Column="1"  x:Name="scrollViewer" 
-                RelativePanel.AlignLeftWithPanel="True"
+                RelativePanel.AlignLeftWithPanel="True"               
                 ZoomMode="Enabled" 
                 MinZoomFactor="0.3" 
                 VerticalScrollMode="Enabled" 
@@ -234,18 +161,16 @@
                 HorizontalScrollMode="Enabled" 
                 HorizontalScrollBarVisibility="Auto"
                 ViewChanged="ScrollView_ViewChanged">
-                
-                <Grid x:Name="outputGrid" Margin="0 10 0 0" Padding="0 100 0 0" 
+
+                <!--Note page grid-->
+                <Grid x:Name="outputGrid" Margin="0 30 0 30" Padding="0 100 0 0" 
                       Background="{ThemeResource SystemControlBackgroundChromeWhiteBrush}" 
                       Height="{x:Bind PAGE_HEIGHT}" Width="{x:Bind PAGE_WIDTH}">
-                    <!-- Inking area -->
 
+                    <!-- Note taking ink canvases -->
                     <Canvas x:Name="backgroundCanvas" />
-
-                    <!-- Note taking ink canvas -->
                     <InkCanvas  x:Name="inkCanvas" />
-
-                    <Grid x:Name="textEditGrid" Visibility="Visible">
+                    <Grid x:Name="textEditGrid" Visibility="Collapsed">
                         <Grid.RowDefinitions>
                             <RowDefinition Height="*"/>
                         </Grid.RowDefinitions>
@@ -253,34 +178,33 @@
                             <ColumnDefinition Width="*"/>
                         </Grid.ColumnDefinitions>
 
-                        <StackPanel x:Name="RecognizedNoteStackPanel" Orientation="Horizontal" Spacing="10" Margin="0 10 0 0" Canvas.ZIndex="999">
-                            <TextBlock x:Name="RecognizedText"/>
-                        </StackPanel>
-
                         <RichEditBox Style="{StaticResource MyRichEditBoxStyle}" Background="Transparent" 
                                      x:Name="textNoteEditBox" TextChanged="TextNoteEdit_TextChanged" 
                                      IsEnabled="False"
-                                     BorderThickness="0">
-                        </RichEditBox>
+                                     BorderThickness="0"/>
+
                     </Grid>
 
-                    <Canvas x:Name ="PhraseControlCanvas"/>
 
-
+                    <!--Canvas for adding recognized textblocks-->
+                    <Canvas x:Name="recognizedCanvas" Visibility="Collapsed"/>
                     <!-- pop up after selection-->
                     <Canvas x:Name="selectionCanvas">
-                        <RelativePanel x:Name="PopupCommandBar" MinWidth="60" Height="30"  Visibility="Collapsed">
-                            <Button Foreground="PaleVioletRed" Click="PopupDeleteButton_Click" Background="WhiteSmoke" Padding="0" RelativePanel.AlignLeftWithPanel="True">
+                        <!--<RelativePanel x:Name="PopupCommandBar" MinWidth="60" Height="30"  Visibility="Collapsed">
+
+                            <Button Foreground="PaleVioletRed" 
+                                    Click="PopupDeleteButton_Click" Background="WhiteSmoke" 
+                                    Padding="0" RelativePanel.AlignLeftWithPanel="True">
                                 <SymbolIcon Symbol="Delete" Height="30" Width="30"/>
                             </Button>
-                            <!--
-                            <Button Background="WhiteSmoke" Padding="0" RelativePanel.AlignRightWithPanel="True"  Click="MoreSymbolIcon_Click">
-                                <SymbolIcon Symbol="More" Height="30" Width="30"></SymbolIcon>
-                            </Button>
-                            -->
-                        </RelativePanel>
-                        <RelativePanel x:Name="recognizedPhenoBriefPanel" Height="200" Visibility="Collapsed"  Background="WhiteSmoke" BorderThickness="1" BorderBrush="Gray">
-                            <ListView x:Name="recognizedPhenoBriefListView" Height="200" HorizontalAlignment="Stretch" Visibility="Collapsed">
+                            
+                        </RelativePanel>-->
+
+                        <RelativePanel x:Name="recognizedPhenoBriefPanel" Height="200" Visibility="Collapsed"  
+                                       Background="WhiteSmoke" BorderThickness="1" BorderBrush="Gray">
+                            
+                            <ListView x:Name="recognizedPhenoBriefListView" Height="200" HorizontalAlignment="Stretch" 
+                                      Visibility="Collapsed">
                                 <ListView.ItemTemplate>
                                     <DataTemplate x:DataType="phenotypeservice:Phenotype">
                                         <local:PhenotypeControl Padding="0" phenotypeName="{x:Bind name}" phenotypeId="{x:Bind hpId}" phenotypeState="{x:Bind state}" sourceType="Notes"></local:PhenotypeControl>
@@ -296,27 +220,23 @@
                                     </Style>
                                 </ListView.ItemContainerStyle>
                             </ListView>
-                            <ProgressRing x:Name="breifPhenoProgressBar" Height="100" Width="200"  IsActive="True" RelativePanel.AlignHorizontalCenterWithPanel="True" RelativePanel.AlignVerticalCenterWithPanel="True"></ProgressRing>
+
+                            <ProgressRing x:Name="breifPhenoProgressBar" Height="100" Width="200"  
+                                          IsActive="True" RelativePanel.AlignHorizontalCenterWithPanel="True" 
+                                          RelativePanel.AlignVerticalCenterWithPanel="True"/>
+                                                       
                         </RelativePanel>
 
-                        <Rectangle StrokeDashArray="2 2"  Name="selectionRectangle" Stroke="DarkBlue" StrokeThickness="2"></Rectangle>
+                        <Rectangle StrokeDashArray="2 2"  Name="selectionRectangle" Stroke="DarkBlue" StrokeThickness="2"/>
                     </Canvas>
 
                     <!-- Add in control panel -->
-                    <Canvas x:Name="userControlCanvas"/>
-
-
-                    <Canvas x:Name="recognizedTextCanvas"/>
+                    <Canvas x:Name="userControlCanvas" x:FieldModifier="public"/>
 
                     <!-- Current line result -->
-                    <Canvas >
-                        <Grid Name="curLineResultPanel" Visibility="Collapsed" Background="White" 
-                              BorderBrush="DarkGray" >
-                            <Grid.Resources>
-
-                            </Grid.Resources>
-
-                            <Grid x:Name="curWordPhenoControlGrid" Height="40" HorizontalAlignment="Right" 
+                    <Canvas>
+                        <Grid Name="curLineResultPanel" Visibility="Collapsed" HorizontalAlignment="Right">
+                            <Grid x:Name="curWordPhenoControlGrid" Height="45" HorizontalAlignment="Left" 
                                   Background="WhiteSmoke"  Padding="5" BorderBrush="LightGray" BorderThickness="0" 
                                   CornerRadius="10">
                                 <Grid.RenderTransform>
@@ -328,7 +248,8 @@
                                           ScrollViewer.HorizontalScrollBarVisibility="Hidden"
                                           ScrollViewer.VerticalScrollBarVisibility="Hidden"
                                           ScrollViewer.IsHorizontalRailEnabled="True"
-                                          x:Name="curLineCandidatePhenoListView" ItemsSource="{x:Bind curLineCandidatePheno, Mode=OneWay}">
+                                          x:Name="curLineCandidatePhenoListView" 
+                                          ItemsSource="{x:Bind curLineCandidatePheno, Mode=OneWay}">
                                     <ListView.ItemsPanel>
                                         <ItemsPanelTemplate>
                                             <VirtualizingStackPanel  Orientation="Horizontal"/>
@@ -391,12 +312,11 @@
                             </Grid>
 
                             <StackPanel Orientation="Horizontal" Background="WhiteSmoke" CornerRadius="10" 
-                                        BorderThickness="1" BorderBrush="DarkGray">
+                                        BorderThickness="1" BorderBrush="DarkGray" HorizontalAlignment="Stretch">
                                 <!-- recongtion result of current line -->
-                                <ProgressRing x:Name="loading" IsActive="True" Margin="10 0 10 0" Visibility="Collapsed"/>
-                                <StackPanel Name="curLineWordsStackPanel" Orientation="Horizontal" Spacing="5" HorizontalAlignment="Left"
-                                            Height="45" Padding="5 0 5 0" />
-
+                                <StackPanel Name="curLineWordsStackPanel" Orientation="Horizontal" Visibility="Visible"
+                                            Spacing="5" HorizontalAlignment="Right"
+                                            MinHeight="45" Padding="10 0 10 0" />
                                 <ListView Visibility="Collapsed" Padding="5 0 0 0" Height="40"
                                   ScrollViewer.HorizontalScrollMode="Enabled"
                                   ScrollViewer.VerticalScrollMode="Disabled"
@@ -412,7 +332,7 @@
                                     </ListView.ItemsPanel>
                                     <ListView.ItemTemplate>
                                         <DataTemplate >
-                                            <TextBlock Text="{Binding}" VerticalAlignment="Center"></TextBlock>
+                                            <TextBlock Text="{Binding}" VerticalAlignment="Center"/>
                                         </DataTemplate>
                                     </ListView.ItemTemplate>
                                     <ListView.ItemContainerStyle>
@@ -426,127 +346,28 @@
                                         </Style>
                                     </ListView.ItemContainerStyle>
                                 </ListView>
-                                <Button Background="WhiteSmoke" Foreground="PaleVioletRed" Width="{x:Bind LINE_HEIGHT}" 
-                                        Height="45" Click="curLineResultButtonClick" Style="{StaticResource ButtonStyle1}"
-                                        RelativePanel.AlignRightWithPanel="True">
-                                    <SymbolIcon Symbol="Clear"/>
-                                </Button>
                             </StackPanel>
                         </Grid>
                     </Canvas>
+                    <Canvas x:Name="recognizedTextCanvas"/>
+
                 </Grid>
             </ScrollViewer>
-
+            <!--scroll viewer for EHR Text mode-->
             <ScrollViewer Grid.Column="1" x:Name="EHRScrollViewer" x:FieldModifier="public" Visibility="Collapsed"
                         ZoomMode="Enabled" 
                         MinZoomFactor="0.3"    
-                          MaxZoomFactor="2"
+                        MaxZoomFactor="2"
                         VerticalScrollMode="Enabled" 
                         VerticalScrollBarVisibility="Hidden" 
                         HorizontalScrollMode="Enabled" 
                         HorizontalScrollBarVisibility="Hidden"
                         >
-
+                <!--for EHR side addin controls-->
                 <Grid x:Name="EHROutputGrid">
-
                     <Canvas x:Name="addinCanvasEHR" x:FieldModifier="public" Canvas.ZIndex="100" />
                 </Grid>
             </ScrollViewer>
-
-
-            <!--Sidebar dock to show minimized add in controls-->
-            <Grid x:Name="addinBase" Grid.Column="1"  x:FieldModifier="public"
-                Visibility="Visible" Padding="5" Width="250"
-                Background="{StaticResource TITLE_BAR_WHITE}" HorizontalAlignment="Right"
-                
-                VerticalAlignment="Stretch">
-
-                <Grid.RenderTransform>
-                    <TranslateTransform x:Name="slide" X="250"/>
-                </Grid.RenderTransform>
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="*"/>
-
-                    </Grid.RowDefinitions>
-
-                <ListView Name="addinlist" ScrollViewer.VerticalScrollBarVisibility="Hidden"
-                        Margin="0" Grid.Row="0">
-                    <ListView.Header>
-                        <controls:ScrollHeader Mode="Sticky" TargetListViewBase="{x:Bind addinlist}">
-                                <TextBlock  Foreground="{StaticResource WORD_DARKER}" Text="Collection" FontSize="24" 
-                                            FontWeight="SemiBold" Padding="20 5 5 5"/>
-                        </controls:ScrollHeader>
-                    </ListView.Header>
-
-                    <ListView.ItemTemplate>
-                        <DataTemplate x:DataType="fileservice:ImageAndAnnotation">
-                            <Button Click="addInIcon_Click" HorizontalAlignment="Center" Width="200" Margin="0" Padding="0"
-                                Style="{StaticResource ButtonStyleaddin}">
-                                <Viewbox Name="AddInIcon" Stretch="Uniform" CanDrag="False">
-                                    <customcontrol:AddInControl name="{x:Bind name}" notebookId="{x:Bind notebookId}" 
-                                                        viewOnly="True" CommentID="{x:Bind commentID}"
-                                                        pageId="{x:Bind pageId}" />
-                                </Viewbox>
-                            </Button>
-                        </DataTemplate>
-                    </ListView.ItemTemplate>
-                    <ListView.ItemContainerStyle>
-                        <Style TargetType="ListViewItem">
-                            <Setter Property="Padding" Value="0"/>
-                            <Setter Property="Margin" Value="10"/>
-                            <Setter Property="HorizontalAlignment" Value="Center" />
-                            <!--<Setter Property="Template">
-                            <Setter.Value>
-                                <ControlTemplate>
-                                    <ContentPresenter/>
-                                </ControlTemplate>
-                            </Setter.Value>
-                        </Setter>-->
-                        </Style>
-                    </ListView.ItemContainerStyle>
-                </ListView>
-            </Grid>
-        
-            <RelativePanel Grid.Column="1" HorizontalAlignment="Right" VerticalAlignment="Stretch" Visibility="Visible">
-
-                <Button 
-                Name="addinButton"
-                Grid.Column="1"
-                Visibility="Visible"
-                RelativePanel.AlignVerticalCenterWithPanel="True"
-                RelativePanel.AlignRightWithPanel="True"
-                Style="{StaticResource ButtonStyle1}"
-                ToolTipService.ToolTip="Toggle Add-In Box"
-                Click="AddinsButton_Click">
-                    <Button.Template>
-                        <ControlTemplate>
-                            <Border CornerRadius="20 0 0 20" Background="{StaticResource TITLE_BAR_WHITE}">
-                                <SymbolIcon Symbol="Pictures" Margin="10"/>
-                            </Border>
-                        </ControlTemplate>
-                    </Button.Template>
-                    <Button.RenderTransform>
-                        <TranslateTransform x:Name="Buttonslide" X="0"/>
-                    </Button.RenderTransform>
-                </Button>
-            </RelativePanel>
-
-            <Grid x:Name="badgeGrid" Grid.Column="1" HorizontalAlignment="Right" VerticalAlignment="Center" Visibility="Collapsed">
-                <Border CornerRadius="14" BorderThickness="2.5" BorderBrush="{StaticResource TITLE_BAR_WHITE}">
-                    <Grid Background="White" Width="20" Height="20"
-                          >
-                        <TextBlock Text="" Name="NumIcon" VerticalAlignment="Center" HorizontalAlignment="Center"                    
-                               FontSize="12"/>
-                    </Grid>
-                </Border>
-                <Grid.RenderTransform>
-                    <TranslateTransform x:Name="textslide" Y="-20" X="-20"/>
-                </Grid.RenderTransform>
-            </Grid>
-
-
         </Grid>
-        
-
     </Grid>
 </UserControl>

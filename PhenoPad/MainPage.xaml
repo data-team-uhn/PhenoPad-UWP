@@ -1,16 +1,4 @@
-﻿<!--
-//*********************************************************
-//
-// Copyright (c) Microsoft. All rights reserved.
-// This code is licensed under the MIT License (MIT).
-// THIS CODE IS PROVIDED *AS IS* WITHOUT WARRANTY OF
-// ANY KIND, EITHER EXPRESS OR IMPLIED, INCLUDING ANY
-// IMPLIED WARRANTIES OF FITNESS FOR A PARTICULAR this.Frame.Navigate(typeof(MainPage));
-// PURPOSE, MERCHANTABILITY, OR NON-INFRINGEMENT.
-//
-//*********************************************************
--->
-<Page
+﻿<Page
     x:Class="PhenoPad.MainPage"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
@@ -19,25 +7,138 @@
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:phenotypeservice="using:PhenoPad.PhenotypeService"
     xmlns:customcontrol="using:PhenoPad.CustomControl"
-    xmlns:photovideoservice="using:PhenoPad.PhotoVideoService"
-    xmlns:styles="using:PhenoPad.Styles"
     xmlns:controls="using:Microsoft.Toolkit.Uwp.UI.Controls"
+    xmlns:fileservice="using:PhenoPad.FileService"
     mc:Ignorable="d"
     Loaded="Page_Loaded"
     NavigationCacheMode="Required">
 
     <Page.Resources>
+        <Flyout x:Name="AllPagesPanel" Placement="Left" 
+                ScrollViewer.HorizontalScrollMode="Disabled" 
+                ScrollViewer.VerticalScrollMode="Disabled">
+
+            <GridView Name="NoteGridView" Padding="10" VariableSizedWrapGrid.ColumnSpan="1" MaxWidth="500"
+                          ItemClick="AllPageItem_Click"
+                          IsItemClickEnabled="True"
+                          HorizontalAlignment="Center">
+
+                <GridView.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <ItemsWrapGrid FlowDirection="LeftToRight" MaximumRowsOrColumns="3"  Orientation="Horizontal" />
+                    </ItemsPanelTemplate>
+                </GridView.ItemsPanel>
+
+                <GridView.ItemTemplate>
+                    <DataTemplate x:DataType="fileservice:NotePage">
+                        <Grid Padding="5" Margin="5" CornerRadius="10"
+                                      BorderThickness="1" Width="150" Height="200" Background="White"
+                                      BorderBrush="LightGray">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="*"></RowDefinition>
+
+                                <RowDefinition Height="8*"></RowDefinition>
+                            </Grid.RowDefinitions>
+                            <Border Grid.Row="0" >
+                                <TextBlock Text="{x:Bind name}" FontSize="16" Foreground="{StaticResource WORD_DARK}"/>
+                            </Border>
+                            <Border  Grid.Row="1">
+                                <BitmapIcon UriSource="{x:Bind strokeUri}"/>
+                            </Border>
+                            <Border  Grid.Row="1">
+                                <TextBlock Padding="10" TextWrapping="WrapWholeWords" FontSize="3" Text="{x:Bind EHR}"/>
+                            </Border>
+                        </Grid>
+                    </DataTemplate>
+                </GridView.ItemTemplate>
+            </GridView>
+            <!--</Grid>-->
+        </Flyout>
+
         <!-- Don't need to convert toggle status
         <local:ToggleValueConverter x:Key="toggleValueConverter" />
         -->
         <local:BackgroundColorConverter x:Key="bcConverter" />
         <local:IntervalDisplayConverter x:Key="intervalConverter" />
+        
         <Storyboard x:Name="StatusBorderEnterStoryboard">
             <FadeInThemeAnimation Duration="0:0:0.6" Storyboard.TargetName="StatusBorder" />
         </Storyboard>
+        
         <Storyboard x:Name="StatusBorderExitStoryboard">
             <FadeOutThemeAnimation Duration="0:0:0.6" Storyboard.TargetName="StatusBorder" />
         </Storyboard>
+        
+        <Storyboard x:Name="addinHideAnimation">
+            <DoubleAnimation Storyboard.TargetName="slide" 
+                                 Storyboard.TargetProperty="X"
+                                 By="250"  
+                                 Duration="0:0:0.1">
+                <DoubleAnimation.EasingFunction>
+                    <CircleEase EasingMode="EaseOut" />
+                </DoubleAnimation.EasingFunction>
+            </DoubleAnimation>
+            <DoubleAnimation Storyboard.TargetName="Buttonslide" 
+                                 Storyboard.TargetProperty="X"
+                                 By="250"  
+                                 Duration="0:0:0.1">
+                <DoubleAnimation.EasingFunction>
+                    <CircleEase EasingMode="EaseOut" />
+                </DoubleAnimation.EasingFunction>
+            </DoubleAnimation>
+            <DoubleAnimation Storyboard.TargetName="textslide" 
+                                 Storyboard.TargetProperty="X"
+                                 By="250"  
+                                 Duration="0:0:0.1">
+                <DoubleAnimation.EasingFunction>
+                    <CircleEase EasingMode="EaseOut" />
+                </DoubleAnimation.EasingFunction>
+            </DoubleAnimation>
+            <DoubleAnimation Storyboard.TargetName="PageButtonslide" 
+                                 Storyboard.TargetProperty="X"
+                                 By="250"  
+                                 Duration="0:0:0.1">
+                <DoubleAnimation.EasingFunction>
+                    <CircleEase EasingMode="EaseOut" />
+                </DoubleAnimation.EasingFunction>
+            </DoubleAnimation>
+        </Storyboard>
+
+        <Storyboard x:Name="addinShowAnimation" x:FieldModifier="public">
+            <DoubleAnimation Storyboard.TargetName="slide" 
+                                 Storyboard.TargetProperty="X"
+                                 By="-250"  
+                                 Duration="0:0:0.1">
+                <DoubleAnimation.EasingFunction>
+                    <CircleEase EasingMode="EaseIn" />
+                </DoubleAnimation.EasingFunction>
+            </DoubleAnimation>
+            <DoubleAnimation Storyboard.TargetName="Buttonslide" x:FieldModifier="public"
+                                 Storyboard.TargetProperty="X"
+                                 By="-250"  
+                                 Duration="0:0:0.1">
+                <DoubleAnimation.EasingFunction>
+                    <CircleEase EasingMode="EaseIn" />
+                </DoubleAnimation.EasingFunction>
+            </DoubleAnimation>
+            <DoubleAnimation Storyboard.TargetName="textslide" x:FieldModifier="public"
+                                 Storyboard.TargetProperty="X"
+                                 By="-250"  
+                                 Duration="0:0:0.1">
+                <DoubleAnimation.EasingFunction>
+                    <CircleEase EasingMode="EaseIn" />
+                </DoubleAnimation.EasingFunction>
+            </DoubleAnimation>
+            <DoubleAnimation Storyboard.TargetName="PageButtonslide" x:FieldModifier="public"
+                                 Storyboard.TargetProperty="X"
+                                 By="-250"  
+                                 Duration="0:0:0.1">
+                <DoubleAnimation.EasingFunction>
+                    <CircleEase EasingMode="EaseIn" />
+                </DoubleAnimation.EasingFunction>
+            </DoubleAnimation>
+        </Storyboard>
+
 
     </Page.Resources>
 
@@ -54,11 +155,11 @@
         <!--TOP MENU BAR-->
         <Grid Name="TopMenuRelativePanel" Grid.Row="0" Background="{StaticResource TITLE_BAR_WHITE}">
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="200"></ColumnDefinition>
-                <ColumnDefinition Width="*"></ColumnDefinition>
+                <ColumnDefinition Width="5*"></ColumnDefinition>
+                <ColumnDefinition Width="5*"></ColumnDefinition>
                 <ColumnDefinition Width="Auto"></ColumnDefinition>
             </Grid.ColumnDefinitions>
-            
+
             <StackPanel Orientation="Horizontal" Grid.Column="0" >
                 <Button Name="BackButton" Click="BackButton_Click" Width="40"  
                         Background="{StaticResource Button_Background}" 
@@ -66,98 +167,93 @@
                     <SymbolIcon Symbol="Back"></SymbolIcon>
                 </Button>
                 <TextBox Name="noteNameTextBox" KeyDown="noteNameTextBox_KeyDown"  LostFocus="noteNameTextBox_LostFocus" 
+                         Width="auto"
                          BorderThickness="0" Background="{StaticResource TITLE_BAR_WHITE}" FontSize="18" Text="" Margin="5 0 0 0" 
                          VerticalAlignment="Center"/>
             </StackPanel>
 
-            <CommandBar Grid.Column="1" HorizontalAlignment="Right" Margin="0 0 30 0"  Name="topCmdBar" OverflowButtonVisibility="Collapsed" Background="{StaticResource TITLE_BAR_WHITE}">
-                <AppBarButton ToolTipService.ToolTip="Dev Functions" HorizontalContentAlignment="Center" Icon="Setting" Click="AppBarButton_Click_1">
-                    <AppBarButton.Flyout>
-                        <MenuFlyout>
-                            <!--<MenuFlyoutItem Text="Open file folder" Click="OpenFileFolder_Click"/>
-                            <MenuFlyoutItem Text="Create new note" Tag="rating"/>
-                            <MenuFlyoutItem Text="Save note" Tag="Save note to disk." Click="SaveNote_Click"/>
-                            <MenuFlyoutItem Text="Save image" Tag="Save note to image." Click="SaveNoteToImage_Click"/>
-                            <MenuFlyoutItem Text="Open saved note" Tag="Open a saved note." Click="LoadNote_Click"/>-->
-                            <MenuFlyoutItem Text="Settings" HorizontalAlignment="Center" Tag="Change configurations" Click="Settings_Click"/>
-                        </MenuFlyout>
-                    </AppBarButton.Flyout>
-                </AppBarButton>
-                
-                <AppBarToggleButton Style="{StaticResource MyAppBarToggleButtonStyle}" IsChecked="True" Label="Notes" Name="NotesButton" Click="NotesButton_Click">
+            <CommandBar Grid.Column="1" HorizontalAlignment="Right" Margin="0 0 0 0"  Name="topCmdBar" OverflowButtonVisibility="Collapsed" 
+                        Background="{StaticResource TITLE_BAR_WHITE}">
+
+                <!--<AppBarToggleButton Style="{StaticResource MyAppBarToggleButtonStyle}" IsChecked="True" Label="Notes" Name="NotesButton" Click="NotesButton_Click">
                     <ToolTipService.ToolTip>
                         <TextBlock>Show notes panel</TextBlock>
                     </ToolTipService.ToolTip>
-                    
+
                     <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xF0E3;"/>
-                    
-                   
-                </AppBarToggleButton>
+                </AppBarToggleButton>-->
+                
                 <AppBarToggleButton Icon="PreviewLink" Style="{StaticResource MyAppBarToggleButtonStyle}" Label="Overview" 
-                                    Name="OverviewButton" Click="OverviewButton_Click">
-                    <ToolTipService.ToolTip>
-                        <TextBlock >Show overview panel</TextBlock>
-                    </ToolTipService.ToolTip>
-                </AppBarToggleButton>
-                <AppBarToggleButton Style="{StaticResource MyAppBarToggleButtonStyle}" Label="Speech" Name="SpeechButton" Click="SpeechButton_Click">
-                    <ToolTipService.ToolTip>
-                        <TextBlock  >Show Past Conversations</TextBlock>
-                    </ToolTipService.ToolTip>
-                    <SymbolIcon Symbol="Clock"/>
-                </AppBarToggleButton>
+                                    Name="OverviewButton" Click="OverviewButton_Click" Width="160" 
+                                    ToolTipService.ToolTip="Show Overview"/>
+
+
+                <AppBarToggleButton Icon="Clock" Style="{StaticResource MyAppBarToggleButtonStyle}" Label="Speech" 
+                                    Name="SpeechButton" Click="SpeechButton_Click" Width="160"
+                                    ToolTipService.ToolTip="Show Chat Record"/>
+
+                <AppBarButton ToolTipService.ToolTip="Dev Functions" 
+                              HorizontalContentAlignment="Center" Icon="Setting" Click="AppBarButton_Click_1">
+                    <AppBarButton.Flyout>
+                        <MenuFlyout Placement="Bottom">
+                            <MenuFlyoutItem Text="Save" 
+                                            HorizontalAlignment="Stretch"
+                                            Tag="Save Note" Click="SaveButton_Click">
+                                <MenuFlyoutItem.Icon>
+                                    <SymbolIcon Symbol="Save"/>
+                                </MenuFlyoutItem.Icon>
+                            </MenuFlyoutItem>
+                            <MenuFlyoutItem Text="Print" 
+                                            HorizontalAlignment="Stretch"
+                                            Tag="Print Note" Click="PrintButton_Click">
+                                <MenuFlyoutItem.Icon>
+                                    <SymbolIcon Symbol="Print"/>
+                                </MenuFlyoutItem.Icon>
+                            </MenuFlyoutItem>
+                            <MenuFlyoutItem Text="Full Screen" 
+                                            HorizontalAlignment="Stretch"
+                                            x:Name="FullscreenBtn"
+                                            Tag="Full Screen" Click="FullscreenButton_Click">
+                                <MenuFlyoutItem.Icon>
+                                    <SymbolIcon Symbol="FullScreen"/>
+                                </MenuFlyoutItem.Icon>
+                            </MenuFlyoutItem>
+                            <MenuFlyoutItem Text="Toogle Bluetooth" 
+                                            HorizontalAlignment="Stretch"
+                                            x:Name="BTConnectBtn"
+                                            Tag="Bluetooth" Click="BTConnectBtn_Click">
+                                <MenuFlyoutItem.Icon>
+                                    <SymbolIcon Symbol="Globe"/>
+                                </MenuFlyoutItem.Icon>
+                            </MenuFlyoutItem>
+
+                            <MenuFlyoutItem Text="Re-recognize Page" 
+                                            HorizontalAlignment="Stretch"
+                                            x:Name="ClearRecogBtn"
+                                            ToolTipService.ToolTip="Clear and re-recognize current page"
+                                            Tag="Clear" Click="ClearRecogBtn_Click">
+                                <MenuFlyoutItem.Icon>
+                                    <SymbolIcon Symbol="Refresh"/>
+                                </MenuFlyoutItem.Icon>
+                            </MenuFlyoutItem>
+
+                            <MenuFlyoutItem Text="Settings" 
+                                            HorizontalAlignment="Stretch"
+                                            Tag="Change configurations" Click="Settings_Click">
+                                <MenuFlyoutItem.Icon>
+                                    <SymbolIcon Symbol="Setting"/>
+                                </MenuFlyoutItem.Icon>
+                            </MenuFlyoutItem>
+                        </MenuFlyout>
+                    </AppBarButton.Flyout>
+                </AppBarButton>
 
                 <AppBarSeparator/>
 
-                <AppBarButton  Name="SaveButton" Icon="Save" Label="Save notes" Click="SaveButton_Click">
-                    <ToolTipService.ToolTip>
-                        <TextBlock Text="Save notes."/>
-                    </ToolTipService.ToolTip>
-                </AppBarButton>
-                <AppBarButton  Name="PrintBtn" Icon="Print" Label="Print note." Click="PrintButton_Click">
-                    <ToolTipService.ToolTip>
-                        <TextBlock Text="Print current page."/>
-                    </ToolTipService.ToolTip>
-                </AppBarButton>
-                <AppBarButton  Name="FullscreenBtn" Icon="FullScreen" Label="Fullscreen Mode" Click="FullscreenButton_Click">
-                    <ToolTipService.ToolTip>
-                        <TextBlock Text="Enter full screen mode."/>
-                    </ToolTipService.ToolTip>
-                </AppBarButton>
-
-
-
-                <!--
-                    <AppBarButton Name="imageButton" Icon="BrowsePhotos" Label="Speech Recognition" Click="LoadImage_Click">
-                        <ToolTipService.ToolTip>
-                            <TextBlock Text="Load a image."/>
-                        </ToolTipService.ToolTip>
-                    </AppBarButton>
-                    -->
-
-                <!--
-                    <AppBarButton Name="MyScriptButton" Label="MyScript" Click="MyScriptButton_Click"></AppBarButton>
-                    -->
-                <!--
-                    <AppBarToggleButton Name="" Foreground="LightBlue" Icon="Microphone" Label="Speech Recognition" Click="MicButton_Click">
-                        <ToolTipService.ToolTip>
-                            <TextBlock Text="Use Microsoft speech recognition."/>
-                        </ToolTipService.ToolTip>
-                    </AppBarToggleButton>
-                    -->
-
-
-
             </CommandBar>
-            
+
             <StackPanel Orientation="Horizontal" Grid.Column="2">
                 <CommandBar  OverflowButtonVisibility="Collapsed" Background="{StaticResource TITLE_BAR_WHITE}">
-
-                    <!--
-                <AppBarToggleButton  Name="MyscriptBtn" Icon="FullScreen" Label="Fullscreen Mode" Click="MyscriptBtn_Click">
-                    <ToolTipService.ToolTip>
-                        <TextBlock Text="Enter full screen mode."/>
-                    </ToolTipService.ToolTip>
-                </AppBarToggleButton>-->
                     <AppBarToggleButton Margin="0 0 0 0" Name="keyboardButton"  Style="{StaticResource MyAppBarToggleButtonStyle}" 
                                         Icon="Keyboard" Label="Typing" Click="KeyboardButton_Click" IsChecked="False">
                         <ToolTipService.ToolTip>
@@ -178,15 +274,13 @@
                     <AppBarButton x:Name="underlineButton" Icon="Underline"  ToolTipService.ToolTip="Underline" Visibility="Collapsed"/>
                 </CommandBar>
                 <InkToolbar Margin="0 0 0 0" Visibility="Visible"  Name="MainPageInkBar" Width="204"
-                            ActiveToolChanged="CurrentToolChanged" Orientation="Horizontal" 
+                            ActiveToolChanged="CurrentToolChanged" Orientation="Horizontal"                         
                             ButtonFlyoutPlacement="Bottom" InitialControls="None">
                     <InkToolbar.Resources>
 
                     </InkToolbar.Resources>
                     <InkToolbarBallpointPenButton Name="BallpointPenButton" SelectedStrokeWidth="2" Background="{StaticResource TITLE_BAR_WHITE}"></InkToolbarBallpointPenButton>
                     <InkToolbarEraserButton  Name="EraserButton" Background="{StaticResource TITLE_BAR_WHITE}"></InkToolbarEraserButton>
-
-
 
                     <InkToolbarCustomToggleButton x:Name="toolButtonLasso"  Click="ToolButton_Lasso" Background="{StaticResource TITLE_BAR_WHITE}" ToolTipService.ToolTip="Selection tool">
                         <SymbolIcon Symbol="{x:Bind LassoSelect}"/>
@@ -197,7 +291,6 @@
                 </InkToolbar>
 
             </StackPanel>
-
 
         </Grid>
         <!--SIDE/BOTTOM MENU VIEW-->
@@ -211,6 +304,7 @@
             <!--SIDE BAR MENU-->
             <SplitView.Pane>
                 <Grid Name="QuickViewGrid" BorderThickness="0 0 0 0" Background="Transparent">
+                    
                     <Grid.RowDefinitions>
                         <RowDefinition Height="5*"/>
                         <RowDefinition Height="3*"/>
@@ -220,16 +314,18 @@
                         <ColumnDefinition Width="40"/>
                         <ColumnDefinition Width="*"/>
                     </Grid.ColumnDefinitions>
-                    <!-- Tab buttons-->
                     
+                    <!--TOP  Tab buttons-->                 
                     <StackPanel Orientation="Vertical" VerticalAlignment="Top" Grid.Row="0" Grid.Column="0" Background="Transparent">
-                        <Button Visibility="Collapsed"  BorderThickness="0" Foreground="Gray" Background="WhiteSmoke" Width="40" Height="30" Name="QuickViewButton" Click="QuickViewButton_Click">
+                        <Button Visibility="Collapsed"  BorderThickness="0" Foreground="Gray" 
+                                Background="WhiteSmoke" Width="40" Height="30" Name="QuickViewButton" 
+                                Click="QuickViewButton_Click">
                             <SymbolIcon Name="QuickViewButtonSymbol" Symbol="Clear"></SymbolIcon>
                         </Button>
-                        <ToggleButton IsChecked="False" ToolTipService.ToolTip="Show Phenotype/Diagnosis" Style="{StaticResource MyToggleButtonStyle}" Background="{StaticResource Left_Panel_Title_BG}" Width="40" Height="80" Name="OverViewToggleButton" Click="OverViewToggleButton_Click">
-                            <Grid>
-                                <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE8BC;"/>
-                            </Grid>
+                        <ToggleButton IsChecked="False" ToolTipService.ToolTip="Show Phenotype/Diagnosis" 
+                                      Style="{StaticResource MyToggleButtonStyle}" Background="{StaticResource Left_Panel_Title_BG}" 
+                                      Width="40" Height="80" Name="OverViewToggleButton" Click="OverViewToggleButton_Click">
+                            <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE8BC;"/>
                         </ToggleButton>
                         <ToggleButton Style="{StaticResource MyToggleButtonStyle}" 
                                       ToolTipService.ToolTip="Show Speech conversations" 
@@ -240,7 +336,7 @@
                             </Grid>
                         </ToggleButton>
                     </StackPanel>
-
+                    <!--BUTTOM  Tab buttons-->
                     <StackPanel  Orientation="Vertical" 
                                  VerticalAlignment="Bottom" Grid.Row="1" Grid.RowSpan="2" Grid.Column="0" Background="Transparent">
                                  
@@ -255,24 +351,23 @@
                             </StackPanel>
                         </Grid>
 
-
+                        <!--TOGGLE AUDIO button-->
                         <ToggleButton  Height="60" HorizontalAlignment="Stretch" ToolTipService.ToolTip="Start/Stop Audio"
                                        Style="{StaticResource MyToggleButtonStyle2}" Background="{StaticResource Left_Panel_Title_BG}" 
                                        x:Name="audioButton" x:FieldModifier="public"  IsEnabled="False" Click="AudioStreamButton_Clicked">
                             
                             <StackPanel>
                                 <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE720;" HorizontalAlignment="Left" Width="21"/>
-                                <TextBlock FontSize="12" Name="audioStatusText" Text="OFF"></TextBlock>
+                                <TextBlock HorizontalTextAlignment="Center" FontSize="12" Name="audioStatusText" Text="OFF"></TextBlock>
                             </StackPanel>
                         </ToggleButton>
-
                         <ToggleButton Visibility="Collapsed" Height="50" HorizontalAlignment="Stretch" 
                                       Name="shutterButton"  Style="{StaticResource MyToggleButtonStyle2}" 
                                       Background="{StaticResource Left_Panel_Title_BG}" 
                                       Click="CameraButton_Click">
                             <SymbolIcon Symbol="WebCam"></SymbolIcon>
                         </ToggleButton>
-
+                        <!--TOGGLE VIDEO button-->
                         <ToggleButton  Height="60" HorizontalAlignment="Stretch" Name="StreamButton"   
                                        ToolTipService.ToolTip="Start/Stop Video Stream"
                                        Click="StreamButton_Click" Style="{StaticResource MyToggleButtonStyle2}" 
@@ -292,22 +387,15 @@
                         </Button>
                     </StackPanel>
                     
-                    <!--Quick View Panels-->
+                    <!--SAVED PHENOTYPES-->
                     <Grid Name="QuickView1" Background="White" Grid.Row="0" Grid.Column="1">
-                        <ListView ScrollViewer.VerticalScrollBarVisibility="Hidden" x:Name="savedPhenoListView" Padding="3 0" ItemsSource="{x:Bind PhenoMana.savedPhenotypes, Mode=OneWay}">
-                            <!--
-                            <ListView.HeaderTemplate>
-                                <DataTemplate>
-                                    <StackPanel >
-                                        <TextBlock Text="Saved phenotypes" FontSize="16" Padding="10 5" FontWeight="SemiBold"  Style="{ThemeResource CaptionTextBlockStyle}"/>
-                                    </StackPanel>
-                                </DataTemplate>
-                            </ListView.HeaderTemplate>
-                            -->
+                        <ListView ScrollViewer.VerticalScrollBarVisibility="Hidden" x:Name="savedPhenoListView" Padding="3 0" 
+                                  ItemsSource="{x:Bind PhenoMana.savedPhenotypes, Mode=OneWay}">
                             <ListView.Header>
                                 <controls:ScrollHeader Mode="Sticky" TargetListViewBase="{x:Bind savedPhenoListView}">
                                     <StackPanel Background="White">
-                                        <TextBlock  Foreground="{StaticResource WORD_DARKER}" Text="Saved phenotypes" FontSize="16" FontWeight="SemiBold" Padding="5"/>
+                                        <TextBlock  Foreground="{StaticResource WORD_DARKER}" Text="Saved phenotypes" FontSize="16" 
+                                                    FontWeight="SemiBold" Padding="5"/>
                                     </StackPanel>
                                 </controls:ScrollHeader>
                             </ListView.Header>
@@ -328,7 +416,7 @@
                             </ListView.ItemContainerStyle>
                         </ListView>
                     </Grid>
-
+                    <!--PHENOTYPE SUGGESTIONS-->
                     <Grid Name="QuickView2" Height="auto" Background="White" Grid.Row="1" Grid.Column="1" >
 
                         <ListView ScrollViewer.VerticalScrollBarVisibility="Hidden" x:Name="suggestedPhenoListView"  
@@ -362,11 +450,11 @@
                             </ListView.ItemContainerStyle>
                         </ListView>
                     </Grid>
-
+                    <!--DIFFERENTIAL DIAGNOSIS-->
                     <Grid Name="QuickView3"  MaxHeight="300" Background="White" Grid.Row="2" Grid.Column="1">
 
-
                         <ListView x:Name="diseaseListView" ScrollViewer.VerticalScrollBarVisibility="Hidden" ItemsSource="{x:Bind PhenoMana.predictedDiseases}">
+
                             <ListView.Header>
                                 <controls:ScrollHeader Mode="Sticky" TargetListViewBase="{x:Bind diseaseListView}">
                                     <StackPanel Background="White" BorderThickness="0 1 0 0" BorderBrush="{StaticResource Left_Panel_Title_BG}">
@@ -391,33 +479,32 @@
                             </ListView.ItemContainerStyle>
                         </ListView>
                     </Grid>
-
+                    <!--REALTIME SPEECH VIEW-->
                     <Grid x:Name="speechQuickView" x:FieldModifier="public" Grid.Row="0" Grid.Column="1" 
                           Grid.RowSpan="3" Visibility="Collapsed" Padding="5" 
                           Background="White">
-                        
+
                         <Grid.RowDefinitions>
                             <RowDefinition Height="8*"></RowDefinition>
                             <RowDefinition Height="2*"></RowDefinition>
                         </Grid.RowDefinitions>
 
-                        <!--<TextBlock Text="Current Conversation" FontSize="16" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="10" />-->
                         <!--colored speech bubbles-->
-                            <local:ChatListView x:Name="chatView" Visibility="Visible" Background="White"  Grid.Row="0"
-                            IncrementalLoadingThreshold="2" 
-                            ScrollViewer.VerticalScrollBarVisibility="Hidden"
-                            ContainerContentChanging="OnChatViewContainerContentChanging">
+                        <local:ChatListView x:Name="chatView" Background="White"  Grid.Row="0"
+                                            IncrementalLoadingThreshold="2" 
+                                            ScrollViewer.VerticalScrollBarVisibility="Auto"
+                                            ContainerContentChanging="OnChatViewContainerContentChanging">
+
                             <ListView.ItemsPanel>
                                 <ItemsPanelTemplate>
                                     <ItemsStackPanel ItemsUpdatingScrollMode="KeepLastItemInView"  VerticalAlignment="Bottom"/>
                                 </ItemsPanelTemplate>
                             </ListView.ItemsPanel>
-                                
+
                             <ListView.Header>
-                                <controls:ScrollHeader Mode="Sticky" TargetListViewBase="{x:Bind savedPhenoListView}">
-                                    <StackPanel Background="White">
-                                        <TextBlock  Foreground="{StaticResource WORD_DARKER}" Text="Realtime Conversation" FontSize="16" FontWeight="SemiBold" Padding="5"/>
-                                    </StackPanel>
+                                <controls:ScrollHeader Mode="Fade" TargetListViewBase="{x:Bind savedPhenoListView}">
+                                    <TextBlock  Foreground="{StaticResource WORD_DARKER}" Text="Realtime Conversation" 
+                                                FontSize="16" FontWeight="SemiBold" Padding="5"/>
                                 </controls:ScrollHeader>
                             </ListView.Header>
 
@@ -438,6 +525,7 @@
                             <ListView.ItemTemplate>
                                 <DataTemplate x:DataType="local:TextMessage">
                                     <Grid Margin="0" Padding="5">
+
                                         <Grid.RowDefinitions>
                                             <RowDefinition Height="Auto" />
                                         </Grid.RowDefinitions>
@@ -448,127 +536,73 @@
                                         <!--Finalized message color-->
                                         <Border CornerRadius="10">
                                             <Grid
-                                            Grid.Row="0"
-                                            Grid.Column="0"
-                                            Background="{Binding Converter={StaticResource bcConverter}}"
-                                            Visibility="{x:Bind Path=IsFinal}"/>
+                                        Grid.Row="0"
+                                        Grid.Column="0"
+                                        Background="{Binding Converter={StaticResource bcConverter}}"
+                                        Visibility="{x:Bind Path=IsFinal}"/>
                                         </Border>
 
                                         <!--Not finalized message color-->
                                         <Border CornerRadius="10">
                                             <Grid
-                                            Grid.Row="0"
-                                            Grid.Column="0"
-                                            Background="{StaticResource Background_Temp}"
-                                            Visibility="{x:Bind Path=IsNotFinal}"/>
+                                        Grid.Row="0"
+                                        Grid.Column="0"
+                                        Background="{StaticResource Background_Temp}"
+                                        Visibility="{x:Bind Path=IsNotFinal}"/>
                                         </Border>
 
-                                        <Grid MaxWidth="260" MinWidth="100"
-                                            Grid.Row="0"
-                                            Grid.Column="0">
+                                        <Grid MaxWidth="260" MinWidth="100" Grid.Row="0" Grid.Column="0">
                                             <Grid.RowDefinitions>
+                                                <RowDefinition Height="Auto"/>
                                                 <RowDefinition Height="Auto"/>
                                             </Grid.RowDefinitions>
 
                                             <TextBlock
-                                            Text="{x:Bind Body}"
-                                            Grid.Row="0"
-                                            Grid.Column="0"
-                                            TextWrapping="Wrap"
-                               
-                                            FontSize="16"
-                                            Padding="10"
-                                            VerticalAlignment="Center"
-                                            Foreground="Black"/>
+                                        Text="{x:Bind Body}"
+                                        Grid.Row="0"
+                                        Grid.Column="0"
+                                        TextWrapping="Wrap"
+                                        DoubleTapped="SpeechBubble_DoubleTapped"
+                                        FontSize="16"
+                                        Padding="10"
+                                        VerticalAlignment="Center"
+                                        Foreground="Black"/>
+                                            <!--Phenotype Grid-->
+                                            <Grid Grid.Row="1" HorizontalAlignment="Left" Padding="3"
+                                                  Visibility="{x:Bind hasPhenotype}">
+
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="40"/>
+                                                    <ColumnDefinition Width="*"/>
+                                                </Grid.ColumnDefinitions>
+                                                
+                                                <SymbolIcon Grid.Column="0" Symbol="List"/>
+                                                <TextBlock Grid.Column="1" Text="{x:Bind numPhenotype}" HorizontalAlignment="Left"/>
+                                            </Grid>
                                         </Grid>
+
 
 
                                     </Grid>
                                 </DataTemplate>
                             </ListView.ItemTemplate>
                         </local:ChatListView>
+
                         <!--gray realtime speech bubbles-->
-                            <local:ChatListView x:Name="realtimeChatView" Grid.Row="1" Background="White"
+                        <local:ChatListView x:Name="realtimeChatView" Grid.Row="1" Background="White"
                             IncrementalLoadingThreshold="2" 
-                            ScrollViewer.VerticalScrollBarVisibility="Hidden">
-                                        <ListView.ItemsPanel>
-                                            <ItemsPanelTemplate>
-                                                <ItemsStackPanel ItemsUpdatingScrollMode="KeepLastItemInView" VerticalAlignment="Bottom"  HorizontalAlignment="Right"/>
-                                            </ItemsPanelTemplate>
-                                        </ListView.ItemsPanel>
-
-                                        <ListView.ItemContainerStyle>
-                                            <Style TargetType="ListViewItem">
-                                                <Setter Property="HorizontalContentAlignment" Value="Stretch" />
-                                                <Setter Property="Padding" Value="3"/>
-                                                <Setter Property="Margin" Value="0"/>
-                                            </Style>
-                                        </ListView.ItemContainerStyle>
-
-                                        <ListView.ItemContainerTransitions>
-                                            <TransitionCollection/>
-                                        </ListView.ItemContainerTransitions>
-
-                                        <ListView.ItemTemplate>
-                                            <DataTemplate x:DataType="local:TextMessage">
-                                    <Grid Margin="2">
-
-                                        <!--Message color-->
-                                                    <Grid
-                            Grid.Row="0"
-                            Background="LightGray"/>
-
-                                                    <Grid MaxWidth="260" MinWidth="100"
-                            Grid.Row="0">
-                                                        <Grid.RowDefinitions>
-                                                            <RowDefinition Height="Auto"/>
-                                                            <RowDefinition Height="Auto"/>
-                                                        </Grid.RowDefinitions>
-
-                                                        <TextBlock 
-                                Text="{x:Bind Body}"
-                                Grid.Row="0"
-                                Grid.Column="0"
-                                TextWrapping="Wrap"
-                               
-                                FontSize="13"
-                                Padding="5"
-                                VerticalAlignment="Center"
-                                Foreground="Black"/>
-
-
-                                                    </Grid>
-
-                                                </Grid>
-                                            </DataTemplate>
-                                        </ListView.ItemTemplate>
-                                    </local:ChatListView>
-                    </Grid>
-
-                    <Grid Name="pastSpeechView" Grid.Row="0" Grid.Column="1" Grid.RowSpan="3" Visibility="Collapsed" Padding="5" Background="White">
-                        <TextBlock Text="Past Conversations" FontWeight="SemiBold" FontSize="18" HorizontalAlignment="Left" Margin="10 10 20 10" />
-                        <local:ChatListView x:Name="pastchatView" Grid.Row="0" 
-                            IncrementalLoadingThreshold="2" Margin="0 60 0 0" 
-                            BorderBrush="White" BorderThickness="2"
                             ScrollViewer.VerticalScrollBarVisibility="Hidden">
                             <ListView.ItemsPanel>
                                 <ItemsPanelTemplate>
-                                    <!--" ItemsStackPanel ItemsUpdatingScrollMode="KeepLastItemInView" VerticalAlignment="Bottom"/-->
-                                    <ItemsStackPanel ItemsUpdatingScrollMode="KeepLastItemInView"  VerticalAlignment="Bottom"/>
+                                    <ItemsStackPanel ItemsUpdatingScrollMode="KeepLastItemInView" VerticalAlignment="Bottom"  HorizontalAlignment="Right"/>
                                 </ItemsPanelTemplate>
                             </ListView.ItemsPanel>
 
                             <ListView.ItemContainerStyle>
                                 <Style TargetType="ListViewItem">
-                                    <Setter Property="Padding" Value="0"/>
+                                    <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                                    <Setter Property="Padding" Value="3"/>
                                     <Setter Property="Margin" Value="0"/>
-                                    <Setter Property="Template">
-                                        <Setter.Value>
-                                            <ControlTemplate>
-                                                <ContentPresenter/>
-                                            </ControlTemplate>
-                                        </Setter.Value>
-                                    </Setter>
                                 </Style>
                             </ListView.ItemContainerStyle>
 
@@ -578,59 +612,24 @@
 
                             <ListView.ItemTemplate>
                                 <DataTemplate x:DataType="local:TextMessage">
-                                    <Grid Margin="6">
-                                        <Grid.RowDefinitions>
-                                            <RowDefinition Height="Auto" />
-                                        </Grid.RowDefinitions>
+                                    <Grid Margin="2">
+                                        <!--Message color-->
+                                        <Grid Grid.Row="0" Background="LightGray"/>
+                                        <Grid MaxWidth="260" MinWidth="100" Grid.Row="0">
+                                            <Grid.RowDefinitions>
+                                                <RowDefinition Height="Auto"/>
+                                                <RowDefinition Height="Auto"/>
+                                            </Grid.RowDefinitions>
 
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="auto"/>
-                                        </Grid.ColumnDefinitions>
-
-                                        <!--Finalized message color-->
-                                        <Border BorderThickness="1" CornerRadius="10">
-                                            <Grid
-                            Grid.Row="0"
-                            Grid.Column="0"
-                            Grid.ColumnSpan="2"
-                            Background="{Binding Converter={StaticResource bcConverter}}"
-                            Visibility="{x:Bind Path=IsFinal}"/>
-                                        </Border>
-                                        <Grid
-                            Grid.Row="0"
-                            Grid.Column="{Binding TextColumn}">
-                                                <Grid.RowDefinitions>
-                                                    <RowDefinition Height="Auto"/>
-                                                    <RowDefinition Height="Auto"/>
-                                                </Grid.RowDefinitions>
-                                                <Grid.ColumnDefinitions>
-                                                    <ColumnDefinition Width="auto" />
-                                                </Grid.ColumnDefinitions>
-                                                <TextBlock
-                                Text="{x:Bind Body}"
-                                Grid.Row="0"
-                                Grid.Column="0"
-                                MaxWidth= "340"
-                                TextWrapping="WrapWholeWords"                                                                                          
-                                FontSize="15"                              
-                                Padding="10 10 10 10"
-                                VerticalAlignment="Center"
-                                HorizontalAlignment="Left"
-                                Foreground="Black"/>
-
-                                                <TextBlock
-                                    Grid.Row="1"
-                                    Grid.Column="0"
-                                    FontSize="11"
-                                    Text="{Binding Converter={StaticResource intervalConverter}}"
-                                    TextWrapping="Wrap"                        
-                                    Padding="10 10 10 10"
-                                    Foreground="Black"
-                                />
-
-                                            </Grid>
-                                        
-
+                                            <TextBlock Text="{x:Bind Body}"
+                                                Grid.Row="0"
+                                                Grid.Column="0"
+                                                TextWrapping="Wrap"                            
+                                                FontSize="13"
+                                                Padding="5"
+                                                VerticalAlignment="Center"
+                                                Foreground="Black"/>
+                                        </Grid>
 
                                     </Grid>
                                 </DataTemplate>
@@ -638,45 +637,96 @@
                         </local:ChatListView>
                     </Grid>
 
-
                 </Grid>
             </SplitView.Pane>
-
-            <Grid Background="LightGray">
+            
+            <!--Container for notepagecontrol-->
+            <Grid x:Name="NoteGrid"  Background="LightGray">
 
                 <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="40"/>
+                    <ColumnDefinition Width="40"/>
                     <ColumnDefinition Width="*"/>
+
                 </Grid.ColumnDefinitions>
 
-                <ContentControl x:Name="PageHost"  HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+
+                <ContentControl x:Name="PageHost" Grid.ColumnSpan="3"  HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch">
                     <ContentControl.ContentTransitions>
                         <TransitionCollection>
-                            <ContentThemeTransition x:Name="PageHostContentTrans"/>
+                            <PaneThemeTransition Edge="Bottom" x:Name="PageHostContentTrans"   />
+                            <!--<EntranceThemeTransition FromVerticalOffset="1500"  x:Name="PageHostContentTrans"/>-->
                         </TransitionCollection>
                     </ContentControl.ContentTransitions>
                 </ContentControl>
 
-                <RelativePanel>
+                <Grid x:Name="placeHolderGrid" Grid.Column="2" />
 
+                <RelativePanel Grid.Row="0" Grid.ColumnSpan="3">
+                    <!--Editing mode/ preview mode text block-->
                     <TextBlock Visibility="Visible" x:Name="modeTextBlock" Width="190" Height="30"
                                RelativePanel.AlignLeftWithPanel="True" 
                                RelativePanel.AlignBottomWithPanel="True"
                                Margin="10 10 10 10" Text="Handwriting Mode"
                                Padding=" 0 0 10 0" FontSize="20" FontFamily="Segoe UI" 
                                FontWeight="ExtraBold" Foreground="Black" Opacity="0.2" /> 
-
-                    <StackPanel Spacing="2" Background="Transparent" Name="pageIndexPanel"  Margin="0 10 0 10" 
-                                Orientation="Horizontal"  
+                    
+                    <!--PAGE INDEX PANEL-->
+                    <StackPanel Spacing="0" Background="Transparent" Name="pageIndexPanel"  Margin="0 10 0 10" 
+                                Orientation="Vertical"  
+                                RelativePanel.AlignRightWith="addinBase"
                                 RelativePanel.AlignBottomWithPanel="True"
                                 RelativePanel.AlignHorizontalCenterWithPanel="True" Padding="0 0 0 0"
                                 Canvas.ZIndex="90">
-                        
-                        <Button Height="30" Width="30" Padding="0 0 0 0" Background="WhiteSmoke"  Click="AddPageButton_Click">
-                            <SymbolIcon Symbol="Add" Foreground="{StaticResource Button_Background}" />
-                        </Button>
-                    </StackPanel>
 
-                    <Grid RelativePanel.AlignTopWithPanel="True" RelativePanel.AlignHorizontalCenterWithPanel="True" >
+                        <StackPanel.RenderTransform>
+                            <TranslateTransform x:FieldModifier="public" x:Name="PageButtonslide" X="0"/>
+                        </StackPanel.RenderTransform>
+
+                        <Grid CornerRadius="10 0 0 0">
+                            <Button Height="35" Width="35" Style="{StaticResource MyButtonStyle}" Visibility="Visible"
+                                    Padding="0 0 0 0" Background="{StaticResource TITLE_BAR_WHITE}"  Click="PreviousPageButton_Click">
+                                <SymbolIcon Symbol="Play" Foreground="Black" >
+                                    <SymbolIcon.RenderTransform>
+                                        <RotateTransform Angle="-90" CenterX="10" CenterY="10" />
+                                    </SymbolIcon.RenderTransform>
+                                </SymbolIcon>
+                            </Button>
+                        </Grid>
+
+                        <Grid>
+                            <Button x:Name="curPageIndexBlock" Height="35" Width="35" Style="{StaticResource MyButtonStyle}"
+                                    Click="ShowAllPagePanel"
+                                    Background="{StaticResource TITLE_BAR_WHITE}"
+                                       VerticalAlignment="Center" HorizontalAlignment="Center" FontSize="18"/>
+                        </Grid>
+                        
+                        <Grid CornerRadius="0 0 0 10">
+                            <Button Height="35" Width="35" Style="{StaticResource MyButtonStyle}" Visibility="Visible"
+                                Padding="0 0 0 0" Background="{StaticResource TITLE_BAR_WHITE}"  Click="NextPageButton_Click">
+                                <SymbolIcon Symbol="Play" Foreground="Black" >
+                                    <SymbolIcon.RenderTransform>
+                                        <RotateTransform Angle="90" CenterX="10" CenterY="10" />
+                                    </SymbolIcon.RenderTransform>
+                                </SymbolIcon>
+                            </Button>
+                        </Grid>
+
+                        <Grid CornerRadius="10 0 0 10" Margin="0 15 0 0">
+
+                            <Button Height="35" Width="35" Style="{StaticResource MyButtonStyle}"
+                                Padding="0 0 0 0" Background="{StaticResource TITLE_BAR_WHITE}"  Click="AddPageButton_Click">
+                                <SymbolIcon Symbol="Add"  />
+                            </Button>
+
+                        </Grid>
+                    </StackPanel>
+                    
+                    <!--NOTIFICATION PANEL-->
+                    <Grid RelativePanel.AlignTopWith="CandidateGrid" Canvas.ZIndex="9999" RelativePanel.AlignHorizontalCenterWithPanel="True" >
                         <Border CornerRadius="10" x:Name="StatusBorder" Margin="0,50,0,0" 
                             RelativePanel.AlignTopWithPanel="True" RelativePanel.AlignHorizontalCenterWithPanel="True" 
                             MinWidth="500" Height="40">
@@ -685,21 +735,24 @@
                         </Border>
                     </Grid>
 
-                    <!-- pheotypes user are looking for -->
+                    <!-- PHENOTYPE CANDIDATE PANEL -->
                     <Grid  Name="CandidateGrid" HorizontalAlignment="Stretch" 
                            RelativePanel.AlignLeftWithPanel="True" 
                            RelativePanel.AlignTopWithPanel="True">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="40" />
+                            <ColumnDefinition Width="40" />
                             <ColumnDefinition Width="*" />
                         </Grid.ColumnDefinitions>
+                        
                         <Grid.RowDefinitions>
-                            <RowDefinition Height="40" />
+                            <RowDefinition Height="45" />
+                            <RowDefinition Height="*"/>
                         </Grid.RowDefinitions>
 
                         <Grid Name="OpenCandidatePanelButtonGrid" Grid.Column="0">
-                            <ToggleButton HorizontalAlignment="Center" Background="Transparent" Style="{StaticResource MyToggleButtonStyle}" IsChecked="false" 
-                                          VerticalAlignment="Center"  Name="OpenCandidatePanelButton" Click="OpenCandidate_Click" Height="40">
+                            <ToggleButton HorizontalAlignment="Center" Grid.Column="0" Background="Transparent" Style="{StaticResource MyToggleButtonStyle}" IsChecked="false" 
+                                          VerticalAlignment="Center"  Name="OpenCandidatePanelButton" Click="OpenCandidate_Click" Width="40" Height="45">
                                 <Grid>
                                     <FontIcon Visibility="Collapsed" Name="OpenCandidatePanelButtonIcon" 
                                               Foreground="Gold" FontWeight="ExtraBlack"  FontFamily="Segoe MDL2 Assets" Glyph="&#xE82F;"/>
@@ -708,31 +761,47 @@
                                 </Grid>
                             </ToggleButton>
                         </Grid>
+                        <Grid Grid.Column="1" Name="ExpandCandidatePanelGrid">
+                            <ToggleButton HorizontalAlignment="Center" Background="WhiteSmoke" ToolTipService.ToolTip="Show All Candidates"
+                                          Style="{StaticResource MyToggleButtonStyle}" IsChecked="false" 
+                                          VerticalAlignment="Center"  x:Name="ExpandButton" Click="ExpandButton_Click" Width="40" Height="45">
+                                <Grid>
+                                    <FontIcon FontWeight="ExtraBlack"  FontFamily="Segoe MDL2 Assets" Glyph="&#xEA37;"/>
+                                </Grid>
+                            </ToggleButton>
 
-                        <StackPanel Orientation="Vertical" Grid.Column="1" 
-                                    Name="CandidatePanelStackPanel" 
-                                    Padding="5 0 5 0"
-                                    HorizontalAlignment="Center"
-                                    VerticalAlignment="Center"
-                                    Background="WhiteSmoke" Visibility="Collapsed" >
-                            
+                        </Grid>
+
+                        <StackPanel Grid.Column="2" Grid.Row="0"                            
+                                Name="CandidatePanelStackPanel" 
+                                Padding="5 0 5 0"
+                                HorizontalAlignment="Center"
+                                VerticalAlignment="Top"
+                                Background="WhiteSmoke" Visibility="Collapsed" >
+
                             <ListView 
-                              ScrollViewer.HorizontalScrollMode="Enabled"
-                              ScrollViewer.VerticalScrollMode="Disabled"
-                              ScrollViewer.HorizontalScrollBarVisibility="Hidden"
-                              ScrollViewer.IsHorizontalRailEnabled="True"          
-                              x:Name="candidatePhenoListView" ItemsSource="{x:Bind PhenoMana.phenotypesCandidates, Mode=OneWay}">
+                            ScrollViewer.HorizontalScrollMode="Enabled"
+                            ScrollViewer.VerticalScrollMode="Enabled"
+                            ScrollViewer.HorizontalScrollBarVisibility="Hidden"
+                            ScrollViewer.VerticalScrollBarVisibility="Hidden"
+                            ScrollViewer.IsHorizontalRailEnabled="True"          
+                            x:Name="candidatePhenoListView" ItemsSource="{x:Bind PhenoMana.phenotypesCandidates, Mode=OneWay}">
                                 <ListView.ItemsPanel>
                                     <ItemsPanelTemplate>
-                                        <VirtualizingStackPanel  Orientation="Horizontal"/>
+                                        <controls:WrapPanel x:Name="wrappanel"
+                                                            FlowDirection="LeftToRight" 
+                                                            MaxHeight="150"
+                                                            Width="{Binding ElementName=placeHolderGrid,Path=ActualWidth}"
+                                                            Orientation="Horizontal"/>
                                     </ItemsPanelTemplate>
                                 </ListView.ItemsPanel>
                                 <ListView.ItemTemplate>
                                     <DataTemplate x:DataType="phenotypeservice:Phenotype">
 
-                                        <customcontrol:PhenotypeBriefControl VerticalAlignment="Center" phenotypeName="{x:Bind name}" 
-                                                                        phenotypeId="{x:Bind hpId}" phenotypeState="{x:Bind state}" 
-                                                                        sourceType="{x:Bind sourceType}" presentPosition="List" />
+                                        <customcontrol:PhenotypeBriefControl 
+                                        VerticalAlignment="Center" phenotypeName="{x:Bind name}" 
+                                                                    phenotypeId="{x:Bind hpId}" phenotypeState="{x:Bind state}" 
+                                                                    sourceType="{x:Bind sourceType}" presentPosition="List" />
                                     </DataTemplate>
                                 </ListView.ItemTemplate>
                                 <!--Defining the phenotype candidate tile style-->
@@ -740,7 +809,7 @@
                                     <Style TargetType="ListViewItem">
                                         <Setter Property="Padding" Value="0 0 0 0" />
                                         <Setter Property="Margin" Value="0 0 0 0" />
-                                        <Setter Property="Height" Value="40"/>
+                                        <!--<Setter Property="Height" Value="40"/>-->
                                         <Setter Property="HorizontalContentAlignment" Value="Left" />
                                         <Setter Property="Template">
                                             <Setter.Value>
@@ -777,34 +846,6 @@
                                 <ColumnDefinition Width="*"/>
                             </Grid.ColumnDefinitions>
 
-                            <!--<TextBlock Text="Microphone" Grid.Row="1" Grid.Column="0" FontWeight="Bold"
-                           VerticalAlignment="Center" HorizontalAlignment="Left"/>
-                            <Button Grid.Row="1" Grid.Column="1" HorizontalAlignment="Right" Style="{StaticResource MyButtonStyle}" Background="Transparent" Foreground="Gray" Height="30" VerticalAlignment="Top" Width="30" Padding="0"
-                                    Click="MultimediaClose_Click">
-                                <SymbolIcon Symbol="Clear" Height="20" Width="20"></SymbolIcon>
-                            </Button>
-                            <StackPanel Grid.Row="2" Grid.ColumnSpan="2">
-                                
-                            </StackPanel>
-                            <TextBlock Text="Swith microphone:" Grid.Row="2" Grid.Column="0"
-                           VerticalAlignment="Center" HorizontalAlignment="Right"/>
-                            <StackPanel Orientation="Horizontal" Grid.Row="2" Grid.Column="1" Spacing="10" HorizontalAlignment="Center">
-                                <RadioButton Content="Surface Microphone" Tag="Surface Microphone" Name="SurfaceMicRadioBtn" GroupName="MicSwitcher" Checked="SurfaceMicRadioButton_Checked"/>
-                                <RadioButton Content="External Microphone" Tag="External Microphone" Name="ExternalMicRadioBtn" GroupName="MicSwitcher" Checked="ExterMicRadioButton_Checked"/>
-                            </StackPanel>
-                            <TextBlock Text="ASR server:" Grid.Row="3" Grid.Column="0"
-                           VerticalAlignment="Center" HorizontalAlignment="Right"/>
-                            <StackPanel Orientation="Horizontal" Grid.Row="3" Grid.Column="1" Spacing="10" HorizontalAlignment="Center">
-                                <TextBox x:Name="ASRAddrInput" PlaceholderText="Server Address:Port" Width="220" Margin="5" />
-                                <Button Content="Change server" Click="ChangeServerASR_Click"/>
-                            </StackPanel>
-                            <TextBlock Text="HWR server:" Grid.Row="4" Grid.Column="0"
-                           VerticalAlignment="Center" HorizontalAlignment="Right"/>
-                            <StackPanel Orientation="Horizontal" Grid.Row="4" Grid.Column="1" Spacing="10" HorizontalAlignment="Center">
-                                <TextBox x:Name="HWRAddrInput" PlaceholderText="Server Address:Port" Width="220" Margin="5" />
-                                <Button Content="Change server" Click="ChangeServerHWR_Click"/>
-                            </StackPanel>-->
-
                             <TextBlock Text="Video" Grid.Row="5" Grid.Column="0" FontWeight="Bold"
                            VerticalAlignment="Top" HorizontalAlignment="Left"/>
 
@@ -817,17 +858,6 @@
                               Click="CameraButton_Click" IsEnabled="True"/>
 
                             </StackPanel>
-                            <!--
-                We have made Bluetooth connection automatic
-                <TextBlock Text="Bluetooh" Grid.Row="3" Grid.Column="0"
-                           VerticalAlignment="Center" HorizontalAlignment="Center"/>
-                <Button Name="bluetoothButton"
-                        Margin="1" FlowDirection="LeftToRight"
-                        Content="Connect"
-                        Grid.Row="3" Grid.Column="1" RequestedTheme="Default"
-                        VerticalAlignment="Center" HorizontalAlignment="Center"
-                              Click="BluetoothButton_Click"  IsEnabled="True"/>
-                -->                        
 
                             <Image Name="StreamImageView" Width="300" Height="200" 
                           Grid.Column="1" Grid.Row="5" HorizontalAlignment="Center" VerticalAlignment="Center"
@@ -838,14 +868,104 @@
                          Visibility="Collapsed"  />
                         </Grid>
                     </Grid>
-                    
+
+                    <!--ADDIN SIDE PANEL-->
+                    <Grid x:Name="addinBase"  x:FieldModifier="public"
+                        Visibility="Visible" Padding="5" Width="250" Height="9999"
+                        RelativePanel.AlignRightWithPanel="True"
+                        Background="{StaticResource TITLE_BAR_WHITE}" HorizontalAlignment="Right"                
+                        VerticalAlignment="Stretch">
+
+                        <Grid.RenderTransform>
+                            <TranslateTransform x:FieldModifier="public" x:Name="slide" X="250"/>
+                        </Grid.RenderTransform>
+                        
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="*"/>
+                        </Grid.RowDefinitions>
+
+                        <ListView Name="addinlist" ScrollViewer.VerticalScrollBarVisibility="Hidden"
+                        Margin="0" Grid.Row="0">
+                            <ListView.Header>
+                                <controls:ScrollHeader Mode="Sticky" TargetListViewBase="{x:Bind addinlist}">
+                                    <TextBlock  Foreground="{StaticResource WORD_DARKER}" Text="Collection" FontSize="24" 
+                                            FontWeight="SemiBold" Padding="20 5 5 5"/>
+                                </controls:ScrollHeader>
+                            </ListView.Header>
+
+                            <ListView.ItemTemplate>
+                                <DataTemplate x:DataType="fileservice:ImageAndAnnotation">
+                                    <Button Click="addInIcon_Click" HorizontalAlignment="Center" Width="200" Margin="0" Padding="0"
+                                Style="{StaticResource ButtonStyleaddin}">
+                                        <Viewbox Name="AddInIcon" Stretch="Uniform" CanDrag="False">
+                                            <customcontrol:AddInControl name="{x:Bind name}" notebookId="{x:Bind notebookId}" 
+                                                        viewOnly="True" CommentID="{x:Bind commentID}"
+                                                        pageId="{x:Bind pageId}"  />
+                                        </Viewbox>
+                                    </Button>
+                                </DataTemplate>
+                            </ListView.ItemTemplate>
+                            <ListView.ItemContainerStyle>
+                                <Style TargetType="ListViewItem">
+                                    <Setter Property="Padding" Value="0"/>
+                                    <Setter Property="Margin" Value="10"/>
+                                    <Setter Property="HorizontalAlignment" Value="Center" />
+                                    <!--<Setter Property="Template">
+                            <Setter.Value>
+                                <ControlTemplate>
+                                    <ContentPresenter/>
+                                </ControlTemplate>
+                            </Setter.Value>
+                        </Setter>-->
+                                </Style>
+                            </ListView.ItemContainerStyle>
+                        </ListView>
+                    </Grid>
+                    <Button Name="addinButton"
+                            Visibility="Visible"
+                            RelativePanel.AlignVerticalCenterWithPanel="True"
+                            RelativePanel.AlignRightWith="addinBase"
+                            Style="{StaticResource ButtonStyle1}"
+                            ToolTipService.ToolTip="Toggle Add-In Box"
+                            Click="AddinsButton_Click">
+                        <Button.Template>
+                            <ControlTemplate>
+                                <Border CornerRadius="20 0 0 20" Background="{StaticResource TITLE_BAR_WHITE}">
+                                    <SymbolIcon Symbol="Pictures" Margin="10"/>
+                                </Border>
+                            </ControlTemplate>
+                        </Button.Template>
+                        <Button.RenderTransform>
+                            <TranslateTransform x:Name="Buttonslide" X="0"/>
+                        </Button.RenderTransform>
+                    </Button>
+                    <Grid x:Name="badgeGrid"  
+                          RelativePanel.AlignRightWith="addinButton"
+                          RelativePanel.AlignBottomWith="addinButton"
+                          Visibility="Visible">
+                        <Border CornerRadius="14" BorderThickness="2.5" BorderBrush="{StaticResource TITLE_BAR_WHITE}">
+                            <Grid Background="White" Width="20" Height="20">
+                                <TextBlock Text="" Name="NumIcon" VerticalAlignment="Center" HorizontalAlignment="Center"                    
+                               FontSize="12"/>
+                            </Grid>
+                        </Border>
+                        <Grid.RenderTransform>
+                            <TranslateTransform x:Name="textslide" Y="-22" X="-22"/>
+                        </Grid.RenderTransform>
+                    </Grid>
+
+
                 </RelativePanel>
+                
+                
+                
             </Grid>
+            
         </SplitView>
         <!--APP SETTINGS POP UP GRID-->
         <Grid x:Name="AppSetting" Background="{StaticResource TITLE_BAR_WHITE}"
                         Visibility="Collapsed" Grid.Row="1" 
-                        Padding="10" Width="600" Height="300" RelativePanel.AlignBottomWithPanel="True">
+                        Padding="10" Width="600" Height="500" RelativePanel.AlignBottomWithPanel="True">
 
             <Grid>
                 <Grid.RowDefinitions>
@@ -855,6 +975,10 @@
                     <RowDefinition Height="Auto"/>
                     <RowDefinition Height="Auto"/>
                     <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+
 
                 </Grid.RowDefinitions>
                 <Grid.ColumnDefinitions>
@@ -900,9 +1024,61 @@
                     <RadioButton Content="OFF" Tag="Turn OFF Abbreviation Detection" Name="AbbrOFFBtn" GroupName="AbbrSwitcher" Checked="AbbreviationOFF_Checked"/>
                 </StackPanel>
 
+                <TextBlock Text="Suggestion:" Grid.Row="6" Grid.Column="0" Grid.ColumnSpan="1"
+                           VerticalAlignment="Center" HorizontalAlignment="Right"/>
+                <StackPanel Orientation="Horizontal" Grid.Row="6" Grid.Column="1" Grid.ColumnSpan="2" Spacing="10" HorizontalAlignment="Center">
+                    <TextBox x:Name="PhenoSuggestionAddr" PlaceholderText="Server Address" Width="300" Margin="5" />
+                    <Button Content="Change Address" Click="PhenoSuggestionAddr_Click"/>
+                </StackPanel>
+                <TextBlock Text="Differential:" Grid.Row="7" Grid.Column="0" Grid.ColumnSpan="1"
+                           VerticalAlignment="Center" HorizontalAlignment="Right"/>
+                <StackPanel Orientation="Horizontal" Grid.Row="7" Grid.Column="1" Grid.ColumnSpan="2" Spacing="10" HorizontalAlignment="Center">
+                    <TextBox x:Name="DiffDiagnosisAddr" PlaceholderText="Server Address" Width="300" Margin="5" />
+                    <Button Content="Change Address" Click="DiffDiagnosisAddr_Click"/>
+                </StackPanel>
+                <TextBlock Text="PhenoDetail:" Grid.Row="8" Grid.Column="0" Grid.ColumnSpan="1"
+                           VerticalAlignment="Center" HorizontalAlignment="Right"/>
+                <StackPanel Orientation="Horizontal" Grid.Row="8" Grid.Column="1" Grid.ColumnSpan="2" Spacing="10" HorizontalAlignment="Center">
+                    <TextBox x:Name="PhenoDetailAddr" PlaceholderText="Server Address" Width="300" Margin="5" />
+                    <Button Content="Change Address" Click="PhenoDetailAddr_Click"/>
+                </StackPanel>
+
+
+
 
             </Grid>
             </Grid>
+        <!--POPUP FOR SHOWING CLICKED SPEECH BUBBLE-->
+        <Canvas x:Name="popupcanvas">
+            <Grid x:Name="PhenotypePopup" CornerRadius="10" Visibility="Collapsed" Padding="5" Background="WhiteSmoke">
+                <ListView x:Name="PhenoInSpeechListView">
+
+                    <ListView.ItemTemplate>
+                        <DataTemplate x:DataType="phenotypeservice:Phenotype">
+                            <customcontrol:PhenotypeControl phenotypeName="{x:Bind name}" 
+                                                            phenotypeId="{x:Bind hpId}" 
+                                                            phenotypeState="{x:Bind state}" 
+                                                            sourceType="Speech"></customcontrol:PhenotypeControl>
+                        </DataTemplate>
+                    </ListView.ItemTemplate>
+                    <ListView.ItemContainerStyle>
+                        <Style TargetType="ListViewItem">
+                            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                            <Setter Property="VerticalContentAlignment" Value="Center" />
+                            <Setter Property="Margin" Value="0,0,0,0" />
+                            <Setter Property="Padding" Value="5,0,0,0" />
+                            <Setter Property="MinHeight" Value="20" />
+                        </Style>
+                    </ListView.ItemContainerStyle>
+
+                </ListView>
+
+
+            </Grid>
+
+        </Canvas>
+
+
         <!--POP UP PAGES FOR OVERVIEW / SPEECH-->
         <Popup Grid.Row="0" Grid.RowSpan="2" Grid.Column="0" x:Name="LoadingPopup" x:FieldModifier="public" IsOpen="True"
                HorizontalAlignment="Center" VerticalAlignment="Center" Width="{x:Bind Width}" Height="{x:Bind Height}"
@@ -923,7 +1099,7 @@
                 <TextBlock Grid.Row="1" VerticalAlignment="Center" HorizontalAlignment="Center" FontSize="26" Text="Loading"/>
             </Grid>
         </Popup>
-    
+
         <Popup x:Name="OverviewPopUp">
             <local:OverviewPage x:Name="OverivePopUpPage"/>
         </Popup>

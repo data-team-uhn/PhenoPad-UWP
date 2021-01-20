@@ -66,7 +66,7 @@
             <Button Style="{StaticResource ButtonStyle1}" Click="NameGrid_Tapped" Background="Transparent" Height="25" Grid.Column="1"
                     Padding="0" HorizontalAlignment="Left" HorizontalContentAlignment="Stretch" Width="auto">
                 <RelativePanel  HorizontalAlignment="Stretch" VerticalAlignment="Center">
-                    <TextBlock  Margin="5 0 0 0" FontSize="14" Grid.Column="1" x:Name="phenotypeNameTextBlock" Text="" VerticalAlignment="Center" >
+                    <TextBlock  Margin="5 0 0 0" FontSize="14" Grid.Column="1" x:Name="phenotypeNameTextBlock" Text="" HorizontalAlignment="Stretch" VerticalAlignment="Center" >
                     <ToolTipService.ToolTip>
                         <TextBlock  x:Name="phenotypeNameTextBlockTooltip" Text="" VerticalAlignment="Center"></TextBlock>
                     </ToolTipService.ToolTip>

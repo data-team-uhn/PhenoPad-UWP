@@ -29,6 +29,7 @@ namespace PhenoPad.Gestures
         private static Recognizer recognizer;
         private string GESTURE_PATH = ROOT_FOLDER.Path + "\\Gestures";
 
+        //empty constructor
         public GestureManager()
         {            
         }
@@ -52,21 +53,21 @@ namespace PhenoPad.Gestures
         {/// <summary>Pre-checks the stroke gesture before passing in to $1</summary>
 
             Rect bound = s.BoundingRect;
-            if (bound.Width < 20 && bound.Height < 20)
+            if (bound.Width < 15 && bound.Height < 15)
                 return "dot";
             else if (bound.Height / bound.Width > 3 && bound.Width < 20)
                 return "vline";
             else if (bound.Width / bound.Height > 3)
             {
                 List<InkPoint> pts = s.GetInkPoints().ToList();
-                //to prevent error spikes at the beginning/end of a stroke, only focus on mid-60% of the points
+                //to prevent error spikes at the beginning/end of a stroke, only focus on mid-80% of the points
                 int sections = (int)(pts.Count * 0.2); 
                 InkPoint pre_point = pts[sections];
-                pts = new ArraySegment<InkPoint> ( pts.ToArray(), sections, pts.Count - sections).ToList(); 
+                pts = new ArraySegment<InkPoint> ( pts.ToArray(), sections, pts.Count - sections).ToList();
+
+                // checking stroke directions and spikes count to determine whether this is a zigzag gesture
                 int spike_count = 0;
-                int direction = pts[0].Position.X < pts[5].Position.X ? 1 : -1;
-                 
-                
+                int direction = pts[0].Position.X < pts[5].Position.X ? 1 : -1;                             
                 for (int i = 0; i < pts.Count; i += 2)
                 {
                     if (direction == 1 && pts[i].Position.X < pre_point.Position.X)
