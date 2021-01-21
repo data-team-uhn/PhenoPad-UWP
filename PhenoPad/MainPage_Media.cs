@@ -72,8 +72,6 @@ namespace PhenoPad
 
 
 
-        public string RPI_ADDRESS = "http://192.168.137.32:8000";
-
         public BluetoothService.BluetoothService bluetoothService = null;
         public UIWebSocketClient uiClinet = null;
         private int doctor = 0;
@@ -177,6 +175,11 @@ namespace PhenoPad
 
         private async void PreviewMultiMedia()
         {
+            /// <summary>
+            /// Sets up and runs video stream preview
+            /// </summary>
+            // TODO: runs at preview button clicked event, exp with this function
+
             // initialize microphone choice
             if (ConfigService.ConfigService.getConfigService().IfUseExternalMicrophone())
                 ExternalMicRadioBtn.IsChecked = true;
@@ -185,7 +188,6 @@ namespace PhenoPad
 
             // steaming video
             string RPI_IP_ADDRESS = BluetoothService.BluetoothService.getBluetoothService().GetPiIP();
-            RPI_ADDRESS = "http://" + RPI_IP_ADDRESS + ":8000";
             // this.StreamView.Navigate(new Uri(RPI_ADDRESS));
 
             this.videoStreamWebSocket = new Windows.Networking.Sockets.MessageWebSocket();

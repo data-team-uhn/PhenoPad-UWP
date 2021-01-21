@@ -14,13 +14,12 @@ namespace PhenoPad.BluetoothService
 {
     public class BluetoothService
     {
-        // A pointer back to the main page is required to display status messages.
-        private MainPage rootPage = MainPage.Current;
+        private MainPage rootPage = MainPage.Current; // A pointer back to the main page is required to display status messages.
         RfcommDeviceService _service = null;
         StreamSocket _socket = null;
         private DeviceWatcher deviceWatcher = null;
         private DataWriter dataWriter = null;
-        private DataReader dataReader = null;
+        private DataReader dataReader = null; // NOTE: this variable is never used
         public string rpi_ipaddr = null;
         //private DataReader readPacket = null;
         private CancellationTokenSource cancellationSource;
@@ -35,6 +34,10 @@ namespace PhenoPad.BluetoothService
 
         public static BluetoothService getBluetoothService()
         {
+            /// <summary>
+            /// Returns the shared Bluetooth service object, initialize a new one if it does not exist.
+            /// </summary>
+           
             if (sharedBluetoothService == null)
             {
                 sharedBluetoothService = new BluetoothService();
@@ -48,6 +51,10 @@ namespace PhenoPad.BluetoothService
 
         public async Task Initialize()
         {
+            /// <summary>
+            /// Check the status of Bluetooth connection and set status parameters accordingly. If Bluetooth connection is not connected, intiate new connection.
+            /// </summary>> 
+
             rootPage = MainPage.Current;
             bool blueConnected = await checkConnection();
             if (!blueConnected)
@@ -56,7 +63,7 @@ namespace PhenoPad.BluetoothService
                 await Windows.ApplicationModel.Core.CoreApplication.MainView.CoreWindow.Dispatcher.RunAsync(CoreDispatcherPriority.Normal, async () =>{
                     while (!initialized)
                     {
-                        //only one thread allowed to initlize at a time
+                        // only one thread allowed to initlize at a time
                         await MainPage.Current.InitBTConnectionSemaphore.WaitAsync();
                         await InitiateConnection();
                         MainPage.Current.InitBTConnectionSemaphore.Release();
@@ -75,14 +82,20 @@ namespace PhenoPad.BluetoothService
         /// </summary>
         private async Task InitiateConnection()
         {
-
+            // NOTE: this function does a lot of things. Might be better to separate some of the code into other functions?
             if (initialized)
+            {
                 return;
-
+            }
             var serviceInfoCollection = await DeviceInformation.FindAllAsync(RfcommDeviceService.GetDeviceSelector(RfcommServiceId.SerialPort), new string[] { "System.Devices.AepService.AepId" });
+            
+            #region RFCOMMService Loop
+            // Identify the target RFCOMM device (Raspberry Pi) and try establish Bluetooth connection with the device.
             foreach (var serviceInfo in serviceInfoCollection)
             {
                 var deviceInfo = await DeviceInformation.CreateFromIdAsync((string)serviceInfo.Properties["System.Devices.AepService.AepId"]);
+                // NOTE: this might cause problem if there are more than 1 device with the name "raspberrypi", 
+                //       since the rfcomm service iterate through all devices and runs connection process for each one that meets deviceInfo.Name == "raspberrypi"
                 if (deviceInfo.Name == "raspberrypi")
                 {
                     DeviceAccessStatus accessStatus = DeviceAccessInformation.CreateFromId(deviceInfo.Id).CurrentStatus;
@@ -104,7 +117,8 @@ namespace PhenoPad.BluetoothService
                         var attempNum = 1;
                         for (; attempNum <= 6; attempNum++)
                         {
-                            //attempted 6 times and could not find available rfcommService
+                            // stop if attempted 6 times and could not find available rfcommService
+                            // NOTE: 6 times seems a bit excessive, is it better to reduce # of attempts?
                             if (attempNum == 6)
                             {
                                 return;
@@ -132,8 +146,7 @@ namespace PhenoPad.BluetoothService
                     }
                 }
             }
-
-            //END OF RFCOMMSERVICE LOOP
+            #endregion
 
             //lock (this)
             try
