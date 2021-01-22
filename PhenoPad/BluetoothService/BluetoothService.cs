@@ -31,13 +31,14 @@ namespace PhenoPad.BluetoothService
 
         public bool initialized = false;
 
-
+        /// <summary>
+        /// Gets an BluetoothService object.
+        /// </summary>
+        /// <remarks>
+        /// Returns the shared Bluetooth service object, initialize a new one if it does not exist.
+        /// </remarks>
         public static BluetoothService getBluetoothService()
         {
-            /// <summary>
-            /// Returns the shared Bluetooth service object, initialize a new one if it does not exist.
-            /// </summary>
-           
             if (sharedBluetoothService == null)
             {
                 sharedBluetoothService = new BluetoothService();
@@ -49,18 +50,22 @@ namespace PhenoPad.BluetoothService
             }
         }
 
+        /// <summary>
+        /// Initiate Bluetooth connection if connection does not exist.
+        /// </summary>
+        /// <remarks>
+        /// Check if a BLuetooth connection is alive.
+        /// If Bluetooth not connected, intiate new connection; otherwise, update t
+        /// </remarks>
         public async Task Initialize()
         {
-            /// <summary>
-            /// Check the status of Bluetooth connection and set status parameters accordingly. If Bluetooth connection is not connected, intiate new connection.
-            /// </summary>> 
-
             rootPage = MainPage.Current;
             bool blueConnected = await checkConnection();
             if (!blueConnected)
             {
                 rootPage.SetBTUIOnInit(blueConnected);
-                await Windows.ApplicationModel.Core.CoreApplication.MainView.CoreWindow.Dispatcher.RunAsync(CoreDispatcherPriority.Normal, async () =>{
+                await Windows.ApplicationModel.Core.CoreApplication.MainView.CoreWindow.Dispatcher.RunAsync(CoreDispatcherPriority.Normal, async () =>
+                {
                     while (!initialized)
                     {
                         // only one thread allowed to initlize at a time
@@ -78,10 +83,10 @@ namespace PhenoPad.BluetoothService
         }
 
         /// <summary>
-        /// Initiate bluetooth connection with Raspberry Pi
+        /// Initiate bluetooth connection with Raspberry Pi 
         /// </summary>
         private async Task InitiateConnection()
-        {
+        {   
             // NOTE: this function does a lot of things. Might be better to separate some of the code into other functions?
             if (initialized)
             {
@@ -90,7 +95,7 @@ namespace PhenoPad.BluetoothService
             var serviceInfoCollection = await DeviceInformation.FindAllAsync(RfcommDeviceService.GetDeviceSelector(RfcommServiceId.SerialPort), new string[] { "System.Devices.AepService.AepId" });
             
             #region RFCOMMService Loop
-            // Identify the target RFCOMM device (Raspberry Pi) and try establish Bluetooth connection with the device.
+            // Identify the target RFCOMM device (Raspberry Pi) and establish Bluetooth connection with the device.
             foreach (var serviceInfo in serviceInfoCollection)
             {
                 var deviceInfo = await DeviceInformation.CreateFromIdAsync((string)serviceInfo.Properties["System.Devices.AepService.AepId"]);
@@ -148,6 +153,8 @@ namespace PhenoPad.BluetoothService
             }
             #endregion
 
+            #region Socket Connection
+            // Establish Bluetooth connection on a stream socket.
             //lock (this)
             try
             {
@@ -161,11 +168,9 @@ namespace PhenoPad.BluetoothService
                 initialized = false;                
                 return;
             }
+            
 
-            //END OF SOCKET CONNECTION
-
-
-            // send hand shake
+            // Send hand shake message to Raspberry Pi through socket to confirm connection.
             try
             {
                 string temp = "HAND_SHAKE";
@@ -181,10 +186,15 @@ namespace PhenoPad.BluetoothService
                 LogService.MetroLogger.getSharedLogger().Info(ex.Message);
                 return;
             }
+            #endregion
 
-            // keep receiving data 
+            #region RPI Message Loop
+            // Handles message from Raspberry Pi (e.g. in the case of an audio service Error).
+            // TODO: Learn more about cancellationSource
             if (cancellationSource != null)
+            {
                 cancellationSource.Cancel();
+            }
             cancellationSource = new CancellationTokenSource();
             CancellationToken cancellationToken = cancellationSource.Token;
             await Task.Run(async () =>
@@ -194,8 +204,9 @@ namespace PhenoPad.BluetoothService
                     // don't run again for 
                     await Task.Delay(500);
                     string result = await ReceiveMessageUsingStreamWebSocket();
-                    if (result == "CONNECTION_ERROR") {
-                        //do nothing
+                    if (result == "CONNECTION_ERROR")
+                    {
+                        // Do nothing.
                     }
                     else if (!string.IsNullOrEmpty(result))
                     {
@@ -206,9 +217,8 @@ namespace PhenoPad.BluetoothService
                     }
                 }
             }, cancellationToken);
-                            
+            #endregion
 
-            //Debug.WriteLine("line 75");
             // Request additional properties
             string[] requestedProperties = new string[] { "System.Devices.Aep.DeviceAddress", "System.Devices.Aep.IsConnected" };
             deviceWatcher = DeviceInformation.CreateWatcher("(System.Devices.Aep.ProtocolId:=\"{e0cbf06c-cd8b-4647-bb8a-263b43f0f974}\")", requestedProperties, DeviceInformationKind.AssociationEndpoint);
@@ -216,142 +226,36 @@ namespace PhenoPad.BluetoothService
             deviceWatcher.Added += new TypedEventHandler<DeviceWatcher, DeviceInformation>(async (watcher, deviceInfo) =>
             {
                 if (initialized)
+                {
                     return;
-                //await rootPage.Dispatcher.RunAsync(CoreDispatcherPriority.High, async () =>
-                //{
-                //    // Make sure device name isn't blank
-                //    if (deviceInfo.Name == "raspberrypi")
-                //    {
-                //        DeviceAccessStatus accessStatus = DeviceAccessInformation.CreateFromId(deviceInfo.Id).CurrentStatus;
-                //        if (accessStatus == DeviceAccessStatus.DeniedByUser)
-                //        {
-                //            rootPage.NotifyUser("This app does not have access to connect to the remote device (please grant access in Settings > Privacy > Other Devices", NotifyType.ErrorMessage, 3);
-                //            return;
-                //        }
-                //        try
-                //        {
-                //            bluetoothDevice = await BluetoothDevice.FromIdAsync(deviceInfo.Id);
-                //            if (bluetoothDevice == null)
-                //            {
-                //                LogService.MetroLogger.getSharedLogger().Error("Bluetooth Device returned null. Access Status = " + accessStatus.ToString());
-                //                return;
-                //            }
-                //            var attempNum = 1;
-                //            for (; attempNum <= 5; attempNum++)
-                //            {
-                //                var rfcommServices = await bluetoothDevice.GetRfcommServicesForIdAsync(RfcommServiceId.FromUuid(Constants.RfcommChatServiceUuid), BluetoothCacheMode.Uncached);
-
-                //                if (rfcommServices.Services.Count > 0)
-                //                {
-                //                    LogService.MetroLogger.getSharedLogger().Info("Found rfcommService.");
-                //                    blueService = rfcommServices.Services[0];
-                //                    break;
-                //                }
-                //                else
-                //                {
-                //                    //LogService.MetroLogger.getSharedLogger().Info("Could not discover Bluetooh server on the remote device, trying again...");
-                //                    await Task.Delay(TimeSpan.FromSeconds(3));
-                //                }
-                //            }
-                //            if (attempNum == 6)
-                //            {
-                //                //LogService.MetroLogger.getSharedLogger().Error("Bluetooth connection attempt exceeded 5, trying again later ...");
-                //                rootPage.audioButton.IsEnabled = true;
-                //                rootPage.audioButton.IsChecked = false;
-                //                rootPage.bluetoonOn = false;
-                //                return;
-                //            }
-
-
-                //            //========================================
-                //            StopWatcher();
-                //            lock (this)
-                //            {
-                //                _socket = new StreamSocket();
-                //            }
-                //            try
-                //            {
-                //                await _socket.ConnectAsync(blueService.ConnectionHostName, blueService.ConnectionServiceName);
-                //                //SetChatUI(attributeReader.ReadString(serviceNameLength), bluetoothDevice.Name);
-                //                dataWriter = new DataWriter(_socket.OutputStream);
-                //                //readPacket = new DataReader(_socket.InputStream);
-                //            }
-                //            catch (Exception ex) // ERROR_ELEMENT_NOT_FOUND
-                //            {
-                //                LogService.MetroLogger.getSharedLogger().Error("in device added" + ex.Message);
-                //            }
-                //            // send hand shake
-                //            try
-                //            {
-                //                string temp = "HAND_SHAKE";
-                //                //dataWriter.WriteUInt32((uint)temp.Length);
-                //                dataWriter.WriteString(temp);
-                //                Debug.WriteLine("\nWriting message " + temp.ToString() + " via Bluetooth\n");
-                //                await dataWriter.StoreAsync();
-                //                this.initialized = true;
-                //                rootPage.NotifyUser("Bluetooth Connected", NotifyType.StatusMessage, 1);
-                //                rootPage.bluetoonOn = true;
-                //                rootPage.bluetoothInitialized(true);
-                //                rootPage.bluetoothicon.Visibility = Windows.UI.Xaml.Visibility.Visible;
-                //                rootPage.bluetoothprogress.Visibility = Windows.UI.Xaml.Visibility.Collapsed;
-                //                //rootPage.StartAudioAfterBluetooth();
-                //            }
-                //            catch (Exception ex) when ((uint)ex.HResult == 0x80072745)
-                //            {
-                //                //remote side disconnect
-                //                LogService.MetroLogger.getSharedLogger().Info(ex.Message);
-                //                return;
-                //            }
-
-                //            // keep receiving data 
-                //            if (cancellationSource != null)
-                //                cancellationSource.Cancel();
-                //            cancellationSource = new CancellationTokenSource();
-                //            CancellationToken cancellationToken = cancellationSource.Token;
-
-                //            await Task.Run(async () =>
-                //            {
-                //                while (true && !cancellationToken.IsCancellationRequested)
-                //                {
-                //                    // don't run again for 
-                //                    await Task.Delay(500);
-                //                    string result = await ReceiveMessageUsingStreamWebSocket();
-                //                    if (!string.IsNullOrEmpty(result))
-                //                    {
-                //                        LogService.MetroLogger.getSharedLogger().Info(result);
-                //                        string[] temp = result.Split(' ');
-                //                        if (temp[0] == "ip")
-                //                            rpi_ipaddr = temp[1];
-                //                    }
-
-                //                }
-                //            }, cancellationToken);
-                //        }
-                //        catch (Exception e)
-                //        {
-                //            LogService.MetroLogger.getSharedLogger().Error(e.Message);
-                //            return;
-                //        }
-                //    }
-                //});
-
+                }
             });
-            deviceWatcher.Stopped += new TypedEventHandler<DeviceWatcher, object>((watcher, deviceInfo) => {
+            deviceWatcher.Stopped += new TypedEventHandler<DeviceWatcher, object>((watcher, deviceInfo) => 
+            {
                 //Debug.WriteLine("device watcher stopped");
             });
-            deviceWatcher.Removed += new TypedEventHandler<DeviceWatcher, DeviceInformationUpdate>((watcher, deviceInfo) => {
+            deviceWatcher.Removed += new TypedEventHandler<DeviceWatcher, DeviceInformationUpdate>((watcher, deviceInfo) => 
+            {
                 //Debug.WriteLine("device watcher removed");
             });
             deviceWatcher.Start();           
         }
 
-        public async void HandleAudioException(string message) {
+        public async void HandleAudioException(string message)
+        {
+            /// <summary>
+            /// Handles audio service errors caused by crashes on Raspberry Pi side.
+            /// </summary>
+
+            // If Raspberry Pi's audio client fails
             if (message.Equals(RESTART_AUDIO_FLAG) && MainPage.Current.speechManager.speechResultsSocket.streamSocket != null)
             {
                 LogService.MetroLogger.getSharedLogger().Error("\nBluetoothService=> GOT EXCEPTION, will try to kill audio\n");
                 await MainPage.Current.KillAudioService();
             }
-            else if (message.Equals(RESTART_BLUETOOTH_FLAG)) {
+            // If Raspberry Pi's Bluetooth server/control client fails
+            else if (message.Equals(RESTART_BLUETOOTH_FLAG))
+            {
                 LogService.MetroLogger.getSharedLogger().Error("\nBluetoothService=> GOT DEXCEPTION, will try to restart bluetooth\n");
                 MainPage.Current.RestartBTOnException();
             }
@@ -365,10 +269,13 @@ namespace PhenoPad.BluetoothService
 
         public async Task<bool> checkConnection()
         {
+            /// <summary>
+            /// Checks if Bluetooth connection is alive by sending a test message.
+            /// </summary>
             try
             {
-                //dataWriter.WriteUInt32((uint)temp.Length);
-                if (dataWriter != null) {
+                if (dataWriter != null)
+                {
                     LogService.MetroLogger.getSharedLogger().Info("Checking whether the connection is still alive...");
                     string temp = "are you alive?";
                     dataWriter.WriteString(temp);
@@ -386,23 +293,26 @@ namespace PhenoPad.BluetoothService
             }
         }
 
-        /// <summary>
-        /// receive data from stream socket
-        /// </summary>
+        
         public async Task<String> ReceiveMessageUsingStreamWebSocket()
         {
+            /// <summary>
+            /// Receive data from stream socket.
+            /// </summary>
+
             string returnMessage = String.Empty;
             try
             {
-                uint length = 100;     // Leave a large buffer
+                uint length = 100;     // Leave a large buffer.
                 var readBuf = new Windows.Storage.Streams.Buffer((uint)length);
-                var readOp = await this._socket.InputStream.ReadAsync(readBuf, (uint)length, InputStreamOptions.Partial);
-                //await readOp;   // Don't move on until we have finished reading from server
+                var readOp = await this._socket.InputStream.ReadAsync(readBuf, (uint)length, InputStreamOptions.Partial); // Don't move on until we have finished reading from server.
                 DataReader readPacket = DataReader.FromBuffer(readBuf);
                 uint buffLen = readPacket.UnconsumedBufferLength;
                 returnMessage = readPacket.ReadString(buffLen);
                 if (returnMessage.Length > 0)
-                    Debug.WriteLine($"BLUETOOTH RETURN MESSAGE=>{returnMessage}\n");               
+                {
+                    Debug.WriteLine($"BLUETOOTH RETURN MESSAGE=>{returnMessage}\n");
+                }
             }
             catch (Exception exp)
             {
@@ -417,8 +327,10 @@ namespace PhenoPad.BluetoothService
         {
             if (null != deviceWatcher)
             {
-                if ((DeviceWatcherStatus.Started == deviceWatcher.Status ||
-                     DeviceWatcherStatus.EnumerationCompleted == deviceWatcher.Status))
+                bool deviceWatcherStarted = (DeviceWatcherStatus.Started == deviceWatcher.Status);
+                bool deviceWatcherEnumerationCompleted = (DeviceWatcherStatus.EnumerationCompleted == deviceWatcher.Status);
+
+                if (deviceWatcherStarted || deviceWatcherEnumerationCompleted)
                 {
                     deviceWatcher.Stop();
                 }
@@ -447,7 +359,8 @@ namespace PhenoPad.BluetoothService
                     _service.Dispose();
                     _service = null;
                 }
-                if (blueService != null) {
+                if (blueService != null)
+                {
                     blueService.Dispose();
                     blueService = null;
                 }
@@ -466,13 +379,18 @@ namespace PhenoPad.BluetoothService
                 return true;
 
             }
-            catch (Exception e) {
+            catch (Exception e)
+            {
                 LogService.MetroLogger.getSharedLogger().Error($"Failed to close bluetooth connection:{e}:{e.Message}");
                 return false;
             }
-
         }
 
+        /// <summary>
+        /// Add content here...
+        /// </summary>
+        /// <param name="message"></param>
+        /// <returns></returns>
         public async Task<bool> sendBluetoothMessage(string message)
         {
             //if bluetooth connection is not establiched,

@@ -28,7 +28,7 @@ using System.Linq;
 
 namespace PhenoPad
 {
-    // This is a partial class of Mainpage that contains methods regarding to video/audio functions including specch engine.
+    // This is a partial class of Mainpage that contains methods regarding to video/audio functions including speech engine.
     public sealed partial class MainPage : Page, INotifyPropertyChanged
     {
         #region properties
@@ -112,19 +112,21 @@ namespace PhenoPad
         #endregion
         //======================================== START OF METHODS =======================================/
 
+        /// <summary>
+        /// Updates the bluetooth video camera stream status (turns video streaming ON/OFF).
+        /// </summary>
+        /// <param name="desiredStatus">Boolean value. True for ON, False for OFF.</param>
+        /// <remarks>
+        /// If Bluetooth connected, turn on video streaming by sending "camera start" to Raspberry Pi if desiredStatus is True;
+        /// else turn off video streaming by sending "camera stop" to Raspberry Pi.
+        /// </remarks>
         private async Task videoStreamStatusUpdateAsync(bool desiredStatus)
         {
-            /// <summary>
-            /// Updates the bluetooth video camera stream status 
-            /// </summary>
-
             if (this.bluetoothService == null)
             {
                 NotifyUser("Could not reach Bluetooth device, try to connect again",
                                    NotifyType.ErrorMessage, 2);
                 this.VideoOn = false;
-
-                //this.bluetoothInitialized(false);
                 this.StreamButton.IsChecked = false;
                 return;
             }
@@ -141,6 +143,7 @@ namespace PhenoPad
             }
             //this.videoSwitch.IsOn = desiredStatus;
             //this.StreamButton.IsChecked = desiredStatus;
+            // TODO: check if this is outdated.
 
             Debug.WriteLine("Setting status value to " + (this.bluetoothService.initialized && desiredStatus).ToString());
             this.VideoOn = this.bluetoothService.initialized && desiredStatus;
@@ -173,12 +176,19 @@ namespace PhenoPad
             }
         }
 
+        /// <summary>
+        /// Sets up and runs video stream preview.
+        /// </summary>
+        /// <remarks>
+        /// Is called in a preview-button-clicked event.
+        /// When called:
+        /// - Sets microphone options button status based on local setting.
+        /// - Fetches and sets RPI address (which is not used anywhere).
+        /// - Initializes videoStreamWebSocket and subscribe event handler functions to handle video stream socket events.  
+        /// </remarks>
         private async void PreviewMultiMedia()
         {
-            /// <summary>
-            /// Sets up and runs video stream preview
-            /// </summary>
-            // TODO: runs at preview button clicked event, exp with this function
+            // TODO: exp with this function
 
             // initialize microphone choice
             if (ConfigService.ConfigService.getConfigService().IfUseExternalMicrophone())
@@ -214,13 +224,17 @@ namespace PhenoPad
 
         #region BLUETOOTH RELATED
 
+        /// <summary>
+        /// Handles DEXCEPTION (Device Exception) received from Raspberry Pi, 
+        /// </summary>
+        /// <remarks>
+        /// Restarts bluetooth connection only (because automatically re-connecting causes errros). Stops speech service before closing bluetooth.
+        /// </remarks>
         public async void RestartBTOnException()
         {
-            //Handles DEXCEPTION received from raspberry pi, restarts bluetooth connection only
-            //uiClinet.disconnect();
-            //stops speech service before closing bluetooth
-            await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, async () => {
-
+            //uiClinet.disconnect(); TODO: learn about this
+            await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, async () => 
+            {
                 if (speechEngineRunning)
                     await SpeechManager.getSharedSpeechManager().StopASRResults();
 
@@ -275,6 +289,7 @@ namespace PhenoPad
                 {
                     try
                     {
+                        // TODO: Learn more about this:
                         //temporarily disables for debugging reseasons
                         //=====
                         //uiClinet = UIWebSocketClient.getSharedUIWebSocketClient();
@@ -344,12 +359,23 @@ namespace PhenoPad
             return success;
          }
 
+        /// <summary>
+        /// Set status of UI element parameters related to Bluetooth.
+        /// </summary>
+        /// <param name="initialized"></param>
+        /// <remarks>
+        /// Assigns the value of *initialized* to the parameters. 
+        /// Affected UI elements:
+        ///     Video Button;
+        ///     Audio button;
+        ///     Shutter Button.
+        /// </remarks>
         public void SetBTUIOnInit(bool initialized)
         {
             /// Initialize bluetooth stream input status
 
             StreamButton.IsEnabled = initialized;
-            shutterButton.IsEnabled = initialized;
+            shutterButton.IsEnabled = initialized; //  TODO: What is shutter button?
             audioButton.IsEnabled = initialized;
             bluetoothicon.Visibility = initialized ? Visibility.Visible : Visibility.Collapsed;
             bluetoonOn = initialized;
