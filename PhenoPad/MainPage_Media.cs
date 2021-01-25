@@ -103,7 +103,7 @@ namespace PhenoPad
         private CancellationTokenSource cancelSource;
         private CancellationToken token;
         private List<byte> audioBuffer;
-        public static string SERVER_ADDR = "137.135.117.253";
+        public static string SERVER_ADDR = "137.135.117.253"; //TODO: this address is outdated
         public static string SERVER_PORT = "8080";
 
         private int RETRIES = 3;
@@ -149,17 +149,27 @@ namespace PhenoPad
             this.VideoOn = this.bluetoothService.initialized && desiredStatus;
         }
 
+        /// <summary>
+        /// Changes chat view display when there's changes to the contents.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="args"></param>
+        /// <remarks>
+        /// Subscribed to ChatListView.ContainerContentChanging event. Displays text message on the chat view container.
+        /// - if message is not final:
+        ///     Display message on the right (by setting the horizontal alignment of the item container to the right)
+        /// - if message is final:
+        ///     Display message on the right if speaker is doctor (currently set to 0), otherwise display on the left. 
+        ///     Update chat view's layout and scroll the list to bring the last item (latest message) into view.
+        /// </remarks>
         private async void OnChatViewContainerContentChanging(ListViewBase sender, ContainerContentChangingEventArgs args)
         {
             /// <summary>
-            /// Handles chat view container change event and displays the message on chat view container 
+            ///  
             /// </summary>
 
             if (args.InRecycleQueue) return;
             TextMessage message = (TextMessage)args.Item;
-
-            // Only display message on the right when speaker index = 0
-            //args.ItemContainer.HorizontalAlignment = (message.Speaker == 0) ? Windows.UI.Xaml.HorizontalAlignment.Right : Windows.UI.Xaml.HorizontalAlignment.Left;
 
             if (message.IsNotFinal)
             {
@@ -168,7 +178,7 @@ namespace PhenoPad
             else
             {
                 args.ItemContainer.HorizontalAlignment = (message.Speaker == doctor) ? HorizontalAlignment.Right : HorizontalAlignment.Left;
-                //Need this dispatcher in-order to avoid threading errors
+                // Need this dispatcher in-order to avoid threading errors
                 await CoreApplication.MainView.CoreWindow.Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () => {
                     chatView.UpdateLayout();
                     chatView.ScrollIntoView(chatView.Items[chatView.Items.Count - 1]);
@@ -196,23 +206,22 @@ namespace PhenoPad
             else
                 SurfaceMicRadioBtn.IsChecked = true;
 
-            // steaming video
+            // Acquire Raspberry Pi's IP address.
             string RPI_IP_ADDRESS = BluetoothService.BluetoothService.getBluetoothService().GetPiIP();
-            // this.StreamView.Navigate(new Uri(RPI_ADDRESS));
 
+            // Initialize video stream websocket.
             this.videoStreamWebSocket = new Windows.Networking.Sockets.MessageWebSocket();
             // In this example, we send/receive a string, so we need to set the MessageType to Utf8.
             this.videoStreamWebSocket.Control.MessageType = Windows.Networking.Sockets.SocketMessageType.Utf8;
             this.videoStreamWebSocket.Closed += WebSocket_Closed;
             this.videoStreamWebSocket.MessageReceived += WebSocket_MessageReceived;
 
+            // Connect and send command to Raspberry Pi.
             try
             {
                 videoStreamCancellationToken = videoCancellationSource.Token;
-                Task connectTask = this.videoStreamWebSocket.ConnectAsync(new Uri("ws://" + RPI_IP_ADDRESS + ":8000/websocket")).AsTask();
+                Task connectTask = this.videoStreamWebSocket.ConnectAsync(new Uri("ws://" + RPI_IP_ADDRESS + ":8000/websocket")).AsTask(); // NOTE: should the socket be hardcoded here?
                 await connectTask.ContinueWith(_ => this.SendMessageUsingMessageWebSocketAsync("read_camera"));
-                //Task.Run(() => this.WebSocket_MessageReceived());
-                //Task.Run(() => this.SendMessageUsingStreamWebSocket(Encoding.UTF8.GetBytes("read_camera")));
 
             }
             catch (Exception ex)
@@ -235,6 +244,7 @@ namespace PhenoPad
             //uiClinet.disconnect(); TODO: learn about this
             await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, async () => 
             {
+                // Stops speech service first if it is running.
                 if (speechEngineRunning)
                     await SpeechManager.getSharedSpeechManager().StopASRResults();
 
