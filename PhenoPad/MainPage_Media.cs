@@ -68,7 +68,7 @@ namespace PhenoPad
                 }
             }
         } //automation properties
-        public bool bluetoonOn;
+        public bool bluetoonOn; // TODO: the value of this is the same as BluetoothService.initialized, why use a separate variable?
 
 
 
@@ -280,6 +280,14 @@ namespace PhenoPad
 
         }
 
+        /// <summary>
+        /// Runs with "Toggle Bluetooth" Button is clicked.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        /// <remarks>
+        /// Subscribed to the BTConnectBtn(Toggle Bluetooth) clicked event.
+        /// </remarks>
         private async void BTConnectBtn_Click(object sender, RoutedEventArgs e)
         {
             var result = true;
@@ -288,13 +296,19 @@ namespace PhenoPad
             });
         }
 
+        /// <summary>
+        /// Changes state of Bluetooth connection.
+        /// </summary>
+        /// <returns>(bool)true if toggle state changed successfully, (bool)false otherwise</returns>
+        /// <remarks>
+        /// Called at the BTConnectBtn(Toggle Bluetooth) clicked event. 
+        /// If Bluetooth is connected, also stops ASR service.
+        /// </remarks>
         public async Task<bool> changeSpeechEngineState_BT()
         {
-            /// <summary>
-            /// Switch speech engine state for blue tooth devices
-            /// </summary>
             bool result = true;
             await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, async () => {
+                // If Bluetooth is not connected, connect.
                 if (!bluetoonOn)
                 {
                     try
@@ -318,15 +332,16 @@ namespace PhenoPad
                         result = false;
                     }
                 }
+                // If Bluetooth connected, stop speech service first, then close Bluetooth connection.
                 else
                 {
                     try
                     {
                         //uiClinet.disconnect();
-                        //stops speech service before closing bluetooth
                         if (speechEngineRunning)
                             await SpeechManager.getSharedSpeechManager().StopASRResults();
                         Debug.WriteLine("stopped ASR RESULT \n");
+
                         result = bluetoothService.CloseConnection();
                         if (result)
                         {
@@ -341,12 +356,11 @@ namespace PhenoPad
                         LogService.MetroLogger.getSharedLogger().Error($"Failed to turn off BT: {e.Message}");
                     }
                     result = false;
-
                 }
-
             });
             return result;
         }
+
 
         public async Task<bool> StartAudioAfterBluetooth() {
             var success = false;
@@ -372,7 +386,7 @@ namespace PhenoPad
         /// <summary>
         /// Set status of UI element parameters related to Bluetooth.
         /// </summary>
-        /// <param name="initialized"></param>
+        /// <param name="initialized">Variable representing the state of the Bluetooth connection</param>
         /// <remarks>
         /// Assigns the value of *initialized* to the parameters. 
         /// Affected UI elements:
