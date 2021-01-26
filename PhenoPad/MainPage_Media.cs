@@ -276,12 +276,10 @@ namespace PhenoPad
             if (!success) {
                 LogService.MetroLogger.getSharedLogger().Error("Bluetooth Connection failed to reconnect.");
             }
-
-
         }
 
         /// <summary>
-        /// Runs with "Toggle Bluetooth" Button is clicked.
+        /// Runs when "Toggle Bluetooth" Button is clicked.
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
@@ -297,7 +295,7 @@ namespace PhenoPad
         }
 
         /// <summary>
-        /// Changes state of Bluetooth connection.
+        /// Changes state of Bluetooth connection (called when "Toggle Bluetooth" Button is clicked).
         /// </summary>
         /// <returns>(bool)true if toggle state changed successfully, (bool)false otherwise</returns>
         /// <remarks>
@@ -361,7 +359,12 @@ namespace PhenoPad
             return result;
         }
 
-
+        //TODO: maybe this function can have a better name?
+        //TODO: might be better to add code to handle speechEngineRunning == true (for clarity), although it should never occur.
+        /// <summary>
+        /// Sends "start audio" command to Raspberry Pi to start recording and connects to the ASR server to receive ASR results.
+        /// </summary>
+        /// <returns>(bool)true if successfully sent command and connected to server, (bool)false otherwise</returns>
         public async Task<bool> StartAudioAfterBluetooth() {
             var success = false;
             DisableAudioButton();
@@ -372,7 +375,7 @@ namespace PhenoPad
                 speechManager.CreateNewAudioName();
                 string audioName = speechManager.GetAudioNameForServer();
                 Debug.WriteLine($"start BT Audio, addr = {uri}");
-                success = await bluetoothService.sendBluetoothMessage($"audio start manager_id=666 server_uri={uri} audiofile_name={audioName}");
+                success = await bluetoothService.sendBluetoothMessage($"audio start manager_id=666 server_uri={uri} audiofile_name={audioName}"); //TODO: manager_id should not be hardcoded
                 if (!success)
                 {
                     LogService.MetroLogger.getSharedLogger().Error("failed to send audio start message to raspi");

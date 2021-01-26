@@ -58,7 +58,7 @@ namespace PhenoPad.BluetoothService
         /// </summary>
         /// <remarks>
         /// Check if a BLuetooth connection is alive.
-        /// If Bluetooth not connected, intiate new connection; otherwise, update t
+        /// If Bluetooth not connected, intiate new connection; otherwise, update UI element parameters.
         /// </remarks>
         public async Task Initialize()
         {

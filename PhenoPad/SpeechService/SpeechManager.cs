@@ -1136,7 +1136,7 @@ namespace PhenoPad.SpeechService
 
         public string GetAudioNameForServer() {
             string noteName = MainPage.Current.notebookId;
-            int workerID = 666;
+            int workerID = 666; // TODO: ID shouldn't be hardcoded in the function
 
             return $"{workerID}_{noteName}_{currentAudioName}";
         }
