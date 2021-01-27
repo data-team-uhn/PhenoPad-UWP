@@ -90,7 +90,7 @@ namespace PhenoPad
         /// not per-app.
         private static uint HResultPrivacyStatementDeclined = 0x80045509;
         /// Keep track of whether the continuous recognizer is currently running, so it can be cleaned up appropriately.
-        private bool isListening;
+        private bool isListening; //NOTE: this field is never used.
 
         //for requesting server audio playbacks
         [XmlArray("Audios")]
@@ -411,17 +411,19 @@ namespace PhenoPad
         #endregion
 
         #region Speech Recognizer
+
+        //NOTE: This function is not used anywhere in the project.
+        /// <summary>
+        /// Initializes Speech Recognizer and sets up recognizer constraints.
+        /// </summary>
+        /// <param name="recognizerLanguage">Language to use for the speech recognizer.</param>
+        /// <returns>Awaitable task.</returns>
+        //NOTE: this function does not return anything!
         private async Task InitializeRecognizer(Language recognizerLanguage)
         {
-            /// <summary>
-            /// Initialize Speech Recognizer and compile constraints.
-            /// </summary>
-            /// <param name="recognizerLanguage">Language to use for the speech recognizer</param>
-            /// <returns>Awaitable task.</returns>
-
+            // Clean up prior to re-initializing.
             if (speechRecognizer != null)
             {
-                // cleanup prior to re-initializing this scenario.
                 speechRecognizer.StateChanged -= SpeechRecognizer_StateChanged;
                 speechRecognizer.ContinuousRecognitionSession.Completed -= ContinuousRecognitionSession_Completed;
                 speechRecognizer.ContinuousRecognitionSession.ResultGenerated -= ContinuousRecognitionSession_ResultGenerated;
@@ -441,30 +443,31 @@ namespace PhenoPad
             var dictationConstraint = new SpeechRecognitionTopicConstraint(SpeechRecognitionScenario.Dictation, "dictation");
             speechRecognizer.Constraints.Add(dictationConstraint);
             SpeechRecognitionCompilationResult result = await speechRecognizer.CompileConstraintsAsync();
+
             if (result.Status != SpeechRecognitionResultStatus.Success)
             {
-                //rootPage.NotifyUser("Grammar Compilation Failed: " + result.Status.ToString(), NotifyType.ErrorMessage);
                 Console.WriteLine("Grammar Compilation Failed: " + result.Status.ToString());
-                //micButton.IsEnabled = false;
             }
 
-            // Handle continuous recognition events. Completed fires when various error states occur. ResultGenerated fires when
-            // some recognized phrases occur, or the garbage rule is hit. HypothesisGenerated fires during recognition, and
-            // allows us to provide incremental feedback based on what the user's currently saying.
+            // Subscribe handler functions to handle continuous recognition events. 
+            // - Completed is called when various error states occur. 
+            // - ResultGenerated is called when some recognized phrases occur, or the garbage rule is hit. 
+            // - HypothesisGenerated fires during recognition, and allows us to provide incremental feedback based on what the user's currently saying.
             speechRecognizer.ContinuousRecognitionSession.Completed += ContinuousRecognitionSession_Completed;
             speechRecognizer.ContinuousRecognitionSession.ResultGenerated += ContinuousRecognitionSession_ResultGenerated;
             speechRecognizer.HypothesisGenerated += SpeechRecognizer_HypothesisGenerated;
         }
 
+        /// <summary>
+        /// Handles events where errors occur, such as the microphone becoming unavailable.
+        /// </summary>
+        /// <param name="sender">The continuous recognition session.</param>
+        /// <param name="args">The result state of the recognition session.</param>
+        /// <remarks>
+        /// Subscribes to the event where a continuous recognition session ends, in the case in the event of an error.
+        /// </remarks>
         private async void ContinuousRecognitionSession_Completed(SpeechContinuousRecognitionSession sender, SpeechContinuousRecognitionCompletedEventArgs args)
         {
-            /// <summary>
-            /// Handle events fired when error conditions occur, such as the microphone becoming unavailable, or if
-            /// some transient issues occur.
-            /// </summary>
-            /// <param name="sender">The continuous recognition session</param>
-            /// <param name="args">The state of the recognizer</param>
-
             if (args.Status != SpeechRecognitionResultStatus.Success)
             {
                 // If TimeoutExceeded occurs, the user has been silent for too long. We can use this to 
@@ -475,9 +478,7 @@ namespace PhenoPad
                 {
                     await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () =>
                     {
-                        //rootPage.NotifyUser("Automatic Time Out of Dictation", NotifyType.StatusMessage);
                         Console.WriteLine("Automatic Time Out of Dictation");
-                        //cmdBarTextBlock.Text = dictatedTextBuilder.ToString();
                         isListening = false;
                     });
                 }
@@ -485,46 +486,46 @@ namespace PhenoPad
                 {
                     await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () =>
                     {
-                        //rootPage.NotifyUser("Continuous Recognition Completed: " + args.Status.ToString(), NotifyType.StatusMessage);
                         Console.WriteLine("Continuous Recognition Completed: " + args.Status.ToString());
                         isListening = false;
                     });
                 }
             }
-
-
         }
 
+        /// <summary>
+        /// While the user is speaking, update the textbox with partial speech recognition results for user feedback.
+        /// </summary>
+        /// <param name="sender">The recognizer which generated the hypothesis.</param>
+        /// <param name="args">The recognition result fragment.</param>
+        /// <remarks>
+        /// Handler function that handles events where a recognition result fragment is returned by the dictation session.
+        /// </remarks>
         private async void SpeechRecognizer_HypothesisGenerated(SpeechRecognizer sender, SpeechRecognitionHypothesisGeneratedEventArgs args)
         {
-            /// <summary>
-            /// While the user is speaking, update the textbox with the partial sentence of what's being said for user feedback.
-            /// </summary>
-            /// <param name="sender">The recognizer that has generated the hypothesis</param>
-            /// <param name="args">The hypothesis formed</param>
-
             string hypothesis = args.Hypothesis.Text;
 
-            // Update the textbox with the currently confirmed text, and the hypothesis combined.
+            // Update the textbox with the confirmed text and the hypothesis combined.
             string textboxContent = dictatedTextBuilder.ToString() + " " + hypothesis + " ...";
             await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () =>
             {
-                //cmdBarTextBlock.Text = textboxContent;
-                //cmdBarTextBlock.Text = hypothesis;
+                //NOTE: this method is empty
             });
-
         }
 
+        /// <summary>
+        /// Update textbox content when a speech recognition result is generated.
+        /// </summary>
+        /// <param name="sender">The Recognition session which generated this result.</param>
+        /// <param name="args">The complete recognition result.</param>
+        /// <remarks>
+        /// Handler function that handles events where a speech recognition result is generated.
+        /// Check for high to medium confidence, and then append the string to the end of the stringbuffer,
+        /// and replace the content of the textbox with the string buffer, to remove any hypothesis text 
+        /// that may be present.
+        /// </remarks>
         private async void ContinuousRecognitionSession_ResultGenerated(SpeechContinuousRecognitionSession sender, SpeechContinuousRecognitionResultGeneratedEventArgs args)
         {
-            /// <summary>
-            /// Handle events fired when a result is generated. Check for high to medium confidence, and then append the
-            /// string to the end of the stringbuffer, and replace the content of the textbox with the string buffer, to
-            /// remove any hypothesis text that may be present.
-            /// </summary>
-            /// <param name="sender">The Recognition session that generated this result</param>
-            /// <param name="args">Details about the recognized speech</param>
-
             // We may choose to discard content that has low confidence, as that could indicate that we're picking up
             // noise via the microphone, or someone could be talking out of earshot.
             if (args.Result.Confidence == SpeechRecognitionConfidence.Medium ||
@@ -532,52 +533,49 @@ namespace PhenoPad
             {
                 dictatedTextBuilder.Append(args.Result.Text + " ");
 
+                //TODO: learn more about this
                 await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, async () =>
                 {
-
                     //cmdBarTextBlock.Text = dictatedTextBuilder.ToString();
-                    //cmdBarTextBlock.Text = args.Result.Text;
                     //SpeechManager.getSharedSpeechManager().AddNewMessage(args.Result.Text);
                     //List<Phenotype> annoResults = await PhenotypeManager.getSharedPhenotypeManager().annotateByNCRAsync("");
                     //if (annoResults != null)
-                    {
-                        //PhenotypeManager.getSharedPhenotypeManager().addPhenotypeInSpeech(annoResults);
+                    //{
+                    //PhenotypeManager.getSharedPhenotypeManager().addPhenotypeInSpeech(annoResults);
 
-                        /**
-                        AnnoPhenoStackPanel.Children.Clear();
-                        foreach (Phenotype ap in annoResults)
+                    /**
+                    AnnoPhenoStackPanel.Children.Clear();
+                    foreach (Phenotype ap in annoResults)
+                    {
+                        Button tb = new Button();
+                        tb.Content= ap.name;
+                        tb.Margin = new Thickness(5, 5, 0, 0);
+                        
+                        if (PhenotypeManager.getSharedPhenotypeManager().checkIfSaved(ap))
+                            tb.BorderBrush = new SolidColorBrush(Colors.Black);
+                        tb.Click += delegate (object s, RoutedEventArgs e)
                         {
-                            Button tb = new Button();
-                            tb.Content= ap.name;
-                            tb.Margin = new Thickness(5, 5, 0, 0);
-                            
-                            if (PhenotypeManager.getSharedPhenotypeManager().checkIfSaved(ap))
-                                tb.BorderBrush = new SolidColorBrush(Colors.Black);
-                            tb.Click += delegate (object s, RoutedEventArgs e)
-                            {
-                                ap.state = 1;
-                                PhenotypeManager.getSharedPhenotypeManager().addPhenotype(ap, SourceType.Speech);
-                                tb.BorderBrush = new SolidColorBrush(Colors.Black);
-                            };
-                            AnnoPhenoStackPanel.Children.Add(tb);
-                        }
-                         **/
+                            ap.state = 1;
+                            PhenotypeManager.getSharedPhenotypeManager().addPhenotype(ap, SourceType.Speech);
+                            tb.BorderBrush = new SolidColorBrush(Colors.Black);
+                        };
+                        AnnoPhenoStackPanel.Children.Add(tb);
                     }
+                     **/
+                    //}
                 });
             }
             else
             {
                 // In some scenarios, a developer may choose to ignore giving the user feedback in this case, if speech
                 // is not the primary input mechanism for the application.
-                // Here, just remove any hypothesis text by resetting it to the last known good.
+                // Here, just discard the hypothesis text.
                 await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () =>
                 {
-                    //cmdBarTextBlock.Text = dictatedTextBuilder.ToString();
                     string discardedText = args.Result.Text;
                     if (!string.IsNullOrEmpty(discardedText))
                     {
                         discardedText = discardedText.Length <= 25 ? discardedText : (discardedText.Substring(0, 25) + "...");
-
                         Console.WriteLine("Discarded due to low/rejected Confidence: " + discardedText);
                     }
                 });
