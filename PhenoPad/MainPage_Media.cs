@@ -410,7 +410,7 @@ namespace PhenoPad
 
         #endregion
 
-        #region Speech Recognizer
+        #region Windows Speech Recognizer
 
         //NOTE: This function is not used anywhere in the project.
         /// <summary>
@@ -582,33 +582,27 @@ namespace PhenoPad
             }
         }
 
+        /// <summary>
+        /// Notify the user when the recognizer is receiving their voice input.
+        /// </summary>
+        /// <param name="sender">The recognizer that is currently running.</param>
+        /// <param name="args">The current state of the recognizer.</param>
         private async void SpeechRecognizer_StateChanged(SpeechRecognizer sender, SpeechRecognizerStateChangedEventArgs args)
         {
-            /// <summary>
-            /// Provide feedback to the user based on whether the recognizer is receiving their voice input.
-            /// </summary>
-            /// <param name="sender">The recognizer that is currently running.</param>
-            /// <param name="args">The current state of the recognizer.</param>
-
             await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () => {
-                //this.NotifyUser(args.State.ToString(), NotifyType.StatusMessage);
+                this.NotifyUser(args.State.ToString(), NotifyType.StatusMessage, 1); //TODO: this is probably a bad way to do this, although this code is not used.
                 Console.WriteLine(args.State.ToString());
             });
         }
 
-        private void SpeechManager_EngineHasResult(SpeechManager sender, SpeechEngineInterpreter args)
-        {
-            /// <summary>
-            /// Update text to display latest sentence
-            /// TODO : Feels like there exists more legitimate wasy to do this
-            /// </summary>
-
-            //this.cmdBarTextBlock.Text = args.latestSentence;
-            throw new NotImplementedException();
-        }
-
         #endregion
 
+        /// <summary>
+        /// Runs a funtion until successful excecution or maximum number of attempts reached.
+        /// </summary>
+        /// <param name="retries">Maximum number of attempts to run function.</param>
+        /// <param name="f">The target function which returns a boolean value that represents success/failure.</param>
+        /// <returns>(bool)true if function successfully excecuted, (bool)false otherwise</returns>
         private async Task<bool> RunFuncWithRetries (int retries, Task<bool> f)
         {
             bool success = await f;
@@ -623,23 +617,25 @@ namespace PhenoPad
                 retryCount--;
                 success = await f;
             }
-
             return success;
         }
 
+        //TODO: This function is also called to kill the audio stream, should consider renaming it for readibility.
+        //      Can rename this function, and make a new handler function AudioStreamButton_Clicked which calls it.
+        /// <summary>
+        /// Invoked when user presses the Microphone button on sidebar, starts/stops speech service.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private async void AudioStreamButton_Clicked(object sender = null, RoutedEventArgs e = null)
         {
-            /// <summary>
-            /// Invoked when user presses the Microphone button on sidebar, requests speech engine connection
-            /// as well as connection to remote server for speech recognition
-            /// </summary>
-
             //Temporarily disables audio button for avoiding frequent requests
             DisableAudioButton();
 
-            // using external microphone
+            // if using external microphone (Raspberry Pi)
             if (ConfigService.ConfigService.getConfigService().IfUseExternalMicrophone())
             {
+                // Notify the user if Bluetooth is not connected.
                 if (!bluetoonOn)
                 {
                     NotifyUser("Bluetooth is not connected, cannot use External Microphone.", NotifyType.ErrorMessage, 2);
@@ -647,29 +643,25 @@ namespace PhenoPad
                 }
                 else
                 {
-                    //ASR is already on, turning off ASR
+                    //If ASR is already on, turn off ASR.
                     if (speechEngineRunning)
                     {
-                        //var success = await SpeechManager.getSharedSpeechManager().StopASRResults();
                         var success = await RunFuncWithRetries(RETRIES, SpeechManager.getSharedSpeechManager().StopASRResults());
                     }
-                    //Bluetooth is connected and ASR isn't already on so just start ASR
+                    // If Bluetooth is connected and ASR isn't already on, start ASR.
                     else
                     {
-                        //var success = await StartAudioAfterBluetooth();
                         var success = await RunFuncWithRetries(RETRIES, StartAudioAfterBluetooth());
                     }
 
                 }
             }
-            // using internal microphone
+            // if using internal microphone.
             else
             {
-                //var success = await changeSpeechEngineState();
                 var success = await RunFuncWithRetries(RETRIES, changeSpeechEngineState());
                 ReEnableAudioButton();
             }
-
         }
 
         public async Task<bool> changeSpeechEngineState()
