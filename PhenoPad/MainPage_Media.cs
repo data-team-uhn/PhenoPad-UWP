@@ -804,8 +804,11 @@ namespace PhenoPad
         {
             //don't handle requests with invalid intervals
             if (start >= end)
+            {
                 return;
-            if (playbackSem.CurrentCount == 0) {
+            }
+            if (playbackSem.CurrentCount == 0)
+            {
                 Debug.WriteLine("semaphore currently inuse will abort");
                 return;
             }

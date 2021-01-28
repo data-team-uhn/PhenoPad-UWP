@@ -70,6 +70,7 @@ namespace PhenoPad
         public int curPageIndex = -1;
         public static MainPage Current;
         private string curPageId = "";
+        // unique identifier of the current note file
         public string notebookId = "";
         private Notebook notebookObject;
         public static readonly string TypeMode = "Typing Mode";

@@ -66,6 +66,7 @@ namespace PhenoPad.FileService
         public string currentNoteboookId = "";
         //setting application data root folder as the default disk access location
         private StorageFolder ROOT_FOLDER = ApplicationData.Current.LocalFolder;
+        
         #endregion
 
         /// <summary>
@@ -78,15 +79,15 @@ namespace PhenoPad.FileService
 
         #region GET methods
         /// <summary>
-        /// Returns the file manager object if exists, otherwise initialize a new file manager.
+        /// Returns the file manager object if it exists, otherwise initialize a new file manager.
         /// </summary>
+        /// <returns>the shared file manager object</returns>
         public static FileManager getSharedFileManager()
         {
             if (sharedFileManager == null)
             {
                 sharedFileManager = new FileManager();
             }
-
             return sharedFileManager;
         }
 
@@ -312,23 +313,34 @@ namespace PhenoPad.FileService
             return false;
         }
 
+        /// <summary>
+        /// TODO ...
+        /// </summary>
+        /// <param name="notebookId"></param>
+        /// <param name="names"></param>
+        /// <returns></returns>
         public async Task<bool> SaveAudioNamesToXML(string notebookId, List<string>names) {
-            try {
+            try
+            {
                 var path = GetNoteFilePath(notebookId, "", NoteFileType.AudioMeta);
                 bool result = await SaveObjectSerilization(path, names, typeof(List<string>));
                 return result;
             }
-            catch (Exception e) {
+            catch (Exception e)
+            {
                 LogService.MetroLogger.getSharedLogger().Error(e.Message);
                 return false;
             }
         }
 
-        /// <summary>
-        /// Gets the operation log file under local folder, if such file does not exist, creates a new one and returns it
-        /// </summary>
-        public async Task<StorageFile> GetOperationLogFile(string notebookId) {
-            try { 
+        
+        public async Task<StorageFile> GetOperationLogFile(string notebookId)
+        {
+            /// <summary>
+            /// Gets the operation log file under local folder, if such file does not exist, creates a new one and returns it
+            /// </summary>
+            try
+            { 
                 //StorageFolder localFolder = ApplicationData.Current.LocalFolder;
                 string filepath = GetNoteFilePath(notebookId, "", NoteFileType.OperationLog);
                 var item = await ROOT_FOLDER.TryGetItemAsync(filepath);
@@ -362,11 +374,12 @@ namespace PhenoPad.FileService
             }
         }
 
-        /// <summary>
-        /// Creates and returns a new local file for given Notebook, returns null if failed.
-        /// </summary>
+       
         public async Task<StorageFile> GetNoteFile(string notebookId, string notePageId, NoteFileType fileType, string name = "")
         {
+            /// <summary>
+            /// Creates and returns a new local file for given Notebook, returns null if failed.
+            /// </summary>
             try
             {
                 StorageFile notefile = null;
@@ -384,11 +397,12 @@ namespace PhenoPad.FileService
             }
         }
 
-        /// <summary>
-        /// Returns the file given IDs,type and name fron root folder. Return null if failed.
-        /// </summary>
+        
         public async Task<StorageFile> GetNoteFileNotCreate(string notebookId, string notePageId, NoteFileType fileType, string name = "")
         {
+            /// <summary>
+            /// Returns the file given IDs,type and name fron root folder. Return null if failed.
+            /// </summary>
             try
             {
                 string filepath = GetNoteFilePath(notebookId, notePageId, fileType, name);
@@ -406,10 +420,18 @@ namespace PhenoPad.FileService
         }
 
         /// <summary>
-        /// Return a file path by notebook and page id, apply to various file types 
+        /// TODO ...
         /// </summary>
+        /// <param name="notebookId"></param>
+        /// <param name="notePageId"></param>
+        /// <param name="fileType"></param>
+        /// <param name="name"></param>
+        /// <returns></returns>
         public string GetNoteFilePath(string notebookId, string notePageId, NoteFileType fileType, string name = "")
         {
+            /// <summary>
+            /// Return a file path by notebook and page id, apply to various file types 
+            /// </summary>
             string foldername = String.Format(@"{0}\{1}\", notebookId, notePageId);
             switch (fileType)
             {
@@ -917,8 +939,16 @@ namespace PhenoPad.FileService
 
         SemaphoreSlim serilizationSS = new SemaphoreSlim(1);
         /// <summary>
-        /// Save object to XML meta file and returns boolean result.
+        /// Saves the state of the object to a XML meta file.
         /// </summary>
+        /// <param name="filepath">path to save the XML file to</param>
+        /// <param name="tosave">the object to be saved</param>
+        /// <param name="type">the type of the object being saved</param>
+        /// <returns>(bool)true if save successful, (bool)false otherwise</returns>
+        /// <remarks>
+        /// Serialize the object into XML document to save the state of the object.
+        /// Used to save states and properties of a note for future access.
+        /// </remarks>
         public async Task<bool> SaveObjectSerilization(string filepath, Object tosave, Type type)
         {
             await serilizationSS.WaitAsync();
@@ -927,7 +957,6 @@ namespace PhenoPad.FileService
             Stream stream = null;
             try
             {
-                //StorageFolder localFolder = ApplicationData.Current.LocalFolder;
                 sfile = await ROOT_FOLDER.CreateFileAsync(filepath, CreationCollisionOption.ReplaceExisting);
                 //Windows.Storage.CachedFileManager.DeferUpdates(sfile);
                 stream = await sfile.OpenStreamForWriteAsync();
@@ -946,7 +975,10 @@ namespace PhenoPad.FileService
             {
                 serilizationSS.Release();
                 if (stream != null)
+                {
                     stream.Dispose();
+                }
+                //TODO: why is this commented out?
                 // Finalize write so other apps can update file.
                 // Windows.Storage.Provider.FileUpdateStatus status = await Windows.Storage.CachedFileManager.CompleteUpdatesAsync(sfile);
             }
