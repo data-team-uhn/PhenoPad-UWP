@@ -664,12 +664,19 @@ namespace PhenoPad
             }
         }
 
+        /// <summary>
+        /// Starts/stops speech service when using internal/plug-in microphones.
+        /// </summary>
+        /// <returns>(bool)true if successfully start/stop audion, (bool)false otherwise</returns>
+        /// <remarks>
+        /// If speech service is not running, start speech; otherwise, end speech.
+        /// </remarks>
         public async Task<bool> changeSpeechEngineState()
         {
-            /// Switch speech engine state for plug-in devices
             try
             {
                 var success = true;
+                
                 if (speechEngineRunning == false)
                 {
                     NotifyUser("Starting Audio using internal microphone ...", NotifyType.StatusMessage, 7);
@@ -680,13 +687,13 @@ namespace PhenoPad
                     NotifyUser("Ending Audio ...", NotifyType.StatusMessage, 2);
                     success = await SpeechManager.getSharedSpeechManager().EndAudio(notebookId);
                 }
-                //#region demo
+                #region Speech Demo
                 ////FOR DEMO PURPOSES, COMMENT OUT FOR REAL USAGE
                 //if (speechEngineRunning == false)
                 //    await SpeechManager.getSharedSpeechManager().StartAudioDemo();
                 //else
                 //    await SpeechManager.getSharedSpeechManager().EndAudioDemo(notebookId);
-                //#endregion
+                #endregion
                 return success;
             }
             catch (Exception ex)
@@ -697,29 +704,49 @@ namespace PhenoPad
 
         }
 
-        public void onAudioStarted(object sender, object e) {
-            audioTimer.Stop();
+        /// <summary>
+        /// Update vairable values and notify user when speech service starts.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        public void onAudioStarted(object sender = null, object e = null)
+        {
+            audioTimer.Stop(); //TODO: What does audioTimer do exactly? audioTimer.start() is called only during demos.
             speechEngineRunning = true;
             NotifyUser("Audio service started.", NotifyType.StatusMessage, 1);
             LogService.MetroLogger.getSharedLogger().Info("Audio started.");
             ReEnableAudioButton();
         }
 
-        public void onAudioEnded() {
+        /// <summary>
+        /// Update vairable values and notify user when speech service ends.
+        /// </summary>
+        public void onAudioEnded()
+        {
             speechEngineRunning = false;
             NotifyUser("Audio service ended.", NotifyType.StatusMessage, 1);
             LogService.MetroLogger.getSharedLogger().Info("Audio stopped.");
             ReEnableAudioButton();
         }
 
-        public void DisableAudioButton() {
+        /// <summary>
+        /// Makes the audio button un-interactable.
+        /// </summary>
+        public void DisableAudioButton()
+        {
             audioButton.IsEnabled = false;
             audioStatusText.Text = "...";
         }
 
+        /// <summary>
+        /// Re-enables the audio button and provide user with visual feedback of speech service's current state through text.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         public async void ReEnableAudioButton(object sender = null, object e = null)
         {
-            await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, async () => {
+            await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, async () => 
+            {
                 await Task.Delay(TimeSpan.FromSeconds(7));
                 audioButton.IsEnabled = true;
                 if (speechEngineRunning)
@@ -735,21 +762,39 @@ namespace PhenoPad
             });
         }
 
-        public async Task KillAudioService() {
-            await Dispatcher.RunAsync(CoreDispatcherPriority.High, async () => {
+        //NOTE: Question: Why not directly call AudioStreamButton_Clicked();
+        /// <summary>
+        /// Stops speech service.
+        /// </summary>
+        /// <returns></returns>
+        /// <remarks>
+        /// Stops speech service by calling AudioStreamButton_Clicked.
+        /// </remarks>
+        public async Task KillAudioService()
+        {
+            await Dispatcher.RunAsync(CoreDispatcherPriority.High, async () => 
+            {
                 if (speechEngineRunning)
-                {//close all audio services before navigating
+                {
+                    //close all audio services before navigating
                     Debug.WriteLine("Killing audio service");
-                    await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () => {
+                    await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () => 
+                    {
                         AudioStreamButton_Clicked();
                     });
                     await Task.Delay(TimeSpan.FromSeconds(7));
+                }
+                else
+                {
+                    Debug.WriteLine("Cannot kill audio service: audio service not running");
                 }
             });
             return;
         }
 
-        public async void SaveNewAudioName(string name) {
+        //TODO
+        public async void SaveNewAudioName(string name)
+        {
             this.SavedAudios.Add(name);
             await FileService.FileManager.getSharedFileManager().SaveAudioNamesToXML(notebookId, SavedAudios);
             speechManager.ClearCurAudioName();
