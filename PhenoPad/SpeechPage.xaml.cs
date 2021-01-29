@@ -281,7 +281,11 @@ namespace PhenoPad
                 var savedFile = await FileManager.getSharedFileManager().GetSavedAudioFile(MainPage.Current.notebookId, m.AudioFile);
 
 
-                //gets the local audio file and plays based on saved interval
+                // If audio is saved locally, get the local audio file and play based on saved interval
+                // NOTE: seems the audio starts playing at the starting timestamp but doesn't auto-end at the ending timestamp
+                // TODO: instead the playbacktimer is set to tick after ts which is defined using the starting timestamp
+                //       wouldn't this cause problem if starting time is like 1s
+                // TODO: Investigate
                 if (savedFile != null)
                 {
                     if (loadedMedia != savedFile.Name)
@@ -290,14 +294,14 @@ namespace PhenoPad
                         loadedMedia = savedFile.Name;
                         mediaText.Text = savedFile.Name;
                     }
-                    TimeSpan ts = new TimeSpan(0, 0, start_minute, start_second, start_mili);
+                    TimeSpan ts = new TimeSpan(0, 0, start_minute, start_second, start_mili); //TODO: better not hardcode hour to 0 since it's possible for the recording to exceed 1 hour
                     playbackTimer.Interval = ts;
                     //Debug.WriteLine(ts);
                     _mediaPlayerElement.MediaPlayer.Position = ts;
                     _mediaPlayerElement.MediaPlayer.Play();
                     playbackTimer.Start();
                 }
-                //tries to get file from server and plays
+                // If no local save exists, try to get file from server and play.
                 else if (savedFile == null)
                 {
                     Debug.WriteLine("requesting from server");
@@ -409,6 +413,8 @@ namespace PhenoPad
             }
         }
 
+        //TODO: the name of this function is misleading, 
+        //      a better name would be something like setSpeakerNumButtonsEnabled
         public void setSpeakerButtonEnabled(bool enabled)
         {
             this.addSpeakerBtn.IsEnabled = enabled;

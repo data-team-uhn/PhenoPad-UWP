@@ -669,6 +669,7 @@ namespace PhenoPad
         /// </summary>
         /// <returns>(bool)true if successfully start/stop audion, (bool)false otherwise</returns>
         /// <remarks>
+        /// Called when choosing the "interal mic" option (i.e. not using the Raspberry Pi for audio).
         /// If speech service is not running, start speech; otherwise, end speech.
         /// </remarks>
         public async Task<bool> changeSpeechEngineState()
@@ -792,33 +793,48 @@ namespace PhenoPad
             return;
         }
 
-        //TODO
+        /// <summary>
+        /// Add the name of a newly created audio file to the saved list of audio file names.
+        /// </summary>
+        /// <param name="name">the name of the new audio file</param>
+        /// <remarks>
+        /// Called when a new audio file is available (e.g. when a new speech session is completed).
+        /// Add the new audio's name to the AudioMeta xml file to keep track of audio files created
+        /// from this note.
+        /// </remarks>
         public async void SaveNewAudioName(string name)
         {
             this.SavedAudios.Add(name);
             await FileService.FileManager.getSharedFileManager().SaveAudioNamesToXML(notebookId, SavedAudios);
-            speechManager.ClearCurAudioName();
+            speechManager.ClearCurAudioName(); //TODO
         }
 
+        //TODO: the name of this file can be misleading, this function actually connects to speech server, request 
+        //      audio from the server, then plays the audio received.
+        //      A better name can be something like "RequestAndPlayAudio"
+        /// <summary>
+        /// Downloads an audio segment from the speech server and plays the audio.
+        /// </summary>
+        /// <param name="audioFileName">the name of the saved audio file</param>
+        /// <param name="start">the starting timestamp of the audio segment</param>
+        /// <param name="end">the ending timestamp of the audio segment</param>
         public async void PlayMedia(string audioFileName,double start = 0, double end = 0)
         {
-            //don't handle requests with invalid intervals
+            // Don't process requests with invalid intervals
             if (start >= end)
             {
                 return;
             }
             if (playbackSem.CurrentCount == 0)
             {
-                Debug.WriteLine("semaphore currently inuse will abort");
+                Debug.WriteLine("semaphore currently inuse, will abort");
                 return;
             }
             await playbackSem.WaitAsync();
             playbackStreamSocket = new StreamWebSocket();
             try
             {
-
-                string audioName = $"666_{notebookId}_{audioFileName} {start} {end}";
-                //Uri serverUri = new Uri("ws://" + SERVER_ADDR + ":" + SERVER_PORT + "/client/ws/file_request");
+                string audioName = $"666_{notebookId}_{audioFileName} {start} {end}"; //TODO: managerID should not be hardcoded
                 String serverAddr = ASRAddrInput.Text.Trim().Split(':')[0];
                 String serverPort = ASRAddrInput.Text.Trim().Split(':')[1];
                 Uri serverUri = new Uri("ws://" + serverAddr + ":" + serverPort + "/client/ws/file_request");
@@ -831,10 +847,11 @@ namespace PhenoPad
                     throw new Exception(connectTask.Exception.Message);
                 }
 
-                //sends the requested audio name to server through buffer
+                // send the requested audio name to server through buffer
                 var bytes = Encoding.UTF8.GetBytes(audioName);
                 await playbackStreamSocket.OutputStream.WriteAsync(bytes.AsBuffer());
 
+                // receive audio from server
                 uint length = 1000000;     // Leave a large buffer
                 audioBuffer = new List<Byte>();
                 isReading = true;
@@ -851,12 +868,12 @@ namespace PhenoPad
             }
             catch (TaskCanceledException)
             {
-                //Plays the audio received from server
+                // Finished receiving audio. Play the audio received from server.
                 readTimer.Stop();
                 Debug.WriteLine("------------------END RECEIVING" + audioBuffer.Count + "----------------");
                 MemoryStream mem = new MemoryStream(audioBuffer.ToArray());
                 MediaPlayer player = new MediaPlayer();
-                player.SetStreamSource(mem.AsRandomAccessStream());
+                player.SetStreamSource(mem.AsRandomAccessStream()); //TODO: warning
                 player.Play();
                 Debug.WriteLine("done");
             }
@@ -871,8 +888,14 @@ namespace PhenoPad
 
         }
 
-        public async Task<bool> GetRemoteAudioAndSave(string audioName) {
-            //don't handle requests with invalid intervals
+        /// <summary>
+        /// Download audio from the speech server and save to a local save file.
+        /// </summary>
+        /// <param name="audioName">the name of the audio file</param>
+        /// <returns>(bool)true if download and save successful, (bool)false otherwise</returns>
+        public async Task<bool> GetRemoteAudioAndSave(string audioName)
+        {
+            // don't process requests with invalid intervals
             if (playbackSem.CurrentCount == 0)
             {
                 return false;
@@ -881,7 +904,8 @@ namespace PhenoPad
             playbackStreamSocket = new StreamWebSocket();
             try
             {
-                string audioserverName = $"666_{notebookId}_" + audioName;
+                // TODO: variable name audioservername misleading
+                string audioserverName = $"666_{notebookId}_" + audioName; //TODO: hardcoded managerID
                 Uri serverUri = new Uri("ws://" + SERVER_ADDR + ":" + SERVER_PORT + "/client/ws/file_request");
                 Task connectTask = playbackStreamSocket.ConnectAsync(serverUri).AsTask();
 
@@ -892,7 +916,7 @@ namespace PhenoPad
                     throw new Exception(connectTask.Exception.Message);
                 }
 
-                //sends the requested audio name to server through buffer
+                // sends the requested audio name to server through buffer
                 var bytes = Encoding.UTF8.GetBytes(audioserverName);
                 await playbackStreamSocket.OutputStream.WriteAsync(bytes.AsBuffer());
 
@@ -912,7 +936,7 @@ namespace PhenoPad
             }
             catch (TaskCanceledException)
             {
-                //Plays the audio received from server
+                // saves the audio received from server
                 readTimer.Stop();
                 Debug.WriteLine("------------------END RECEIVING " + audioBuffer.Count + "----------------");
                 if (audioBuffer.Count == 0)
@@ -935,15 +959,25 @@ namespace PhenoPad
             return true;
         }
 
-        private void EndAudioStream(object sender, object e)
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        /// <remarks>
+        /// Subscribe to readTimer.Tick event
+        /// </remarks>
+        private void EndAudioStream(object sender = null, object e = null)
         {
             isReading = false;
             cancelSource.Cancel();
         }
 
+        //TODO: don't fully understand this yet
+        //TODO: experiment with this
         private void SpeechBubble_DoubleTapped(object sender, DoubleTappedRoutedEventArgs e)
         {
-            //handling when user double tapps on the speech bubble in the realtime conversation grid
+            //handling when user double taps on the speech bubble in the realtime conversation grid
 
             //Debug.WriteLine("doubletapped");
             TextBlock tb = ((TextBlock)sender);
@@ -955,32 +989,35 @@ namespace PhenoPad
             var element_Visual_Relative2 = tb.TransformToVisual(this);
             Point pos_bubble = element_Visual_Relative2.TransformPoint(new Point(0, 0));
 
-
-
             TextMessage tm = speechManager.speechInterpreter.GetTextMessage(body);
 
             if (tm != null && tm.phenotypesInText.Count > 0)
             {
                 //Debug.WriteLine($"has phenotype, first = {tm.phenotypesInText[0].name}");
                 PhenoInSpeechListView.ItemsSource = tm.phenotypesInText;
-                showingPhenoSpeech = tm.phenotypesInText;
+                showingPhenoSpeech = tm.phenotypesInText; //TODO: what is this?
                 Canvas.SetLeft(PhenotypePopup, pos_grid.X);
                 Canvas.SetTop(PhenotypePopup, pos_bubble.Y - 50);
                 PhenotypePopup.Visibility = Visibility.Visible;
                 UpdateLayout();
             }
         }
-      
+        
+        //TODO: Complete documentation of this when question about this is resolved.
+        // Saves ASR transcripts to local file
         public async Task SaveCurrentConversationsToDisk()
         {
             // save transcriptions to local file only when there's transcripts
 
+            //TODO: Question: What are currentConversation and Current.conversations?
             if ( speechManager.speechInterpreter.CurrentConversationHasContent() || Current.conversations.Count > 0)
-            {//only save transcripts if there are finalized messages
+            {  
+                // only save transcripts if there are finalized messages
                 try
                 {
                     string fpath = FileManager.getSharedFileManager().GetNoteFilePath(
                       FileManager.getSharedFileManager().currentNoteboookId, "", NoteFileType.Transcriptions, "transcripts");
+
                     var result = await FileManager.getSharedFileManager().SaveObjectSerilization(fpath, conversations, typeof(List<TextMessage>));
                     Debug.WriteLine($"transcripts saved to {fpath}, result = {result}");
                 }

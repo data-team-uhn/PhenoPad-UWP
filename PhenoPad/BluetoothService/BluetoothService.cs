@@ -399,7 +399,7 @@ namespace PhenoPad.BluetoothService
         }
 
         /// <summary>
-        /// Send message (command) to Raspberry Pi.
+        /// Send message/command to Raspberry Pi.
         /// </summary>
         /// <param name="message">The message to be sent.</param>
         /// <returns>(bool)true if the message is successfully sent, (bool)false otherwise</returns>

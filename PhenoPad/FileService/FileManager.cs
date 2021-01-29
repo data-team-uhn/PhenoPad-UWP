@@ -294,7 +294,15 @@ namespace PhenoPad.FileService
             return null;
         }
 
-        public async Task<bool> SaveByteAudioToFile(string notebookId, string name, List<Byte> bytes) {
+        /// <summary>
+        /// Write audio data in the form of bytes to a save file.
+        /// </summary>
+        /// <param name="notebookId">the unique identifier of the note the audio originated from</param>
+        /// <param name="name">name of the audio file</param>
+        /// <param name="bytes">byte audio data in a list</param>
+        /// <returns></returns>
+        public async Task<bool> SaveByteAudioToFile(string notebookId, string name, List<Byte> bytes)
+        {
             var path = GetNoteFilePath(notebookId, "", NoteFileType.Audio, name);
 
             try
@@ -314,11 +322,11 @@ namespace PhenoPad.FileService
         }
 
         /// <summary>
-        /// TODO ...
+        /// Stores the names of the saved recordings from this note to an XML meta file.
         /// </summary>
-        /// <param name="notebookId"></param>
-        /// <param name="names"></param>
-        /// <returns></returns>
+        /// <param name="notebookId">the unique identifier of the note</param>
+        /// <param name="names">a list of the names of the saved recordings</param>
+        /// <returns>(bool)true if save successful, (bool)false otherwise</returns>
         public async Task<bool> SaveAudioNamesToXML(string notebookId, List<string>names) {
             try
             {
@@ -420,18 +428,15 @@ namespace PhenoPad.FileService
         }
 
         /// <summary>
-        /// TODO ...
+        /// Returns the path of a saved file based on file type given the notebook and note page's id.
         /// </summary>
-        /// <param name="notebookId"></param>
-        /// <param name="notePageId"></param>
-        /// <param name="fileType"></param>
-        /// <param name="name"></param>
+        /// <param name="notebookId">the unique identifier of the note</param>
+        /// <param name="notePageId">the identifier of the note page</param>
+        /// <param name="fileType">the type of the file in question</param>
+        /// <param name="name">the name of the file</param>
         /// <returns></returns>
         public string GetNoteFilePath(string notebookId, string notePageId, NoteFileType fileType, string name = "")
         {
-            /// <summary>
-            /// Return a file path by notebook and page id, apply to various file types 
-            /// </summary>
             string foldername = String.Format(@"{0}\{1}\", notebookId, notePageId);
             switch (fileType)
             {
