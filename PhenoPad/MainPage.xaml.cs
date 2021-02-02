@@ -70,6 +70,7 @@ namespace PhenoPad
         public int curPageIndex = -1;
         public static MainPage Current;
         private string curPageId = "";
+        // unique identifier of the current note file
         public string notebookId = "";
         private Notebook notebookObject;
         public static readonly string TypeMode = "Typing Mode";
@@ -86,7 +87,9 @@ namespace PhenoPad
         #endregion
 
         //******************************END OF ATTRIBUTES DEFINITION***************************************
-        
+        /// <summary>
+        /// TODO ...
+        /// </summary>
         public MainPage()
         {/// <summary>Creates and initializes a new MainPage instance.</summary>
             Current = this;
@@ -155,7 +158,7 @@ namespace PhenoPad
 
             isReading = false;
             readTimer = new DispatcherTimer();
-            readTimer.Interval = TimeSpan.FromSeconds(1.5);
+            readTimer.Interval = TimeSpan.FromSeconds(1.5); //TODO: Question: if readTimer interval is set to 1.5s, and EndAudioStream is called at timer tick, how does audiostream have time to read data? 
             readTimer.Tick += EndAudioStream;
 
             cancelService = new CancellationTokenSource();

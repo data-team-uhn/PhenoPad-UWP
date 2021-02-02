@@ -43,7 +43,7 @@ namespace PhenoPad.SpeechService
     public class SpeechManager
     {
         //private string serverAddress = "54.226.217.30";
-        private string serverAddress = "speechengine.ccm.sickkids.ca";
+        private string serverAddress = "speechengine.ccm.sickkids.ca"; //TODO: change this to the public server?
         private string serverPort = "8888";
         public static string DEFAULT_SERVER = "speechengine.ccm.sickkids.ca";
         public static string DEFAULT_PORT = "8888";
@@ -69,6 +69,7 @@ namespace PhenoPad.SpeechService
         public event TypedEventHandler<SpeechManager, StorageFile> RecordingCreated;
         public StorageFile savedFile;
 
+        //TODO: investigate this comment
         // file debug seems to be broken?
         private bool useFile = false;
         private CancellationTokenSource cancellationSource;
@@ -93,7 +94,14 @@ namespace PhenoPad.SpeechService
             this.speechAPI = new SpeechRESTAPI();          
         }
 
-
+        /// <summary>
+        /// Returns a shared speech manager object.
+        /// </summary>
+        /// <returns>the shared speech manager object</returns>
+        /// <remarks>
+        /// If an instance of the speech manager class has not been created yet,
+        /// initialize a new one.
+        /// </remarks>
         public static SpeechManager getSharedSpeechManager()
         {
             if (sharedSpeechManager == null)
@@ -106,6 +114,7 @@ namespace PhenoPad.SpeechService
                 return sharedSpeechManager;
             }
         }
+        # region Set/Get
         public void setServerAddress(string ads)
         {
             this.serverAddress = ads;
@@ -144,22 +153,29 @@ namespace PhenoPad.SpeechService
             this.speechInterpreter = new SpeechEngineInterpreter(this.conversation, this.realtimeConversation);
             currentAudioName = "";
         }
+        # endregion
 
 
         // ================================= AUDIO START / STOP FOR USING EXTERNAL MICROPHONE =============================
+
         /// <summary>
-        /// connect to client/speech/results
-        /// only receive results without sending audio signals
+        /// ...
         /// </summary>
+        /// <returns></returns>
         public async Task<bool> ReceiveASRResults()
         {
+            /// <summary>
+            /// connect to client/speech/results
+            /// only receive results without sending audio signals
+            /// </summary>
+            # region Speech Server Connection
             MainPage.Current.NotifyUser("Connecting to speech result server...", NotifyType.StatusMessage, 1);
             Debug.WriteLine($"Connecting to speech result server...");
             bool succeed = false;
             try {
                 speechResultsSocket = new SpeechResultsSocket(this.serverAddress, this.serverPort);
                 succeed = await speechResultsSocket.ConnectToServer();
-                //looping this connection attempt until user prompts to cancel
+                // loop this connection attempt until user prompts to cancel
                 while (!succeed)
                 {
                     var messageDialog = new MessageDialog($"Failed to connect to ASR {serverAddress}:{serverPort}.\n Would you like to retry connection?");
@@ -172,26 +188,26 @@ namespace PhenoPad.SpeechService
                     messageDialog.CancelCommandIndex = 1;
 
                     // Show the message dialog
-                    var result = await messageDialog.ShowAsync();
+                    var dialogResult = await messageDialog.ShowAsync();
 
-                    if ((int)(result.Id) == 1)
+                    if ((int)(dialogResult.Id) == 1)
                     {
                         MainPage.Current.NotifyUser("Connection cancelled", NotifyType.ErrorMessage, 2);
+                        //TODO: investigate if this should be re-enabled
                         //await BluetoothService.BluetoothService.getBluetoothService().sendBluetoothMessage("audio stop");
                         MainPage.Current.ReEnableAudioButton();
                         return false;
                     }
-                    else if ((int)(result.Id) == 0)
+                    else if ((int)(dialogResult.Id) == 0)
                         succeed = await speechResultsSocket.ConnectToServer();
-                }//END OF CONNECTION LOOP
+                }
             }
             catch (Exception e)
             {
-                //this is to handle some url problems
+                // this is to handle some url problems
                 MetroLogger.getSharedLogger().Error("Failed to connect to speech result socket:" + e.Message);
             }
-            //END OF SPEECH RESULT CONNECTION
-
+            # endregion
 
             MainPage.Current.onAudioStarted(null, null);
             SpeechPage.Current.setSpeakerButtonEnabled(true);
@@ -1136,7 +1152,7 @@ namespace PhenoPad.SpeechService
 
         public string GetAudioNameForServer() {
             string noteName = MainPage.Current.notebookId;
-            int workerID = 666;
+            int workerID = 666; // TODO: ID shouldn't be hardcoded in the function
 
             return $"{workerID}_{noteName}_{currentAudioName}";
         }

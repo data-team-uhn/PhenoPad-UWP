@@ -28,7 +28,7 @@ using System.Linq;
 
 namespace PhenoPad
 {
-    // This is a partial class of Mainpage that contains methods regarding to video/audio functions including specch engine.
+    // This is a partial class of Mainpage that contains methods regarding to video/audio functions including speech engine.
     public sealed partial class MainPage : Page, INotifyPropertyChanged
     {
         #region properties
@@ -68,11 +68,9 @@ namespace PhenoPad
                 }
             }
         } //automation properties
-        public bool bluetoonOn;
+        public bool bluetoonOn; // TODO: the value of this is the same as BluetoothService.initialized, why use a separate variable?
 
 
-
-        public string RPI_ADDRESS = "http://192.168.137.32:8000";
 
         public BluetoothService.BluetoothService bluetoothService = null;
         public UIWebSocketClient uiClinet = null;
@@ -92,7 +90,7 @@ namespace PhenoPad
         /// not per-app.
         private static uint HResultPrivacyStatementDeclined = 0x80045509;
         /// Keep track of whether the continuous recognizer is currently running, so it can be cleaned up appropriately.
-        private bool isListening;
+        private bool isListening; //NOTE: this field is never used.
 
         //for requesting server audio playbacks
         [XmlArray("Audios")]
@@ -105,7 +103,7 @@ namespace PhenoPad
         private CancellationTokenSource cancelSource;
         private CancellationToken token;
         private List<byte> audioBuffer;
-        public static string SERVER_ADDR = "137.135.117.253";
+        public static string SERVER_ADDR = "137.135.117.253"; //TODO: this address is outdated
         public static string SERVER_PORT = "8080";
 
         private int RETRIES = 3;
@@ -114,19 +112,21 @@ namespace PhenoPad
         #endregion
         //======================================== START OF METHODS =======================================/
 
+        /// <summary>
+        /// Updates the bluetooth video camera stream status (turns video streaming ON/OFF).
+        /// </summary>
+        /// <param name="desiredStatus">Boolean value. True for ON, False for OFF.</param>
+        /// <remarks>
+        /// If Bluetooth connected, turn on video streaming by sending "camera start" to Raspberry Pi if desiredStatus is True;
+        /// else turn off video streaming by sending "camera stop" to Raspberry Pi.
+        /// </remarks>
         private async Task videoStreamStatusUpdateAsync(bool desiredStatus)
         {
-            /// <summary>
-            /// Updates the bluetooth video camera stream status 
-            /// </summary>
-
             if (this.bluetoothService == null)
             {
                 NotifyUser("Could not reach Bluetooth device, try to connect again",
                                    NotifyType.ErrorMessage, 2);
                 this.VideoOn = false;
-
-                //this.bluetoothInitialized(false);
                 this.StreamButton.IsChecked = false;
                 return;
             }
@@ -143,22 +143,33 @@ namespace PhenoPad
             }
             //this.videoSwitch.IsOn = desiredStatus;
             //this.StreamButton.IsChecked = desiredStatus;
+            // TODO: check if this is outdated.
 
             Debug.WriteLine("Setting status value to " + (this.bluetoothService.initialized && desiredStatus).ToString());
             this.VideoOn = this.bluetoothService.initialized && desiredStatus;
         }
 
+        /// <summary>
+        /// Changes chat view display when there's changes to the contents.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="args"></param>
+        /// <remarks>
+        /// Subscribed to ChatListView.ContainerContentChanging event. Displays text message on the chat view container.
+        /// - if message is not final:
+        ///     Display message on the right (by setting the horizontal alignment of the item container to the right)
+        /// - if message is final:
+        ///     Display message on the right if speaker is doctor (currently set to 0), otherwise display on the left. 
+        ///     Update chat view's layout and scroll the list to bring the last item (latest message) into view.
+        /// </remarks>
         private async void OnChatViewContainerContentChanging(ListViewBase sender, ContainerContentChangingEventArgs args)
         {
             /// <summary>
-            /// Handles chat view container change event and displays the message on chat view container 
+            ///  
             /// </summary>
 
             if (args.InRecycleQueue) return;
             TextMessage message = (TextMessage)args.Item;
-
-            // Only display message on the right when speaker index = 0
-            //args.ItemContainer.HorizontalAlignment = (message.Speaker == 0) ? Windows.UI.Xaml.HorizontalAlignment.Right : Windows.UI.Xaml.HorizontalAlignment.Left;
 
             if (message.IsNotFinal)
             {
@@ -167,7 +178,7 @@ namespace PhenoPad
             else
             {
                 args.ItemContainer.HorizontalAlignment = (message.Speaker == doctor) ? HorizontalAlignment.Right : HorizontalAlignment.Left;
-                //Need this dispatcher in-order to avoid threading errors
+                // Need this dispatcher in-order to avoid threading errors
                 await CoreApplication.MainView.CoreWindow.Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () => {
                     chatView.UpdateLayout();
                     chatView.ScrollIntoView(chatView.Items[chatView.Items.Count - 1]);
@@ -175,32 +186,42 @@ namespace PhenoPad
             }
         }
 
+        /// <summary>
+        /// Sets up and runs video stream preview.
+        /// </summary>
+        /// <remarks>
+        /// Is called in a preview-button-clicked event.
+        /// When called:
+        /// - Sets microphone options button status based on local setting.
+        /// - Fetches and sets RPI address (which is not used anywhere).
+        /// - Initializes videoStreamWebSocket and subscribe event handler functions to handle video stream socket events.  
+        /// </remarks>
         private async void PreviewMultiMedia()
         {
+            // TODO: exp with this function
+
             // initialize microphone choice
             if (ConfigService.ConfigService.getConfigService().IfUseExternalMicrophone())
                 ExternalMicRadioBtn.IsChecked = true;
             else
                 SurfaceMicRadioBtn.IsChecked = true;
 
-            // steaming video
+            // Acquire Raspberry Pi's IP address.
             string RPI_IP_ADDRESS = BluetoothService.BluetoothService.getBluetoothService().GetPiIP();
-            RPI_ADDRESS = "http://" + RPI_IP_ADDRESS + ":8000";
-            // this.StreamView.Navigate(new Uri(RPI_ADDRESS));
 
+            // Initialize video stream websocket.
             this.videoStreamWebSocket = new Windows.Networking.Sockets.MessageWebSocket();
             // In this example, we send/receive a string, so we need to set the MessageType to Utf8.
             this.videoStreamWebSocket.Control.MessageType = Windows.Networking.Sockets.SocketMessageType.Utf8;
             this.videoStreamWebSocket.Closed += WebSocket_Closed;
             this.videoStreamWebSocket.MessageReceived += WebSocket_MessageReceived;
 
+            // Connect and send command to Raspberry Pi.
             try
             {
                 videoStreamCancellationToken = videoCancellationSource.Token;
-                Task connectTask = this.videoStreamWebSocket.ConnectAsync(new Uri("ws://" + RPI_IP_ADDRESS + ":8000/websocket")).AsTask();
+                Task connectTask = this.videoStreamWebSocket.ConnectAsync(new Uri("ws://" + RPI_IP_ADDRESS + ":8000/websocket")).AsTask(); // NOTE: should the socket be hardcoded here?
                 await connectTask.ContinueWith(_ => this.SendMessageUsingMessageWebSocketAsync("read_camera"));
-                //Task.Run(() => this.WebSocket_MessageReceived());
-                //Task.Run(() => this.SendMessageUsingStreamWebSocket(Encoding.UTF8.GetBytes("read_camera")));
 
             }
             catch (Exception ex)
@@ -212,13 +233,18 @@ namespace PhenoPad
 
         #region BLUETOOTH RELATED
 
+        /// <summary>
+        /// Handles DEXCEPTION (Device Exception) received from Raspberry Pi, 
+        /// </summary>
+        /// <remarks>
+        /// Restarts bluetooth connection only (because automatically re-connecting causes errros). Stops speech service before closing bluetooth.
+        /// </remarks>
         public async void RestartBTOnException()
         {
-            //Handles DEXCEPTION received from raspberry pi, restarts bluetooth connection only
-            //uiClinet.disconnect();
-            //stops speech service before closing bluetooth
-            await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, async () => {
-
+            //uiClinet.disconnect(); TODO: learn about this
+            await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, async () => 
+            {
+                // Stops speech service first if it is running.
                 if (speechEngineRunning)
                     await SpeechManager.getSharedSpeechManager().StopASRResults();
 
@@ -250,10 +276,16 @@ namespace PhenoPad
             if (!success) {
                 LogService.MetroLogger.getSharedLogger().Error("Bluetooth Connection failed to reconnect.");
             }
-
-
         }
 
+        /// <summary>
+        /// Runs when "Toggle Bluetooth" Button is clicked.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        /// <remarks>
+        /// Subscribed to the BTConnectBtn(Toggle Bluetooth) clicked event.
+        /// </remarks>
         private async void BTConnectBtn_Click(object sender, RoutedEventArgs e)
         {
             var result = true;
@@ -262,17 +294,24 @@ namespace PhenoPad
             });
         }
 
+        /// <summary>
+        /// Changes state of Bluetooth connection (called when "Toggle Bluetooth" Button is clicked).
+        /// </summary>
+        /// <returns>(bool)true if toggle state changed successfully, (bool)false otherwise</returns>
+        /// <remarks>
+        /// Called at the BTConnectBtn(Toggle Bluetooth) clicked event. 
+        /// If Bluetooth is connected, also stops ASR service.
+        /// </remarks>
         public async Task<bool> changeSpeechEngineState_BT()
         {
-            /// <summary>
-            /// Switch speech engine state for blue tooth devices
-            /// </summary>
             bool result = true;
             await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, async () => {
+                // If Bluetooth is not connected, connect.
                 if (!bluetoonOn)
                 {
                     try
                     {
+                        // TODO: Learn more about this:
                         //temporarily disables for debugging reseasons
                         //=====
                         //uiClinet = UIWebSocketClient.getSharedUIWebSocketClient();
@@ -291,15 +330,16 @@ namespace PhenoPad
                         result = false;
                     }
                 }
+                // If Bluetooth connected, stop speech service first, then close Bluetooth connection.
                 else
                 {
                     try
                     {
                         //uiClinet.disconnect();
-                        //stops speech service before closing bluetooth
                         if (speechEngineRunning)
                             await SpeechManager.getSharedSpeechManager().StopASRResults();
                         Debug.WriteLine("stopped ASR RESULT \n");
+
                         result = bluetoothService.CloseConnection();
                         if (result)
                         {
@@ -314,13 +354,17 @@ namespace PhenoPad
                         LogService.MetroLogger.getSharedLogger().Error($"Failed to turn off BT: {e.Message}");
                     }
                     result = false;
-
                 }
-
             });
             return result;
         }
 
+        //TODO: maybe this function can have a better name?
+        //TODO: might be better to add code to handle speechEngineRunning == true (for clarity), although it should never occur.
+        /// <summary>
+        /// Sends "start audio" command to Raspberry Pi to start recording and connects to the ASR server to receive ASR results.
+        /// </summary>
+        /// <returns>(bool)true if successfully sent command and connected to server, (bool)false otherwise</returns>
         public async Task<bool> StartAudioAfterBluetooth() {
             var success = false;
             DisableAudioButton();
@@ -331,7 +375,7 @@ namespace PhenoPad
                 speechManager.CreateNewAudioName();
                 string audioName = speechManager.GetAudioNameForServer();
                 Debug.WriteLine($"start BT Audio, addr = {uri}");
-                success = await bluetoothService.sendBluetoothMessage($"audio start manager_id=666 server_uri={uri} audiofile_name={audioName}");
+                success = await bluetoothService.sendBluetoothMessage($"audio start manager_id=666 server_uri={uri} audiofile_name={audioName}"); //TODO: manager_id should not be hardcoded
                 if (!success)
                 {
                     LogService.MetroLogger.getSharedLogger().Error("failed to send audio start message to raspi");
@@ -342,12 +386,23 @@ namespace PhenoPad
             return success;
          }
 
+        /// <summary>
+        /// Set status of UI element parameters related to Bluetooth.
+        /// </summary>
+        /// <param name="initialized">Variable representing the state of the Bluetooth connection</param>
+        /// <remarks>
+        /// Assigns the value of *initialized* to the parameters. 
+        /// Affected UI elements:
+        ///     Video Button;
+        ///     Audio button;
+        ///     Shutter Button.
+        /// </remarks>
         public void SetBTUIOnInit(bool initialized)
         {
             /// Initialize bluetooth stream input status
 
             StreamButton.IsEnabled = initialized;
-            shutterButton.IsEnabled = initialized;
+            shutterButton.IsEnabled = initialized; //  TODO: What is shutter button?
             audioButton.IsEnabled = initialized;
             bluetoothicon.Visibility = initialized ? Visibility.Visible : Visibility.Collapsed;
             bluetoonOn = initialized;
@@ -355,18 +410,20 @@ namespace PhenoPad
 
         #endregion
 
-        #region Speech Recognizer
+        #region Windows Speech Recognizer
+
+        //NOTE: This function is not used anywhere in the project.
+        /// <summary>
+        /// Initializes Speech Recognizer and sets up recognizer constraints.
+        /// </summary>
+        /// <param name="recognizerLanguage">Language to use for the speech recognizer.</param>
+        /// <returns>Awaitable task.</returns>
+        //NOTE: this function does not return anything!
         private async Task InitializeRecognizer(Language recognizerLanguage)
         {
-            /// <summary>
-            /// Initialize Speech Recognizer and compile constraints.
-            /// </summary>
-            /// <param name="recognizerLanguage">Language to use for the speech recognizer</param>
-            /// <returns>Awaitable task.</returns>
-
+            // Clean up prior to re-initializing.
             if (speechRecognizer != null)
             {
-                // cleanup prior to re-initializing this scenario.
                 speechRecognizer.StateChanged -= SpeechRecognizer_StateChanged;
                 speechRecognizer.ContinuousRecognitionSession.Completed -= ContinuousRecognitionSession_Completed;
                 speechRecognizer.ContinuousRecognitionSession.ResultGenerated -= ContinuousRecognitionSession_ResultGenerated;
@@ -386,30 +443,31 @@ namespace PhenoPad
             var dictationConstraint = new SpeechRecognitionTopicConstraint(SpeechRecognitionScenario.Dictation, "dictation");
             speechRecognizer.Constraints.Add(dictationConstraint);
             SpeechRecognitionCompilationResult result = await speechRecognizer.CompileConstraintsAsync();
+
             if (result.Status != SpeechRecognitionResultStatus.Success)
             {
-                //rootPage.NotifyUser("Grammar Compilation Failed: " + result.Status.ToString(), NotifyType.ErrorMessage);
                 Console.WriteLine("Grammar Compilation Failed: " + result.Status.ToString());
-                //micButton.IsEnabled = false;
             }
 
-            // Handle continuous recognition events. Completed fires when various error states occur. ResultGenerated fires when
-            // some recognized phrases occur, or the garbage rule is hit. HypothesisGenerated fires during recognition, and
-            // allows us to provide incremental feedback based on what the user's currently saying.
+            // Subscribe handler functions to handle continuous recognition events. 
+            // - Completed is called when various error states occur. 
+            // - ResultGenerated is called when some recognized phrases occur, or the garbage rule is hit. 
+            // - HypothesisGenerated fires during recognition, and allows us to provide incremental feedback based on what the user's currently saying.
             speechRecognizer.ContinuousRecognitionSession.Completed += ContinuousRecognitionSession_Completed;
             speechRecognizer.ContinuousRecognitionSession.ResultGenerated += ContinuousRecognitionSession_ResultGenerated;
             speechRecognizer.HypothesisGenerated += SpeechRecognizer_HypothesisGenerated;
         }
 
+        /// <summary>
+        /// Handles events where errors occur, such as the microphone becoming unavailable.
+        /// </summary>
+        /// <param name="sender">The continuous recognition session.</param>
+        /// <param name="args">The result state of the recognition session.</param>
+        /// <remarks>
+        /// Subscribes to the event where a continuous recognition session ends, in the case in the event of an error.
+        /// </remarks>
         private async void ContinuousRecognitionSession_Completed(SpeechContinuousRecognitionSession sender, SpeechContinuousRecognitionCompletedEventArgs args)
         {
-            /// <summary>
-            /// Handle events fired when error conditions occur, such as the microphone becoming unavailable, or if
-            /// some transient issues occur.
-            /// </summary>
-            /// <param name="sender">The continuous recognition session</param>
-            /// <param name="args">The state of the recognizer</param>
-
             if (args.Status != SpeechRecognitionResultStatus.Success)
             {
                 // If TimeoutExceeded occurs, the user has been silent for too long. We can use this to 
@@ -420,9 +478,7 @@ namespace PhenoPad
                 {
                     await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () =>
                     {
-                        //rootPage.NotifyUser("Automatic Time Out of Dictation", NotifyType.StatusMessage);
                         Console.WriteLine("Automatic Time Out of Dictation");
-                        //cmdBarTextBlock.Text = dictatedTextBuilder.ToString();
                         isListening = false;
                     });
                 }
@@ -430,46 +486,46 @@ namespace PhenoPad
                 {
                     await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () =>
                     {
-                        //rootPage.NotifyUser("Continuous Recognition Completed: " + args.Status.ToString(), NotifyType.StatusMessage);
                         Console.WriteLine("Continuous Recognition Completed: " + args.Status.ToString());
                         isListening = false;
                     });
                 }
             }
-
-
         }
 
+        /// <summary>
+        /// While the user is speaking, update the textbox with partial speech recognition results for user feedback.
+        /// </summary>
+        /// <param name="sender">The recognizer which generated the hypothesis.</param>
+        /// <param name="args">The recognition result fragment.</param>
+        /// <remarks>
+        /// Handler function that handles events where a recognition result fragment is returned by the dictation session.
+        /// </remarks>
         private async void SpeechRecognizer_HypothesisGenerated(SpeechRecognizer sender, SpeechRecognitionHypothesisGeneratedEventArgs args)
         {
-            /// <summary>
-            /// While the user is speaking, update the textbox with the partial sentence of what's being said for user feedback.
-            /// </summary>
-            /// <param name="sender">The recognizer that has generated the hypothesis</param>
-            /// <param name="args">The hypothesis formed</param>
-
             string hypothesis = args.Hypothesis.Text;
 
-            // Update the textbox with the currently confirmed text, and the hypothesis combined.
+            // Update the textbox with the confirmed text and the hypothesis combined.
             string textboxContent = dictatedTextBuilder.ToString() + " " + hypothesis + " ...";
             await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () =>
             {
-                //cmdBarTextBlock.Text = textboxContent;
-                //cmdBarTextBlock.Text = hypothesis;
+                //NOTE: this method is empty
             });
-
         }
 
+        /// <summary>
+        /// Update textbox content when a speech recognition result is generated.
+        /// </summary>
+        /// <param name="sender">The Recognition session which generated this result.</param>
+        /// <param name="args">The complete recognition result.</param>
+        /// <remarks>
+        /// Handler function that handles events where a speech recognition result is generated.
+        /// Check for high to medium confidence, and then append the string to the end of the stringbuffer,
+        /// and replace the content of the textbox with the string buffer, to remove any hypothesis text 
+        /// that may be present.
+        /// </remarks>
         private async void ContinuousRecognitionSession_ResultGenerated(SpeechContinuousRecognitionSession sender, SpeechContinuousRecognitionResultGeneratedEventArgs args)
         {
-            /// <summary>
-            /// Handle events fired when a result is generated. Check for high to medium confidence, and then append the
-            /// string to the end of the stringbuffer, and replace the content of the textbox with the string buffer, to
-            /// remove any hypothesis text that may be present.
-            /// </summary>
-            /// <param name="sender">The Recognition session that generated this result</param>
-            /// <param name="args">Details about the recognized speech</param>
-
             // We may choose to discard content that has low confidence, as that could indicate that we're picking up
             // noise via the microphone, or someone could be talking out of earshot.
             if (args.Result.Confidence == SpeechRecognitionConfidence.Medium ||
@@ -477,85 +533,76 @@ namespace PhenoPad
             {
                 dictatedTextBuilder.Append(args.Result.Text + " ");
 
+                //TODO: learn more about this
                 await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, async () =>
                 {
-
                     //cmdBarTextBlock.Text = dictatedTextBuilder.ToString();
-                    //cmdBarTextBlock.Text = args.Result.Text;
                     //SpeechManager.getSharedSpeechManager().AddNewMessage(args.Result.Text);
                     //List<Phenotype> annoResults = await PhenotypeManager.getSharedPhenotypeManager().annotateByNCRAsync("");
                     //if (annoResults != null)
-                    {
-                        //PhenotypeManager.getSharedPhenotypeManager().addPhenotypeInSpeech(annoResults);
+                    //{
+                    //PhenotypeManager.getSharedPhenotypeManager().addPhenotypeInSpeech(annoResults);
 
-                        /**
-                        AnnoPhenoStackPanel.Children.Clear();
-                        foreach (Phenotype ap in annoResults)
+                    /**
+                    AnnoPhenoStackPanel.Children.Clear();
+                    foreach (Phenotype ap in annoResults)
+                    {
+                        Button tb = new Button();
+                        tb.Content= ap.name;
+                        tb.Margin = new Thickness(5, 5, 0, 0);
+                        
+                        if (PhenotypeManager.getSharedPhenotypeManager().checkIfSaved(ap))
+                            tb.BorderBrush = new SolidColorBrush(Colors.Black);
+                        tb.Click += delegate (object s, RoutedEventArgs e)
                         {
-                            Button tb = new Button();
-                            tb.Content= ap.name;
-                            tb.Margin = new Thickness(5, 5, 0, 0);
-                            
-                            if (PhenotypeManager.getSharedPhenotypeManager().checkIfSaved(ap))
-                                tb.BorderBrush = new SolidColorBrush(Colors.Black);
-                            tb.Click += delegate (object s, RoutedEventArgs e)
-                            {
-                                ap.state = 1;
-                                PhenotypeManager.getSharedPhenotypeManager().addPhenotype(ap, SourceType.Speech);
-                                tb.BorderBrush = new SolidColorBrush(Colors.Black);
-                            };
-                            AnnoPhenoStackPanel.Children.Add(tb);
-                        }
-                         **/
+                            ap.state = 1;
+                            PhenotypeManager.getSharedPhenotypeManager().addPhenotype(ap, SourceType.Speech);
+                            tb.BorderBrush = new SolidColorBrush(Colors.Black);
+                        };
+                        AnnoPhenoStackPanel.Children.Add(tb);
                     }
+                     **/
+                    //}
                 });
             }
             else
             {
                 // In some scenarios, a developer may choose to ignore giving the user feedback in this case, if speech
                 // is not the primary input mechanism for the application.
-                // Here, just remove any hypothesis text by resetting it to the last known good.
+                // Here, just discard the hypothesis text.
                 await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () =>
                 {
-                    //cmdBarTextBlock.Text = dictatedTextBuilder.ToString();
                     string discardedText = args.Result.Text;
                     if (!string.IsNullOrEmpty(discardedText))
                     {
                         discardedText = discardedText.Length <= 25 ? discardedText : (discardedText.Substring(0, 25) + "...");
-
                         Console.WriteLine("Discarded due to low/rejected Confidence: " + discardedText);
                     }
                 });
             }
         }
 
+        /// <summary>
+        /// Notify the user when the recognizer is receiving their voice input.
+        /// </summary>
+        /// <param name="sender">The recognizer that is currently running.</param>
+        /// <param name="args">The current state of the recognizer.</param>
         private async void SpeechRecognizer_StateChanged(SpeechRecognizer sender, SpeechRecognizerStateChangedEventArgs args)
         {
-            /// <summary>
-            /// Provide feedback to the user based on whether the recognizer is receiving their voice input.
-            /// </summary>
-            /// <param name="sender">The recognizer that is currently running.</param>
-            /// <param name="args">The current state of the recognizer.</param>
-
             await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () => {
-                //this.NotifyUser(args.State.ToString(), NotifyType.StatusMessage);
+                this.NotifyUser(args.State.ToString(), NotifyType.StatusMessage, 1); //TODO: this is probably a bad way to do this, although this code is not used.
                 Console.WriteLine(args.State.ToString());
             });
         }
 
-        private void SpeechManager_EngineHasResult(SpeechManager sender, SpeechEngineInterpreter args)
-        {
-            /// <summary>
-            /// Update text to display latest sentence
-            /// TODO : Feels like there exists more legitimate wasy to do this
-            /// </summary>
-
-            //this.cmdBarTextBlock.Text = args.latestSentence;
-            throw new NotImplementedException();
-        }
-
         #endregion
 
+        /// <summary>
+        /// Runs a funtion until successful excecution or maximum number of attempts reached.
+        /// </summary>
+        /// <param name="retries">Maximum number of attempts to run function.</param>
+        /// <param name="f">The target function which returns a boolean value that represents success/failure.</param>
+        /// <returns>(bool)true if function successfully excecuted, (bool)false otherwise</returns>
         private async Task<bool> RunFuncWithRetries (int retries, Task<bool> f)
         {
             bool success = await f;
@@ -570,23 +617,25 @@ namespace PhenoPad
                 retryCount--;
                 success = await f;
             }
-
             return success;
         }
 
+        //TODO: This function is also called to kill the audio stream, should consider renaming it for readibility.
+        //      Can rename this function, and make a new handler function AudioStreamButton_Clicked which calls it.
+        /// <summary>
+        /// Invoked when user presses the Microphone button on sidebar, starts/stops speech service.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private async void AudioStreamButton_Clicked(object sender = null, RoutedEventArgs e = null)
         {
-            /// <summary>
-            /// Invoked when user presses the Microphone button on sidebar, requests speech engine connection
-            /// as well as connection to remote server for speech recognition
-            /// </summary>
-
             //Temporarily disables audio button for avoiding frequent requests
             DisableAudioButton();
 
-            // using external microphone
+            // if using external microphone (Raspberry Pi)
             if (ConfigService.ConfigService.getConfigService().IfUseExternalMicrophone())
             {
+                // Notify the user if Bluetooth is not connected.
                 if (!bluetoonOn)
                 {
                     NotifyUser("Bluetooth is not connected, cannot use External Microphone.", NotifyType.ErrorMessage, 2);
@@ -594,37 +643,41 @@ namespace PhenoPad
                 }
                 else
                 {
-                    //ASR is already on, turning off ASR
+                    //If ASR is already on, turn off ASR.
                     if (speechEngineRunning)
                     {
-                        //var success = await SpeechManager.getSharedSpeechManager().StopASRResults();
                         var success = await RunFuncWithRetries(RETRIES, SpeechManager.getSharedSpeechManager().StopASRResults());
                     }
-                    //Bluetooth is connected and ASR isn't already on so just start ASR
+                    // If Bluetooth is connected and ASR isn't already on, start ASR.
                     else
                     {
-                        //var success = await StartAudioAfterBluetooth();
                         var success = await RunFuncWithRetries(RETRIES, StartAudioAfterBluetooth());
                     }
 
                 }
             }
-            // using internal microphone
+            // if using internal microphone.
             else
             {
-                //var success = await changeSpeechEngineState();
                 var success = await RunFuncWithRetries(RETRIES, changeSpeechEngineState());
                 ReEnableAudioButton();
             }
-
         }
 
+        /// <summary>
+        /// Starts/stops speech service when using internal/plug-in microphones.
+        /// </summary>
+        /// <returns>(bool)true if successfully start/stop audion, (bool)false otherwise</returns>
+        /// <remarks>
+        /// Called when choosing the "interal mic" option (i.e. not using the Raspberry Pi for audio).
+        /// If speech service is not running, start speech; otherwise, end speech.
+        /// </remarks>
         public async Task<bool> changeSpeechEngineState()
         {
-            /// Switch speech engine state for plug-in devices
             try
             {
                 var success = true;
+                
                 if (speechEngineRunning == false)
                 {
                     NotifyUser("Starting Audio using internal microphone ...", NotifyType.StatusMessage, 7);
@@ -635,13 +688,13 @@ namespace PhenoPad
                     NotifyUser("Ending Audio ...", NotifyType.StatusMessage, 2);
                     success = await SpeechManager.getSharedSpeechManager().EndAudio(notebookId);
                 }
-                //#region demo
+                #region Speech Demo
                 ////FOR DEMO PURPOSES, COMMENT OUT FOR REAL USAGE
                 //if (speechEngineRunning == false)
                 //    await SpeechManager.getSharedSpeechManager().StartAudioDemo();
                 //else
                 //    await SpeechManager.getSharedSpeechManager().EndAudioDemo(notebookId);
-                //#endregion
+                #endregion
                 return success;
             }
             catch (Exception ex)
@@ -652,29 +705,49 @@ namespace PhenoPad
 
         }
 
-        public void onAudioStarted(object sender, object e) {
-            audioTimer.Stop();
+        /// <summary>
+        /// Update vairable values and notify user when speech service starts.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        public void onAudioStarted(object sender = null, object e = null)
+        {
+            audioTimer.Stop(); //TODO: What does audioTimer do exactly? audioTimer.start() is called only during demos.
             speechEngineRunning = true;
             NotifyUser("Audio service started.", NotifyType.StatusMessage, 1);
             LogService.MetroLogger.getSharedLogger().Info("Audio started.");
             ReEnableAudioButton();
         }
 
-        public void onAudioEnded() {
+        /// <summary>
+        /// Update vairable values and notify user when speech service ends.
+        /// </summary>
+        public void onAudioEnded()
+        {
             speechEngineRunning = false;
             NotifyUser("Audio service ended.", NotifyType.StatusMessage, 1);
             LogService.MetroLogger.getSharedLogger().Info("Audio stopped.");
             ReEnableAudioButton();
         }
 
-        public void DisableAudioButton() {
+        /// <summary>
+        /// Makes the audio button un-interactable.
+        /// </summary>
+        public void DisableAudioButton()
+        {
             audioButton.IsEnabled = false;
             audioStatusText.Text = "...";
         }
 
+        /// <summary>
+        /// Re-enables the audio button and provide user with visual feedback of speech service's current state through text.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         public async void ReEnableAudioButton(object sender = null, object e = null)
         {
-            await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, async () => {
+            await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, async () => 
+            {
                 await Task.Delay(TimeSpan.FromSeconds(7));
                 audioButton.IsEnabled = true;
                 if (speechEngineRunning)
@@ -690,42 +763,78 @@ namespace PhenoPad
             });
         }
 
-        public async Task KillAudioService() {
-            await Dispatcher.RunAsync(CoreDispatcherPriority.High, async () => {
+        //NOTE: Question: Why not directly call AudioStreamButton_Clicked();
+        /// <summary>
+        /// Stops speech service.
+        /// </summary>
+        /// <returns></returns>
+        /// <remarks>
+        /// Stops speech service by calling AudioStreamButton_Clicked.
+        /// </remarks>
+        public async Task KillAudioService()
+        {
+            await Dispatcher.RunAsync(CoreDispatcherPriority.High, async () => 
+            {
                 if (speechEngineRunning)
-                {//close all audio services before navigating
+                {
+                    //close all audio services before navigating
                     Debug.WriteLine("Killing audio service");
-                    await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () => {
+                    await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () => 
+                    {
                         AudioStreamButton_Clicked();
                     });
                     await Task.Delay(TimeSpan.FromSeconds(7));
+                }
+                else
+                {
+                    Debug.WriteLine("Cannot kill audio service: audio service not running");
                 }
             });
             return;
         }
 
-        public async void SaveNewAudioName(string name) {
+        /// <summary>
+        /// Add the name of a newly created audio file to the saved list of audio file names.
+        /// </summary>
+        /// <param name="name">the name of the new audio file</param>
+        /// <remarks>
+        /// Called when a new audio file is available (e.g. when a new speech session is completed).
+        /// Add the new audio's name to the AudioMeta xml file to keep track of audio files created
+        /// from this note.
+        /// </remarks>
+        public async void SaveNewAudioName(string name)
+        {
             this.SavedAudios.Add(name);
             await FileService.FileManager.getSharedFileManager().SaveAudioNamesToXML(notebookId, SavedAudios);
-            speechManager.ClearCurAudioName();
+            speechManager.ClearCurAudioName(); //TODO
         }
 
+        //TODO: the name of this file can be misleading, this function actually connects to speech server, request 
+        //      audio from the server, then plays the audio received.
+        //      A better name can be something like "RequestAndPlayAudio"
+        /// <summary>
+        /// Downloads an audio segment from the speech server and plays the audio.
+        /// </summary>
+        /// <param name="audioFileName">the name of the saved audio file</param>
+        /// <param name="start">the starting timestamp of the audio segment</param>
+        /// <param name="end">the ending timestamp of the audio segment</param>
         public async void PlayMedia(string audioFileName,double start = 0, double end = 0)
         {
-            //don't handle requests with invalid intervals
+            // Don't process requests with invalid intervals
             if (start >= end)
+            {
                 return;
-            if (playbackSem.CurrentCount == 0) {
-                Debug.WriteLine("semaphore currently inuse will abort");
+            }
+            if (playbackSem.CurrentCount == 0)
+            {
+                Debug.WriteLine("semaphore currently inuse, will abort");
                 return;
             }
             await playbackSem.WaitAsync();
             playbackStreamSocket = new StreamWebSocket();
             try
             {
-
-                string audioName = $"666_{notebookId}_{audioFileName} {start} {end}";
-                //Uri serverUri = new Uri("ws://" + SERVER_ADDR + ":" + SERVER_PORT + "/client/ws/file_request");
+                string audioName = $"666_{notebookId}_{audioFileName} {start} {end}"; //TODO: managerID should not be hardcoded
                 String serverAddr = ASRAddrInput.Text.Trim().Split(':')[0];
                 String serverPort = ASRAddrInput.Text.Trim().Split(':')[1];
                 Uri serverUri = new Uri("ws://" + serverAddr + ":" + serverPort + "/client/ws/file_request");
@@ -738,10 +847,11 @@ namespace PhenoPad
                     throw new Exception(connectTask.Exception.Message);
                 }
 
-                //sends the requested audio name to server through buffer
+                // send the requested audio name to server through buffer
                 var bytes = Encoding.UTF8.GetBytes(audioName);
                 await playbackStreamSocket.OutputStream.WriteAsync(bytes.AsBuffer());
 
+                // receive audio from server
                 uint length = 1000000;     // Leave a large buffer
                 audioBuffer = new List<Byte>();
                 isReading = true;
@@ -758,12 +868,12 @@ namespace PhenoPad
             }
             catch (TaskCanceledException)
             {
-                //Plays the audio received from server
+                // Finished receiving audio. Play the audio received from server.
                 readTimer.Stop();
                 Debug.WriteLine("------------------END RECEIVING" + audioBuffer.Count + "----------------");
                 MemoryStream mem = new MemoryStream(audioBuffer.ToArray());
                 MediaPlayer player = new MediaPlayer();
-                player.SetStreamSource(mem.AsRandomAccessStream());
+                player.SetStreamSource(mem.AsRandomAccessStream()); //TODO: warning
                 player.Play();
                 Debug.WriteLine("done");
             }
@@ -778,8 +888,14 @@ namespace PhenoPad
 
         }
 
-        public async Task<bool> GetRemoteAudioAndSave(string audioName) {
-            //don't handle requests with invalid intervals
+        /// <summary>
+        /// Download audio from the speech server and save to a local save file.
+        /// </summary>
+        /// <param name="audioName">the name of the audio file</param>
+        /// <returns>(bool)true if download and save successful, (bool)false otherwise</returns>
+        public async Task<bool> GetRemoteAudioAndSave(string audioName)
+        {
+            // don't process requests with invalid intervals
             if (playbackSem.CurrentCount == 0)
             {
                 return false;
@@ -788,7 +904,8 @@ namespace PhenoPad
             playbackStreamSocket = new StreamWebSocket();
             try
             {
-                string audioserverName = $"666_{notebookId}_" + audioName;
+                // TODO: variable name audioservername misleading
+                string audioserverName = $"666_{notebookId}_" + audioName; //TODO: hardcoded managerID
                 Uri serverUri = new Uri("ws://" + SERVER_ADDR + ":" + SERVER_PORT + "/client/ws/file_request");
                 Task connectTask = playbackStreamSocket.ConnectAsync(serverUri).AsTask();
 
@@ -799,7 +916,7 @@ namespace PhenoPad
                     throw new Exception(connectTask.Exception.Message);
                 }
 
-                //sends the requested audio name to server through buffer
+                // sends the requested audio name to server through buffer
                 var bytes = Encoding.UTF8.GetBytes(audioserverName);
                 await playbackStreamSocket.OutputStream.WriteAsync(bytes.AsBuffer());
 
@@ -819,7 +936,7 @@ namespace PhenoPad
             }
             catch (TaskCanceledException)
             {
-                //Plays the audio received from server
+                // saves the audio received from server
                 readTimer.Stop();
                 Debug.WriteLine("------------------END RECEIVING " + audioBuffer.Count + "----------------");
                 if (audioBuffer.Count == 0)
@@ -842,15 +959,25 @@ namespace PhenoPad
             return true;
         }
 
-        private void EndAudioStream(object sender, object e)
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        /// <remarks>
+        /// Subscribe to readTimer.Tick event
+        /// </remarks>
+        private void EndAudioStream(object sender = null, object e = null)
         {
             isReading = false;
             cancelSource.Cancel();
         }
 
+        //TODO: don't fully understand this yet
+        //TODO: experiment with this
         private void SpeechBubble_DoubleTapped(object sender, DoubleTappedRoutedEventArgs e)
         {
-            //handling when user double tapps on the speech bubble in the realtime conversation grid
+            //handling when user double taps on the speech bubble in the realtime conversation grid
 
             //Debug.WriteLine("doubletapped");
             TextBlock tb = ((TextBlock)sender);
@@ -862,32 +989,35 @@ namespace PhenoPad
             var element_Visual_Relative2 = tb.TransformToVisual(this);
             Point pos_bubble = element_Visual_Relative2.TransformPoint(new Point(0, 0));
 
-
-
             TextMessage tm = speechManager.speechInterpreter.GetTextMessage(body);
 
             if (tm != null && tm.phenotypesInText.Count > 0)
             {
                 //Debug.WriteLine($"has phenotype, first = {tm.phenotypesInText[0].name}");
                 PhenoInSpeechListView.ItemsSource = tm.phenotypesInText;
-                showingPhenoSpeech = tm.phenotypesInText;
+                showingPhenoSpeech = tm.phenotypesInText; //TODO: what is this?
                 Canvas.SetLeft(PhenotypePopup, pos_grid.X);
                 Canvas.SetTop(PhenotypePopup, pos_bubble.Y - 50);
                 PhenotypePopup.Visibility = Visibility.Visible;
                 UpdateLayout();
             }
         }
-      
+        
+        //TODO: Complete documentation of this when question about this is resolved.
+        // Saves ASR transcripts to local file
         public async Task SaveCurrentConversationsToDisk()
         {
             // save transcriptions to local file only when there's transcripts
 
+            //TODO: Question: What are currentConversation and Current.conversations?
             if ( speechManager.speechInterpreter.CurrentConversationHasContent() || Current.conversations.Count > 0)
-            {//only save transcripts if there are finalized messages
+            {  
+                // only save transcripts if there are finalized messages
                 try
                 {
                     string fpath = FileManager.getSharedFileManager().GetNoteFilePath(
                       FileManager.getSharedFileManager().currentNoteboookId, "", NoteFileType.Transcriptions, "transcripts");
+
                     var result = await FileManager.getSharedFileManager().SaveObjectSerilization(fpath, conversations, typeof(List<TextMessage>));
                     Debug.WriteLine($"transcripts saved to {fpath}, result = {result}");
                 }

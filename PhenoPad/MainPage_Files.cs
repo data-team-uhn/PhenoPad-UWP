@@ -92,11 +92,11 @@ namespace PhenoPad
             curPage.Visibility = Visibility.Visible;
         }
 
-        /// <summary>
-        /// Initializes the notebook by loading from pre-existing local save file.
-        /// </summary>
         public async void InitializeNotebookFromDisk()
         {
+            /// <summary>
+            /// Initializes the notebook by loading from pre-existing local save file.
+            /// </summary>
             LoadingPopup.IsOpen = true;
             //NotifyUser("Loading Notebook ...", NotifyType.StatusMessage, 3);
             MetroLogger.getSharedLogger().Info("Initializing notebook from disk ...");
@@ -317,12 +317,14 @@ namespace PhenoPad
         }
 
 
-        /// <summary>
-        /// Save everything to disk, include: 
-        /// handwritten strokes, typing words, photos and annotations, drawing, collected phenotypes
-        /// </summary>
+        
         public async Task<bool> saveNoteToDisk()
         {
+            /// <summary>
+            /// Save everything to disk, include: 
+            /// handwritten strokes, typing words, photos and annotations, drawing, collected phenotypes
+            /// </summary>
+            
             //locks semaphore before accessing
             await savingSemaphoreSlim.WaitAsync();
             bool pgResult = true;
@@ -371,11 +373,12 @@ namespace PhenoPad
         }
 
 
-        /// <summary>
-        /// Saves current added phenotypes to local file
-        /// </summary>
+        
         public async Task<bool> AutoSavePhenotypes()
         {
+            /// <summary>
+            /// Saves current added phenotypes to local file
+            /// </summary>
             bool complete = await FileManager.getSharedFileManager().saveCollectedPhenotypesToFile(notebookId);
             if (!complete)
                 MetroLogger.getSharedLogger().Error("Failed to auto-save collected phenotypes.");
