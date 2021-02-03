@@ -164,10 +164,6 @@ namespace PhenoPad
         /// </remarks>
         private async void OnChatViewContainerContentChanging(ListViewBase sender, ContainerContentChangingEventArgs args)
         {
-            /// <summary>
-            ///  
-            /// </summary>
-
             if (args.InRecycleQueue) return;
             TextMessage message = (TextMessage)args.Item;
 
@@ -706,7 +702,7 @@ namespace PhenoPad
         }
 
         /// <summary>
-        /// Update vairable values and notify user when speech service starts.
+        /// Updates vairable values and notifies user when speech service starts.
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>

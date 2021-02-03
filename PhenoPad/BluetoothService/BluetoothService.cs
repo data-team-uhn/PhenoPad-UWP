@@ -172,7 +172,6 @@ namespace PhenoPad.BluetoothService
                 return;
             }
             
-
             // Send hand shake message to Raspberry Pi through socket to confirm connection.
             try
             {
@@ -388,7 +387,8 @@ namespace PhenoPad.BluetoothService
                 }
                 StopWatcher();
                 initialized = false;
-                //sharedBluetoothService = null; TODO: why was this disabled?
+                //TODO: Question: why was this disabled ?
+                //sharedBluetoothService = null; 
                 return true;
             }
             catch (Exception e)

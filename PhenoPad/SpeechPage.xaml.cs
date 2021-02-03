@@ -415,19 +415,29 @@ namespace PhenoPad
 
         //TODO: the name of this function is misleading, 
         //      a better name would be something like setSpeakerNumButtonsEnabled
+        /// <summary>
+        /// Enable/Disable the buttons for manually adjusting the number of speakers on ASR result page.
+        /// </summary>
+        /// <param name="enabled">(bool)true to enable, (bool)false to disable</param>
         public void setSpeakerButtonEnabled(bool enabled)
         {
             this.addSpeakerBtn.IsEnabled = enabled;
             this.removeSpeakerBtn.IsEnabled = enabled;
         }
 
+        /// <summary>
+        /// Sets the number of speaker(s) in the ASR transcript.
+        /// </summary>
+        /// <param name="newCount">the new number of speaker(s)</param>
         public void adjustSpeakerCount(int newCount)
         {
             Debug.WriteLine("New Count: " + newCount.ToString() + "\tCurSpeaker Count: " + this.curSpeakerCount.ToString());
             while (newCount != this.curSpeakerCount)
             {
+                // speaker count increased
                 if (newCount > this.curSpeakerCount)
                 {
+                    // Add new option to the combo box for selecting speaker as doctor.
                     Debug.WriteLine("Incrementing speaker count to " + newCount.ToString());
                     this.curSpeakerCount += 1;
                     ComboBoxItem item = new ComboBoxItem();
@@ -437,8 +447,10 @@ namespace PhenoPad
 
                     this.speakerBox.Items.Add(item);
                 }
+                // speaker count decreased
                 else
                 {
+                    // Remove an option in the combo box for selecting speaker as doctor.
                     Debug.WriteLine("Decrementing speaker count to " + newCount.ToString());
                     this.curSpeakerCount -= 1;
                     if (this.speakerBox.SelectedIndex + 1 > this.curSpeakerCount)
@@ -450,8 +462,17 @@ namespace PhenoPad
             }
         }
 
+        /// <summary>
+        /// Handler function called when the selected audio in the "Recorded Audio" drop down list is changed.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        /// <remarks>
+        /// Subscribed to (PhenoPad.SpeechPage.AudioDropdownList).SelectionChanged event
+        /// </remarks>
         private async void AudioDropdownList_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
+            // proceed if the list of selected item isn't empty
             if (e.AddedItems.Count > 0)
             {
                 string audioName = e.AddedItems[0].ToString();
@@ -476,9 +497,19 @@ namespace PhenoPad
             }
         }
 
+        /// <summary>
+        /// Initiates sequence for downloading an audio file from the ASR server and saving it to a local save file.
+        /// </summary>
+        /// <param name="name">The name of the audio file.</param>
+        /// <returns>(bool)true if download and save successful, 
+        /// (bool)false if download/save failed or if the user cancels request.
+        /// </returns>
+        /// <remarks>
+        /// Displays a prompt box which asks the user to confirm downloading audio from ASR server.
+        /// If the user confirms, downloads and saves the requested audio file.
+        /// </remarks>
         public async Task<bool> TryGetAudioFromServer(string name)
         {
-            //tries to request recorded audio from sickkids server when local audio does not exist
             try
             {
                 var messageDialog = new MessageDialog("Getting audio file from server may take a while, continue?");
@@ -522,7 +553,7 @@ namespace PhenoPad
             {
                 this._body = value;
                 this.NotifyPropertyChanged("Body");
-
+                //TODO: this code is disabled, learn more about this.
                 /*
                 Task<List<Phenotype>> phenosTask = PhenotypeManager.getSharedPhenotypeManager().annotateByNCRAsync(this._body);
                 
@@ -590,7 +621,7 @@ namespace PhenoPad
                 return phenotypesInText.Count.ToString();
             }
         }
-        // Now that we support more than 2 users, we need to have speaker index
+        // Now that we support more than 2 speakers, we need to have speaker index
         public uint Speaker { get; set; }
 
         // Has finalized content of the string
@@ -601,6 +632,7 @@ namespace PhenoPad
 
         public bool OnRight { get { return !OnLeft; } }
 
+        // NOTE: no references found to this
         public int TextColumn
         {
             get
@@ -616,10 +648,12 @@ namespace PhenoPad
             }
         }
 
+        //TODO: maybe this can be a future feature?
         public void fileterMessage() {
-            // TODO need to filter useless phrases of message for better display
+            // TODO: need to filter useless phrases of message for better display
         }
 
+        // NOTE: no references found to this
         public int PhenoColumn
         {
             get
@@ -635,17 +669,26 @@ namespace PhenoPad
             }
         }
         
+        //TODO: Question: this delegate points to an empty method?
         public event PropertyChangedEventHandler PropertyChanged = delegate { };
 
-        // This method is called by the Set accessor of each property.
-        // The CallerMemberName attribute that is applied to the optional propertyName
-        // parameter causes the property name of the caller to be substituted as an argument.
+        /// <summary>
+        /// TODO ...
+        /// </summary>
+        /// <param name="propertyName"></param>
+        /// <remarks>
+        /// Having questions about this
+        /// </remarks>
         private async void NotifyPropertyChanged([CallerMemberName] String propertyName = "")
         {
+            // This method is called by the Set accessor of each property.
+            // The CallerMemberName attribute that is applied to the optional propertyName
+            // parameter causes the property name of the caller to be substituted as an argument.
             if (PropertyChanged != null)
             {
                 await Windows.ApplicationModel.Core.CoreApplication.MainView.CoreWindow.Dispatcher.RunAsync(CoreDispatcherPriority.Normal,() =>
                 {
+                    //TODO: Question: this should call the empty method PropertyChanged points do, which does nothing?
                     PropertyChanged(this, new PropertyChangedEventArgs(propertyName));
                 });
             }
@@ -654,6 +697,15 @@ namespace PhenoPad
 
     class BackgroundColorConverter : IValueConverter
     {
+        // TODO: experiment with this
+        /// <summary>
+        /// Converts a text message object to an object representing a background color based on the speaker id.
+        /// </summary>
+        /// <param name="value"></param>
+        /// <param name="targetType">NOTE: this parameter is never used</param>
+        /// <param name="parameter">NOTE: this parameter is never used</param>
+        /// <param name="language">NOTE: this parameter is never used</param>
+        /// <returns>Object representing a background color (?)</returns>
         public object Convert(object value, Type targetType, object parameter, string language)
         {
             var m = ((TextMessage)value);
@@ -671,6 +723,14 @@ namespace PhenoPad
             return Application.Current.Resources[resourceKey];
         }
 
+        /// <summary>
+        /// UNIMPLEMENTED
+        /// </summary>
+        /// <param name="value"></param>
+        /// <param name="targetType"></param>
+        /// <param name="parameter"></param>
+        /// <param name="language"></param>
+        /// <returns></returns>
         public object ConvertBack(object value, Type targetType, object parameter, string language)
         {
             throw new NotImplementedException();

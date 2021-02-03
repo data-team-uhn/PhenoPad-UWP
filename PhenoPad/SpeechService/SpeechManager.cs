@@ -168,7 +168,7 @@ namespace PhenoPad.SpeechService
             /// connect to client/speech/results
             /// only receive results without sending audio signals
             /// </summary>
-            # region Speech Server Connection
+            #region Speech Server Connection
             MainPage.Current.NotifyUser("Connecting to speech result server...", NotifyType.StatusMessage, 1);
             Debug.WriteLine($"Connecting to speech result server...");
             bool succeed = false;
@@ -207,7 +207,7 @@ namespace PhenoPad.SpeechService
                 // this is to handle some url problems
                 MetroLogger.getSharedLogger().Error("Failed to connect to speech result socket:" + e.Message);
             }
-            # endregion
+            #endregion
 
             MainPage.Current.onAudioStarted(null, null);
             SpeechPage.Current.setSpeakerButtonEnabled(true);

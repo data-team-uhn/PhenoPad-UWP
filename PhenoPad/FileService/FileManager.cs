@@ -277,9 +277,14 @@ namespace PhenoPad.FileService
             return null;
         }
 
+        /// <summary>
+        /// Returns the audio file with the specified name from the specified notebook.
+        /// </summary>
+        /// <param name="notebookId">The notebook the audio recording is from.</param>
+        /// <param name="name">The name of the audio file.</param>
+        /// <returns>A StorageFile object representing the audio file.</returns>
         public async Task<StorageFile> GetSavedAudioFile(string notebookId, string name) {
             var path = GetNoteFilePath(notebookId, "", NoteFileType.Audio, name);
-            //path += name;
             Debug.WriteLine("tring to get " + path);
             try
             {
