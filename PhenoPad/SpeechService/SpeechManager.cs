@@ -114,7 +114,7 @@ namespace PhenoPad.SpeechService
                 return sharedSpeechManager;
             }
         }
-        # region Set/Get
+        #region Set/Get
         public void setServerAddress(string ads)
         {
             this.serverAddress = ads;
@@ -153,7 +153,7 @@ namespace PhenoPad.SpeechService
             this.speechInterpreter = new SpeechEngineInterpreter(this.conversation, this.realtimeConversation);
             currentAudioName = "";
         }
-        # endregion
+        #endregion
 
 
         // ================================= AUDIO START / STOP FOR USING EXTERNAL MICROPHONE =============================

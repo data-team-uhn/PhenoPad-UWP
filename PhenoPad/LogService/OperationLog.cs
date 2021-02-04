@@ -17,7 +17,8 @@ namespace PhenoPad.LogService
     //So far only tracking the abbreviation,
     //Can add more types for different operations that
     //we want to track
-    public enum OperationType{
+    public enum OperationType
+    {
         Abbreviation,
         Alternative,
         Phenotype,
@@ -38,13 +39,23 @@ namespace PhenoPad.LogService
         public static List<string> CacheLogs;
         public static string CurrentNotebook;
         private DispatcherTimer FlushTimer;
-        //this is for removing duplicate HWR logs
+        // this is for removing duplicate HWR logs
+        //TODO: this name can be misleading, consider changing it
         private string lastHWRLog;
 
-        public OperationLogger() {
+        public OperationLogger()
+        {
         }
 
-        public static OperationLogger getOpLogger() {
+        /// <summary>
+        /// Returns an operation logger object.
+        /// </summary>
+        /// <returns>an instance of the operation logger class</returns>
+        /// <remarks>
+        /// Creates a new instance if there isn't one.
+        /// </remarks>
+        public static OperationLogger getOpLogger()
+        {
             if (logger == null) {
                 logger = new OperationLogger();
                 logger.InitializeLogFile();
@@ -69,13 +80,16 @@ namespace PhenoPad.LogService
         }
 
 
-        public void SetCurrentNoteID(string notebookId) {
+        public void SetCurrentNoteID(string notebookId)
+        {
             CurrentNotebook = notebookId;
         }
 
-        public List<string> GetPhenotypeNames(List<Phenotype> phenos) {
+        public List<string> GetPhenotypeNames(List<Phenotype> phenos)
+        {
             List<string> names = new List<string>();
-            foreach (Phenotype p in phenos) {
+            foreach (Phenotype p in phenos)
+            {
                 names.Add(p.name);
             }
             return names;
@@ -83,11 +97,17 @@ namespace PhenoPad.LogService
         }
 
         /// <summary>
-        /// Logs an operation based on its type with varying number of arguments
+        /// Logs an operation.
         /// </summary>
-        public async void Log(OperationType opType, params string[] args) {
+        /// <remarks>
+        /// args can contain between 0-6 arguments depending on the type of the operation
+        /// </remarks>
+        public async void Log(OperationType opType, params string[] args)
+        {
+            //Logs an operation based on its type with varying number of arguments
             string log = "";
-            switch (opType) {
+            switch (opType)
+            {
                 case OperationType.Stroke:
                     //args format= (args0: strokeID, args1: strokeaStarttime, args2: strokeDuration, args3: lineIndex, args4: pageID)
                     Debug.Assert(args.Count() == 5);
@@ -129,34 +149,49 @@ namespace PhenoPad.LogService
                     break;
             }
             //only adds the log if it's got different content from the previous log 
-            if (!CheckIfSameLog(log)) {
+            if (!CheckIfSameLog(log))
+            {
                 CacheLogs.Add(log);
                 lastHWRLog = log;
-                //Debug.WriteLine(log);
             }
+            //TODO: Question: what does this part do?
             await Windows.ApplicationModel.Core.CoreApplication.MainView.CoreWindow.Dispatcher.RunAsync(CoreDispatcherPriority.Normal,
                 () =>
                 {
                     if (!FlushTimer.IsEnabled)
                         FlushTimer.Start();
-                }
-                );
-            
+                });     
         }
 
-        private bool CheckIfSameLog(string log) {
+        /// <summary>
+        /// Checks if a new log is the same as the last log.
+        /// </summary>
+        /// <param name="log">the current log</param>
+        /// <returns>
+        /// (bool)true if it is the new log is the same as the last log
+        /// (bool)false otherwise.
+        /// </returns>
+        private bool CheckIfSameLog(string log)
+        {
             if (lastHWRLog == string.Empty)
                 return false;
-
+            
             var lastLog = lastHWRLog.Split('|');
             var curLog = log.Split('|');
-            for (int i = 1; i < lastLog.Count(); i++) {
+            for (int i = 1; i < lastLog.Count(); i++)
+            {
                 if (lastLog[i] != curLog[i])
                     return false;
             }
             return true;
         }
 
+        /// <summary>
+        /// Returns the string representation of current local time.
+        /// </summary>
+        /// <returns>
+        /// The string representation of current local time (precise to seconds).
+        /// </returns>
         private string GetTimeStamp()
         {
             DateTime now = DateTime.Now;
@@ -172,18 +207,21 @@ namespace PhenoPad.LogService
         }
 
         /// <summary>
-        /// Clears all logs saved in cache
+        /// Clears all logs saved in cache.
         /// </summary>
-        public void ClearAllLogs() {
+        public void ClearAllLogs()
+        {
             CacheLogs.Clear();
         }
 
-        /// <summary>
-        /// Flushes the logs in current program to local disk
-        /// </summary>
-        public async void FlushLogToDisk(object sender = null, object e = null) {
+        public async void FlushLogToDisk(object sender = null, object e = null)
+        {
+            /// <summary>
+            /// Flushes the logs in current program to local disk
+            /// </summary>
             FlushTimer.Stop();
-            if (CacheLogs.Count > 0) {
+            if (CacheLogs.Count > 0)
+            {
                 bool done = await FileManager.getSharedFileManager().AppendLogToFile(CacheLogs, CurrentNotebook);
                 if (done)
                     CacheLogs.Clear();
@@ -195,31 +233,34 @@ namespace PhenoPad.LogService
         internal void Log(OperationType type, string recognized,Dictionary<string, Phenotype> annoResult)
         {
             string pairs = "";
-            foreach (var item in annoResult) {
+            foreach (var item in annoResult)
+            {
                 pairs += $"{item.Key}:{item.Value.name},";
             }
             pairs = pairs.TrimEnd(',');
             Log(type, recognized, pairs);
         }
 
-        public string ParseCandidateList(List<string> str) {
+        public string ParseCandidateList(List<string> str)
+        {
             string parsed = "[";
-            foreach (string s in str) {
+            foreach (string s in str)
+            {
                 parsed += s + ",";
             }
             parsed = parsed.TrimEnd(',') + "]";
             return parsed;
         }
 
-        /// <summary>
-        /// parses a log line to operationitem to be displayed in view mode,
-        /// currently not all logs will be displayed
-        /// </summary>
-        public async Task<List<NoteLineViewControl>> ParseOperationItems(Notebook notebook, List<TextMessage>conversations) {
+        
+        public async Task<List<NoteLineViewControl>> ParseOperationItems(Notebook notebook, List<TextMessage>conversations)
+        {
+            /// <summary>
+            /// parses a log line to operationitem to be displayed in view mode,
+            /// currently not all logs will be displayed
+            /// </summary>
 
             List<NoteLineViewControl> opitems = new List<NoteLineViewControl>();
-
-
 
             //Parsing information from log file
             List<string> logs = await FileManager.getSharedFileManager().GetLogStrings(notebook.id);
@@ -251,14 +292,16 @@ namespace PhenoPad.LogService
 
 
                 //selective parse useful log for display
-                foreach (string line in logs) {
+                foreach (string line in logs)
+                {
                     List<string> segment = line.Split('|').ToList();
                     DateTime time;
                     DateTime.TryParse(segment[0].Trim(), out time);
                     int lineNum;
 
                     //currently only interested in stroke and phenotypes
-                    switch (segment[1]) {
+                    switch (segment[1])
+                    {
 
                         case ("Stroke"):
                             int id;
@@ -324,7 +367,8 @@ namespace PhenoPad.LogService
                 }
                 //TODO
                 //1. add word blocks for lines           
-                foreach (var l in opitems.Where(x => x.type == "Stroke")) {
+                foreach (var l in opitems.Where(x => x.type == "Stroke"))
+                {
                     l.LoadPhenotypes(savedPhenotypes);
                     var rect = l.strokeCanvas.InkPresenter.StrokeContainer.BoundingRect;
                     l.strokeCanvas.InkPresenter.StrokeContainer.MoveSelected(new Point(-rect.X, -rect.Y));
@@ -360,8 +404,8 @@ namespace PhenoPad.LogService
     /// <summary>
     /// A class that contains useful information of a logged operation
     /// </summary>
-    class OperationItem {
-
+    class OperationItem
+    {
         public string notebookID;
         public string pageID;
         public string type;
@@ -385,7 +429,8 @@ namespace PhenoPad.LogService
         {
         }
 
-        public OperationItem(string notebookID, string pageID, string type, DateTime time) {
+        public OperationItem(string notebookID, string pageID, string type, DateTime time)
+        {
             this.notebookID = notebookID;
             this.pageID = pageID;
             this.type = type;

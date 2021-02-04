@@ -426,7 +426,7 @@ namespace PhenoPad
         }
 
         /// <summary>
-        /// Sets the number of speaker(s) in the ASR transcript.
+        /// Sets the number of speaker(s) on the ASR result page.
         /// </summary>
         /// <param name="newCount">the new number of speaker(s)</param>
         public void adjustSpeakerCount(int newCount)
