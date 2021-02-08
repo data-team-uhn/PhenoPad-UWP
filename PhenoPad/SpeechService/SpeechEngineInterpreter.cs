@@ -138,6 +138,9 @@ namespace PhenoPad.SpeechService
             this.realtimeConversation = _realtimeconv;
         }
 
+        /// <summary>
+        /// TODO ...
+        /// </summary>
         public void newConversation()
         {
             this.formConversation(false);       // don't care about results here
@@ -157,13 +160,17 @@ namespace PhenoPad.SpeechService
         }
 
 
-        // Looks at speech engine result to identify what can be done
+        
         public async void processJSON(SpeechEngineJSON json)
         {
+            ///<summary>
+            /// Looks at speech engine result to identify what can be done
+            ///</summary>
+
             //processes speech result received from server
             try
             {
-                // We take for granted that diarizatio will always be a lot slower than 
+                // We take for granted that diarization will always be a lot slower than 
                 // speech recognition
 
                 if (json != null)

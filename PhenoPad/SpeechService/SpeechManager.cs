@@ -172,7 +172,8 @@ namespace PhenoPad.SpeechService
             MainPage.Current.NotifyUser("Connecting to speech result server...", NotifyType.StatusMessage, 1);
             Debug.WriteLine($"Connecting to speech result server...");
             bool succeed = false;
-            try {
+            try
+            {
                 speechResultsSocket = new SpeechResultsSocket(this.serverAddress, this.serverPort);
                 succeed = await speechResultsSocket.ConnectToServer();
                 // loop this connection attempt until user prompts to cancel
@@ -226,11 +227,14 @@ namespace PhenoPad.SpeechService
             await Task.Run(async () =>
             {
                 // Weird issue but seems to be some buffer issue
+                // TODO (haochi): investigate this
                 string accumulator = String.Empty;
 
                 // Stop running if cancellation requested
                 while (true && !cancellationToken.IsCancellationRequested)
                 {
+
+                    #region Receive Results
                     // don't run again for 
                     await Task.Delay(100);
                     // do the work in the loop
@@ -239,6 +243,7 @@ namespace PhenoPad.SpeechService
                     {
                         MainPage.Current.NotifyUser("Speech Result Server error", NotifyType.ErrorMessage, 2);
                     }
+                    // at ASR server TIMEOUT
                     else if (serverResult.Trim('"').Equals(RESTART_AUIDO_SERVER))
                     {
                         MainPage.Current.NotifyUser("Restarting audio service after error", NotifyType.ErrorMessage, 2);
@@ -246,8 +251,10 @@ namespace PhenoPad.SpeechService
                         NEED_RESTART_AUDIO = true;
                         break;
                     }
+                    #endregion
 
-                    // So that we can parse objects
+                    #region Process Results
+                    // Replace hyphen with underscore in the ASR result so that we can parse objects
                     serverResult = serverResult.Replace('-', '_');     
                     accumulator += serverResult;
 
@@ -262,15 +269,16 @@ namespace PhenoPad.SpeechService
                         if (json.Length != 0)
                         {
                             try
-                            {                               
-                                //Debug.WriteLine("Result from speech: " + json);
+                            {   
+                                // TODO: experiment with this
                                 var parsedSpeech = JsonConvert.DeserializeObject<SpeechEngineJSON>(json);
                                 parsedSpeech.original = json;
                                 //{'diarization': [{'start': 7.328, 'speaker': 0, 'end': 9.168000000000001, 'angle': 152.97781134625265}], 'diarization_incremental': True} 
 
                                 speechInterpreter.processJSON(parsedSpeech);
 
-                                // TODO Find a more legitimate way to fire an UI change?
+                                // TODO (Helen): Find a more legitimate way to fire an UI change?
+                                // TODO (Haochi): Learn more about this.
                                 await Windows.ApplicationModel.Core.CoreApplication.MainView.CoreWindow.Dispatcher.RunAsync(CoreDispatcherPriority.High,
                                    () =>
                                    {
@@ -281,6 +289,7 @@ namespace PhenoPad.SpeechService
                                 continue;
 
                             }
+                            // TODO: learn more about this
                             catch (Exception e)
                             {
                                 StackTrace st = new StackTrace(e, true);
@@ -316,10 +325,11 @@ namespace PhenoPad.SpeechService
                             doParsing = false;
                         }
                     }
-
+                    #endregion
                 }
             }, cancellationToken);
 
+            #region Handle Error
             if (cancellationToken.IsCancellationRequested)
             {
                 MetroLogger.getSharedLogger().Info("ASR connection requested cancellation from line 319");
@@ -338,6 +348,8 @@ namespace PhenoPad.SpeechService
                 MetroLogger.getSharedLogger().Error("ASR encountered some problem, will call StopASRRsults ...");
                 await StopASRResults(false);
             }
+            #endregion
+
             return true;
         }
 
@@ -1047,7 +1059,8 @@ namespace PhenoPad.SpeechService
                 try
                 {
                   await this.EndAudio("");
-                } catch (Exception e)
+                }
+                catch (Exception e)
                 {
                     Debug.WriteLine(e.Message);
                     Debug.WriteLine("Diarization engine stopped unexpectedly");
@@ -1059,7 +1072,8 @@ namespace PhenoPad.SpeechService
                 try
                 {
                     byte_accumulator.AddRange(bs);
-                } catch (Exception ex)
+                }
+                catch (Exception ex)
                 {
                     Debug.WriteLine(ex.Message);
                 }
@@ -1067,11 +1081,11 @@ namespace PhenoPad.SpeechService
             }
         }
 
-        // Continuously read incoming data. For reading data we'll show how to use activeSocket.InputStream.AsStream()
-        // to get a .NET stream. Alternatively you could call readBuffer.AsBuffer() to use IBuffer with
-        // activeSocket.InputStream.ReadAsync.
         private async Task ReceiveDataAsync(StreamWebSocket activeSocket)
         {
+            // Continuously read incoming data. For reading data we'll show how to use activeSocket.InputStream.AsStream()
+            // to get a .NET stream. Alternatively you could call readBuffer.AsBuffer() to use IBuffer with
+            // activeSocket.InputStream.ReadAsync.
             Stream readStream = activeSocket.InputStream.AsStreamForRead();
             int bytesReceived = 0;
             try
@@ -1111,6 +1125,7 @@ namespace PhenoPad.SpeechService
             }
         }
 
+        // NOTE: this function is never called
         public void AddFakeSpeechResults()
         {
             double start = 0;
@@ -1145,12 +1160,28 @@ namespace PhenoPad.SpeechService
             });
         }
 
-        public void CreateNewAudioName() {
+        /// <summary>
+        /// Updates current audio name when a new recording session starts.
+        /// </summary>
+        /// <remarks>
+        /// The audio name is the time the recording session starts (Year_Month_Day_Hour_Minute).
+        /// The server will save the recorded audio with name = {ManagerID}_{NoteID}_{AudioName}.
+        /// It's precise to the minutes so that if a recording session is opened and closed within the same minute,
+        /// a new recording opened later in the same minute overwrites it (based on the assumption that very short
+        /// recordings don't contain useful information).
+        /// </remarks>
+        public void CreateNewAudioName()
+        {
             var time = DateTime.Now;
             currentAudioName = $"{time.Year}_{time.Month}_{time.Day}_{time.Hour}_{time.Minute}";
         }
 
-        public string GetAudioNameForServer() {
+        /// <summary>
+        /// Generates the name by which the ASR server saves the current audio recording.
+        /// </summary>
+        /// <returns>saved audio file name on the ASR server</returns>
+        public string GetAudioNameForServer()
+        {
             string noteName = MainPage.Current.notebookId;
             int workerID = 666; // TODO: ID shouldn't be hardcoded in the function
 

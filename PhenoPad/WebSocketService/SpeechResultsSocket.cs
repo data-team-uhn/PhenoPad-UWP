@@ -116,7 +116,6 @@ namespace PhenoPad.WebSocketService
             }
         }
 
-
         public async Task<String> SpeechResultsSocket_ReceiveMessage()
         {
             string returnMessage = String.Empty;
@@ -189,6 +188,15 @@ namespace PhenoPad.WebSocketService
             streamSocket = null;
 
         }
+        
+        /// <summary>
+        /// Handler function called when a stream websocket is closed.
+        /// </summary>
+        /// <param name="sender">the websocket being closed</param>
+        /// <param name="args">contains information about reasons that the websocket was closed</param>
+        /// <remarks>
+        /// Clears the SpeechResultSocket instance's streamSocket and if speech service is still running, stops the service.
+        /// </remarks>
         private async void WebSocket_ClosedAsync(IWebSocket sender, WebSocketClosedEventArgs args)
         {
             LogService.MetroLogger.getSharedLogger().Info(

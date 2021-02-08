@@ -57,6 +57,7 @@ namespace PhenoPad
             chatView.ContainerContentChanging += OnChatViewContainerContentChanging;
             //realtimeChatView.Children.Add(MainPage.Current.speechQuickView.c);
             savedAudio = new List<AudioFile>();
+            //NOTE: method SpeechPage_EngineHasResult is empty
             SpeechManager.getSharedSpeechManager().EngineHasResult += SpeechPage_EngineHasResult;
             SpeechManager.getSharedSpeechManager().RecordingCreated += SpeechPage_RecordingCreated;
             this.Tapped += HidePopups;

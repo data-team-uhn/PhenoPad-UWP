@@ -72,7 +72,6 @@ namespace PhenoPad.WebSocketService
             //socket.Control.OutboundBufferSizeInBytes = ;
 
             //socket.SetRequestHeader("content-type", "audio/x-raw");
-            //socket.SetRequestHeader("content-type", "audio/x-raw");
             try
             {
                 Uri uri = new Uri("ws://" + this.serverAddress + ":" + this.serverPort +
