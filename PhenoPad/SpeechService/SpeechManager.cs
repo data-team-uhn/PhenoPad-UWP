@@ -227,10 +227,10 @@ namespace PhenoPad.SpeechService
             await Task.Run(async () =>
             {
                 // Weird issue but seems to be some buffer issue
-                // TODO (haochi): investigate this
+                //TODO (haochi): what issue? investigate
                 string accumulator = String.Empty;
 
-                // Stop running if cancellation requested
+                // Stop running if cancellation requested.
                 while (true && !cancellationToken.IsCancellationRequested)
                 {
 
@@ -258,10 +258,12 @@ namespace PhenoPad.SpeechService
                     serverResult = serverResult.Replace('-', '_');     
                     accumulator += serverResult;
 
-                    // Seems like if we don't do this we won't get all the packages
+                    // This while loop is added to make sure we get all the packages.
+                    //TODO (haochi): think about if there's a better way to do this.
                     bool doParsing = true;
                     while (doParsing && !cancellationToken.IsCancellationRequested)
                     {
+                        // 
                         string outAccumulator = String.Empty;
                         string json = SpeechEngineInterpreter.getFirstJSON(accumulator, out outAccumulator);
                         accumulator = outAccumulator;
@@ -269,10 +271,10 @@ namespace PhenoPad.SpeechService
                         if (json.Length != 0)
                         {
                             try
-                            {   
-                                // TODO: experiment with this
+                            {                                
                                 var parsedSpeech = JsonConvert.DeserializeObject<SpeechEngineJSON>(json);
                                 parsedSpeech.original = json;
+                                // TODO: experiment with this
                                 //{'diarization': [{'start': 7.328, 'speaker': 0, 'end': 9.168000000000001, 'angle': 152.97781134625265}], 'diarization_incremental': True} 
 
                                 speechInterpreter.processJSON(parsedSpeech);
@@ -287,7 +289,6 @@ namespace PhenoPad.SpeechService
                                    );
 
                                 continue;
-
                             }
                             // TODO: learn more about this
                             catch (Exception e)

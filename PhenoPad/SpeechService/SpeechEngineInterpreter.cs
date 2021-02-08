@@ -167,11 +167,12 @@ namespace PhenoPad.SpeechService
             /// Looks at speech engine result to identify what can be done
             ///</summary>
 
-            //processes speech result received from server
             try
             {
-                // We take for granted that diarization will always be a lot slower than 
-                // speech recognition
+                // Diarization results are only sent with partial ASR results.
+                // Here we take the assumption that diarization will always be slower than 
+                // speech recognition. I.e. the diarization results of certain utterances 
+                // will only be received after the final ASR results of these utterances.
 
                 if (json != null)
                 {
@@ -184,32 +185,29 @@ namespace PhenoPad.SpeechService
                     // First check if speech is final (remember that diarization is always slower)
                     if (json.result.final)
                     {
-                        //this.queryPhenoService(json.result.hypotheses[0].transcript);
-
                         Debug.WriteLine(json.result.hypotheses[0].transcript);
 
                         // Then we should have a bunch of words to look at
                         double latest = 0;
+                        //TODO: when is offset useful? and should it be hardcoded in this function?
                         double OFFSET = 0;          // not too sure if word alignment data is actually correct from aspire???
                         foreach (WordAlignment wa in json.result.hypotheses[0].word_alignment)
                         {
-                            // Remove <laughter> <unk> etc.
-                            //if (wa.word.IndexOf('[') == -1 && wa.word.IndexOf('<') == -1)
-                            {
-                                // Make sure word does not start before 0
-                                double word_start = Math.Max(wa.start + json.segment_start + OFFSET, 0);
-                                double word_end = Math.Max(wa.start + wa.length + json.segment_start + OFFSET, 0);
-                                var w = new WordSpoken(wa.word, -1, new TimeInterval(word_start, word_end));
-                                words.Add(w);
-                                latest = wa.start + wa.length + json.segment_start;
-                            }
+                            // Make sure word does not start before 0
+                            //TODO: this block of code is not self-explanatory, consider rewriting this
+                            double word_start = Math.Max(wa.start + json.segment_start + OFFSET, 0);
+                            double word_end = Math.Max(wa.start + wa.length + json.segment_start + OFFSET, 0);
+                            var w = new WordSpoken(wa.word, -1, new TimeInterval(word_start, word_end));
+                            words.Add(w);
+                            latest = wa.start + wa.length + json.segment_start;
                         }
 
+                        //update lastest timestamp to latest sentence
+                        //TODO: consider rewrite this into a function
                         if (latest == 0)
                         {
                             latest = words[words.Count - 1].interval.end;
                         }
-                        //Debug.WriteLine("Latest final sentence up to " + latest.ToString());
 
                         /*if (json.result.hypotheses[0].word_alignment.Count > 0)
                         {
@@ -290,8 +288,6 @@ namespace PhenoPad.SpeechService
             catch (Exception e) {
                 LogService.MetroLogger.getSharedLogger().Error(e.Message);
             }
-
-
         }
 
         public async void processDiaJson(DiarizationJSON diaJson)
@@ -649,6 +645,15 @@ namespace PhenoPad.SpeechService
             Debug.WriteLine("---------------------");
         }
 
+        /// <summary>
+        /// Finds the first json block and returns its content as string.
+        /// </summary>
+        /// <param name="content">the content to process (parse the first json block from)</param>
+        /// <param name="outContent">stores content after the first json block for future use</param>
+        /// <returns>
+        /// if json block found: the content of the first json block as string 
+        /// else: empty string
+        /// </returns>
         public static string getFirstJSON(string content, out string outContent)
         {
             int count = 0;
@@ -675,7 +680,6 @@ namespace PhenoPad.SpeechService
 
             if (good)
             {
-                //Debug.WriteLine((content.Length).ToString() + ", " + (index).ToString());
                 string toReturn = content.Substring(0, index + 1);
                 if (content.Length >= index + 1)
                 {

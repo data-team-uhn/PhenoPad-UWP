@@ -116,6 +116,9 @@ namespace PhenoPad.WebSocketService
             }
         }
 
+        /// <summary>
+        /// Receives ASR server message as a string.
+        /// </summary>
         public async Task<String> SpeechResultsSocket_ReceiveMessage()
         {
             string returnMessage = String.Empty;
@@ -136,7 +139,7 @@ namespace PhenoPad.WebSocketService
             }
             catch (Exception exp)
             {
-                //This handles the case where we forse quit 
+                //This handles the case where we force quit 
                 if (exp.HResult == (int)ERROR_INTERNET_OPERATION_CANCELLED)
                 {
                     LogService.MetroLogger.getSharedLogger().Info("ERROR_INTERNET_OPERATION_CANCELLED.");
