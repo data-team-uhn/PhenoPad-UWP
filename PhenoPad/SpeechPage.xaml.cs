@@ -115,6 +115,11 @@ namespace PhenoPad
             //);
         }
 
+        /// <summary>
+        /// Note: This method is empty.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="args"></param>
         private void SpeechPage_EngineHasResult(SpeechManager sender, SpeechEngineInterpreter args)
         {
             //this.tempSentenceTextBlock.Text = args.tempSentence;

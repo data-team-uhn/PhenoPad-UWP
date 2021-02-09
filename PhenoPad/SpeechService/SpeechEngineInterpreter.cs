@@ -160,7 +160,7 @@ namespace PhenoPad.SpeechService
         }
 
 
-        
+        //NOTE: this function does several things, might be too long and need to be broken into smaller functions
         public async void processJSON(SpeechEngineJSON json)
         {
             ///<summary>
@@ -169,10 +169,13 @@ namespace PhenoPad.SpeechService
 
             try
             {
-                // Diarization results are only sent with partial ASR results.
-                // Here we take the assumption that diarization will always be slower than 
-                // speech recognition. I.e. the diarization results of certain utterances 
-                // will only be received after the final ASR results of these utterances.
+                // Here we take the assumption that diarization will always be slower than speech recognition. 
+                // I.e. the diarization results of certain utterances will only be received after the final 
+                // ASR results of these utterances.
+                // The assumption is valid because in the speech server, diarization of an utterance is only 
+                // performed after the utterance has ended (detected using WebRTC Voice Activity Detector),
+                // while ASR is performed real-time. Which means diarization of an utterance starts when the
+                // ASR finishes.
 
                 if (json != null)
                 {
@@ -182,7 +185,7 @@ namespace PhenoPad.SpeechService
                         Debug.WriteLine("Worker PID upon processing " + this.worker_pid.ToString());
                     }
 
-                    // First check if speech is final (remember that diarization is always slower)
+                    // First check if speech is final (Note: Diarization results are only sent with partial ASR results.)
                     if (json.result.final)
                     {
                         Debug.WriteLine(json.result.hypotheses[0].transcript);
@@ -208,11 +211,7 @@ namespace PhenoPad.SpeechService
                         {
                             latest = words[words.Count - 1].interval.end;
                         }
-
-                        /*if (json.result.hypotheses[0].word_alignment.Count > 0)
-                        {
-                            words.Add(new WordSpoken(".", -1, new TimeInterval(latest, latest)));
-                        }*/
+                        
                     }
 
                     // Then check if we have results from diarization
@@ -249,7 +248,6 @@ namespace PhenoPad.SpeechService
                         this.constructTempSentence();
                         //this.printDiarizationResult();
                     }
-
                 }
 
                 this.realtimeSentences = this.constructTempSentence();
@@ -266,6 +264,8 @@ namespace PhenoPad.SpeechService
                             this.realtimeConversation.UpdateLastMessage(constructRealtimeTempBubble(), true);
                             //Debug.WriteLine("Not final, no existing");
                         }
+                        //NOTE: this condition (json.result.final) was checked earlier already
+                        //TODO: rearrange code
                         else
                         {
                             this.realtimeConversation.UpdateLastMessage(constructRealtimeTempBubble(), false);
