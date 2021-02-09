@@ -110,6 +110,7 @@ namespace PhenoPad.SpeechService
         public Conversation conversation;               // left hand diarized pannel    
         public Conversation realtimeConversation;       // right hand temporary result panel
 
+        //TODO: consider changing to a more descriptive name
         private List<WordSpoken> words = new List<WordSpoken>();      // all words detected
         // a list of intervals that have speaker identified
         private List<Pair<TimeInterval, int>> diarization = new List<Pair<TimeInterval, int>>();    
@@ -139,8 +140,11 @@ namespace PhenoPad.SpeechService
         }
 
         /// <summary>
-        /// TODO ...
+        /// Resets variables and saves last conversation when a new conversation is opened.
         /// </summary>
+        /// <remarks>
+        /// Called when a new recording session is started (i.e. when "Start Audio" button is clicked).
+        /// </remarks>
         public void newConversation()
         {
             this.formConversation(false);       // don't care about results here
@@ -185,6 +189,7 @@ namespace PhenoPad.SpeechService
                         Debug.WriteLine("Worker PID upon processing " + this.worker_pid.ToString());
                     }
 
+                    #region If result is final, add all words in the result to the list of all words
                     // First check if speech is final (Note: Diarization results are only sent with partial ASR results.)
                     if (json.result.final)
                     {
@@ -196,23 +201,30 @@ namespace PhenoPad.SpeechService
                         double OFFSET = 0;          // not too sure if word alignment data is actually correct from aspire???
                         foreach (WordAlignment wa in json.result.hypotheses[0].word_alignment)
                         {
+                            //TODO: consider rewriting this to a separate function
+                            #region Adds a new word to the list of all words and update latest timestamp
                             // Make sure word does not start before 0
                             //TODO: this block of code is not self-explanatory, consider rewriting this
                             double word_start = Math.Max(wa.start + json.segment_start + OFFSET, 0);
                             double word_end = Math.Max(wa.start + wa.length + json.segment_start + OFFSET, 0);
                             var w = new WordSpoken(wa.word, -1, new TimeInterval(word_start, word_end));
                             words.Add(w);
+                            //NOTE: this line is possibly redundant due to the code below
                             latest = wa.start + wa.length + json.segment_start;
+                            #endregion
                         }
 
-                        //update lastest timestamp to latest sentence
                         //TODO: consider rewrite this into a function
+                        #region Update lastest timestamp to end of last sentence
+                        //TODO: Question: what is the purpose of latest? It's only been assigned value.
+                        //      It's a local variable and it's value wasn't passed to anything outside this function.
                         if (latest == 0)
                         {
                             latest = words[words.Count - 1].interval.end;
                         }
-                        
+                        #endregion
                     }
+                    #endregion
 
                     // Then check if we have results from diarization
                     if (json.result.diarization != null && json.result.diarization.Count > 0)

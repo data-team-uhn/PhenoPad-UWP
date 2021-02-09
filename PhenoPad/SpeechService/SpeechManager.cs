@@ -158,17 +158,19 @@ namespace PhenoPad.SpeechService
 
         // ================================= AUDIO START / STOP FOR USING EXTERNAL MICROPHONE =============================
 
+        //NOTE: this function is very long and does way more things than its name indicates, 
+        //      consider breaking it into smaller functions
         /// <summary>
         /// ...
         /// </summary>
-        /// <returns></returns>
+        /// <returns>(bool)false if connection to server fails/cancelled, (bool)true otherwise</returns>
         public async Task<bool> ReceiveASRResults()
         {
             /// <summary>
             /// connect to client/speech/results
             /// only receive results without sending audio signals
             /// </summary>
-            #region Speech Server Connection
+            #region Connect to Speech Server
             MainPage.Current.NotifyUser("Connecting to speech result server...", NotifyType.StatusMessage, 1);
             Debug.WriteLine($"Connecting to speech result server...");
             bool succeed = false;
@@ -210,6 +212,7 @@ namespace PhenoPad.SpeechService
             }
             #endregion
 
+            #region Set Up New Conversation
             MainPage.Current.onAudioStarted(null, null);
             SpeechPage.Current.setSpeakerButtonEnabled(true);
             SpeechPage.Current.adjustSpeakerCount(2);
@@ -217,13 +220,14 @@ namespace PhenoPad.SpeechService
             cancellationSource = new CancellationTokenSource();
             // need this to actually cancel reading from websocketS
 
-            //ENTERS MESSAGE RECEIVING LOOP
             CancellationToken cancellationToken = cancellationSource.Token;                 
             this.speechInterpreter.newConversation();
             OperationLogger.getOpLogger().Log(OperationType.ASR, "Started");
 
             CreateNewAudioName();
+            #endregion
 
+            #region Message Receiving Loop
             await Task.Run(async () =>
             {
                 // Weird issue but seems to be some buffer issue
@@ -237,13 +241,14 @@ namespace PhenoPad.SpeechService
                     #region Receive Results
                     // don't run again for 
                     await Task.Delay(100);
-                    // do the work in the loop
+
                     string serverResult = await speechResultsSocket.SpeechResultsSocket_ReceiveMessage();
                     if (serverResult == "CONNECTION_ERROR")
                     {
                         MainPage.Current.NotifyUser("Speech Result Server error", NotifyType.ErrorMessage, 2);
                     }
-                    // at ASR server TIMEOUT
+
+                    // On ASR Server TIMEOUT Exception
                     else if (serverResult.Trim('"').Equals(RESTART_AUIDO_SERVER))
                     {
                         MainPage.Current.NotifyUser("Restarting audio service after error", NotifyType.ErrorMessage, 2);
@@ -251,10 +256,12 @@ namespace PhenoPad.SpeechService
                         NEED_RESTART_AUDIO = true;
                         break;
                     }
+
                     #endregion
 
-                    #region Process Results
-                    // Replace hyphen with underscore in the ASR result so that we can parse objects
+                    #region Process Results(JSON)
+                    // Replace hyphen with underscore in the ASR result so that we can parse objects,
+                    // hyphens will cause errors 
                     serverResult = serverResult.Replace('-', '_');     
                     accumulator += serverResult;
 
@@ -263,7 +270,6 @@ namespace PhenoPad.SpeechService
                     bool doParsing = true;
                     while (doParsing && !cancellationToken.IsCancellationRequested)
                     {
-                        // 
                         string outAccumulator = String.Empty;
                         string json = SpeechEngineInterpreter.getFirstJSON(accumulator, out outAccumulator);
                         accumulator = outAccumulator;
@@ -290,7 +296,7 @@ namespace PhenoPad.SpeechService
 
                                 continue;
                             }
-                            // TODO: learn more about this
+                            // Report error if failed to process JSON
                             catch (Exception e)
                             {
                                 StackTrace st = new StackTrace(e, true);
@@ -329,13 +335,15 @@ namespace PhenoPad.SpeechService
                     #endregion
                 }
             }, cancellationToken);
+            #endregion
 
-            #region Handle Error
+            //TODO: consider rewriting this into a separate function
+            #region On Message Receiving Loop Stops
             if (cancellationToken.IsCancellationRequested)
             {
+                //TODO: change this line number
                 MetroLogger.getSharedLogger().Info("ASR connection requested cancellation from line 319");
                 NEED_RESTART_AUDIO = false;
-
             }
             else if (NEED_RESTART_AUDIO) {
                 MetroLogger.getSharedLogger().Error("Server requested AUDIO restart ... will be restarting");
@@ -354,6 +362,11 @@ namespace PhenoPad.SpeechService
             return true;
         }
 
+        /// <summary>
+        /// TODO...
+        /// </summary>
+        /// <param name="reload"></param>
+        /// <returns></returns>
         public async Task<bool> StopASRResults(bool reload = true)
         {
             try
@@ -589,6 +602,7 @@ namespace PhenoPad.SpeechService
                 return false;
             }
         }
+
         private SemaphoreSlim endSemaphoreSlim = new SemaphoreSlim(1);
         public async Task<bool> EndAudio(string notebookid)
         {
@@ -1162,7 +1176,7 @@ namespace PhenoPad.SpeechService
         }
 
         /// <summary>
-        /// Updates current audio name when a new recording session starts.
+        /// Updates current audio name when a new speech session starts.
         /// </summary>
         /// <remarks>
         /// The audio name is the time the recording session starts (Year_Month_Day_Hour_Minute).

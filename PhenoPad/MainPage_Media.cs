@@ -361,6 +361,9 @@ namespace PhenoPad
         /// Sends "start audio" command to Raspberry Pi to start recording and connects to the ASR server to receive ASR results.
         /// </summary>
         /// <returns>(bool)true if successfully sent command and connected to server, (bool)false otherwise</returns>
+        /// <remarks>
+        /// Called when choosing "external audio" option.
+        /// </remarks>
         public async Task<bool> StartAudioAfterBluetooth() {
             var success = false;
             DisableAudioButton();
@@ -702,7 +705,7 @@ namespace PhenoPad
         }
 
         /// <summary>
-        /// Updates vairable values and notifies user when speech service starts.
+        /// Updates vairable values and notifies user when new speech session starts.
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
