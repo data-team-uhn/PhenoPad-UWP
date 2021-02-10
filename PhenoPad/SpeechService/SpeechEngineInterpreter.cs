@@ -42,17 +42,24 @@ namespace PhenoPad.SpeechService
             this.end = _end;
         }
 
+        /// <summary>
+        /// Returns the length/duration of the interval.
+        /// </summary>
+        /// <returns>length/duration of the interval in seconds</returns>
         public double getLength()
         {
             return this.end - this.start;
         }
     }
 
-    // We construct the entire conversation via words spoken
-    // contains an array that corresponds to each 0.1 seconds in time interval
-    // lenght 1 if interval is 0 lengthed
+    /// <summary>
+    /// TODO...
+    /// </summary>
     class WordSpoken
     {
+        // We construct the entire conversation via words spoken
+        // contains an array that corresponds to each 0.1 seconds in time interval
+        // lenght = 1 if interval length = 0 
         public string word;
         public int[] smallSegSpeaker;
         public TimeInterval interval;
@@ -61,15 +68,26 @@ namespace PhenoPad.SpeechService
         {
             this.word = _word;
             this.interval = _interval;
-            int speakerLength = Math.Max((int)(this.interval.getLength() / 0.1), 1);
-            smallSegSpeaker = new int[speakerLength];
+            int lengthIn100ms = Math.Max((int)(this.interval.getLength() / 0.1), 1);
+            smallSegSpeaker = new int[lengthIn100ms];
 
-            for (int i = 0; i < speakerLength; i++)
+            for (int i = 0; i < lengthIn100ms; i++)
             {
                 this.smallSegSpeaker[i] = _speaker;
             }
         }
 
+        /// <summary>
+        /// Returns the relative start time (time since conversation started) of the 
+        /// unit segment given its index.
+        /// </summary>
+        /// <param name="index"></param>
+        /// <returns></returns>
+        /// <remarks>
+        /// E.g. If the word starts at 10.5s, and the index of the unit segment is 2,
+        ///      the function returns 0.2s + 10.5s  = 10.7s which is the start time
+        ///      of the segment.
+        /// </remarks>
         public double getTimeByIndex(int index)
         {
             return index * 0.1 + this.interval.start;
@@ -127,9 +145,11 @@ namespace PhenoPad.SpeechService
         public List<Pair<int, int>> diarizationSmallSeg = new List<Pair<int, int>>();        // Pair<start time, speaker>
         //TODO: Why was diarization implemented like this?
 
-        private int diarizationWordIndex = 0;                     // word index that need to be assigned speaker
-        private int constructDiarizedSentenceIndex = 0;           // word index to construct diarized index
-        private int latestSentenceIndex = 0;                      // word index that has not been diarized
+        //TODO: these variable are not self-descriptive enough, and need clearer documentation!
+        private int diarizationWordIndex = 0;                     // index of the next word to assign speaker to
+        private int constructDiarizedSentenceIndex = 0;           // word index to construct diarized index => ??? seems to be the earliest word which has not been put into a sentence ???
+        private int latestSentenceIndex = 0;                      // index of the next(earliest) word which has never been assigned speaker(s) to (this is normally the
+                                                                  // same as diarizationWordIndex, but does not reset when the conversation is re-diarized
         private int lastSpeaker = 0;
 
         public string tempSentence;         // non-final result from engine
@@ -243,7 +263,8 @@ namespace PhenoPad.SpeechService
                     {
                         bool full = false;
 
-                        //Received new diarization. Removing previous results
+                        //TODO: consider making this a separate function.
+                        // If received new diarization of the conversation, clear previous results.
                         if (!json.result.diarization_incremental)
                         {
                             diarization.Clear();
@@ -262,9 +283,6 @@ namespace PhenoPad.SpeechService
                         }
 
                         this.assignSpeakerToWords();
-                        //Debug.WriteLine("Diarized to word count" + diarizationWordIndex.ToString());
-                        //Debug.WriteLine("Total word count" + words.Count.ToString());
-                        //Debug.WriteLine(json.original);
                         this.formConversation(full);
 
                         // so that we don't have an overflow of words
@@ -410,9 +428,6 @@ namespace PhenoPad.SpeechService
         /// </summary>
         /// <param name="interval">the interval of the utterance</param>
         /// <param name="speaker">the intteger index representing the speaker</param>
-        /// <remarks>
-        /// 
-        /// </remarks>
         private void insertToDiarization(TimeInterval interval, int speaker)
         {
             diarization.Add(new Pair<TimeInterval, int>(interval, speaker));
@@ -444,7 +459,7 @@ namespace PhenoPad.SpeechService
             {   
                 //TODO: is this the best way to do this?
                 // If the new utterance starts before the last diarization segment ends, simply overwrite
-                // overlapping segments
+                // overlapping segments.
                 for (int i = Convert.ToInt32(prev * 10); i < Convert.ToInt32(interval.end * 10); i += 1)
                 {
                     this.diarizationSmallSeg.Add(new Pair<int, int>(i, speaker));
@@ -452,16 +467,15 @@ namespace PhenoPad.SpeechService
             }
         }
 
+
         private void assignSpeakerToWords()
         {
             // Label speaker for each word according to speaker intervals
-            // returns index to word that has been diarized
 
+            //TODO: what does constructDiarizedSentenceIndex do?
+            //TODO: shouldn't this update happen after forming conversation?
             // construct diarized sentences from previous diarized word index
             this.constructDiarizedSentenceIndex = this.diarizationWordIndex;
-            /*Debug.WriteLine("assigning words from word index " +
-                        this.diarizationWordIndex.ToString() + " to " +
-                        this.words.Count.ToString());*/
 
             bool brokeOut = false;
             for (int wordIndex = this.diarizationWordIndex; wordIndex < this.words.Count; wordIndex++)
@@ -469,8 +483,10 @@ namespace PhenoPad.SpeechService
                 WordSpoken word = this.words[wordIndex];
                 for (int i = 0; i < word.smallSegSpeaker.Length; i++)
                 {
-                    double time = word.getTimeByIndex(i);
-                    int diarizationSmallSegIndex = (int)(time / 0.1);
+                    //TODO: consider rewriting as function
+                    #region Assign speaker to the word's unit segments
+                    double segStartTime = word.getTimeByIndex(i);
+                    int diarizationSmallSegIndex = (int)(segStartTime / 0.1);
 
                     if (diarizationSmallSegIndex >= this.diarizationSmallSeg.Count)
                     {
@@ -482,11 +498,10 @@ namespace PhenoPad.SpeechService
                     {
                         word.smallSegSpeaker[i] = this.diarizationSmallSeg[diarizationSmallSegIndex].second;
                     }
+                    #endregion
                 }
             }
 
-            // latest sentence should start from last diarized word index, but not 
-            // affected by re-training
             if (!brokeOut)
             {
                 this.diarizationWordIndex = this.words.Count;
@@ -529,6 +544,7 @@ namespace PhenoPad.SpeechService
         }
 
 
+        //TODO: what?
         // Concatenate words together to form sentences
         // awkward thing is we don't know how to get sentences
         private async Task<List<TextMessage>> formConversation(bool full)
