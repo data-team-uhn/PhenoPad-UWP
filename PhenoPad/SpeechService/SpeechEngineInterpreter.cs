@@ -113,8 +113,20 @@ namespace PhenoPad.SpeechService
         //TODO: consider changing to a more descriptive name
         private List<WordSpoken> words = new List<WordSpoken>();      // all words detected
         // a list of intervals that have speaker identified
-        private List<Pair<TimeInterval, int>> diarization = new List<Pair<TimeInterval, int>>();    
+        private List<Pair<TimeInterval, int>> diarization = new List<Pair<TimeInterval, int>>();
+
+        // Note: Each segment in diarizationSmallSeg represents a 0.1s long audio segment. The audio is
+        //       discretized into 0.1s segments each with a speaker index. If a segment contains no speech,
+        //       its speaker index is set to -1.
+        //       E.g. An audio segment with 2 utterances utt1 and utt2 spoken by speaker 0 and 1, respectively,
+        //            can be represented as:
+        //            -1, -1, -1, 0, 0, 0, 0, 0, -1, -1, -1, -1, -1, 1, 1, 1, 1, 1, 1, 1
+        //            Here the audio is 2s long, utt1 starts at 0.3s and ends at 0.8s and utt2 starts at 1.3s
+        //            and ends at 2.0s.
+        //       The rest of the script refers to the set of unit diarization segments as the diarization segment space.
         public List<Pair<int, int>> diarizationSmallSeg = new List<Pair<int, int>>();        // Pair<start time, speaker>
+        //TODO: Why was diarization implemented like this?
+
         private int diarizationWordIndex = 0;                     // word index that need to be assigned speaker
         private int constructDiarizedSentenceIndex = 0;           // word index to construct diarized index
         private int latestSentenceIndex = 0;                      // word index that has not been diarized
@@ -176,7 +188,7 @@ namespace PhenoPad.SpeechService
                 // Here we take the assumption that diarization will always be slower than speech recognition. 
                 // I.e. the diarization results of certain utterances will only be received after the final 
                 // ASR results of these utterances.
-                // The assumption is valid because in the speech server, diarization of an utterance is only 
+                // This is because in the speech server, diarization of an utterance is only 
                 // performed after the utterance has ended (detected using WebRTC Voice Activity Detector),
                 // while ASR is performed real-time. Which means diarization of an utterance starts when the
                 // ASR finishes.
@@ -243,7 +255,6 @@ namespace PhenoPad.SpeechService
                         foreach (var d in json.result.diarization)
                         {
                             int speaker = d.speaker;
-                            //Debug.WriteLine("Identified speaker is " + speaker.ToString());
                             double start = d.start;
                             double end = d.end;
                             var interval = new TimeInterval(start, end);
@@ -332,33 +343,33 @@ namespace PhenoPad.SpeechService
             }
         }
 
-    // Show all words that have not been diarized
         private List<string> constructTempSentence()
+        {
+            // Show all words that have not been diarized
+            List<string> sentences = new List<string>();
+            string result = String.Empty;
+
+            /*Debug.WriteLine("constructing latest sentences from word index " +
+                        this.latestSentenceIndex.ToString() + " to " +
+                        this.words.Count.ToString());*/
+            for (int i = this.latestSentenceIndex; i < this.words.Count; i++)
             {
-                List<string> sentences = new List<string>();
-                string result = String.Empty;
+                result += " " + words[i].word;
 
-                /*Debug.WriteLine("constructing latest sentences from word index " +
-                            this.latestSentenceIndex.ToString() + " to " +
-                            this.words.Count.ToString());*/
-                for (int i = this.latestSentenceIndex; i < this.words.Count; i++)
-                {
-                    result += " " + words[i].word;
-
-                    if (result.Length > 120)
-                    {
-                        sentences.Add(result);
-                        result = String.Empty;
-                    }
-                }
-
-                if (result.Length > 0)
+                if (result.Length > 120)
                 {
                     sentences.Add(result);
+                    result = String.Empty;
                 }
-
-                return sentences;
             }
+
+            if (result.Length > 0)
+            {
+                sentences.Add(result);
+            }
+
+            return sentences;
+        }
 
         private TextMessage constructTempBubble()
         {
@@ -394,41 +405,49 @@ namespace PhenoPad.SpeechService
 
         // ------ Helper Functions for Diarization ---------------
 
+        /// <summary>
+        /// Add a new utterance to the diarization segment space
+        /// </summary>
+        /// <param name="interval">the interval of the utterance</param>
+        /// <param name="speaker">the intteger index representing the speaker</param>
+        /// <remarks>
+        /// 
+        /// </remarks>
         private void insertToDiarization(TimeInterval interval, int speaker)
         {
-            // Fill in diarizaitonSmallSeg by reading interval
-
             diarization.Add(new Pair<TimeInterval, int>(interval, speaker));
 
             double prev = 0;
+
             if (this.diarizationSmallSeg.Count > 0)
             {
+                //TODO: prev is the first unassigned segment, need a better name
+                // Since each diarizationSmallSeg contains the start time and speaker index of
+                // a 0.1s segment, the start time of the first unassigned segment is the start
+                // time of the last assigned segment + 0.1s
                 prev = (double)(this.diarizationSmallSeg.Last().first) / (double)(10.0) + 0.1;
             }
             if (interval.start >= prev)
             {
-                // fill empty ones, just in case
+                // fill the space between utterances with speaker index -1
                 for (int i = Convert.ToInt32(prev * 10); i < Convert.ToInt32(interval.start * 10); i += 1)
                 {
                     this.diarizationSmallSeg.Add(new Pair<int, int>(i, -1));
-                    //Debug.WriteLine("addedSmallSegIndex: " + (diarizationSmallSeg.Count - 1));
-                    //Debug.WriteLine("diarizationSmallSeg added: " + (i, -1));
                 }
 
                 for (int i = Convert.ToInt32(interval.start * 10); i < Convert.ToInt32(interval.end * 10); i += 1)
                 {
                     this.diarizationSmallSeg.Add(new Pair<int, int>(i, speaker));
-                    //Debug.WriteLine("addedSmallSegIndex: " + (diarizationSmallSeg.Count - 1));
-                    //Debug.WriteLine("diarizationSmallSeg added: " + (i, speaker));
                 }
             }
             else
-            {
+            {   
+                //TODO: is this the best way to do this?
+                // If the new utterance starts before the last diarization segment ends, simply overwrite
+                // overlapping segments
                 for (int i = Convert.ToInt32(prev * 10); i < Convert.ToInt32(interval.end * 10); i += 1)
                 {
                     this.diarizationSmallSeg.Add(new Pair<int, int>(i, speaker));
-                    //Debug.WriteLine("addedSmallSegIndex: " + (diarizationSmallSeg.Count - 1));
-                    //Debug.WriteLine("diarizationSmallSeg added: " + (i, speaker));
                 }
             }
         }

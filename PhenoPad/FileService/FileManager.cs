@@ -91,11 +91,12 @@ namespace PhenoPad.FileService
             return sharedFileManager;
         }
 
-        /// <summary>
-        /// Returns all Notebook ids from local notes.Returns null if failed.
-        /// </summary>
+        
         public async Task<List<string>> GetAllNotebookIds()
         {
+            /// <summary>
+            /// Returns all Notebook ids from local notes.Returns null if failed.
+            /// </summary>
             List<string> result = new List<string>();
             try
             {
@@ -116,11 +117,12 @@ namespace PhenoPad.FileService
             return null;
         }
 
-        /// <summary>
-        /// Returns all note page IDs by notebook ID.Returns null if failed.
-        /// </summary>
+        
         public async Task<List<string>> GetPageIdsByNotebook(string notebookId)
         {
+            /// <summary>
+            /// Returns all note page IDs by notebook ID.Returns null if failed.
+            /// </summary>
             List<string> result = new List<string>();
             //StorageFolder localFolder = ApplicationData.Current.LocalFolder;
             try
@@ -143,11 +145,12 @@ namespace PhenoPad.FileService
             return null;
         }
 
-        /// <summary>
-        /// Returns the Notebook object from XML meta file by Notebook ID. Returns null if failed.
-        /// </summary>
+        
         public async Task<Notebook> GetNotebookObjectFromXML(string notebookId)
         {
+            /// <summary>
+            /// Returns the Notebook object from XML meta file by Notebook ID. Returns null if failed.
+            /// </summary>
             try
             {
                 //Debug.WriteLine($"Fetching notebook meta file object of {notebookId}");
@@ -178,11 +181,12 @@ namespace PhenoPad.FileService
             }
         }
 
-        /// <summary>
-        /// Returns all Image ad Annotations from XML meta file by Notebook ID and page IDs. Returns null if failed.
-        /// </summary>
+        
         public async Task<List<ImageAndAnnotation>> GetImgageAndAnnotationObjectFromXML(string notebookId, string pageId)
         {
+            /// <summary>
+            /// Returns all Image ad Annotations from XML meta file by Notebook ID and page IDs. Returns null if failed.
+            /// </summary>
             try
             {
                 var metafile = await GetNoteFile(notebookId, pageId, NoteFileType.ImageAnnotationMeta);
@@ -218,12 +222,14 @@ namespace PhenoPad.FileService
         }
 
 
-        /// <summary>
-        /// Returns all saved phenotypes object or phenotype candidates from XML meta file by Notebook ID. Returns null if failed.
-        /// </summary>
+        
         public async Task<List<Phenotype>> GetSavedPhenotypeObjectsFromXML(string notebookId, NoteFileType type = NoteFileType.Phenotypes)
         {
-            try {
+            /// <summary>
+            /// Returns all saved phenotypes object or phenotype candidates from XML meta file by Notebook ID. Returns null if failed.
+            /// </summary>
+            try
+            {
                 // meta data
                 var phenofile = await GetNoteFile(notebookId, "", type);
                 object obj = await LoadObjectFromSerilization(phenofile, typeof(List<Phenotype>));
@@ -236,12 +242,14 @@ namespace PhenoPad.FileService
             }
         }
 
-        /// <summary>
-        /// Gets the saved transcripts from disk and return as a list of text messages.
-        /// </summary>
+       
         public async Task<List<TextMessage>> GetSavedTranscriptsFromXML(string notebookId,string name = "")
         {
-            try {
+            /// <summary>
+            /// Gets the saved transcripts from disk and return as a list of text messages.
+            /// </summary>
+            try
+            {
                 List < TextMessage > msg = new List<TextMessage>();
                 string transcriptPath = $"{notebookId}\\Transcripts";
                 StorageFolder folder = await ROOT_FOLDER.GetFolderAsync(transcriptPath);
@@ -540,11 +548,12 @@ namespace PhenoPad.FileService
             return foldername + filename;
         }
 
-        /// <summary>
-        /// Returns stroke bitmap image from file by IDs, returns null if failed
-        /// </summary>
+        
         public BitmapImage GetStrokeImage(string notebookId, string pageId)
         {
+            /// <summary>
+            /// Returns stroke bitmap image from file by IDs, returns null if failed
+            /// </summary>
             try
             {
                 string imagePath = GetNoteFilePath(notebookId, pageId, NoteFileType.Strokes);
@@ -559,11 +568,12 @@ namespace PhenoPad.FileService
             return null;
         }
 
-        /// <summary>
-        /// Returns all Notebook objects from root file, returns null if failed.
-        /// </summary>
+        
         public async Task<List<Notebook>> GetAllNotebookObjects()
         {
+            /// <summary>
+            /// Returns all Notebook objects from root file, returns null if failed.
+            /// </summary>
             List<Notebook> result = new List<Notebook>();
             try
             {
@@ -600,12 +610,14 @@ namespace PhenoPad.FileService
             return null;
         }
 
-        /// <summary>
-        /// Returns all image and annotation objects from root file, returns null if failed.
-        /// </summary>
+        
         public async Task<List<ImageAndAnnotation>> GetAllImageAndAnnotationObjects(string notebookId)
         {
-            try {
+            /// <summary>
+            /// Returns all image and annotation objects from root file, returns null if failed.
+            /// </summary>
+            try
+            {
 
                 List<string> pageIds = await GetPageIdsByNotebook(notebookId);
                 if (pageIds == null)
@@ -651,12 +663,14 @@ namespace PhenoPad.FileService
             }
         }
 
-        /// <summary>
-        /// Returns all NotePage objects of the given Notebook ID from root file, returns null if failed.
-        /// </summary>
+        
         public async Task<List<NotePage>> GetAllNotePageObjects(string notebookId)
         {
-            try {
+            /// <summary>
+            /// Returns all NotePage objects of the given Notebook ID from root file, returns null if failed.
+            /// </summary>
+            try
+            {
                 List<string> pageIds = await GetPageIdsByNotebook(notebookId);
                 if (pageIds == null)
                     return null;

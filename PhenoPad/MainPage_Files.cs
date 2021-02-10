@@ -242,11 +242,12 @@ namespace PhenoPad
 
         }
         
-        /// <summary>
-        /// Initializes the EHR Text file from a picked .txt file
-        /// </summary>
+        
         public async void InitializeEHRNote(StorageFile file)
         {
+            /// <summary>
+            /// Initializes the EHR Text file from a picked .txt file
+            /// </summary>
             PhenoMana.clearCache();
 
             //if user cancels choosing a file or file is not valid, just create a new notebook
