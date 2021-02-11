@@ -93,6 +93,22 @@ namespace PhenoPad.SpeechService
             return index * 0.1 + this.interval.start;
         }
 
+        /// <summary>
+        /// Returns the most probable speaker of the current word.
+        /// </summary>
+        /// <returns>
+        /// An integer (speaker index) which represents the speaker with the highest frequency,
+        /// This is the speaker assigned to the word.
+        /// </returns>
+        /// <remarks>
+        /// The most probable speaker is the one assigned to the most unit segments in the word's 
+        /// interval.
+        /// E.g. If a word's interval consists of 15 unit segments (each unit segment is 100ms,
+        /// which means the word is 1.5s long), and 3 segments are assigned the speaker index 0,
+        /// 10 are assigned the speaker index 1, 2 are assigned the index -1 (empty), then this
+        /// function returns (int)1, which is the index representing "Speaker 2" (the 2nd speaker),
+        /// the most likely speaker of this word.
+        /// </remarks>
         public int determineSpeaker()
         {
             Dictionary<int, int> votes = new Dictionary<int, int>();
@@ -352,7 +368,6 @@ namespace PhenoPad.SpeechService
                 assignSpeakerToWords();
                 //Debug.WriteLine("Diarized to word count" + diarizationWordIndex.ToString());
                 //Debug.WriteLine("Total word count" + words.Count.ToString());
-                //Debug.WriteLine(json.original);
                 await formConversation(full);
 
                 // so that we don't have an overflow of words
@@ -557,23 +572,27 @@ namespace PhenoPad.SpeechService
         {
             List<TextMessage> messages = new List<TextMessage>();
 
+            // TODO: prevStart is misleading, consider changing name. This is actually the start of the next word that needs processing.
             double prevStart = 0;
             double speechEnd = 0;
             int prevSpeaker = this.lastSpeaker;
             string sentence = String.Empty;
 
             for (int wordIndex = this.constructDiarizedSentenceIndex; wordIndex < this.diarizationWordIndex; wordIndex++)
-            {   
+            {
+                //TODO: what's the point initializing prevStart as 0 if this condition is always true so prevStart 
+                //      will always be re-assigned words[wordIndex].interval.start;
                 // then won't trigger again
                 if (prevStart == 0)
                     prevStart = words[wordIndex].interval.start;
 
-                //tries to determine the speaker, if unknown by default assigns to last speaker
+                // tries to determine the speaker, if unknown by default assigns to last speaker
                 int wordProposedSpeaker = this.words[wordIndex].determineSpeaker();
                 if (wordProposedSpeaker == -1)
                     wordProposedSpeaker = prevSpeaker;
 
-                //pushes messages if the speaker if different or exceeded char limit 50
+                // if a change in speaker is detected OR word is "." and sentence length > 50 char, push current sentence as message
+                //TODO: consider rewriting condition checks into functions, e.g. "ifSpeakerChanged" and "ifSentenceEnded"
                 if ((wordProposedSpeaker != prevSpeaker && sentence.Length != 0) || (words[wordIndex].word == "." && sentence.Length > 50))
                 {
                     Debug.WriteLine("speechengineinterpreter in for loop creating message");
@@ -595,7 +614,7 @@ namespace PhenoPad.SpeechService
                     sentence += " " + words[wordIndex].word;
                     prevStart = words[wordIndex].interval.start;
                 }
-                //if same speaker, add words to current sentence
+                // if speaker unchanged, add words to current sentence
                 else
                 {
                     sentence += " " + words[wordIndex].word;

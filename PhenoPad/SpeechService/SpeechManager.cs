@@ -139,6 +139,9 @@ namespace PhenoPad.SpeechService
         {
             return this.speechInterpreter.conversationIndex;
         }
+        /// <summary>
+        /// Returns the audio name of the current conversation.
+        /// </summary>
         public string GetAudioName()
         {
             return currentAudioName;
@@ -1176,7 +1179,7 @@ namespace PhenoPad.SpeechService
         }
 
         /// <summary>
-        /// Updates current audio name when a new speech session starts.
+        /// Updates current audio name when a new speech session/conversation starts.
         /// </summary>
         /// <remarks>
         /// The audio name is the time the recording session starts (Year_Month_Day_Hour_Minute).
