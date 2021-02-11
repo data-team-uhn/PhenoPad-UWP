@@ -61,7 +61,7 @@ namespace PhenoPad.SpeechService
         // contains an array that corresponds to each 0.1 seconds in time interval
         // lenght = 1 if interval length = 0 
         public string word;
-        public int[] smallSegSpeaker;
+        public int[] smallSegSpeakers;
         public TimeInterval interval;
 
         public WordSpoken(string _word, int _speaker, TimeInterval _interval)
@@ -69,11 +69,11 @@ namespace PhenoPad.SpeechService
             this.word = _word;
             this.interval = _interval;
             int lengthIn100ms = Math.Max((int)(this.interval.getLength() / 0.1), 1);
-            smallSegSpeaker = new int[lengthIn100ms];
+            smallSegSpeakers = new int[lengthIn100ms];
 
             for (int i = 0; i < lengthIn100ms; i++)
             {
-                this.smallSegSpeaker[i] = _speaker;
+                this.smallSegSpeakers[i] = _speaker;
             }
         }
 
@@ -96,7 +96,7 @@ namespace PhenoPad.SpeechService
         public int determineSpeaker()
         {
             Dictionary<int, int> votes = new Dictionary<int, int>();
-            foreach (int i in smallSegSpeaker)
+            foreach (int i in smallSegSpeakers)
             {
                 if (votes.ContainsKey(i))
                 {
@@ -142,7 +142,7 @@ namespace PhenoPad.SpeechService
         //            Here the audio is 2s long, utt1 starts at 0.3s and ends at 0.8s and utt2 starts at 1.3s
         //            and ends at 2.0s.
         //       The rest of the script refers to the set of unit diarization segments as the diarization segment space.
-        public List<Pair<int, int>> diarizationSmallSeg = new List<Pair<int, int>>();        // Pair<start time, speaker>
+        public List<Pair<int, int>> diarizationSmallSegs = new List<Pair<int, int>>();        // Pair<start time, speaker>
         //TODO: Why was diarization implemented like this?
 
         //TODO: these variable are not self-descriptive enough, and need clearer documentation!
@@ -268,7 +268,7 @@ namespace PhenoPad.SpeechService
                         if (!json.result.diarization_incremental)
                         {
                             diarization.Clear();
-                            diarizationSmallSeg.Clear();
+                            diarizationSmallSegs.Clear();
                             diarizationWordIndex = 0;
                             constructDiarizedSentenceIndex = 0;
                             full = true;
@@ -434,25 +434,25 @@ namespace PhenoPad.SpeechService
 
             double prev = 0;
 
-            if (this.diarizationSmallSeg.Count > 0)
+            if (this.diarizationSmallSegs.Count > 0)
             {
                 //TODO: prev is the first unassigned segment, need a better name
                 // Since each diarizationSmallSeg contains the start time and speaker index of
                 // a 0.1s segment, the start time of the first unassigned segment is the start
                 // time of the last assigned segment + 0.1s
-                prev = (double)(this.diarizationSmallSeg.Last().first) / (double)(10.0) + 0.1;
+                prev = (double)(this.diarizationSmallSegs.Last().first) / (double)(10.0) + 0.1;
             }
             if (interval.start >= prev)
             {
                 // fill the space between utterances with speaker index -1
                 for (int i = Convert.ToInt32(prev * 10); i < Convert.ToInt32(interval.start * 10); i += 1)
                 {
-                    this.diarizationSmallSeg.Add(new Pair<int, int>(i, -1));
+                    this.diarizationSmallSegs.Add(new Pair<int, int>(i, -1));
                 }
 
                 for (int i = Convert.ToInt32(interval.start * 10); i < Convert.ToInt32(interval.end * 10); i += 1)
                 {
-                    this.diarizationSmallSeg.Add(new Pair<int, int>(i, speaker));
+                    this.diarizationSmallSegs.Add(new Pair<int, int>(i, speaker));
                 }
             }
             else
@@ -462,17 +462,23 @@ namespace PhenoPad.SpeechService
                 // overlapping segments.
                 for (int i = Convert.ToInt32(prev * 10); i < Convert.ToInt32(interval.end * 10); i += 1)
                 {
-                    this.diarizationSmallSeg.Add(new Pair<int, int>(i, speaker));
+                    this.diarizationSmallSegs.Add(new Pair<int, int>(i, speaker));
                 }
             }
         }
 
-
+        /// <summary>
+        /// Assigns speakers of diarization segments to the words uttered during those segments.
+        /// </summary>
+        /// <remarks>
+        /// Each word has an array smallSegSpeakers whose elements are segments which correspond to
+        /// segments in diarizationSmallSeg. This function assigns the speaker of diarization segments
+        /// to the corresponding segments in the words' smallSegSpeakers array.
+        /// </remarks>
         private void assignSpeakerToWords()
         {
             // Label speaker for each word according to speaker intervals
 
-            //TODO: what does constructDiarizedSentenceIndex do?
             //TODO: shouldn't this update happen after forming conversation?
             // construct diarized sentences from previous diarized word index
             this.constructDiarizedSentenceIndex = this.diarizationWordIndex;
@@ -481,14 +487,14 @@ namespace PhenoPad.SpeechService
             for (int wordIndex = this.diarizationWordIndex; wordIndex < this.words.Count; wordIndex++)
             {
                 WordSpoken word = this.words[wordIndex];
-                for (int i = 0; i < word.smallSegSpeaker.Length; i++)
+                for (int i = 0; i < word.smallSegSpeakers.Length; i++)
                 {
                     //TODO: consider rewriting as function
                     #region Assign speaker to the word's unit segments
                     double segStartTime = word.getTimeByIndex(i);
                     int diarizationSmallSegIndex = (int)(segStartTime / 0.1);
 
-                    if (diarizationSmallSegIndex >= this.diarizationSmallSeg.Count)
+                    if (diarizationSmallSegIndex >= this.diarizationSmallSegs.Count)
                     {
                         this.diarizationWordIndex = wordIndex;
                         brokeOut = true;
@@ -496,7 +502,7 @@ namespace PhenoPad.SpeechService
                     }
                     else
                     {
-                        word.smallSegSpeaker[i] = this.diarizationSmallSeg[diarizationSmallSegIndex].second;
+                        word.smallSegSpeakers[i] = this.diarizationSmallSegs[diarizationSmallSegIndex].second;
                     }
                     #endregion
                 }
