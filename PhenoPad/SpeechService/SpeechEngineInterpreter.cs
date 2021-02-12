@@ -439,7 +439,7 @@ namespace PhenoPad.SpeechService
         // ------ Helper Functions for Diarization ---------------
 
         /// <summary>
-        /// Add a new utterance to the diarization segment space
+        /// Add a new diarized utterance to the diarization segment space
         /// </summary>
         /// <param name="interval">the interval of the utterance</param>
         /// <param name="speaker">the intteger index representing the speaker</param>
@@ -552,7 +552,8 @@ namespace PhenoPad.SpeechService
                 //phenolist.Reverse();
                 //need this runasync function otherwise will give threading error
                 Windows.ApplicationModel.Core.CoreApplication.MainView.CoreWindow.Dispatcher.RunAsync(CoreDispatcherPriority.Normal,
-                () =>{
+                () =>
+                {
                     foreach (var p in phenolist)
                     {
                         PhenotypeManager.getSharedPhenotypeManager().addPhenotypeCandidate(p, SourceType.Speech);
@@ -591,7 +592,7 @@ namespace PhenoPad.SpeechService
                 if (wordProposedSpeaker == -1)
                     wordProposedSpeaker = prevSpeaker;
 
-                // if a change in speaker is detected OR word is "." and sentence length > 50 char, push current sentence as message
+                // if a change in speaker is detected OR word is "." and sentence length > 50 char, push current sentence to messages
                 //TODO: consider rewriting condition checks into functions, e.g. "ifSpeakerChanged" and "ifSentenceEnded"
                 if ((wordProposedSpeaker != prevSpeaker && sentence.Length != 0) || (words[wordIndex].word == "." && sentence.Length > 50))
                 {
@@ -605,8 +606,7 @@ namespace PhenoPad.SpeechService
                         IsFinal = true,
                         ConversationIndex = this.conversationIndex,
                         AudioFile = SpeechManager.getSharedSpeechManager().GetAudioName(),
-                        phenotypesInText = new List<Phenotype>()
-                                             
+                        phenotypesInText = new List<Phenotype>()                                            
                     };
                     messages.Add(message);
                     prevSpeaker = wordProposedSpeaker;
@@ -617,23 +617,26 @@ namespace PhenoPad.SpeechService
                 // if speaker unchanged, add words to current sentence
                 else
                 {
+                    #region Add Word to Sentence
                     sentence += " " + words[wordIndex].word;
                     speechEnd = words[wordIndex].interval.end;
+                    #endregion
                 }
             }
 
-            // Do not add new sentence if it is empty
+            #region pushes current sentence to messages when all diarized words are processed
             if (sentence.Length > 0 && prevSpeaker != -1)
             {
+                //TODO: Question: why is queryPhenoService not called when speaker changes?
                 var phenotypes = await queryPhenoService(sentence);
-                bool hasPheno =  phenotypes.Count>0? true : false;
+                bool hasPheno =  phenotypes.Count > 0 ? true : false;
                 var m = new TextMessage()
                 {
                     Body = sentence,
                     Speaker = (uint)prevSpeaker,
+                    DisplayTime = DateTime.Now,
                     Interval = new TimeInterval(prevStart, speechEnd),
                     IsFinal = true,
-                    DisplayTime = DateTime.Now,
                     ConversationIndex = this.conversationIndex,
                     AudioFile = SpeechManager.getSharedSpeechManager().GetAudioName(),
                     phenotypesInText = phenotypes,
@@ -641,6 +644,7 @@ namespace PhenoPad.SpeechService
                 };
                 messages.Add(m);
             }
+            #endregion
 
             this.lastSpeaker = prevSpeaker;
 
