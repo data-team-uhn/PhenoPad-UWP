@@ -37,11 +37,12 @@ namespace PhenoPad
 
         //=============================================================================================
 
-        /// <summary>
-        /// Initializes the new notebook and creates a locally saved file for it.
-        /// </summary>
+        
         public async void InitializeNotebook()
         {
+            /// <summary>
+            /// Initializes the new notebook and creates a locally saved file for it.
+            /// </summary>
             LoadingPopup.IsOpen = true;
             MetroLogger.getSharedLogger().Info("Initialize a new notebook.");
             PhenoMana.clearCache();
@@ -609,17 +610,20 @@ namespace PhenoPad
             }
         }
 
-        /// <summary>
-        /// Saves the current audio metadata to disk
-        /// </summary>
-        public async void updateAudioMeta() {
+        public async void updateAudioMeta()
+        {
+            /// <summary>
+            /// Saves the current audio metadata to disk
+            /// </summary>
             notebookObject.audioCount = SpeechManager.getSharedSpeechManager().getAudioCount();
             await FileManager.getSharedFileManager().SaveToMetaFile(notebookObject);
         }
-        /// <summary>
-        /// Gets saved transcripts from disk and updates the past conversations panel
-        /// </summary>
-        public async void updatePastConversation() {
+        
+        public async void updatePastConversation()
+        {
+            /// <summary>
+            /// Gets saved transcripts from disk and updates the past conversations panel
+            /// </summary>
             conversations = await FileManager.getSharedFileManager().GetSavedTranscriptsFromXML(notebookId);
             //pastchatView.ItemsSource = conversations;
             SpeechPage.Current.updateChat();

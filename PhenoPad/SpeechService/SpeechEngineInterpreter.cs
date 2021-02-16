@@ -368,6 +368,7 @@ namespace PhenoPad.SpeechService
                 assignSpeakerToWords();
                 //Debug.WriteLine("Diarized to word count" + diarizationWordIndex.ToString());
                 //Debug.WriteLine("Total word count" + words.Count.ToString());
+                //NOTE: full is always false here (never assigned other values after initialization), so what's the point?
                 await formConversation(full);
 
                 // so that we don't have an overflow of words
@@ -587,12 +588,14 @@ namespace PhenoPad.SpeechService
                 if (prevStart == 0)
                     prevStart = words[wordIndex].interval.start;
 
-                // tries to determine the speaker, if unknown by default assigns to last speaker
+                //TODO: consider rewriting as function
+                #region determine speaker
                 int wordProposedSpeaker = this.words[wordIndex].determineSpeaker();
                 if (wordProposedSpeaker == -1)
                     wordProposedSpeaker = prevSpeaker;
+                #endregion
 
-                // if a change in speaker is detected OR word is "." and sentence length > 50 char, push current sentence to messages
+                #region if a change in speaker is detected OR word is "." and sentence length > 50 char, push current sentence to messages
                 //TODO: consider rewriting condition checks into functions, e.g. "ifSpeakerChanged" and "ifSentenceEnded"
                 if ((wordProposedSpeaker != prevSpeaker && sentence.Length != 0) || (words[wordIndex].word == "." && sentence.Length > 50))
                 {
@@ -614,10 +617,12 @@ namespace PhenoPad.SpeechService
                     sentence += " " + words[wordIndex].word;
                     prevStart = words[wordIndex].interval.start;
                 }
+                #endregion
+
                 // if speaker unchanged, add words to current sentence
                 else
                 {
-                    #region Add Word to Sentence
+                    #region add word to sentence
                     sentence += " " + words[wordIndex].word;
                     speechEnd = words[wordIndex].interval.end;
                     #endregion
@@ -650,9 +655,13 @@ namespace PhenoPad.SpeechService
 
             /*Debug.WriteLine("Forming a conversation of length " + messages.Count.ToString());*/
 
+            #region what does this do?
             await Windows.ApplicationModel.Core.CoreApplication.MainView.CoreWindow.Dispatcher.RunAsync(CoreDispatcherPriority.Normal,
             () =>
             {
+                // `full` denotes if the conversation has beeb re-diarized 
+                // (i.e. if speakers of all utterances in the conversation have been re-calculated).
+                //TODO: change `full` to a more descriptive name
                 if (full)
                 {
                     List<TextMessage> temp = new List<TextMessage>(oldConversations);
@@ -667,10 +676,11 @@ namespace PhenoPad.SpeechService
                     this.conversation.AddRange(temp);
                     currentConversation.AddRange(temp);
                     MainPage.Current.conversations.AddRange(temp);
+                    //NOTE: Question: why is updateChat() not called when "full"?
                     SpeechPage.Current.updateChat();
                 }
-
             }
+            #endregion
             );
 
             return messages;

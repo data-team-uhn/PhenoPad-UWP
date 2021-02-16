@@ -93,6 +93,7 @@ namespace PhenoPad
             UpdateLayout();
         }
 
+        
         public void updateChat()
         {
             chatView.ItemsSource = MainPage.Current.conversations;
@@ -679,12 +680,9 @@ namespace PhenoPad
         public event PropertyChangedEventHandler PropertyChanged = delegate { };
 
         /// <summary>
-        /// TODO ...
+        /// Triggers TextMessage.PropertyChanged Event.
         /// </summary>
         /// <param name="propertyName"></param>
-        /// <remarks>
-        /// Having questions about this
-        /// </remarks>
         private async void NotifyPropertyChanged([CallerMemberName] String propertyName = "")
         {
             // This method is called by the Set accessor of each property.
@@ -694,7 +692,6 @@ namespace PhenoPad
             {
                 await Windows.ApplicationModel.Core.CoreApplication.MainView.CoreWindow.Dispatcher.RunAsync(CoreDispatcherPriority.Normal,() =>
                 {
-                    //TODO: Question: this should call the empty method PropertyChanged points do, which does nothing?
                     PropertyChanged(this, new PropertyChangedEventArgs(propertyName));
                 });
             }
@@ -793,8 +790,10 @@ namespace PhenoPad
         }
     }
 
-    // Observable collection representing a text message conversation
-    // that can load more items incrementally.
+    /// <summary>
+    /// Observable collection representing a text message conversation
+    /// that can load more items incrementally.
+    /// </summary>
     public class Conversation : ObservableCollection<TextMessage>, ISupportIncrementalLoading
     {
         private uint messageCount = 0;
@@ -842,10 +841,11 @@ namespace PhenoPad
             return fillerText.Substring(0, rand.Next(5, fillerText.Length));
         }
 
-        // A method to avoid firing collection changed events when adding a bunch of items
-        // https://forums.xamarin.com/discussion/29925/observablecollection-addrange
+        
         public void ClearThenAddRange(List<TextMessage> range)
         {
+            // A method to avoid firing collection changed events when adding a bunch of items
+            // https://forums.xamarin.com/discussion/29925/observablecollection-addrange
             Items.Clear();
             foreach (var item in range)
             {
@@ -878,10 +878,12 @@ namespace PhenoPad
             int i = -1;
             for (i = 0; i < this.Count; i++)
             {
+                #region break if the i-th TM has the same content as m
                 if (this[i].Body == m.Body)
                 {
                     break;
                 }
+                #endregion
             }
 
             if (i != -1 && i < this.Count)
@@ -898,13 +900,15 @@ namespace PhenoPad
             if (addNew || Items.Count == 0)
             {
                 Items.Add(m);
-                m.PropertyChanged += Item_PropertyChanged;
-            } else
+                
+            }
+            else
             {
                 Items.RemoveAt(Items.Count - 1);
                 Items.Add(m);
-                m.PropertyChanged += Item_PropertyChanged;
             }
+            m.PropertyChanged += Item_PropertyChanged;
+
             //var changedItems = new List<TextMessage>(m);
             this.OnPropertyChanged(new PropertyChangedEventArgs("Count"));
             this.OnPropertyChanged(new PropertyChangedEventArgs("Item[]"));
