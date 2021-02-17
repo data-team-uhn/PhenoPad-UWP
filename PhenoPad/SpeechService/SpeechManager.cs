@@ -276,7 +276,7 @@ namespace PhenoPad.SpeechService
                         string outAccumulator = String.Empty;
                         string json = SpeechEngineInterpreter.getFirstJSON(accumulator, out outAccumulator);
                         accumulator = outAccumulator;
-                        // Only process if we have valid JSON
+
                         if (json.Length != 0)
                         {
                             try
@@ -294,12 +294,11 @@ namespace PhenoPad.SpeechService
                                    () =>
                                    {
                                        EngineHasResult.Invoke(this, speechInterpreter);
-                                   }
-                                   );
+                                   });
 
                                 continue;
                             }
-                            // Report error if failed to process JSON
+                            // Report error if failed to process JSON.
                             catch (Exception e)
                             {
                                 StackTrace st = new StackTrace(e, true);
@@ -311,7 +310,7 @@ namespace PhenoPad.SpeechService
                                 Debug.WriteLine("===SERIOUS PROBLEM!====");
                             }
 
-                            //  try to decode as dirization result
+                            // Try to decode JSON as dirization result.
                             try
                             {
                                 json = json.Replace('_', '-');
@@ -321,8 +320,7 @@ namespace PhenoPad.SpeechService
                                   () =>
                                   {
                                       EngineHasResult.Invoke(this, speechInterpreter);
-                                  }
-                                  );
+                                  });
                             }
                             catch (Exception)
                             {

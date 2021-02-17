@@ -9,13 +9,22 @@ using PhenoPad.PhenotypeService;
 using PhenoPad.FileService;
 using PhenoPad.LogService;
 
+/// <summary>
+/// Processes JSON files received from speech engine and attemps to reconstruct
+/// a conversation.
+/// </summary>
 namespace PhenoPad.SpeechService
 {
-    // Processes JSON files received from speech engine and attemps to reconstruct
-    // a conversation
 
+    /// <summary>
+    /// A key-value pair.
+    /// </summary>
+    /// <typeparam name="X">Type of the first element.</typeparam>
+    /// <typeparam name="Y">Type of the second element.</typeparam>
+    /// <remarks>
+    /// https://stackoverflow.com/questions/166089/what-is-c-sharp-analog-of-c-stdpair
+    /// </remarks>
     public class Pair<X, Y>
-    // https://stackoverflow.com/questions/166089/what-is-c-sharp-analog-of-c-stdpair
     {
         private X _x;
         private Y _y;
@@ -237,7 +246,7 @@ namespace PhenoPad.SpeechService
                         Debug.WriteLine("Worker PID upon processing " + this.worker_pid.ToString());
                     }
 
-                    #region If result is final, add all words in the result to the list of all words
+                    // If result is final, add all words in the result to the list of all words
                     // First check if speech is final (Note: Diarization results are only sent with partial ASR results.)
                     if (json.result.final)
                     {
@@ -272,7 +281,6 @@ namespace PhenoPad.SpeechService
                         }
                         #endregion
                     }
-                    #endregion
 
                     // Then check if we have results from diarization
                     if (json.result.diarization != null && json.result.diarization.Count > 0)
@@ -309,6 +317,7 @@ namespace PhenoPad.SpeechService
 
                 this.realtimeSentences = this.constructTempSentence();
 
+                //TEMP: If result is not final, 
                 if (!json.result.final)
                 {
                     this.realtimeLastSentence = json.result.hypotheses[0].transcript.Trim();
@@ -321,22 +330,21 @@ namespace PhenoPad.SpeechService
                             this.realtimeConversation.UpdateLastMessage(constructRealtimeTempBubble(), true);
                             //Debug.WriteLine("Not final, no existing");
                         }
-                        //NOTE: this condition (json.result.final) was checked earlier already
-                        //TODO: rearrange code
+                        
                         else
                         {
                             this.realtimeConversation.UpdateLastMessage(constructRealtimeTempBubble(), false);
                             //Debug.WriteLine("Not final, but has existing");
                         }
                         this.tempSentence = String.Empty;
-                    }
-                    );
+                    });
                 }
+                //NOTE: this condition (json.result.final) was checked earlier already
+                //TODO: rearrange code
                 else
                 {
                     this.tempSentence = "ADD NEW";
                     this.formRealtimeConversation();
-                    //Debug.WriteLine("Final");
                 }
 
                 // latest sentence has a length cap
@@ -431,11 +439,16 @@ namespace PhenoPad.SpeechService
             return message;
         }
 
-        public TextMessage GetTextMessage(string body) {
-            var tx = currentConversation.Where(x => x.Body == body).FirstOrDefault();
-            return tx;
+        /// <summary>
+        /// Searches for a TextMessage instance based on content and returns the instance found.
+        /// </summary>
+        /// <param name="body">The content of the target TextMessage instance.</param>
+        /// <returns>The target TextMessage instance.</returns>
+        public TextMessage GetTextMessage(string body)
+        {
+            var text = currentConversation.Where(x => x.Body == body).FirstOrDefault();
+            return text;
         }
-
 
         // ------ Helper Functions for Diarization ---------------
 
@@ -493,8 +506,6 @@ namespace PhenoPad.SpeechService
         /// </remarks>
         private void assignSpeakerToWords()
         {
-            // Label speaker for each word according to speaker intervals
-
             //TODO: shouldn't this update happen after forming conversation?
             // construct diarized sentences from previous diarized word index
             this.constructDiarizedSentenceIndex = this.diarizationWordIndex;
@@ -717,14 +728,17 @@ namespace PhenoPad.SpeechService
         }
 
         /// <summary>
-        /// Finds the first json block and returns its content as string.
+        /// Finds the first JSON block and returns its content as string.
         /// </summary>
         /// <param name="content">the content to process (parse the first json block from)</param>
         /// <param name="outContent">stores content after the first json block for future use</param>
         /// <returns>
-        /// if json block found: the content of the first json block as string 
+        /// if JSON block found: the content of the first json block as string 
         /// else: empty string
         /// </returns>
+        /// <remarks>
+        /// 
+        /// </remarks>
         public static string getFirstJSON(string content, out string outContent)
         {
             int count = 0;
@@ -764,36 +778,61 @@ namespace PhenoPad.SpeechService
             }
         }
 
-        public void UpdatePhenotypeState(Phenotype pheno) {
-            var tm = this.currentConversation.Where(x => x.phenotypesInText.Contains(pheno)).ToList();
-            if (tm.Count > 0) {
-                foreach (var mess in tm) {
-                   int ind = mess.phenotypesInText.IndexOf(pheno);
-                    mess.phenotypesInText[ind].state = pheno.state;
+        /// <summary>
+        /// Finds all instances of a phenotype in the list of current TextMessage instances and updates their state.
+        /// </summary>
+        /// <param name="pheno">The phenotype whose state is updated.</param>
+        public void UpdatePhenotypeState(Phenotype pheno)
+        {
+            var txtMsg = this.currentConversation.Where(x => x.phenotypesInText.Contains(pheno)).ToList();
+            if (txtMsg.Count > 0)
+            {
+                foreach (var msg in txtMsg)
+                {
+                    int phenoIdx = msg.phenotypesInText.IndexOf(pheno);
+                    msg.phenotypesInText[phenoIdx].state = pheno.state;
                 }
                 Debug.WriteLine("updated phenotype states in speechinterpreter.");
             }
         }
 
-        public void DeletePhenotype(Phenotype pheno) {
-            var tm = this.currentConversation.Where(x => x.phenotypesInText.Contains(pheno)).ToList();
-            if (tm.Count > 0)
+        /// <summary>
+        /// Removes all instances of a phenotype from the list of current TextMessage instances.
+        /// </summary>
+        /// <param name="pheno">The phenotype to be deleted</param>
+        public void DeletePhenotype(Phenotype pheno)
+        {
+            var txtMsg = this.currentConversation.Where(x => x.phenotypesInText.Contains(pheno)).ToList();
+            if (txtMsg.Count > 0)
             {
-                foreach (var mess in tm)
+                foreach (var msg in txtMsg)
                 {
-                    int ind = mess.phenotypesInText.IndexOf(pheno);
-                    mess.phenotypesInText.RemoveAt(ind);
+                    int phenoIdx = msg.phenotypesInText.IndexOf(pheno);
+                    msg.phenotypesInText.RemoveAt(phenoIdx);
                 }
                 Debug.WriteLine("deleted phenotype states in speechinterpreter.");
             }
         }
 
-        public bool CurrentConversationHasContent() {
+        /// <summary>
+        /// Checks if the on-going conversation has any content.
+        /// </summary>
+        /// <returns>
+        /// (bool)true if the list of current TextMessage instances is not empty
+        /// (bool)false otherwise.
+        /// </returns>
+        public bool CurrentConversationHasContent()
+        {
             return currentConversation.Count > 0;
         }
 
-
-        public void addToCurrentConversation(TextMessage t) {
+        //NOTE: this method is only called once during the DEMO, might be outdated.
+        /// <summary>
+        /// Adds a TextMessage instance to the list of current TextMessage instances.
+        /// </summary>
+        /// <param name="t">The TextMessage instance to be added.</param>
+        public void addToCurrentConversation(TextMessage t)
+        {
             currentConversation.Add(t);
         }
 

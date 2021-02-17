@@ -864,6 +864,21 @@ namespace PhenoPad
             this.OnCollectionChanged(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Reset));
         }
 
+        /// <summary>
+        /// Adds a list of TextMessage instances to conversation and
+        /// triggers PropertyChanged and CollectionChanged events.
+        /// </summary>
+        /// <param name="range">
+        /// The list of TextMessage instances to be added.
+        /// </param>
+        /// <remarks>
+        /// This method subscribes the handler function Item_PropertyChanged
+        /// to each TextMessage instance's PropertyChanged event when it's 
+        /// added.
+        /// After all the instances in the list is added, raises 
+        /// ObserverbleCollection.PropertyChanged and 
+        /// ObserverbleCollection.CollectionChanged events.
+        /// </remarks>
         public void AddRange(List<TextMessage> range)
         {
             foreach (var item in range)
