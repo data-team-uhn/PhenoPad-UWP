@@ -841,11 +841,17 @@ namespace PhenoPad
             return fillerText.Substring(0, rand.Next(5, fillerText.Length));
         }
 
-        
+        /// <summary>
+        /// Removes all TextMessage instances in the collection and add a list of new ones. 
+        /// </summary>
+        /// <param name="range">the list of items to be added</param>
+        /// <remarks>
+        /// A method to avoid firing collection changed events when adding a bunch of items
+        /// https://forums.xamarin.com/discussion/29925/observablecollection-addrange
+        /// </remarks>
         public void ClearThenAddRange(List<TextMessage> range)
         {
-            // A method to avoid firing collection changed events when adding a bunch of items
-            // https://forums.xamarin.com/discussion/29925/observablecollection-addrange
+            
             Items.Clear();
             foreach (var item in range)
             {
@@ -871,6 +877,17 @@ namespace PhenoPad
             this.OnCollectionChanged(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Reset));
         }
 
+        /// <summary>
+        /// Updates an TextMessage instance in the collection when its property changes.
+        /// </summary>
+        /// <param name="sender">The TextMessage instance whose property changed</param>
+        /// <param name="e">Contains info about the property that changed.</param>
+        /// <remarks>
+        /// Called when the property of a TextMessage instance changes (by the TM instance).
+        /// Iterates through each item in the collection to find the index of the collection
+        /// to find the index of the sender TextMessage in the collection, then replaces it
+        /// with the altered TextMessage.
+        /// </remarks> 
         private void Item_PropertyChanged(object sender, PropertyChangedEventArgs e)
         {
             var m = (TextMessage)sender;
@@ -878,21 +895,17 @@ namespace PhenoPad
             int i = -1;
             for (i = 0; i < this.Count; i++)
             {
-                #region break if the i-th TM has the same content as m
                 if (this[i].Body == m.Body)
                 {
                     break;
                 }
-                #endregion
             }
 
             if (i != -1 && i < this.Count)
             {
                 this.RemoveAt(i);
                 this.Insert(i, m);
-            }
-            
-            
+            } 
         }
 
         public void UpdateLastMessage(TextMessage m, bool addNew)
@@ -900,7 +913,6 @@ namespace PhenoPad
             if (addNew || Items.Count == 0)
             {
                 Items.Add(m);
-                
             }
             else
             {

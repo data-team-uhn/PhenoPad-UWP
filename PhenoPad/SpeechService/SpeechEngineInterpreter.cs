@@ -163,7 +163,7 @@ namespace PhenoPad.SpeechService
 
         //TODO: these variable are not self-descriptive enough, and need clearer documentation!
         private int diarizationWordIndex = 0;                     // index of the next word to assign speaker to
-        private int constructDiarizedSentenceIndex = 0;           // word index to construct diarized index => ??? seems to be the earliest word which has not been put into a sentence ???
+        private int constructDiarizedSentenceIndex = 0;           // word index to construct diarized index => TODO: ??? seems to be the earliest word which has not been put into a sentence ???
         private int latestSentenceIndex = 0;                      // index of the next(earliest) word which has never been assigned speaker(s) to (this is normally the
                                                                   // same as diarizationWordIndex, but does not reset when the conversation is re-diarized
         private int lastSpeaker = 0;
@@ -195,7 +195,7 @@ namespace PhenoPad.SpeechService
         /// </remarks>
         public void newConversation()
         {
-            this.formConversation(false);       // don't care about results here
+            this.formConversation(false);       // don't care about results here TODO: investigate
             oldConversations.AddRange(this.currentConversation);
 
             words.Clear();
@@ -566,10 +566,11 @@ namespace PhenoPad.SpeechService
             return phenolist;
         }
 
-
-        //TODO: what?
-        // Concatenate words together to form sentences
-        // awkward thing is we don't know how to get sentences
+        /// <summary>
+        /// Assigns speakers to un-assigned words, forms TextMessages, and add TextMessages to Conversation.
+        /// </summary>
+        /// <param name="full">whether the conversation has been re-diarized</param>
+        /// <returns>a list of newly diarized sentences, never used</returns>
         private async Task<List<TextMessage>> formConversation(bool full)
         {
             List<TextMessage> messages = new List<TextMessage>();
@@ -582,9 +583,6 @@ namespace PhenoPad.SpeechService
 
             for (int wordIndex = this.constructDiarizedSentenceIndex; wordIndex < this.diarizationWordIndex; wordIndex++)
             {
-                //TODO: what's the point initializing prevStart as 0 if this condition is always true so prevStart 
-                //      will always be re-assigned words[wordIndex].interval.start;
-                // then won't trigger again
                 if (prevStart == 0)
                     prevStart = words[wordIndex].interval.start;
 
@@ -595,8 +593,8 @@ namespace PhenoPad.SpeechService
                     wordProposedSpeaker = prevSpeaker;
                 #endregion
 
-                #region if a change in speaker is detected OR word is "." and sentence length > 50 char, push current sentence to messages
                 //TODO: consider rewriting condition checks into functions, e.g. "ifSpeakerChanged" and "ifSentenceEnded"
+                // If detected speaker change or "." encountered, save sentence as TextMessage
                 if ((wordProposedSpeaker != prevSpeaker && sentence.Length != 0) || (words[wordIndex].word == "." && sentence.Length > 50))
                 {
                     Debug.WriteLine("speechengineinterpreter in for loop creating message");
@@ -617,19 +615,14 @@ namespace PhenoPad.SpeechService
                     sentence += " " + words[wordIndex].word;
                     prevStart = words[wordIndex].interval.start;
                 }
-                #endregion
-
-                // if speaker unchanged, add words to current sentence
+                // Otherwise, add word to current sentence.
                 else
                 {
-                    #region add word to sentence
                     sentence += " " + words[wordIndex].word;
                     speechEnd = words[wordIndex].interval.end;
-                    #endregion
                 }
             }
 
-            #region pushes current sentence to messages when all diarized words are processed
             if (sentence.Length > 0 && prevSpeaker != -1)
             {
                 //TODO: Question: why is queryPhenoService not called when speaker changes?
@@ -649,19 +642,14 @@ namespace PhenoPad.SpeechService
                 };
                 messages.Add(m);
             }
-            #endregion
 
             this.lastSpeaker = prevSpeaker;
 
-            /*Debug.WriteLine("Forming a conversation of length " + messages.Count.ToString());*/
-
-            #region what does this do?
             await Windows.ApplicationModel.Core.CoreApplication.MainView.CoreWindow.Dispatcher.RunAsync(CoreDispatcherPriority.Normal,
             () =>
             {
-                // `full` denotes if the conversation has beeb re-diarized 
-                // (i.e. if speakers of all utterances in the conversation have been re-calculated).
-                //TODO: change `full` to a more descriptive name
+                // "full" denotes if the conversation has beeb re-diarized (i.e. if speakers of all utterances in the conversation have been re-calculated).
+                //TODO: change "full" to a more descriptive name
                 if (full)
                 {
                     List<TextMessage> temp = new List<TextMessage>(oldConversations);
@@ -679,9 +667,7 @@ namespace PhenoPad.SpeechService
                     //NOTE: Question: why is updateChat() not called when "full"?
                     SpeechPage.Current.updateChat();
                 }
-            }
-            #endregion
-            );
+            });
 
             return messages;
         }
@@ -712,8 +698,7 @@ namespace PhenoPad.SpeechService
             {
                 //this.conversation.Clear();
                 this.realtimeConversation.ClearThenAddRange(messages);
-            }
-            );
+            });
         }
 
         public void printDiarizationResult()
