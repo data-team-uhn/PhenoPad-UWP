@@ -943,6 +943,14 @@ namespace PhenoPad.SpeechService
             }
         }
 
+        // This function is only called in SpeechManager.AddFakeSpeechResults(), which is never called.
+        /// <summary>
+        /// TODO...
+        /// </summary>
+        /// <param name="text"></param>
+        /// <param name="start"></param>
+        /// <param name="duration"></param>
+        /// <param name="speaker"></param>
         public void AddNewMessage(string text, double start, double duration, uint speaker)
         {
             if (text.Length > 0)

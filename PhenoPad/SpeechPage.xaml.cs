@@ -176,20 +176,26 @@ namespace PhenoPad
             }
         }
 
+        /// <summary>
+        /// TODO...
+        /// </summary>
+        /// <param name="sender">The speaker selection box.</param>
+        /// <param name="e">Contains info about added or removed items.</param>
+        /// <remarks>
+        /// Called when the speaker selected in the "Select Doctor" box on the speech page
+        /// is changed.
+        /// </remarks>
         private void speakerBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             ComboBox senderBox = (ComboBox)sender;
             doctor = senderBox.SelectedIndex;
+
             if (senderBox.SelectedItem != null)
             {
-                senderBox.Background = ((ComboBoxItem)(senderBox.SelectedItem)).Background;
+                senderBox.Background = ( (ComboBoxItem)(senderBox.SelectedItem) ).Background;
             }
 
-            // Do not change combobox label after selection
-            //speakerTxt.Text = "doctor: " + (doctor + 1).ToString();
-
             for (int i = 0; i < SpeechManager.getSharedSpeechManager().conversation.Count; i++)
-            //foreach (TextMessage item in chatView.ItemsSource.Items)
             {
                 if (SpeechManager.getSharedSpeechManager().conversation[i].IsNotFinal)
                 {
@@ -201,6 +207,7 @@ namespace PhenoPad
                 }
             }
 
+            //NOTE: related to https://social.msdn.microsoft.com/Forums/vstudio/en-US/be9f1c8c-d60c-490a-890a-dc7bdb41c545/listviewitemssource-does-not-refresh-when-the-underlying-observable-collection-is-updated?forum=wpf
             var temp = chatView.ItemsSource;
             chatView.ItemsSource = null;
             chatView.ItemsSource = temp;

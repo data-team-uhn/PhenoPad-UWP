@@ -62,13 +62,13 @@ namespace PhenoPad.SpeechService
     }
 
     /// <summary>
-    /// TODO...
+    /// Custom object used to construct conversations. Each WordSpoken object contains
+    /// an array that corresponds to the discretized time interval (with a unit of 100ms) 
+    /// over which the word is uttered.
+    /// * If the interval length is 0, set the array length to 1
     /// </summary>
     class WordSpoken
     {
-        // We construct the entire conversation via words spoken
-        // contains an array that corresponds to each 0.1 seconds in time interval
-        // lenght = 1 if interval length = 0 
         public string word;
         public int[] smallSegSpeakers;
         public TimeInterval interval;
@@ -150,6 +150,7 @@ namespace PhenoPad.SpeechService
     public class SpeechEngineInterpreter
     {
         // to be connected to speech manager
+
         public Conversation conversation;               // left hand diarized pannel    
         public Conversation realtimeConversation;       // right hand temporary result panel
 
@@ -581,7 +582,7 @@ namespace PhenoPad.SpeechService
         /// Assigns speakers to un-assigned words, forms TextMessages, and add TextMessages to Conversation.
         /// </summary>
         /// <param name="full">whether the conversation has been re-diarized</param>
-        /// <returns>a list of newly diarized sentences, never used</returns>
+        /// <returns>A list of newly diarized sentences, never used.</returns>
         private async Task<List<TextMessage>> formConversation(bool full)
         {
             List<TextMessage> messages = new List<TextMessage>();

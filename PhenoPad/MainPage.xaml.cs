@@ -393,6 +393,7 @@ namespace PhenoPad
             return;                
         }
 
+        //NOTE: no reference found to this function? 
         protected async override void OnNavigatingFrom(NavigatingCancelEventArgs e)
         {
             /// Clearing all cache and index records before leaving MainPage.
@@ -403,7 +404,7 @@ namespace PhenoPad
                 {//close all audio services before navigating
                     if (bluetoonOn)
                     {
-                        //becaise we are no longer in mainpage, does not need to reload past conversation
+                        //because we are no longer in mainpage, does not need to reload past conversation
                         await SpeechManager.getSharedSpeechManager().StopASRResults(false);
                     }
                     else
@@ -1265,9 +1266,8 @@ namespace PhenoPad
             LoadingPopup.IsOpen = false;
             //On_BackRequested();
             this.Frame.Navigate(typeof(PageOverview));
-         
-
         }
+
         // Handles system-level BackRequested events and page-level back button Click events
         private bool On_BackRequested()
         {
