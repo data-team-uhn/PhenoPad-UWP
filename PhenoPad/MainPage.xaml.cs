@@ -626,6 +626,9 @@ namespace PhenoPad
             }
         }
 
+        /// <summary>
+        /// Handler function called when "Chat Record" button is clicked. Opens the ChatRecord/Speech Page.
+        /// </summary>
         private void SpeechButton_Click(object sender, RoutedEventArgs e)
         {
             //NotesButton.IsChecked = false;
@@ -911,11 +914,12 @@ namespace PhenoPad
             }
         }
 
-        /// <summary>
-        /// Invoked when user clicks the "load note" button from drop down menu
-        /// </summary>
+        
         private async void LoadNote_Click(object sender, RoutedEventArgs e)
         {
+            /// <summary>
+            /// Invoked when user clicks the "load note" button from drop down menu
+            /// </summary>
             bool is_loaded = await loadStrokefromGif();
             if (is_loaded)
                 NotifyUser("The note has been loaded.", NotifyType.StatusMessage, 2);
@@ -923,11 +927,12 @@ namespace PhenoPad
                 NotifyUser("Failed to load note", NotifyType.ErrorMessage, 2);
         }
 
-        /// <summary>
-        /// Invoked when user clicks "load an image".
-        /// </summary>
+        
         private async void LoadImage_Click(object sender, RoutedEventArgs e)
         {
+            /// <summary>
+            /// Invoked when user clicks "load an image".
+            /// </summary>
             bool is_loaded = await loadImagefromDisk();
             if (is_loaded)
                 NotifyUser("The note has been loaded.", NotifyType.StatusMessage, 2);
@@ -1016,11 +1021,12 @@ namespace PhenoPad
             AppSetting.Visibility = Visibility.Collapsed;
         }
 
-        /// <summary>
-        /// Invoked when user clicks on the type mode button
-        /// </summary>
+        
         private void KeyboardButton_Click(object sender, RoutedEventArgs e)
         {
+            /// <summary>
+            /// Invoked when user clicks on the type mode button
+            /// </summary>
             curPage.hideRecognizedTextCanvas();
             ifViewMode = false;
             currentMode = TypeMode;
@@ -1036,11 +1042,11 @@ namespace PhenoPad
             curPage.showTextEditGrid();
         }
 
-        /// <summary>
-        /// Invoked when user clicks on hand write mode button
-        /// </summary>
         private void WriteButton_Click(object sender, RoutedEventArgs e)
         {
+            /// <summary>
+            /// Invoked when user clicks on hand write mode button
+            /// </summary>
             curPage.hideRecognizedTextCanvas();
             ifViewMode = false;
             currentMode = WritingMode;
@@ -1256,6 +1262,8 @@ namespace PhenoPad
 
         private async void BackButton_Click(object sender, RoutedEventArgs e)
         {
+            ResetSpeechPopUpOnBack();
+
             cancelService.Cancel();
             cancelService = new CancellationTokenSource();
             LoadingPopup.IsOpen = true;
@@ -1421,11 +1429,13 @@ namespace PhenoPad
             }
         }
 
-        /// <summary>
-        /// Event Handler for when user click erase all ink button
-        /// </summary>
+        
         private void InkToolbar_EraseAllClicked(InkToolbar sender, object args)
         {
+            /// <summary>
+            /// Event Handler for when user click erase all ink button
+            /// </summary>
+            /// 
             //calling auto-saving handler to save erased result
             //NotifyUser("");
             this.curPage.on_stroke_changed();
@@ -1724,6 +1734,19 @@ namespace PhenoPad
         }
         #endregion
 
+        //***************************Helper functions********************************
+        //TODO: might have better places for these functions
+        /// <summary>
+        /// Closes Speech Page and un-checks button
+        /// </summary>
+        private void ResetSpeechPopUpOnBack()
+        {
+            if (SpeechPopUp.IsOpen)
+            {
+                SpeechPopUp.IsOpen = false;
+                SpeechButton.IsChecked = false;
+            }
+        }
 
     }
     //================================= END OF MAINAPGE ==========================================/
