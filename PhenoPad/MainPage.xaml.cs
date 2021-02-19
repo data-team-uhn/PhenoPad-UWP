@@ -216,7 +216,8 @@ namespace PhenoPad
                 //only saves the notes if in editing stage
                 if (notebookId != null)
                 {
-                    await Dispatcher.RunAsync(CoreDispatcherPriority.High, async () =>{
+                    await Dispatcher.RunAsync(CoreDispatcherPriority.High, async () =>
+                    {
                         MetroLogger.getSharedLogger().Info("Saving ...");
                         saved = await saveNoteToDisk();
                         if (speechEngineRunning)
@@ -227,7 +228,8 @@ namespace PhenoPad
                 if (saved)
                     return true;
             }
-            else if ((int)result.Id == 1) {
+            else if ((int)result.Id == 1)
+            {
                 MetroLogger.getSharedLogger().Info("Exiting app without saving ...");
                 return true;
             }
@@ -1262,18 +1264,25 @@ namespace PhenoPad
 
         private async void BackButton_Click(object sender, RoutedEventArgs e)
         {
-            ResetSpeechPopUpOnBack();
+            bool confirmed = await ConfirmNoteClose_OnBackButton();
 
-            cancelService.Cancel();
-            cancelService = new CancellationTokenSource();
-            LoadingPopup.IsOpen = true;
-            // save note
-            //await this.saveNoteToDisk();
-            UIWebSocketClient.getSharedUIWebSocketClient().disconnect();
-            await Task.Delay(TimeSpan.FromSeconds(1));
-            LoadingPopup.IsOpen = false;
-            //On_BackRequested();
-            this.Frame.Navigate(typeof(PageOverview));
+            if (confirmed)
+            {
+                ResetSpeechPopUp_OnBackButton();
+
+                cancelService.Cancel();
+                cancelService = new CancellationTokenSource();
+
+                LoadingPopup.IsOpen = true;
+                // save note
+                //await this.saveNoteToDisk();
+                UIWebSocketClient.getSharedUIWebSocketClient().disconnect();
+                await Task.Delay(TimeSpan.FromSeconds(1));
+                LoadingPopup.IsOpen = false;
+
+                //On_BackRequested();
+                this.Frame.Navigate(typeof(PageOverview));
+            }
         }
 
         // Handles system-level BackRequested events and page-level back button Click events
@@ -1735,11 +1744,12 @@ namespace PhenoPad
         #endregion
 
         //***************************Helper functions********************************
+        
         //TODO: might have better places for these functions
         /// <summary>
         /// Closes Speech Page and un-checks button
         /// </summary>
-        private void ResetSpeechPopUpOnBack()
+        private void ResetSpeechPopUp_OnBackButton()
         {
             if (SpeechPopUp.IsOpen)
             {
@@ -1748,14 +1758,45 @@ namespace PhenoPad
             }
         }
 
+        /// <summary>
+        /// Pops up a dialog box to confirm exiting note when the back button is clicked.
+        /// </summary>
+        /// <returns>(bool)true if the user confirms, (bool)false otherwise</returns>
+        private async Task<bool> ConfirmNoteClose_OnBackButton()
+        {
+            const string message = "Are you sure that you would like to close note?";
+            const string title = "Closing Note";
+            var messageDialog = new MessageDialog(message);
+            messageDialog.Title = title;
+            messageDialog.Commands.Add(new UICommand { Label = "Yes", Id = 0 });
+            messageDialog.Commands.Add(new UICommand { Label = "No", Id = 1 });
+
+            messageDialog.DefaultCommandIndex = 1;
+            messageDialog.CancelCommandIndex = 1;
+
+            var result = await messageDialog.ShowAsync();
+
+            if ( (int)result.Id == 0 )
+            {
+                return true;
+            }
+            if ( (int)result.Id == 1 )
+            {
+                return false;
+            }
+            return false;
+        }
+
+
     }
     //================================= END OF MAINAPGE ==========================================/
 
-    /// <summary>
-    /// Configurates pen tool including size, shape, color, etc.
-    /// </summary>
+    
     public class CalligraphicPen : InkToolbarCustomPen
     {
+        /// <summary>
+        /// Configurates pen tool including size, shape, color, etc.
+        /// </summary>
         /// <summary>
         /// Creates a new ClligraphicPen instance.
         /// </summary>
@@ -1763,12 +1804,12 @@ namespace PhenoPad
         {
         }
 
-        /// <summary>
-        /// Create and returns new ink attributes and sets defult shape,color and size.
-        /// </summary>
+        
         protected override InkDrawingAttributes CreateInkDrawingAttributesCore(Brush brush, double strokeWidth)
         {
-
+            /// <summary>
+            /// Create and returns new ink attributes and sets defult shape,color and size.
+            /// </summary>
             InkDrawingAttributes inkDrawingAttributes = new InkDrawingAttributes();
             inkDrawingAttributes.PenTip = PenTipShape.Circle;
             inkDrawingAttributes.IgnorePressure = false;
@@ -1788,30 +1829,5 @@ namespace PhenoPad
 
     }
 
-    //// MyScript 
-    //public class FlyoutCommand : System.Windows.Input.ICommand
-    //{
-    //    public delegate void InvokedHandler(FlyoutCommand command);
 
-    //    public string Id { get; set; }
-    //    private InvokedHandler _handler = null;
-
-    //    public FlyoutCommand(string id, InvokedHandler handler)
-    //    {
-    //        Id = id;
-    //        _handler = handler;
-    //    }
-
-    //    public bool CanExecute(object parameter)
-    //    {
-    //        return _handler != null;
-    //    }
-
-    //    public void Execute(object parameter)
-    //    {
-    //        _handler(this);
-    //    }
-
-    //    public event EventHandler CanExecuteChanged;
-    //}
 }
