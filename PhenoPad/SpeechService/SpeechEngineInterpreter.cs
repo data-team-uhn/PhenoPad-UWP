@@ -159,23 +159,29 @@ namespace PhenoPad.SpeechService
         // a list of intervals that have speaker identified
         private List<Pair<TimeInterval, int>> diarization = new List<Pair<TimeInterval, int>>();
 
-        // Note: Each segment in diarizationSmallSeg represents a 0.1s long audio segment. The audio is
-        //       discretized into 0.1s segments each with a speaker index. If a segment contains no speech,
-        //       its speaker index is set to -1.
-        //       E.g. An audio segment with 2 utterances utt1 and utt2 spoken by speaker 0 and 1, respectively,
+        // Note: Each pair in diarizationSmallSegs corresponds to a 0.1s long audio segment. The audio is
+        //       discretized into a set of 0.1s segments, each of which is associate with a speaker index. 
+        //       If a segment contains no speech, its speaker index is -1.
+        //
+        //       E.g. A 2s audio segment with 2 utterances utt1 and utt2 spoken by speaker 0 and 1, respectively,
         //            can be represented as:
-        //            -1, -1, -1, 0, 0, 0, 0, 0, -1, -1, -1, -1, -1, 1, 1, 1, 1, 1, 1, 1
-        //            Here the audio is 2s long, utt1 starts at 0.3s and ends at 0.8s and utt2 starts at 1.3s
-        //            and ends at 2.0s.
-        //       The rest of the script refers to the set of unit diarization segments as the diarization segment space.
-        public List<Pair<int, int>> diarizationSmallSegs = new List<Pair<int, int>>();        // Pair<start time, speaker>
+        //            {<0,-1>, <1,-1>, <2,-1>, <3,0>, <4,0>, <5,0>, <6,0>, <7,0>, <8,-1>, <9,-1>, <10,-1>, <11,-1>, 
+        //             <12,-1>, <13,1>, <14,1>, <15,1>, <16,1>, <17,1>, <18,1>, <19,1>}
+        //            where utt1 starts at 0.3s and ends at 0.8s and utt2 starts at 1.3s and ends at 2.0s.
+        //       
+        //       In other words, diarizationSmallSegs is the graph of the function which maps a 100ms audio segment
+        //       to a speaker index.
+        //
+        //       The rest of the script refers to diarizationSmallSegs as the diarization graph and a 100ms audio
+        //       segment an unit audio segment.
+        public List<Pair<int, int>> diarizationSmallSegs = new List<Pair<int, int>>();    // Pair<(int)startTime/0.1s, speaker>
         //TODO: Why was diarization implemented like this?
 
         //TODO: these variable are not self-descriptive enough, and need clearer documentation!
         private int diarizationWordIndex = 0;                     // index of the next word to assign speaker to
         private int constructDiarizedSentenceIndex = 0;           // word index to construct diarized index => TODO: ??? seems to be the earliest word which has not been put into a sentence ???
         private int latestSentenceIndex = 0;                      // index of the next(earliest) word which has never been assigned speaker(s) to (this is normally the
-                                                                  // same as diarizationWordIndex, but does not reset when the conversation is re-diarized
+                                                                  //    same as diarizationWordIndex, but does not reset when the conversation is re-diarized)
         private int lastSpeaker = 0;
 
         public string tempSentence;         // non-final result from engine
@@ -223,6 +229,10 @@ namespace PhenoPad.SpeechService
 
 
         //NOTE: this function does several things, might be too long and need to be broken into smaller functions
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="json"></param>
         public async void processJSON(SpeechEngineJSON json)
         {
             ///<summary>
@@ -247,34 +257,35 @@ namespace PhenoPad.SpeechService
                         Debug.WriteLine("Worker PID upon processing " + this.worker_pid.ToString());
                     }
 
-                    // If result is final, add all words in the result to the list of all words
-                    // First check if speech is final (Note: Diarization results are only sent with partial ASR results.)
+                    // If result is final, add words in the result to the list of all words
+                    // (Note: Diarization results are only sent with partial ASR results.)
                     if (json.result.final)
                     {
                         Debug.WriteLine(json.result.hypotheses[0].transcript);
-
-                        // Then we should have a bunch of words to look at
+                        // records the ending timestamp of the last word in ASR result
                         double latest = 0;
                         //TODO: when is offset useful? and should it be hardcoded in this function?
                         double OFFSET = 0;          // not too sure if word alignment data is actually correct from aspire???
                         foreach (WordAlignment wa in json.result.hypotheses[0].word_alignment)
                         {
                             //TODO: consider rewriting this to a separate function
-                            #region Adds a new word to the list of all words and update latest timestamp
+                            //TEMP
+                            #region adds a new word to the list of all words and update latest timestamp
                             // Make sure word does not start before 0
-                            //TODO: this block of code is not self-explanatory, consider rewriting this
+                            //TODO: this block of code is not self-explanatory, consider modifying this
                             double word_start = Math.Max(wa.start + json.segment_start + OFFSET, 0);
                             double word_end = Math.Max(wa.start + wa.length + json.segment_start + OFFSET, 0);
                             var w = new WordSpoken(wa.word, -1, new TimeInterval(word_start, word_end));
                             words.Add(w);
-                            //NOTE: this line is possibly redundant due to the code below
+
                             latest = wa.start + wa.length + json.segment_start;
                             #endregion
                         }
 
                         //TODO: consider rewrite this into a function
-                        #region Update lastest timestamp to end of last sentence
-                        //TODO: Question: what is the purpose of latest? It's only been assigned value.
+                        //TEMP
+                        #region update lastest timestamp to end of last sentence
+                        //TODO: Question: what is the purpose of latest? It's only been assigned values (it's value is not used).
                         //      It's a local variable and it's value wasn't passed to anything outside this function.
                         if (latest == 0)
                         {
@@ -283,13 +294,14 @@ namespace PhenoPad.SpeechService
                         #endregion
                     }
 
-                    // Then check if we have results from diarization
+                    // if received diarization result
                     if (json.result.diarization != null && json.result.diarization.Count > 0)
                     {
                         bool full = false;
 
                         //TODO: consider making this a separate function.
-                        // If received new diarization of the conversation, clear previous results.
+                        //TEMP
+                        #region If received new diarization of the conversation, clear previous results.
                         if (!json.result.diarization_incremental)
                         {
                             diarization.Clear();
@@ -298,18 +310,24 @@ namespace PhenoPad.SpeechService
                             constructDiarizedSentenceIndex = 0;
                             full = true;
                         }
+                        #endregion
+                        //TEMP
+                        #region update diarization graph with new results
                         foreach (var d in json.result.diarization)
                         {
                             int speaker = d.speaker;
                             double start = d.start;
                             double end = d.end;
                             var interval = new TimeInterval(start, end);
-                            this.insertToDiarization(interval, speaker);
+                            this.insertToDiarizationGraph(interval, speaker);
                         }
+                        #endregion
 
                         this.assignSpeakerToWords();
                         this.formConversation(full);
 
+                        //NOTE: don't understand this, looks like constructTempSentence() does not change the value of
+                        //      global variables, what's the purpose of this?
                         // so that we don't have an overflow of words
                         this.constructTempSentence();
                         //this.printDiarizationResult();
@@ -317,39 +335,36 @@ namespace PhenoPad.SpeechService
                 }
 
                 this.realtimeSentences = this.constructTempSentence();
-
-                //TEMP: If result is not final, 
+ 
                 if (!json.result.final)
                 {
                     this.realtimeLastSentence = json.result.hypotheses[0].transcript.Trim();
 
+                    //TEMP
+                    #region Update Temp Speech Bubble
                     await Windows.ApplicationModel.Core.CoreApplication.MainView.CoreWindow.Dispatcher.RunAsync(CoreDispatcherPriority.Normal,
                     () =>
                     {
+                        // tempSentence is set to "ADD NEW" after receiving a "final" result
+                        //TODO: should be given a more descriptive name, "ADD NEW" indicates if there's no existing content in the temp
+                        //      speech bubble (because the last ASR result is final)
                         if (this.tempSentence.Equals("ADD NEW"))
                         {
                             this.realtimeConversation.UpdateLastMessage(constructRealtimeTempBubble(), true);
-                            //Debug.WriteLine("Not final, no existing");
-                        }
-                        
+                        }                     
                         else
                         {
                             this.realtimeConversation.UpdateLastMessage(constructRealtimeTempBubble(), false);
-                            //Debug.WriteLine("Not final, but has existing");
                         }
                         this.tempSentence = String.Empty;
                     });
+                    #endregion
                 }
-                //NOTE: this condition (json.result.final) was checked earlier already
-                //TODO: rearrange code
                 else
                 {
                     this.tempSentence = "ADD NEW";
                     this.formRealtimeConversation();
                 }
-
-                // latest sentence has a length cap
-                //this.constructLatestSentence();
             }
             catch (Exception e) {
                 LogService.MetroLogger.getSharedLogger().Error(e.Message);
@@ -371,7 +386,7 @@ namespace PhenoPad.SpeechService
                 double end = diaJson.end;
 
                 var interval = new TimeInterval(start, end);
-                insertToDiarization(interval, speaker);
+                insertToDiarizationGraph(interval, speaker);
                 //}
 
                 assignSpeakerToWords();
@@ -380,12 +395,18 @@ namespace PhenoPad.SpeechService
                 //NOTE: full is always false here (never assigned other values after initialization), so what's the point?
                 await formConversation(full);
 
+                //NOTE: don't understand this, looks like constructTempSentence() does not change the value of
+                //      global variables, what's the purpose of this?
                 // so that we don't have an overflow of words
                 constructTempSentence();
                 //this.printDiarizationResult();
             }
         }
 
+        /// <summary>
+        /// Returns a list of strings which contain all the words that have not been assigned speaker.
+        /// </summary>
+        /// <returns>a list of strings</returns>
         private List<string> constructTempSentence()
         {
             // Show all words that have not been diarized
@@ -414,6 +435,18 @@ namespace PhenoPad.SpeechService
             return sentences;
         }
 
+        //NOTE: no reference found for this function
+        /// <summary>
+        /// (OUTDATED) Returns a TextMessage instance which represents a temporary speech bubble.
+        /// </summary>
+        /// <returns>TextMessage instance</returns>
+        /// <remarks>
+        /// This function is currently not used anywhere in the App. It is worth noting that
+        /// while this function seems to construct a temp speech bubble, this.tempSentence 
+        /// does not contain actual content (it's only possible assignment is "ADD NEW" - a
+        /// placeholder string which indicates if the last ASR result is final). Therefore
+        /// this function was likely outdated.
+        /// </remarks>
         private TextMessage constructTempBubble()
         {
             var message = new TextMessage()
@@ -454,11 +487,12 @@ namespace PhenoPad.SpeechService
         // ------ Helper Functions for Diarization ---------------
 
         /// <summary>
-        /// Add a new diarized utterance to the diarization segment space
+        /// Adds the diarization result of a newly diarized utterance to the 
+        /// diarization graph.
         /// </summary>
         /// <param name="interval">the interval of the utterance</param>
         /// <param name="speaker">the intteger index representing the speaker</param>
-        private void insertToDiarization(TimeInterval interval, int speaker)
+        private void insertToDiarizationGraph(TimeInterval interval, int speaker)
         {
             diarization.Add(new Pair<TimeInterval, int>(interval, speaker));
 
@@ -466,10 +500,11 @@ namespace PhenoPad.SpeechService
 
             if (this.diarizationSmallSegs.Count > 0)
             {
-                //TODO: prev is the first unassigned segment, need a better name
-                // Since each diarizationSmallSeg contains the start time and speaker index of
-                // a 0.1s segment, the start time of the first unassigned segment is the start
-                // time of the last assigned segment + 0.1s
+                //TODO: prev is the start time of the first unassigned unit segment,
+                //      needs a better name
+                // Since each pair in the diariszation graph contains the start time and speaker index of
+                // an unit audio segment, the start time of the first unassigned segment is the start time
+                // of the last assigned segment + 0.1s
                 prev = (double)(this.diarizationSmallSegs.Last().first) / (double)(10.0) + 0.1;
             }
             if (interval.start >= prev)
@@ -486,10 +521,10 @@ namespace PhenoPad.SpeechService
                 }
             }
             else
-            {   
+            {
                 //TODO: is this the best way to do this?
-                // If the new utterance starts before the last diarization segment ends, simply overwrite
-                // overlapping segments.
+                // If the new utterance starts before the last diarized segment ends (i.e. overlapping diarization results), 
+                // simply overwrite the overlapping segments.
                 for (int i = Convert.ToInt32(prev * 10); i < Convert.ToInt32(interval.end * 10); i += 1)
                 {
                     this.diarizationSmallSegs.Add(new Pair<int, int>(i, speaker));
@@ -497,13 +532,15 @@ namespace PhenoPad.SpeechService
             }
         }
 
+        //TODO: consider changing the name because "assign" can be misleading
         /// <summary>
-        /// Assigns speakers of diarization segments to the words uttered during those segments.
+        /// Adds speakers of diarized segments to the words (WordSpoken instances) uttered during 
+        /// those segments.
         /// </summary>
         /// <remarks>
-        /// Each word has an array smallSegSpeakers whose elements are segments which correspond to
-        /// segments in diarizationSmallSeg. This function assigns the speaker of diarization segments
-        /// to the corresponding segments in the words' smallSegSpeakers array.
+        /// Each word (WordSpoken object) contains an array smallSegSpeakers whose elements are segments 
+        /// which correspond to segments in diarizationSmallSeg. This function assigns the speaker of
+        /// diarization segments to the corresponding segments in the words' smallSegSpeakers array.
         /// </remarks>
         private void assignSpeakerToWords()
         {
@@ -518,6 +555,7 @@ namespace PhenoPad.SpeechService
                 for (int i = 0; i < word.smallSegSpeakers.Length; i++)
                 {
                     //TODO: consider rewriting as function
+                    //TEMP
                     #region Assign speaker to the word's unit segments
                     double segStartTime = word.getTimeByIndex(i);
                     int diarizationSmallSegIndex = (int)(segStartTime / 0.1);
@@ -579,7 +617,8 @@ namespace PhenoPad.SpeechService
         }
 
         /// <summary>
-        /// Assigns speakers to un-assigned words, forms TextMessages, and add TextMessages to Conversation.
+        /// Calculates speakers for diarized words which have not been added to sentences, 
+        /// forms TextMessages, and add the new TextMessages to Conversation.
         /// </summary>
         /// <param name="full">whether the conversation has been re-diarized</param>
         /// <returns>A list of newly diarized sentences, never used.</returns>
@@ -599,7 +638,7 @@ namespace PhenoPad.SpeechService
                     prevStart = words[wordIndex].interval.start;
 
                 //TODO: consider rewriting as function
-                #region determine speaker
+                #region Determine Speaker
                 int wordProposedSpeaker = this.words[wordIndex].determineSpeaker();
                 if (wordProposedSpeaker == -1)
                     wordProposedSpeaker = prevSpeaker;
@@ -684,7 +723,15 @@ namespace PhenoPad.SpeechService
             return messages;
         }
 
-        //adding temporary text messages
+        //NOTE: this function might have a better name
+        /// <summary>
+        /// Replaces the TextMessage instances in the real-time conversation collection
+        /// with the list of ones that have not been assigned speakers.
+        /// </summary>
+        /// <remarks>
+        /// The real-time conversation collection (this.realtimeConversation) are the items
+        /// displayed as the temp grey speech bubbles.
+        /// </remarks>
         private async void formRealtimeConversation()
         {
             List<TextMessage> messages = new List<TextMessage>();
@@ -704,15 +751,16 @@ namespace PhenoPad.SpeechService
                 }
             }
 
-
             await Windows.ApplicationModel.Core.CoreApplication.MainView.CoreWindow.Dispatcher.RunAsync(CoreDispatcherPriority.Normal,
             () =>
             {
-                //this.conversation.Clear();
                 this.realtimeConversation.ClearThenAddRange(messages);
             });
         }
 
+        /// <summary>
+        /// TODO...
+        /// </summary>
         public void printDiarizationResult()
         {
             for (int i = 0; i < diarization.Count; i++)

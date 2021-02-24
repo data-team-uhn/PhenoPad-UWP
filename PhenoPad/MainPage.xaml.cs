@@ -455,11 +455,12 @@ namespace PhenoPad
             curPage.DrawBackgroundLines();
         }
 
-        /// <summary>
-        /// Makes virtual keyboard disappear
-        /// </summary>
+        
         private void LoseFocus(object sender)
         {
+            /// <summary>
+            /// Makes virtual keyboard disappear
+            /// </summary>
             var control = sender as Control;
             var isTabStop = control.IsTabStop;
             control.IsTabStop = false;
@@ -467,7 +468,6 @@ namespace PhenoPad
             control.IsEnabled = true;
             control.IsTabStop = isTabStop;
         }
-
 
         // ************** Tool Toggle event handlers ********************
         #region Tool Toggles
@@ -1563,11 +1563,12 @@ namespace PhenoPad
                 return "";
         }
 
-        /// <summary>
-        /// Changes the name of the current Notebook based on user's input
-        /// </summary>
+        
         private async void noteNameTextBox_KeyDown(object sender, KeyRoutedEventArgs e)
         {
+            /// <summary>
+            /// Changes the name of the current Notebook based on user's input
+            /// </summary>
             try
             {
                 if (e.Key == Windows.System.VirtualKey.Enter)

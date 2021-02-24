@@ -930,24 +930,34 @@ namespace PhenoPad
             } 
         }
 
-        public void UpdateLastMessage(TextMessage m, bool addNew)
+        //TODO: more descriptive name
+        /// <summary>
+        /// Updates the content of the temporary speech result bubble.
+        /// </summary>
+        /// <param name="m">The new TextMessage instance to add to the conversation object</param>
+        /// <param name="newBubble">
+        /// if a new sequence of temp results should be started (i.e. if the last ASR hypothesis is final)
+        /// </param>
+        public void UpdateLastMessage(TextMessage m, bool startNew)
         {
-            if (addNew || Items.Count == 0)
+            // if the temp speech bubble has no existing content 
+            // or conversation has no element
+            if (startNew || Items.Count == 0)
             {
                 Items.Add(m);
             }
             else
             {
+                // replaces the last TextMessage instance (temporary hypothesis)
+                // with the new one the update real time hypothesis
                 Items.RemoveAt(Items.Count - 1);
                 Items.Add(m);
             }
             m.PropertyChanged += Item_PropertyChanged;
 
-            //var changedItems = new List<TextMessage>(m);
             this.OnPropertyChanged(new PropertyChangedEventArgs("Count"));
             this.OnPropertyChanged(new PropertyChangedEventArgs("Item[]"));
             this.OnCollectionChanged(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Reset));
-            //this.OnCollectionChanged(changedItems, Items.Count - 1);
         }
     }
 
