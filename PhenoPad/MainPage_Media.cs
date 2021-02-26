@@ -362,7 +362,7 @@ namespace PhenoPad
         /// </summary>
         /// <returns>(bool)true if successfully sent command and connected to server, (bool)false otherwise</returns>
         /// <remarks>
-        /// Called when choosing "external audio" option.
+        /// Called when choosing "external audio" option (i.e. using Raspberry Pi for audio).
         /// </remarks>
         public async Task<bool> StartAudioAfterBluetooth() {
             var success = false;
@@ -719,7 +719,7 @@ namespace PhenoPad
         }
 
         /// <summary>
-        /// Update vairable values and notify user when speech service ends.
+        /// Updates vairable values and notifies the user when speech service ends.
         /// </summary>
         public void onAudioEnded()
         {
@@ -1002,6 +1002,7 @@ namespace PhenoPad
             }
         }
         
+        //NOTE: this is probably the function to start with if want to solve issue#10
         //TODO: Complete documentation of this when question about this is resolved.
         // Saves ASR transcripts to local file
         public async Task SaveCurrentConversationsToDisk()

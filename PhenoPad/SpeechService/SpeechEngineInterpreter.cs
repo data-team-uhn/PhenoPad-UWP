@@ -179,7 +179,7 @@ namespace PhenoPad.SpeechService
 
         //TODO: these variable are not self-descriptive enough, and need clearer documentation!
         private int diarizationWordIndex = 0;                     // index of the next word to assign speaker to
-        private int constructDiarizedSentenceIndex = 0;           // word index to construct diarized index => TODO: ??? seems to be the earliest word which has not been put into a sentence ???
+        private int constructDiarizedSentenceIndex = 0;           // word index to construct diarized index => TODO: ? the next word to construct diarized sentences with ?
         private int latestSentenceIndex = 0;                      // index of the next(earliest) word which has never been assigned speaker(s) to (this is normally the
                                                                   //    same as diarizationWordIndex, but does not reset when the conversation is re-diarized)
         private int lastSpeaker = 0;
@@ -230,9 +230,9 @@ namespace PhenoPad.SpeechService
 
         //NOTE: this function does several things, might be too long and need to be broken into smaller functions
         /// <summary>
-        /// 
+        /// Updates speech bubbles with new ASR and diarization results
         /// </summary>
-        /// <param name="json"></param>
+        /// <param name="json">JSON received from the speech server, contains ASR and diarization results</param>
         public async void processJSON(SpeechEngineJSON json)
         {
             ///<summary>
@@ -323,8 +323,11 @@ namespace PhenoPad.SpeechService
                         }
                         #endregion
 
+                        //TEMP
+                        #region adds speakers to words and calculate speaker for each diarized word, forms TextMessage instances with diarized words, adds the formed TextMessage instances to the conversation collection.
                         this.assignSpeakerToWords();
                         this.formConversation(full);
+                        #endregion
 
                         //NOTE: don't understand this, looks like constructTempSentence() does not change the value of
                         //      global variables, what's the purpose of this?
@@ -334,14 +337,14 @@ namespace PhenoPad.SpeechService
                     }
                 }
 
+                #region Update Temp Speech Bubble
                 this.realtimeSentences = this.constructTempSentence();
  
                 if (!json.result.final)
                 {
                     this.realtimeLastSentence = json.result.hypotheses[0].transcript.Trim();
 
-                    //TEMP
-                    #region Update Temp Speech Bubble
+                    
                     await Windows.ApplicationModel.Core.CoreApplication.MainView.CoreWindow.Dispatcher.RunAsync(CoreDispatcherPriority.Normal,
                     () =>
                     {
@@ -358,19 +361,21 @@ namespace PhenoPad.SpeechService
                         }
                         this.tempSentence = String.Empty;
                     });
-                    #endregion
+                    
                 }
                 else
                 {
                     this.tempSentence = "ADD NEW";
                     this.formRealtimeConversation();
                 }
+                #endregion
             }
             catch (Exception e) {
                 LogService.MetroLogger.getSharedLogger().Error(e.Message);
             }
         }
 
+        //NOTE: it looks like this function does the exact same thing as part of processJSON does. 
         public async void processDiaJson(DiarizationJSON diaJson)
         {
             // Then check if we have results from diarization
@@ -378,20 +383,16 @@ namespace PhenoPad.SpeechService
             if (diaJson != null && diaJson.end != -1)
             {
                 bool full = false;
-                //foreach (var d in json.result.diarization)
-                //{
+
                 int speaker = diaJson.speaker;
-                //Debug.WriteLine("Identified speaker is " + speaker.ToString());
                 double start = diaJson.start;
                 double end = diaJson.end;
 
                 var interval = new TimeInterval(start, end);
                 insertToDiarizationGraph(interval, speaker);
-                //}
 
                 assignSpeakerToWords();
-                //Debug.WriteLine("Diarized to word count" + diarizationWordIndex.ToString());
-                //Debug.WriteLine("Total word count" + words.Count.ToString());
+
                 //NOTE: full is always false here (never assigned other values after initialization), so what's the point?
                 await formConversation(full);
 
@@ -618,7 +619,7 @@ namespace PhenoPad.SpeechService
 
         /// <summary>
         /// Calculates speakers for diarized words which have not been added to sentences, 
-        /// forms TextMessages, and add the new TextMessages to Conversation.
+        /// forms TextMessages with these words, and add the new TextMessages to the speech panel.
         /// </summary>
         /// <param name="full">whether the conversation has been re-diarized</param>
         /// <returns>A list of newly diarized sentences, never used.</returns>
@@ -759,7 +760,7 @@ namespace PhenoPad.SpeechService
         }
 
         /// <summary>
-        /// TODO...
+        /// Displays the start time, end time and speaker of all diarized utterances in the ongoing conversation to the output window.
         /// </summary>
         public void printDiarizationResult()
         {
@@ -767,11 +768,6 @@ namespace PhenoPad.SpeechService
             {
                 Debug.WriteLine("Start: " + diarization[i].first.start.ToString() + " End: " + diarization[i].first.end.ToString() + " => Speaker " + diarization[i].second.ToString());
             }
-
-            /*for (int i = 0; i < words.Count; i++)
-            {
-                Debug.WriteLine("[" + i.ToString() + "] " + words[i].word + " Start: " + words[i].interval.start + " => Speaker " + words[i].speaker.ToString());
-            }*/
 
             Debug.WriteLine("---------------------");
         }
@@ -864,7 +860,7 @@ namespace PhenoPad.SpeechService
         }
 
         /// <summary>
-        /// Checks if the on-going conversation has any content.
+        /// Checks if the on-going speech session has any content.
         /// </summary>
         /// <returns>
         /// (bool)true if the list of current TextMessage instances is not empty

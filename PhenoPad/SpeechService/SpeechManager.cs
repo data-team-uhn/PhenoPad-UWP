@@ -164,9 +164,13 @@ namespace PhenoPad.SpeechService
         //NOTE: this function is very long and does way more things than its name indicates, 
         //      consider breaking it into smaller functions
         /// <summary>
-        /// ...
+        /// Connects to speech server, sets up new conversation, receives speech server results, update speech bubbles with new results, 
+        /// and handles result receiving exceptions.
         /// </summary>
         /// <returns>(bool)false if connection to server fails/cancelled, (bool)true otherwise</returns>
+        /// <remarks>
+        /// Called when starting audio in "external microphone" mode.
+        /// </remarks>
         public async Task<bool> ReceiveASRResults()
         {
             /// <summary>
@@ -343,7 +347,7 @@ namespace PhenoPad.SpeechService
             if (cancellationToken.IsCancellationRequested)
             {
                 //TODO: change this line number
-                MetroLogger.getSharedLogger().Info("ASR connection requested cancellation from line 319");
+                MetroLogger.getSharedLogger().Info("ASR connection requested cancellation from ReceiveASRResults");
                 NEED_RESTART_AUDIO = false;
             }
             else if (NEED_RESTART_AUDIO) {

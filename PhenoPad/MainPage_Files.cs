@@ -124,6 +124,7 @@ namespace PhenoPad
                 //if (notebookObject != null)
                 noteNameTextBox.Text = notebookObject.name;
 
+                //TODO: rephrase this
                 //Gets the possible stored conversation transcripts and audio names from XML meta
                 conversations =  await FileManager.getSharedFileManager().GetSavedTranscriptsFromXML(notebookId);
                 if (conversations != null)

@@ -154,20 +154,19 @@ namespace PhenoPad.WebSocketService
             }
         }
 
+        /// <summary>
+        /// Writes EOS (End of Stream) message to the speech server and disposes resources.
+        /// </summary>
+        /// <returns>an awaitable task</returns>
         public async Task CloseConnnction()
         {
             if (streamSocket == null)
                 return;
             try
             {
-                //using (var dataWriter = new DataWriter(this.streamSocket.OutputStream))
-                //{
                 Encoding ascii = Encoding.ASCII;
                 dataWriter.WriteBytes(ascii.GetBytes("EOS"));
                 await dataWriter.StoreAsync();
-                //dataWriter.DetachStream();
-                //}
-                //Debug.WriteLine("Sending data using StreamWebSocket: " + message.Length.ToString() + " bytes");
             }
 
             catch (Exception ex)
