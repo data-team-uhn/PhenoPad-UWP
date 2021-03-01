@@ -173,10 +173,6 @@ namespace PhenoPad.SpeechService
         /// </remarks>
         public async Task<bool> ReceiveASRResults()
         {
-            /// <summary>
-            /// connect to client/speech/results
-            /// only receive results without sending audio signals
-            /// </summary>
             #region Connect to Speech Server
             MainPage.Current.NotifyUser("Connecting to speech result server...", NotifyType.StatusMessage, 1);
             Debug.WriteLine($"Connecting to speech result server...");
@@ -346,7 +342,6 @@ namespace PhenoPad.SpeechService
             #region On Message Receiving Loop Stops
             if (cancellationToken.IsCancellationRequested)
             {
-                //TODO: change this line number
                 MetroLogger.getSharedLogger().Info("ASR connection requested cancellation from ReceiveASRResults");
                 NEED_RESTART_AUDIO = false;
             }
@@ -371,7 +366,9 @@ namespace PhenoPad.SpeechService
         /// TODO...
         /// </summary>
         /// <param name="reload"></param>
-        /// <returns></returns>
+        /// <returns>
+        /// (bool)true if successfully stoped
+        /// </returns>
         public async Task<bool> StopASRResults(bool reload = true)
         {
             try
@@ -433,13 +430,14 @@ namespace PhenoPad.SpeechService
 
                     if ((int)result.Id == 0)
                     {
-                        // Technically we don't have to do anything here
+                        // Technically we don't have to do anything here.
                         count++;
                         MainPage.Current.NotifyUser($"Retry connection at attempt #{count.ToString()} ... " , NotifyType.StatusMessage, 2);
                         attemptConnection = true;
                     }
                     else
                     {
+                        // If the user cancels, break from the loop, re-enable the audio button and return false.
                         MainPage.Current.NotifyUser("Connection cancelled", NotifyType.ErrorMessage, 2);
                         attemptConnection = false;
                         MainPage.Current.ReEnableAudioButton();
@@ -448,7 +446,7 @@ namespace PhenoPad.SpeechService
                 }                
                 else
                 {
-                    //Connection success,break from loop
+                    // If connection successful, break from the loop.
                     attemptConnection = false;
                 }
             }
@@ -539,9 +537,9 @@ namespace PhenoPad.SpeechService
 
                                  speechInterpreter.processJSON(parsedSpeech);
 
-                                 // TODO Find a more legitimate way to fire an UI change?
-
-                                 await Windows.ApplicationModel.Core.CoreApplication.MainView.CoreWindow.Dispatcher.RunAsync(CoreDispatcherPriority.Normal,() =>{
+                                 // TODO (Helen): Find a more legitimate way to fire an UI change?
+                                 await Windows.ApplicationModel.Core.CoreApplication.MainView.CoreWindow.Dispatcher.RunAsync(CoreDispatcherPriority.Normal,() =>
+                                    {
                                         EngineHasResult.Invoke(this, speechInterpreter);
                                     }
                                     );
@@ -561,7 +559,9 @@ namespace PhenoPad.SpeechService
                                  Debug.WriteLine("===SERIOUS PROBLEM!====");
                              }
 
-                             //  try to decode as dirization result
+                             // Note: this block should always throw an exception because the server doesn't send separate
+                             //       diarization results in this format at the moment
+                             // Try to decode server message as dirization result
                              try
                              {
                                  json = json.Replace('_', '-');
@@ -569,8 +569,7 @@ namespace PhenoPad.SpeechService
                                  speechInterpreter.processDiaJson(diaResult);
                                  await Windows.ApplicationModel.Core.CoreApplication.MainView.CoreWindow.Dispatcher.RunAsync(CoreDispatcherPriority.Normal,() => {
                                        EngineHasResult.Invoke(this, speechInterpreter);
-                                   }
-                                   );
+                                   });
                              }
                              catch (Exception)
                              {
@@ -580,7 +579,7 @@ namespace PhenoPad.SpeechService
                          }
                          else
                          {
-                             // didn't get a valid JSON, wait for more packages
+                             // If didn't receive a valid JSON, wait for more packages.
                              doParsing = false;
                          }
                      }                    
@@ -592,6 +591,7 @@ namespace PhenoPad.SpeechService
                 MetroLogger.getSharedLogger().Info("ASR connection requested cancellation");
                 return true;
             }
+
             else if (NEED_RESTART_AUDIO)
             {
                 MetroLogger.getSharedLogger().Error("Server requested AUDIO restart ... will be restarting");

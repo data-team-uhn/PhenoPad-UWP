@@ -417,7 +417,6 @@ namespace PhenoPad
         /// </summary>
         /// <param name="recognizerLanguage">Language to use for the speech recognizer.</param>
         /// <returns>Awaitable task.</returns>
-        //NOTE: this function does not return anything!
         private async Task InitializeRecognizer(Language recognizerLanguage)
         {
             // Clean up prior to re-initializing.
@@ -588,7 +587,8 @@ namespace PhenoPad
         /// <param name="args">The current state of the recognizer.</param>
         private async void SpeechRecognizer_StateChanged(SpeechRecognizer sender, SpeechRecognizerStateChangedEventArgs args)
         {
-            await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () => {
+            await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () => 
+            {
                 this.NotifyUser(args.State.ToString(), NotifyType.StatusMessage, 1); //TODO: this is probably a bad way to do this, although this code is not used.
                 Console.WriteLine(args.State.ToString());
             });
@@ -762,7 +762,6 @@ namespace PhenoPad
             });
         }
 
-        //NOTE: Question: Why not directly call AudioStreamButton_Clicked();
         /// <summary>
         /// Stops speech service.
         /// </summary>

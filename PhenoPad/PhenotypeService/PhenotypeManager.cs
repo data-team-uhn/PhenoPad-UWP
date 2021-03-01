@@ -350,11 +350,11 @@ namespace PhenoPad.PhenotypeService
             }
 
             //updates the phenotype states in saved text conversations
-            var tm = MainPage.Current.conversations.Where(x => x.phenotypesInText.Contains(pheno)).ToList();
+            var txtmsgs = MainPage.Current.conversations.Where(x => x.phenotypesInText.Contains(pheno)).ToList();
             int count = 0;
-            if (tm.Count > 0)
+            if (txtmsgs.Count > 0)
             {
-                foreach (var m in tm)
+                foreach (var m in txtmsgs)
                 {
                     var ph = m.phenotypesInText.Where(x => x == pheno).FirstOrDefault();
                     m.phenotypesInText.Remove(ph);

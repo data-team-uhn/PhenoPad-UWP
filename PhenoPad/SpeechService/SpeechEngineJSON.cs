@@ -50,17 +50,21 @@ namespace PhenoPad.SpeechService
         }
     */
 
-    
+    /// <summary>
+    /// Represents the diarization result of an utterance.
+    /// </summary>
+    /// <remarks>
+    /// Format: {'start': startTime, 'speaker': speakerIndex, 'end': endTime, 'angle': angleOfArrival}
+    /// </remarks>
+    /// <example>
+    /// {'start': 7.328, 'speaker': 0, 'end': 9.168000000000001, 'angle': 152.97781134625265}
+    /// </example>
     public class DiarizationJSON
     {
-        /// <summary>
-        /// {'start': 7.328, 'speaker': 0, 'end': 9.168000000000001, 'angle': 152.97781134625265}
-        /// </summary>
         public double start { get; set; }
         public int speaker { get; set; }
         public double end { get; set; }
-        public double angle { get; set; }
-        
+        public double angle { get; set; } 
     }
 
     /// <summary>
@@ -122,6 +126,7 @@ namespace PhenoPad.SpeechService
         public List<WordAlignment> word_alignment { get; set; }
     }
 
+    //NOTE: this class is the same as DiarizationJSON minus the "angle" attribute
     public class Diarization
     {
         public double end { get; set; }

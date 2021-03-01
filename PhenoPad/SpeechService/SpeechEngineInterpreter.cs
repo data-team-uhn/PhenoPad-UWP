@@ -375,13 +375,24 @@ namespace PhenoPad.SpeechService
             }
         }
 
-        //NOTE: it looks like this function does the exact same thing as part of processJSON does. 
+        /// <summary>
+        /// Inserts a newly diarized interval into the diarization graph, assigns speaker arrays to words,
+        /// determines the speakers of those words and groups them into messages, then adds them to the
+        /// speaker panel.
+        /// </summary>
+        /// <param name="diaJson"></param>
+        /// <remarks>
+        /// This function processes diarization result messages from the speech server which have not been
+        /// implemented. At the moment, diarization results are sent as a part of the ASR results, and are
+        /// processed during processJSON function.
+        /// </remarks>
         public async void processDiaJson(DiarizationJSON diaJson)
         {
             // Then check if we have results from diarization
-            //if (json.result.diarization != null && json.result.diarization.Count > 0)
             if (diaJson != null && diaJson.end != -1)
             {
+                // Full's value doesn't change right now because the DiarizationJSON class
+                // doesn't contain information about "re-diarization".
                 bool full = false;
 
                 int speaker = diaJson.speaker;
@@ -393,10 +404,9 @@ namespace PhenoPad.SpeechService
 
                 assignSpeakerToWords();
 
-                //NOTE: full is always false here (never assigned other values after initialization), so what's the point?
                 await formConversation(full);
 
-                //NOTE: don't understand this, looks like constructTempSentence() does not change the value of
+                //NOTE: looks like constructTempSentence() does not change the value of
                 //      global variables, what's the purpose of this?
                 // so that we don't have an overflow of words
                 constructTempSentence();
@@ -533,10 +543,10 @@ namespace PhenoPad.SpeechService
             }
         }
 
-        //TODO: consider changing the name because "assign" can be misleading
+        //TODO: consider changing the name
         /// <summary>
-        /// Adds speakers of diarized segments to the words (WordSpoken instances) uttered during 
-        /// those segments.
+        /// Assigns the speaker array of diarized segments to the words (WordSpoken instances) uttered 
+        /// during those segments.
         /// </summary>
         /// <remarks>
         /// Each word (WordSpoken object) contains an array smallSegSpeakers whose elements are segments 
@@ -619,7 +629,7 @@ namespace PhenoPad.SpeechService
 
         /// <summary>
         /// Calculates speakers for diarized words which have not been added to sentences, 
-        /// forms TextMessages with these words, and add the new TextMessages to the speech panel.
+        /// forms TextMessages with these words and adds the new TextMessages to the speech panel.
         /// </summary>
         /// <param name="full">whether the conversation has been re-diarized</param>
         /// <returns>A list of newly diarized sentences, never used.</returns>

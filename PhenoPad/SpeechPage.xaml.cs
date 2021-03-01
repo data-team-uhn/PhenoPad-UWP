@@ -77,28 +77,30 @@ namespace PhenoPad
             ChatEditPopup.Visibility = Visibility.Collapsed;
         }
 
+        //TODO: change name
+        //NOTE: this function does not actually load the saved audio, it sets up the audioDropdownList 
+        //      from which the selected audio will be loaded (through AudioDropdownList.selectionChanged event).
+        //      The name "LoadSaveAudio" came from a previous version where loading saved audio and setting up
+        //      Media Player was performed in this function.
+        /// <summary>
+        /// Displays the saved audio files to the Audio Drop-Down-List ("Recorded 
+        /// Audio" drop-down menu on the Speech Page.)
+        /// </summary>
         public async void LoadSavedAudio()
         {
             List<string> audioNames = MainPage.Current.SavedAudios;
             AudioDropdownList.ItemsSource = audioNames;
-            //if (audioNames.Count > 0) {
-            //    AudioDropdownList.SelectedIndex = 0;
-            //    var audioFile = await FileManager.getSharedFileManager().GetSavedAudioFile(MainPage.Current.notebookId, audioNames[0]);
-            //    if (audioFile != null)
-            //    {
-            //        _mediaPlayerElement.Source = MediaSource.CreateFromStorageFile(audioFile);
-            //        _mediaPlayerElement.Visibility = Visibility.Visible;
-            //    }
-            //}
+
             UpdateLayout();
         }
 
-        
         public void updateChat()
         {
             chatView.ItemsSource = MainPage.Current.conversations;
             if (MainPage.Current != null && !MainPage.Current.speechEngineRunning)
+            {
                 LoadSavedAudio();
+            }
             UpdateLayout();
         }
 
@@ -477,11 +479,13 @@ namespace PhenoPad
         }
 
         /// <summary>
-        /// Handler function called when the selected audio in the "Recorded Audio" drop down list is changed.
+        /// Loads the selected audio file from disk (or downloads it from server if a local copy does not exist) 
+        /// and sets up the Media Player.
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
         /// <remarks>
+        /// Handler function called when the selected audio in the "Recorded Audio" drop down list is changed.
         /// Subscribed to (PhenoPad.SpeechPage.AudioDropdownList).SelectionChanged event
         /// </remarks>
         private async void AudioDropdownList_SelectionChanged(object sender, SelectionChangedEventArgs e)

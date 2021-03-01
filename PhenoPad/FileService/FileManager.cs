@@ -242,26 +242,29 @@ namespace PhenoPad.FileService
             }
         }
 
-       
+        /// <summary>
+        /// Returns the locally saved ASR transcirpt as a list of TextMessage objects.
+        /// </summary>
+        /// <param name="notebookId">The ID of the notebook from which the transcript was saved.</param>
+        /// <param name="name">Unused in the function, default value is an empty string.</param>
+        /// <returns></returns>
         public async Task<List<TextMessage>> GetSavedTranscriptsFromXML(string notebookId,string name = "")
         {
-            /// <summary>
-            /// Gets the saved transcripts from disk and return as a list of text messages.
-            /// </summary>
             try
             {
-                List < TextMessage > msg = new List<TextMessage>();
+                List < TextMessage > msgs = new List<TextMessage>();
                 string transcriptPath = $"{notebookId}\\Transcripts";
                 StorageFolder folder = await ROOT_FOLDER.GetFolderAsync(transcriptPath);
                 //Debug.WriteLine("transcript folder ="+folder.Path);
                 IReadOnlyList<StorageFile> fileList = await folder.GetFilesAsync();
                 SpeechManager.getSharedSpeechManager().setAudioIndex(fileList.Count);
-                foreach (StorageFile file in fileList) {
+                foreach (StorageFile file in fileList)
+                {
                     List<TextMessage> obj = await LoadObjectFromSerilization(file, typeof(List<TextMessage>)) as List<TextMessage>;
                     if (obj != null)
-                        msg.AddRange(obj);
+                        msgs.AddRange(obj);
                 }
-                return msg;
+                return msgs;
             }
             catch (Exception e) {
                 MetroLogger.getSharedLogger().Error( e + e.Message);
@@ -286,11 +289,14 @@ namespace PhenoPad.FileService
         }
 
         /// <summary>
-        /// Returns the audio file with the specified name from the specified notebook.
+        /// Returns the locally saved audio file with the specified name from the specified notebook.
         /// </summary>
         /// <param name="notebookId">The notebook the audio recording is from.</param>
         /// <param name="name">The name of the audio file.</param>
-        /// <returns>A StorageFile object representing the audio file.</returns>
+        /// <returns>
+        /// A StorageFile object representing the audio file.
+        /// If save file does not exist, returns null.
+        /// </returns>
         public async Task<StorageFile> GetSavedAudioFile(string notebookId, string name) {
             var path = GetNoteFilePath(notebookId, "", NoteFileType.Audio, name);
             Debug.WriteLine("tring to get " + path);
