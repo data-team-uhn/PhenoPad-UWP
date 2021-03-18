@@ -69,9 +69,9 @@ namespace PhenoPad.SpeechService
         public event TypedEventHandler<SpeechManager, StorageFile> RecordingCreated;
         public StorageFile savedFile;
 
-        //TODO: investigate this comment
+        //TODO (haochi): investigate this comment
         // file debug seems to be broken?
-        private bool useFile = false;
+        private bool useFile = false; //NOTE: probably marks if using a pre-recorded audio file for speech input
         private CancellationTokenSource cancellationSource;
 
         public SpeechManager()
@@ -355,6 +355,9 @@ namespace PhenoPad.SpeechService
             else
             {
                 MetroLogger.getSharedLogger().Error("ASR encountered some problem, will call StopASRRsults ...");
+                //NOTE: there does seem to be a need to not reload, the same handler code in "surface mic" mode does
+                //      not set reload to false
+                // stop speech session without reloading SpeechPage content
                 await StopASRResults(false);
             }
             #endregion
@@ -367,7 +370,7 @@ namespace PhenoPad.SpeechService
         /// </summary>
         /// <param name="reload"></param>
         /// <returns>
-        /// (bool)true if successfully stoped
+        /// (bool)true if successfully stopped
         /// </returns>
         public async Task<bool> StopASRResults(bool reload = true)
         {
@@ -564,6 +567,10 @@ namespace PhenoPad.SpeechService
                              // Try to decode server message as dirization result
                              try
                              {
+                                 //NOTE: testing
+                                 Debug.WriteLine("##################");
+                                 Debug.WriteLine("Trying to run processDiaJson");
+                                 Debug.WriteLine("##################");
                                  json = json.Replace('_', '-');
                                  var diaResult = JsonConvert.DeserializeObject<DiarizationJSON>(json);
                                  speechInterpreter.processDiaJson(diaResult);
@@ -618,6 +625,7 @@ namespace PhenoPad.SpeechService
             async () =>{
                 try
                 {
+                    // if recorded audio using microphone
                     if (graph != null && (fileInputNode != null || useFile == false))
                     {
                         if (notebookid != "")
@@ -769,8 +777,13 @@ namespace PhenoPad.SpeechService
         public async Task SaveTranscriptions(bool reload=true)
         {
             await MainPage.Current.SaveCurrentConversationsToDisk();
-            if (reload) {
+            // when "reload" is true, load the saved transcripts and update the speech bubbles 
+            // on SpeechPage
+            if (reload)
+            {   
+                // update audio related metadata in notebook meta file
                 MainPage.Current.updateAudioMeta();
+                // load content of saved transcripts to past conversation panel
                 MainPage.Current.updatePastConversation();
             }
         }
@@ -869,6 +882,8 @@ namespace PhenoPad.SpeechService
 
             // Makes sure this expresses 16K Hz, F32LE format, with Byte rate of 16k x 4 bytes per second
             // Jixuan says the audio graph does not change audio format
+            //NOTE (haochi): because audio graph only supports float 32 bit according to doc
+            //               https://docs.microsoft.com/en-us/windows/uwp/audio-video-camera/audio-graphs
             nodeEncodingProperties.ChannelCount = 1;
             nodeEncodingProperties.SampleRate = 16000;
             nodeEncodingProperties.BitsPerSample = 32;

@@ -190,8 +190,20 @@ namespace PhenoPad.SpeechService
         public List<string> realtimeSentences = new List<string>();
         public string realtimeLastSentence;
 
+        // currentConversation stores ASR results from the current notebook session
+        // i.e. oldConversation + utterances from the current ASR session
+        //
         private List<TextMessage> currentConversation = new List<TextMessage>();
+        //
+        // oldConversations stores results from previous ASR session(s) within the 
+        // current notebook session. Used to keep track of utterances from previous
+        // conversations during diarization "re-clustering" when utterances in the
+        // current ASR sessions (and consequently currentConversation's content)
+        // gets rearranged.
+        //
         private List<TextMessage> oldConversations = new List<TextMessage>();
+       
+        
         public int conversationIndex = 0;
 
         public int worker_pid = 0;
@@ -211,8 +223,13 @@ namespace PhenoPad.SpeechService
         /// </remarks>
         public void newConversation()
         {
-            this.formConversation(false);       // don't care about results here TODO: investigate
+            this.formConversation(false);       // don't care about results here TODO
+            oldConversations.Clear();
             oldConversations.AddRange(this.currentConversation);
+            
+            //NOTE: testing
+            Debug.WriteLine("############# SEI line 217: oldConversations count ############");
+            Debug.WriteLine(oldConversations.Count);
 
             words.Clear();
             realtimeSentences.Clear();
@@ -717,6 +734,7 @@ namespace PhenoPad.SpeechService
                     List<TextMessage> temp = new List<TextMessage>(oldConversations);
                     temp.AddRange(messages);
                     this.conversation.ClearThenAddRange(temp);
+                    // update currentConversation to oldConversations + rearranged new messages
                     currentConversation = temp;
                 }
                 else
@@ -727,6 +745,7 @@ namespace PhenoPad.SpeechService
                     currentConversation.AddRange(temp);
                     MainPage.Current.conversations.AddRange(temp);
                     //NOTE: Question: why is updateChat() not called when "full"?
+                    // update Speech Page
                     SpeechPage.Current.updateChat();
                 }
             });

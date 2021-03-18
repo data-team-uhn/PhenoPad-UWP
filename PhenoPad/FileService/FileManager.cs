@@ -260,6 +260,11 @@ namespace PhenoPad.FileService
                 SpeechManager.getSharedSpeechManager().setAudioIndex(fileList.Count);
                 foreach (StorageFile file in fileList)
                 {
+                    //NOTE: testing
+                    Debug.WriteLine("################");
+                    Debug.WriteLine("loading transcript file from disk");
+                    Debug.WriteLine(file);
+                    Debug.WriteLine("################");
                     List<TextMessage> obj = await LoadObjectFromSerilization(file, typeof(List<TextMessage>)) as List<TextMessage>;
                     if (obj != null)
                         msgs.AddRange(obj);
@@ -852,7 +857,7 @@ namespace PhenoPad.FileService
         }
 
         /// <summary>
-        /// Saves notebook meta file object to root folder.
+        /// Saves notebook metadata to xml file in root folder.
         /// </summary>
         public async Task<bool> SaveToMetaFile(Notebook notebook)
         {

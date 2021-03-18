@@ -718,6 +718,7 @@ namespace PhenoPad
             ReEnableAudioButton();
         }
 
+        //NOTE: this is not a handler function, better change its name
         /// <summary>
         /// Updates vairable values and notifies the user when speech service ends.
         /// </summary>
@@ -958,7 +959,7 @@ namespace PhenoPad
         }
 
         /// <summary>
-        /// 
+        /// TODO...
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
@@ -1000,23 +1001,21 @@ namespace PhenoPad
                 UpdateLayout();
             }
         }
-        
+
         //NOTE: this is probably the function to start with if want to solve issue#10
-        //TODO: Complete documentation of this when question about this is resolved.
-        // Saves ASR transcripts to local file
+        /// <summary>
+        /// Saves ASR transcripts to local save file if there are ASR results
+        /// </summary>
+        /// <returns></returns>
         public async Task SaveCurrentConversationsToDisk()
         {
-            // save transcriptions to local file only when there's transcripts
-
-            //TODO: Question: What are currentConversation and Current.conversations?
-            if ( speechManager.speechInterpreter.CurrentConversationHasContent() || Current.conversations.Count > 0)
+            if ( speechManager.speechInterpreter.CurrentConversationHasContent() || Current.conversations.Count > 0 )
             {  
-                // only save transcripts if there are finalized messages
                 try
                 {
                     string fpath = FileManager.getSharedFileManager().GetNoteFilePath(
-                      FileManager.getSharedFileManager().currentNoteboookId, "", NoteFileType.Transcriptions, "transcripts");
-
+                        FileManager.getSharedFileManager().currentNoteboookId, "", NoteFileType.Transcriptions, "transcripts");
+                    //NOTE: Question: why is it saving conversations instead if Current.conversations
                     var result = await FileManager.getSharedFileManager().SaveObjectSerilization(fpath, conversations, typeof(List<TextMessage>));
                     Debug.WriteLine($"transcripts saved to {fpath}, result = {result}");
                 }

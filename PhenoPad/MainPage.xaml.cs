@@ -88,10 +88,10 @@ namespace PhenoPad
 
         //******************************END OF ATTRIBUTES DEFINITION***************************************
         /// <summary>
-        /// TODO ...
+        /// Creates and initializes a new MainPage instance.
         /// </summary>
         public MainPage()
-        {/// <summary>Creates and initializes a new MainPage instance.</summary>
+        {
             Current = this;
             this.InitializeComponent();
 
@@ -99,6 +99,7 @@ namespace PhenoPad
             dictatedTextBuilder = new StringBuilder();
 
             _simpleorientation = SimpleOrientationSensor.GetDefault();
+            
             // Assign an event handler for the sensor orientation-changed event 
             if (_simpleorientation != null)
             {
@@ -126,7 +127,7 @@ namespace PhenoPad
             //adding event handler to when erase all is clicked
             MainPageInkBar.EraseAllClicked += InkToolbar_EraseAllClicked;
 
-            //SpeechPage initialization 
+            // Speech Panel initialization 
             chatView.ItemsSource = SpeechManager.getSharedSpeechManager().conversation;
             chatView.ContainerContentChanging += OnChatViewContainerContentChanging;
             realtimeChatView.ItemsSource = SpeechManager.getSharedSpeechManager().realtimeConversation;
@@ -148,11 +149,14 @@ namespace PhenoPad
 
             this.SavedAudios = new List<string>();
             showingPhenoSpeech = new List<Phenotype>();
-            conversations = new List<TextMessage>();
+            conversations = new List<TextMessage>(); // Stores all TextMessages in the notebook,
+                                                     // items in this list are displayed in SpeechPage's
+                                                     // speech bubbles.
 
             playbackSem = new SemaphoreSlim(1);
             audioTimer = new DispatcherTimer();
-            //waits 3 seconds before re-enabling microphone button
+
+            // waits 3 seconds before re-enabling microphone button
             audioTimer.Interval = TimeSpan.FromSeconds(3);
             audioTimer.Tick += onAudioStarted;
 
@@ -164,7 +168,7 @@ namespace PhenoPad
             cancelService = new CancellationTokenSource();
             this.Tapped += HideUIs;
 
-            //When user clicks X while in mainpage, auto-saves all current process and exits the program.
+            // When user clicks X while in mainpage, auto-saves all current process and exits the program.
             Windows.UI.Core.Preview.SystemNavigationManagerPreview.GetForCurrentView().CloseRequested +=
             async (sender, args) =>
             {
@@ -192,7 +196,7 @@ namespace PhenoPad
 
         /// <summary>
         /// Prompts the user for exiting confirmation and saves the most recently edited notebook
-        /// if user attempts to exit while editing, exit apps after
+        /// if user attempts to exit while editing, exits apps after
         /// </summary>
         private async Task<bool> confirmOnExit_Clicked() {
             //no need to ask user if already at note overview page
@@ -406,11 +410,14 @@ namespace PhenoPad
                 {//close all audio services before navigating
                     if (bluetoonOn)
                     {
-                        //because we are no longer in mainpage, does not need to reload past conversation
+                        // because we are no longer in mainpage, does not need to reload past conversation
                         await SpeechManager.getSharedSpeechManager().StopASRResults(false);
                     }
                     else
                     {
+                        //NOTE: it's probably bad style to directly call an event handler function without the triggering event
+                        //NOTE: if not reloading past conversation in when using RPI, then reload should be false in this case, too
+                        //TODO: rewrite this
                         AudioStreamButton_Clicked();
                     }
 

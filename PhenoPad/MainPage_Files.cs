@@ -46,7 +46,9 @@ namespace PhenoPad
             LoadingPopup.IsOpen = true;
             MetroLogger.getSharedLogger().Info("Initialize a new notebook.");
             PhenoMana.clearCache();
-            conversations = new List<TextMessage>();
+            conversations = new List<TextMessage>(); // Stores all TextMessages in the notebook,
+                                                     // items in this list are displayed in SpeechPage's
+                                                     // speech bubbles.
             SpeechPage.Current.updateChat();
 
             // Tries to create a file structure for the new notebook.
@@ -125,7 +127,7 @@ namespace PhenoPad
                 noteNameTextBox.Text = notebookObject.name;
 
                 //TODO: rephrase this
-                //Gets the possible stored conversation transcripts and audio names from XML meta
+                // Get the stored conversation transcripts and audio names from XML meta if they exist
                 conversations =  await FileManager.getSharedFileManager().GetSavedTranscriptsFromXML(notebookId);
                 if (conversations != null)
                     Current.conversations = conversations;
@@ -611,22 +613,30 @@ namespace PhenoPad
             }
         }
 
+        /// <summary>
+        /// Updates audio related metadata in the saved notebook metadata.
+        /// </summary>
+        /// <remarks>
+        /// Note that this function updates the notebook meta file, not AudioMeta, which stores 
+        /// the name of all audios created by a notebook. 
+        /// 
+        /// Currently the only audio related data in "meta" is audioCount.
+        /// </remarks>
         public async void updateAudioMeta()
         {
-            /// <summary>
-            /// Saves the current audio metadata to disk
-            /// </summary>
+            // Set audio count as the current conversation index
             notebookObject.audioCount = SpeechManager.getSharedSpeechManager().getAudioCount();
             await FileManager.getSharedFileManager().SaveToMetaFile(notebookObject);
         }
-        
+
+        /// <summary>
+        /// Gets saved transcripts from disk and updates the conversations history panel on the Speech Page.
+        /// </summary>
         public async void updatePastConversation()
-        {
-            /// <summary>
-            /// Gets saved transcripts from disk and updates the past conversations panel
-            /// </summary>
+        {  
+            // load content of saved transcripts into MainPage.conversations
             conversations = await FileManager.getSharedFileManager().GetSavedTranscriptsFromXML(notebookId);
-            //pastchatView.ItemsSource = conversations;
+            // display the loaded transcripts to Speech Page and update audio drop-down list
             SpeechPage.Current.updateChat();
         }
     }
