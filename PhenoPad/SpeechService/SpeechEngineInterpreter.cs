@@ -190,11 +190,14 @@ namespace PhenoPad.SpeechService
         public List<string> realtimeSentences = new List<string>();
         public string realtimeLastSentence;
 
+        //TODO: consider renaming the following variables, these names don't describe 
+        //      the data they hold very well
+
         // currentConversation stores ASR results from the current notebook session
         // i.e. oldConversation + utterances from the current ASR session
         //
         private List<TextMessage> currentConversation = new List<TextMessage>();
-        //
+        
         // oldConversations stores results from previous ASR session(s) within the 
         // current notebook session. Used to keep track of utterances from previous
         // conversations during diarization "re-clustering" when utterances in the
@@ -224,12 +227,10 @@ namespace PhenoPad.SpeechService
         public void newConversation()
         {
             this.formConversation(false);       // don't care about results here TODO
+
+            // Update oldConversations to the content of currentConversation till this point
             oldConversations.Clear();
             oldConversations.AddRange(this.currentConversation);
-            
-            //NOTE: testing
-            Debug.WriteLine("############# SEI line 217: oldConversations count ############");
-            Debug.WriteLine(oldConversations.Count);
 
             words.Clear();
             realtimeSentences.Clear();

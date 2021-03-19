@@ -705,10 +705,8 @@ namespace PhenoPad
         }
 
         /// <summary>
-        /// Updates vairable values and notifies user when new speech session starts.
+        /// Updates mainpage UI elements and notifies user when new speech session starts.
         /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
         public void onAudioStarted(object sender = null, object e = null)
         {
             audioTimer.Stop(); //TODO: What does audioTimer do exactly? audioTimer.start() is called only during demos.

@@ -53,7 +53,10 @@ namespace PhenoPad.WebSocketService
             return this.serverAddress;
         }
 
-
+        /// <summary>
+        /// TODO...
+        /// </summary>
+        /// <returns></returns>
         public async Task<bool> ConnectToServer()
         {
             // By default 'HostNameForConnect' is disabled and host name validation is not required. When enabling the

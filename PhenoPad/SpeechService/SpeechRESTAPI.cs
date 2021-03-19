@@ -40,6 +40,10 @@ namespace PhenoPad.SpeechService
         {
         }
 
+        /// <summary>
+        /// TODO ...
+        /// </summary>
+        /// <param name="url"></param>
         public void setupClient(String url)
         {
             client = new HttpClient();

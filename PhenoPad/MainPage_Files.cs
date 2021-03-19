@@ -28,11 +28,13 @@ namespace PhenoPad
     //This partial class of MainPage mainly contains logic methods for file I/O such as save / load
     public sealed partial class MainPage : Page, INotifyPropertyChanged
     {
-        //using a semaphore to ensure only one thread is accessing resources
-        //its purpose is to avoid concurrent accesses to ensure saving process
+        // Using a semaphore to ensure only one thread is accessing resources,
+        // its purpose is to avoid concurrent accesses during the saving process
         private SemaphoreSlim savingSemaphoreSlim = new SemaphoreSlim(1);
         public bool loadFromDisk = false;
         string prefix = "transcriptions_";
+        // Stores all TextMessages in the notebook, is the ItemSource for SpeechPage.ChatView
+        //TODO: consider renaming this to be more self-descriptive
         public List<TextMessage> conversations;
 
         //=============================================================================================

@@ -406,7 +406,17 @@ namespace PhenoPad.FileService
             }
         }
 
-       
+        /// <summary>
+        /// Returns a new local save file for the given Notebook, returns null if failed.
+        /// </summary>
+        /// <param name="notebookId"></param>
+        /// <param name="notePageId"></param>
+        /// <param name="fileType"></param>
+        /// <param name="name"></param>
+        /// <returns></returns>
+        /// <remarks>
+        /// If a file already exists for the specified notebook, returns the file; otherwise, create a new file.
+        /// </remarks>
         public async Task<StorageFile> GetNoteFile(string notebookId, string notePageId, NoteFileType fileType, string name = "")
         {
             /// <summary>
@@ -415,9 +425,7 @@ namespace PhenoPad.FileService
             try
             {
                 StorageFile notefile = null;
-                //StorageFolder localFolder = ApplicationData.Current.LocalFolder;
                 string filepath = GetNoteFilePath(notebookId, notePageId, fileType, name);
-                //Debug.WriteLine(filepath);
                 notefile = await ROOT_FOLDER.CreateFileAsync(filepath, CreationCollisionOption.OpenIfExists);
                 return notefile;
             }

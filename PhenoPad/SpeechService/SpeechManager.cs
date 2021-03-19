@@ -366,18 +366,20 @@ namespace PhenoPad.SpeechService
         }
 
         /// <summary>
-        /// TODO...
+        /// Stops the ASR session when using "external microphone" mode. Saves the audio and
+        /// ASR transcripts to disk.
         /// </summary>
-        /// <param name="reload"></param>
-        /// <returns>
-        /// (bool)true if successfully stopped
-        /// </returns>
-        public async Task<bool> StopASRResults(bool reload = true)
+        /// <param name="reloadSpeechPage">
+        /// when "reload" is true, load the saved transcripts and update the speech bubbles 
+        /// on SpeechPage
+        /// </param>
+        /// <returns> (bool)true if successfully stopped </returns>
+        public async Task<bool> StopASRResults(bool reloadSpeechPage = true)
         {
             try
             {
                 cancellationSource.Cancel();
-                await SaveTranscriptions(reload);
+                await SaveTranscriptions(reloadSpeechPage);
                 MainPage.Current.SaveNewAudioName(currentAudioName);
 
                 await BluetoothService.BluetoothService.getBluetoothService().sendBluetoothMessage("audio stop");
@@ -396,60 +398,61 @@ namespace PhenoPad.SpeechService
             }
             return false;
         }
-        // ================================== AUDIO START / STOP FOR USING INTERNAL MICROPHONE =============================
+
+        #region AUDIO START / STOP FOR USING INTERNAL MICROPHONE
+
+        //TODO: better function name
         public async Task<bool> StartAudio()
         {
             bool attemptConnection = true;
-            bool succeed = false;
+            bool connectToServerSucceed = false;
             int count = 1;
+
+
             while (attemptConnection)
             {
+                /*---- connect to ASR server ----*/
                 try
                 {
                     speechStreamSocket = new SpeechStreamSocket(this.serverAddress, this.serverPort);
                     CreateNewAudioName();
                     speechAPI.setupClient(this.serverAddress);
-                    succeed = await speechStreamSocket.ConnectToServer();
+                    connectToServerSucceed = await speechStreamSocket.ConnectToServer();
                 }
                 catch (Exception e)
                 {
                     MetroLogger.getSharedLogger().Error(e.Message);
                 }
 
-                if (!succeed)
+                if (!connectToServerSucceed)
                 {
-                    // Display a dialog box to allow for retry
+                    /*---- Display a dialog box to allow for retry ----*/
                     var messageDialog = new MessageDialog("Failed to connect to (" 
                         + this.serverAddress + ":" + this.serverPort  + ").\nWould you like to retry this connection?");
                     messageDialog.Title = "CONNECTION ERROR";
                     messageDialog.Commands.Add(new UICommand("YES") { Id = 0 });
                     messageDialog.Commands.Add(new UICommand("NO") { Id = 1 });
-                    // Set the command that will be invoked by default
                     messageDialog.DefaultCommandIndex = 0;
-                    // Set the command to be invoked when escape is pressed
                     messageDialog.CancelCommandIndex = 1;
-                    // Show the message dialog
+
                     var result = await messageDialog.ShowAsync();
 
                     if ((int)result.Id == 0)
                     {
-                        // Technically we don't have to do anything here.
                         count++;
                         MainPage.Current.NotifyUser($"Retry connection at attempt #{count.ToString()} ... " , NotifyType.StatusMessage, 2);
                         attemptConnection = true;
                     }
                     else
                     {
-                        // If the user cancels, break from the loop, re-enable the audio button and return false.
                         MainPage.Current.NotifyUser("Connection cancelled", NotifyType.ErrorMessage, 2);
                         attemptConnection = false;
                         MainPage.Current.ReEnableAudioButton();
                         return false;
                     }
-                }                
+                }
                 else
                 {
-                    // If connection successful, break from the loop.
                     attemptConnection = false;
                 }
             }
@@ -457,18 +460,14 @@ namespace PhenoPad.SpeechService
             await CreateAudioGraph();
 
             // Wait 10 seconds so that the server has time to create a worker
-            // else you'll see lots of audio delays
+            // else you'll see lots of audio delays.
             await Task.Delay(5000);
 
             SpeechPage.Current.setSpeakerButtonEnabled(true);           
             SpeechPage.Current.adjustSpeakerCount(2);
-            //Triggers audio started event handler in Mainpage to switch necessary interface layout
             MainPage.Current.onAudioStarted(null, null);
             OperationLogger.getOpLogger().Log(OperationType.ASR, "Started");
 
-            //bool response = await speechStreamSocket.SendBytesAsync(Encoding.UTF8.GetBytes(GetAudioNameForServer()));
-            //Debug.WriteLine("");
-            //await Task.Delay(TimeSpan.FromSeconds(2));
             startGraph();
 
             if (useFile)
@@ -478,19 +477,16 @@ namespace PhenoPad.SpeechService
             else
             {
                 deviceInputNode.Start();
-                // await BluetoothService.BluetoothService.getBluetoothService().sendBluetoothMessage("odas start");
             }
 
             // save this to file
             this.byte_accumulator = new List<byte>();
 
-            // Start a task to continuously read for incoming data
-            //Task receiving = ReceiveDataAsync(speechStreamSocket.streamSocket);
-
             cancellationSource = new CancellationTokenSource();
             // need this to actually cancel reading from websocketS
             CancellationToken cancellationToken = cancellationSource.Token;
             this.speechInterpreter.newConversation();
+
             await Task.Run(async () =>
              {
                  // Weird issue but seems to be some buffer issue
@@ -499,9 +495,8 @@ namespace PhenoPad.SpeechService
                  // Stop running if cancellation requested
                  while (true && !cancellationToken.IsCancellationRequested)
                  {
-                     // don't run again for 
                      await Task.Delay(500);
-                     // do the work in the loop
+
                      string serverResult = await speechStreamSocket.SpeechStreamSocket_ReceiveMessage();
 
                      if (serverResult.Trim('"').Equals(RESTART_AUIDO_SERVER))
@@ -511,7 +506,7 @@ namespace PhenoPad.SpeechService
                          break;
                      }
 
-                     serverResult = serverResult.Replace('-', '_');     // So that we can parse objects
+                     serverResult = serverResult.Replace('-', '_');     // If we don't do this that we'll have errors when parsing objects.
                      accumulator += serverResult;
 
                      // Seems like if we don't do this we won't get all the packages
@@ -527,9 +522,6 @@ namespace PhenoPad.SpeechService
                          {
                              try
                              {
-                                 // need - not _ here... =. =
-
-                                 //Debug.WriteLine("Result from speech: " + json);
                                  var parsedSpeech = JsonConvert.DeserializeObject<SpeechEngineJSON>(json);
                                  parsedSpeech.original = json;
 
@@ -568,9 +560,6 @@ namespace PhenoPad.SpeechService
                              try
                              {
                                  //NOTE: testing
-                                 Debug.WriteLine("##################");
-                                 Debug.WriteLine("Trying to run processDiaJson");
-                                 Debug.WriteLine("##################");
                                  json = json.Replace('_', '-');
                                  var diaResult = JsonConvert.DeserializeObject<DiarizationJSON>(json);
                                  speechInterpreter.processDiaJson(diaResult);
@@ -618,7 +607,6 @@ namespace PhenoPad.SpeechService
         private SemaphoreSlim endSemaphoreSlim = new SemaphoreSlim(1);
         public async Task<bool> EndAudio(string notebookid)
         {
-            //await endSemaphoreSlim.WaitAsync();
             bool result = true;
 
             await Windows.ApplicationModel.Core.CoreApplication.MainView.CoreWindow.Dispatcher.RunAsync(CoreDispatcherPriority.Normal,
@@ -631,10 +619,9 @@ namespace PhenoPad.SpeechService
                         if (notebookid != "")
                         {
                             this.writeToFile(notebookid);
-                            await this.SaveTranscriptions(reload: true);
+                            await this.SaveTranscriptions(reloadSpeechPage: true);
                         }
 
-                        //deviceInputNode.Stop();
                         cancellationSource.Cancel();
 
                         if (useFile)
@@ -643,27 +630,9 @@ namespace PhenoPad.SpeechService
                         graph.Stop();
                         graph.Dispose();
 
-
                         await speechStreamSocket.CloseConnnction();
-                        // await BluetoothService.BluetoothService.getBluetoothService().sendBluetoothMessage("audio end");
-                        /**
-
-                        TranscodeFailureReason finalizeResult = await fileOutputNode.FinalizeAsync();
-                        if (finalizeResult != TranscodeFailureReason.None)
-                        {
-                            // Finalization of file failed. Check result code to see why
-                            rootPage.NotifyUser(String.Format("Finalization of file failed because {0}", finalizeResult.ToString()), NotifyType.ErrorMessage, 2);
-                            //fileButton.Background = new SolidColorBrush(Colors.Red);
-                            return;
-                        }
-
-                        //recordStopButton.Content = "Record";
-                        rootPage.NotifyUser("Recording to file completed successfully!", NotifyType.StatusMessage, 1);
-                        **/
-
 
                         SpeechPage.Current.setSpeakerButtonEnabled(false);
-                        //Triggers audio started event handler in Mainpage to switch necessary interface layout
                     }
                     MainPage.Current.onAudioEnded();
                     OperationLogger.getOpLogger().Log(OperationType.ASR, "Ended");
@@ -678,8 +647,10 @@ namespace PhenoPad.SpeechService
             return result;
 
         }
+        #endregion
 
-        //==================FOR DEMO PURPOSES===================================
+        //TODO: remove these
+        #region FOR DEMO PURPOSES
         public async Task<bool> StartAudioDemo() {
             MainPage.Current.NotifyUser("Audio started ...", NotifyType.StatusMessage, 2);
             Debug.WriteLine("STARTED AUDIO DEMO");
@@ -773,13 +744,26 @@ namespace PhenoPad.SpeechService
             return true;
         }
 
-        //==================================================================================================================
-        public async Task SaveTranscriptions(bool reload=true)
+        #endregion
+
+        /// <summary>
+        /// Saves ASR transcripts to disk and updates the conversation history
+        /// panel on Speech Page to the saved transcripts if necessary.
+        /// </summary>
+        /// <param name="reloadSpeechPage"></param>
+        /// <returns></returns>
+        public async Task SaveTranscriptions(bool reloadSpeechPage=true)
         {
             await MainPage.Current.SaveCurrentConversationsToDisk();
-            // when "reload" is true, load the saved transcripts and update the speech bubbles 
+
+            //TODO: consider making this a separate function to improve readability. When a parent 
+            //      function needs to call this function with reloadSpeechPage = true, it can make 
+            //      two function calls instead and each of those function can only do what's described
+            //      by their name.
+            //
+            // when "reloadSpeechPage" is true, load the saved transcripts and update the speech bubbles 
             // on SpeechPage
-            if (reload)
+            if (reloadSpeechPage)
             {   
                 // update audio related metadata in notebook meta file
                 MainPage.Current.updateAudioMeta();
@@ -787,12 +771,15 @@ namespace PhenoPad.SpeechService
                 MainPage.Current.updatePastConversation();
             }
         }
-      
+
+        /// <summary>
+        /// TODO ...
+        /// </summary>
+        /// <param name="notebookid"></param>
         public async void writeToFile(string notebookid)
         {
             MainPage.Current.NotifyUser("Saving conversation audio", NotifyType.StatusMessage, 2);
 
-            //string datestring = System.DateTime.Now.ToString("dd-MM-yyyy-HH-mm-ss");
             savedFile = await FileService.FileManager.getSharedFileManager().GetNoteFile(notebookid, "", FileService.NoteFileType.Audio, currentAudioName);
 
             Debug.WriteLine("Output file to " + savedFile.Path.ToString());
@@ -808,7 +795,6 @@ namespace PhenoPad.SpeechService
                     dataWriter.WriteBytes(Encoding.ASCII.GetBytes("RIFF"));
 
                     // Chunk size.
-                    //dataWriter.WriteBytes(BitConverter.GetBytes((UInt32)(((32 / 8) * this.byte_accumulator.Count) + 36)));
                     dataWriter.WriteBytes(BitConverter.GetBytes((UInt32)((this.byte_accumulator.Count) + 36)));
 
                     // Format.
@@ -892,8 +878,6 @@ namespace PhenoPad.SpeechService
             // Create a frame output node
             frameOutputNode = graph.CreateFrameOutputNode(nodeEncodingProperties);
             graph.QuantumStarted += AudioGraph_QuantumStarted;
-
-            //graph.QuantumProcessed += AudioGraph_QuantumProcessed;
 
             //AudioEncodingProperties nodeEncodingProperties = graph.EncodingProperties;
             /**
@@ -1038,11 +1022,6 @@ namespace PhenoPad.SpeechService
             }
         }
 
-        private void AudioGraph_QuantumProcessed(AudioGraph sender, object args)
-        {
-            AudioFrame frame = frameOutputNode.GetFrame();
-            ProcessFrameOutputAsync(frame);
-        }
 
         private void AudioGraph_QuantumStarted(AudioGraph sender, object args)
         {
@@ -1226,7 +1205,7 @@ namespace PhenoPad.SpeechService
         public string GetAudioNameForServer()
         {
             string noteName = MainPage.Current.notebookId;
-            int workerID = 666; // TODO: ID shouldn't be hardcoded in the function
+            int workerID = 666; // TODO: ID shouldn't be hardcoded in the function!
 
             return $"{workerID}_{noteName}_{currentAudioName}";
         }
