@@ -123,6 +123,10 @@ namespace PhenoPad.WebSocketService
             }
         }
 
+        /// <summary>
+        /// TODO...
+        /// </summary>
+        /// <returns></returns>
         public async Task<String> SpeechStreamSocket_ReceiveMessage()
         {
             string returnMessage = "";

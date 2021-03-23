@@ -48,8 +48,17 @@ namespace PhenoPad.WebSocketService
             return this.serverAddress;
         }
 
+        /// <summary>
+        /// Creates a StreamWebSocket object and connects to the speech result handler of 
+        /// the ASR WebSocket server.
+        /// </summary>
+        /// <remarks>
+        /// Called when using external microphone (RPI) to receive ASR and diarization 
+        /// results from the server.
+        /// </remarks>
         public async Task<bool> ConnectToServer()
         {
+            //TODO: investigate this
             // By default 'HostNameForConnect' is disabled and host name validation is not required. When enabling the
             // text box validating the host name is required since it was received from an untrusted source
             // (user input). The host name is validated by catching ArgumentExceptions thrown by the HostName
@@ -58,20 +67,21 @@ namespace PhenoPad.WebSocketService
 
 
             streamSocket = new StreamWebSocket();
-            //.Control.OutboundBufferSizeInBytes = 5000;
             streamSocket.Closed += WebSocket_ClosedAsync;
 
+            //TODO: investigate this
             // If necessary, tweak the socket's control options before carrying out the connect operation.
             // Refer to the StreamSocketControl class' MSDN documentation for the full list of control options.
             //socket.Control.OutboundBufferSizeInBytes = ;
 
             //socket.SetRequestHeader("content-type", "audio/x-raw");
             //socket.SetRequestHeader("content-type", "audio/x-raw");
+
             try
             {
                 Debug.WriteLine(serverAddress);
                 Debug.WriteLine(serverPort + Environment.NewLine);
-
+                //TODO: this shouldn't be hardcoded?
                 Task connectTask = this.streamSocket.ConnectAsync(new Uri("ws://" + serverAddress + ":" + serverPort +
                                            "/client/ws/speech_result" +
                                            "?content-type=audio%2Fx-raw%2C+layout%3D%28string%29interleaved%2C+rate%3D%28int%2916000%2C+format%3D%28string%29S16LE%2C+channels%3D%28int%291&manager_id=666")).AsTask();
