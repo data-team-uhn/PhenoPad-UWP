@@ -102,7 +102,6 @@ namespace PhenoPad.WebSocketService
                 streamSocket = null;
                 return false;
             }
-
         }
 
 

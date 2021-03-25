@@ -603,6 +603,11 @@ namespace PhenoPad.SpeechService
         }
 
         private SemaphoreSlim endSemaphoreSlim = new SemaphoreSlim(1);
+        /// <summary>
+        /// Stops the ASR session when using "internal microphone" mode. Saves the audio and
+        /// ASR transcripts to disk.
+        /// </summary>
+        /// <returns>(bool)true if successful, (bool)false otherwise</returns>
         public async Task<bool> EndAudio(string notebookid)
         {
             bool result = true;
@@ -611,15 +616,15 @@ namespace PhenoPad.SpeechService
             async () =>{
                 try
                 {
-                    // if recorded audio using microphone
-                    if (graph != null && (fileInputNode != null || useFile == false))
+                    if (graph != null && (fileInputNode != null || useFile == false))   // if recorded audio using microphone
                     {
+                        /*---- Save data to disk ----*/
                         if (notebookid != "")
                         {
-                            this.writeToFile(notebookid);
+                            this.writeAudioToFile(notebookid);
                             await this.SaveTranscriptions(reloadSpeechPage: true);
                         }
-
+                        /*---- Stop audio service ----*/
                         cancellationSource.Cancel();
 
                         if (useFile)
@@ -630,6 +635,7 @@ namespace PhenoPad.SpeechService
 
                         await speechStreamSocket.CloseConnnction();
 
+                        /*---- Update UI ----*/
                         SpeechPage.Current.setSpeakerButtonEnabled(false);
                     }
                     MainPage.Current.onAudioEnded();
@@ -772,7 +778,7 @@ namespace PhenoPad.SpeechService
         /// TODO ...
         /// </summary>
         /// <param name="notebookid"></param>
-        public async void writeToFile(string notebookid)
+        public async void writeAudioToFile(string notebookid)
         {
             MainPage.Current.NotifyUser("Saving conversation audio", NotifyType.StatusMessage, 2);
 
@@ -919,6 +925,9 @@ namespace PhenoPad.SpeechService
 
         }
         
+        /// <summary>
+        /// TODO...
+        /// </summary>
         private void startGraph()
         {
             try
@@ -1007,50 +1016,39 @@ namespace PhenoPad.SpeechService
             }
         }
 
-
+        /// <summary>
+        /// Gets audio data from Audio Frame and sends data to the speech server when
+        /// when the audio graph starts to process a new quantum.
+        /// </summary>
         private void onAudioGraphQuantumStarted(AudioGraph sender, object args)
         {
             AudioFrame frame = frameOutputNode.GetFrame();
             ProcessFrameOutputAsync(frame);
-
         }
 
         //TODO: this list is no longer used, investigate
         List<byte> bytelist = new List<byte>(1000);
         /// <summary>
-        /// TODO...
+        /// Copies the audio data from native memory to managed memory and send it to 
+        /// the speech server.
         /// </summary>
-        /// <param name="frame"></param>
         unsafe private async void ProcessFrameOutputAsync(AudioFrame frame)
         {
             using (AudioBuffer buffer = frame.LockBuffer(AudioBufferAccessMode.Read))
             using (IMemoryBufferReference reference = buffer.CreateReference())
             {
+                /*---- Get buffer from the AudioFrame ----*/
                 byte* dataInBytes;
-                uint capacityInBytes;
-                // Get the buffer from the AudioFrame
-                ((IMemoryBufferByteAccess)reference).GetBuffer(out dataInBytes, out capacityInBytes);
+                uint capacityInBytes;   // number of bytes
+                ((IMemoryBufferByteAccess)reference).GetBuffer(out dataInBytes, out capacityInBytes); // Gets an IMemoryBuffer as an array of bytes.
 
+                /*---- Copy data in native memory to managed memory ----*/
                 IntPtr source = (IntPtr)dataInBytes;
                 byte[] floatmsg = new byte[capacityInBytes];
                 Marshal.Copy(source, floatmsg, 0, (int)capacityInBytes);
-                    //Debug.WriteLine("    " + capacityInBytes);
-                    // without a buffer
 
+                /*---- Send data to speech server ----*/
                 sendBytes(floatmsg);
-                //speechStreamSocket.SendBytesAsync(floatmsg);
-
-                // using a buffer
-                /**
-                bytelist.AddRange(floatmsg);
-                if (bytelist.Count >= 32000)
-                {
-                    byte[] tosend = bytelist.ToArray();
-                    Debug.WriteLine("Sending data...");
-                    speechStreamSocket.SendBytesAsync(tosend);
-                    //WriteWAV(tosend);
-                    bytelist = new List<byte>();
-                }**/
             }
         }
 
@@ -1061,27 +1059,27 @@ namespace PhenoPad.SpeechService
         /// <param name="bs"></param>
         private async void sendBytes(byte[] bs)
         {
-            // To slow down streaming to server when loading test file
             if (useFile)
             {
-                await Task.Delay(100);
+                await Task.Delay(100);  // To slow down streaming to server when loading test file
             }
-
+            /*---- Send audio to speech server ----*/
             bool result = await speechStreamSocket.SendBytesAsync(bs);
             if (!result)
             {
                 LogService.MetroLogger.getSharedLogger().Error("sendBytes in SpeechManager failed");
                 try
                 {
-                  await this.EndAudio("");
+                  await this.EndAudio("");  // set arg to "" so the function doesn't save data to disk
                 }
                 catch (Exception e)
                 {
                     Debug.WriteLine(e.Message);
                     Debug.WriteLine("Diarization engine stopped unexpectedly");
                 }
-                
             }
+            //NOTE: why not save write audio to file incrementally instead of writing to memory and save everything at audiostop?
+            /*---- Save audio (for saving to disk later) ----*/
             else
             {
                 try
@@ -1091,11 +1089,11 @@ namespace PhenoPad.SpeechService
                 catch (Exception ex)
                 {
                     Debug.WriteLine(ex.Message);
-                }
-                
+                }   
             }
         }
 
+        //NOTE: no reference to this function
         private async Task ReceiveDataAsync(StreamWebSocket activeSocket)
         {
             // Continuously read incoming data. For reading data we'll show how to use activeSocket.InputStream.AsStream()

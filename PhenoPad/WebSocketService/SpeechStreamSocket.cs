@@ -103,10 +103,15 @@ namespace PhenoPad.WebSocketService
 
         }
 
+        /// <summary>
+        /// Sends audio data to the speech server.
+        /// </summary>
+        /// <param name="message">the audio data to send to the server as a byte array</param>
+        /// <returns></returns>
         public async Task<bool> SendBytesAsync(byte[] message)
         {
-            //don't send anything if the stream socket has nothing
-            if (streamSocket == null)
+            
+            if (streamSocket == null)   //don't send anything if the stream socket has nothing
                 return false;
             try
             {
@@ -175,10 +180,13 @@ namespace PhenoPad.WebSocketService
         }
 
         /// <summary>
-        /// Gets the current datas from stream socket and dispose for disconnection.
+        /// TODO...
         /// </summary>
         public async Task CloseConnnction()
         {
+            /// <summary>
+            /// Gets the current datas from stream socket and dispose for disconnection.
+            /// </summary>
             if (streamSocket == null)
                 return;
             try
