@@ -95,7 +95,7 @@ namespace PhenoPad
         }
 
         /// <summary>
-        /// Displays items in MainPage.Current conversations to the speech bubbles on 
+        /// Displays items in MainPage.Current.conversations to the speech bubbles on 
         /// Speech Page and displays saved audios to the audio drop-down list.
         /// </summary>
         public void updateChat()

@@ -107,7 +107,7 @@ namespace PhenoPad.WebSocketService
         /// Sends audio data to the speech server.
         /// </summary>
         /// <param name="message">the audio data to send to the server as a byte array</param>
-        /// <returns></returns>
+        /// <returns>true if successful, false otherwise</returns>
         public async Task<bool> SendBytesAsync(byte[] message)
         {
             

@@ -1054,7 +1054,7 @@ namespace PhenoPad.SpeechService
 
         private List<byte> byte_accumulator;
         /// <summary>
-        /// TODO...
+        /// Sends audio bytes to the speech server and stores them in an array for saving to disk later.
         /// </summary>
         /// <param name="bs"></param>
         private async void sendBytes(byte[] bs)
