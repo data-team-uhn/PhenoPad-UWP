@@ -100,7 +100,8 @@ namespace PhenoPad.Gestures
             _gestures = new Dictionary<string, Unistroke>(256);
         }
 
-        public async Task LoadGestureFromPath(string path) {
+        public async Task LoadGestureFromPath(string path)
+        {
             StorageFolder fd = await StorageFolder.GetFolderFromPathAsync(path);
             IReadOnlyList<StorageFile> files = await fd.GetFilesAsync();
             foreach (var f in files)
@@ -195,13 +196,6 @@ namespace PhenoPad.Gestures
 
         public double[] FindMinXYRatio(List<PointR> points)
         {
-            /*
-            Debug.WriteLine("pts1.Count: ");
-            Debug.WriteLine(pts1.Count);
-            Debug.WriteLine("pts2.Count: ");
-            Debug.WriteLine(pts2.Count);
-            Debug.WriteLine("##########");
-            */
             double a = GeotrigEx.Degrees2Radians(-90.0);
             double b = GeotrigEx.Degrees2Radians(+90.0);
             double threshold = GeotrigEx.Degrees2Radians(2.0);
@@ -238,38 +232,18 @@ namespace PhenoPad.Gestures
                 i++;
             }
 
-            //Debug.WriteLine(i);
             return new double[3] { Math.Min(fx1, fx2), GeotrigEx.Radians2Degrees((b + a) / 2.0), i };
         }
 
 
         #region Recognition
 
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="timepoints"></param>
-        /// <param name="protractor"></param>
-        /// <returns></returns>
         public NBestList Recognize(List<TimePointR> timepoints, bool protractor) // candidate points
         {
             double I = GeotrigEx.PathLength(TimePointR.ConvertList(timepoints)) / (NumPoints - 1); // interval distance between points
             double A = FindBoundingBoxArea(timepoints);
             List<PointR> points = TimePointR.ConvertList(SeriesEx.ResampleInSpace(timepoints, I / 2));
 
-            //Debug.WriteLine("PathLength");
-            //Debug.WriteLine(GeotrigEx.PathLength(TimePointR.ConvertList(timepoints)));
-            //Debug.WriteLine("BoundingBoxArea");
-            //Debug.WriteLine(A);
-            //Debug.WriteLine("MinPathXYRatio");
-            //Debug.WriteLine(FindMinPathXYRatio(timepoints, GeotrigEx.PathLength(TimePointR.ConvertList(timepoints))));
-            //Debug.WriteLine("XYRatio");
-            //Debug.WriteLine(FindXYRatio(points));
-            //Debug.WriteLine("MinXYRatio");
-            //Debug.WriteLine(FindMinXYRatio(points)[1]);
-            //Debug.WriteLine(FindMinXYRatio(points)[0]);
-            //Debug.WriteLine("PathLength/BoundingBoxArea");
-            //Debug.WriteLine(GeotrigEx.PathLength(TimePointR.ConvertList(timepoints)) / A);
             string suggestion = GiveSuggestion(FindMinXYRatio(points)[0], FindMinPathXYRatio(timepoints, GeotrigEx.PathLength(TimePointR.ConvertList(timepoints))), 
                 GeotrigEx.PathLength(TimePointR.ConvertList(timepoints)) / A);
 
@@ -307,7 +281,8 @@ namespace PhenoPad.Gestures
             }
             nbest.SortDescending(); // sort descending by score so that nbest[0] is best result
 
-            if (suggestion == "line") {
+            if (suggestion == "line")
+            {
                     nbest.AddResult(suggestion, 1.0, 0, 0);
             }
 
@@ -357,9 +332,6 @@ namespace PhenoPad.Gestures
         /// <summary>
         /// From Protractor by Yang Li, published at CHI 2010. See http://yangl.org/protractor/. 
         /// </summary>
-        /// <param name="v1"></param>
-        /// <param name="v2"></param>
-        /// <returns></returns>
         private double[] OptimalCosineDistance(List<double> v1, List<double> v2)
         {
             double a = 0.0;
@@ -380,33 +352,10 @@ namespace PhenoPad.Gestures
             for (int i = 0; i < Math.Min(path1.Count, path2.Count); i++)
             {
                 distance += GeotrigEx.Distance(path1[i], path2[i]);
-                /*
-                if (path1.Count / path2.Count >= 2)
-                {
-                    distance = distance * (path1.Count / path2.Count);
-                }
-                if (path2.Count / path1.Count >= 2)
-                {
-                    distance = distance * (path2.Count / path1.Count);
-                }
-                */
-                /*
-                Debug.WriteLine("path1.Count: ");
-                Debug.WriteLine(path1.Count);
-                Debug.WriteLine("path2.Count: ");
-                Debug.WriteLine(path2.Count);
-                */
             }
             return distance / path1.Count;
-            //return path1.Count *20 / path2.Count;
         }
 
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="path1"></param>
-        /// <param name="path2"></param>
-        /// <returns></returns>
         public static double PathDistance2(List<PointR> path1, List<PointR> path2)
         {
             double distance = 0;
@@ -438,13 +387,6 @@ namespace PhenoPad.Gestures
             return new double[3] { D, theta - step, i }; // distance, angle, calls to pathdist
         }
 
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="pts1"></param>
-        /// <param name="pts2"></param>
-        /// <param name="writer"></param>
-        /// <returns></returns>
         private double[] FullSearch(List<PointR> pts1, List<PointR> pts2, StreamWriter writer)
         {
             double bestA = 0d;
@@ -618,10 +560,13 @@ namespace PhenoPad.Gestures
         /// <summary>
         /// Assemble the gesture filenames into categories that contain potentially multiple examples of the same gesture.
         /// </summary>
-        /// <param name="filenames"></param>
-        /// <returns>A 1-D list of category instances that each contain the same number of examples, or <b>null</b> if an
-        /// error occurs.</returns>
-        /// <remarks>See the comments above MainForm.TestBatch_Click.</remarks>
+        /// <returns>
+        /// A 1-D list of category instances that each contain the same number of examples, or <b>null</b> if an
+        /// error occurs.
+        /// </returns>
+        /// <remarks>
+        /// See the comments above MainForm.TestBatch_Click.
+        /// </remarks>
         public List<Category> AssembleBatch(string[] filenames)
         {
             Dictionary<string, Category> categories = new Dictionary<string, Category>();
@@ -696,8 +641,10 @@ namespace PhenoPad.Gestures
         /// <param name="categories">A list of gesture categories that each contain lists of prototypes (examples) within that gesture category.</param>
         /// <param name="dir">The directory into which to write the output files.</param>
         /// <param name="protractor">If true, uses Protractor instead of Golden Section Search.</param>
-        /// <returns>The two filenames of the output file if successful; null otherwise. The main results are in string[0],
-        /// while the detailed recognition results are in string[1].</returns>
+        /// <returns>
+        /// The two filenames of the output file if successful; null otherwise. The main results are in string[0],
+        /// while the detailed recognition results are in string[1].
+        /// </returns>
         public string[] TestBatch(string subject, string speed, List<Category> categories, string dir, bool protractor)
         {
             StreamWriter mw = null; // main results writer
@@ -892,9 +839,6 @@ namespace PhenoPad.Gestures
                     GeotrigEx.Degrees2Radians(+45.0),   // ubound
                     GeotrigEx.Degrees2Radians(2.0));    // threshold
                 writer.WriteLine("\nGolden Section Search ({0} rotations)\n{1:F2}{2}\t{3:F3} px", gold[2], Math.Round(gold[1], 2), (char)176, Math.Round(gold[0], 3)); // calls, angle, distance
-
-                // use Protractor to do it yet again
-                // TODO
 
                 // for pasting into Excel
                 writer.WriteLine("\n{0} {1} {2:F2} {3:F2} {4:F3} {5:F3} {6} {7:F2} {8:F2} {9:F3} {10} {11:F2} {12:F2} {13:F3} {14}",

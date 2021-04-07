@@ -92,7 +92,6 @@ namespace PhenoPad.Gestures
 		}
 
 
-
         /// <summary>
         /// Vectorize the unistroke according to the algorithm by Yang Li for use in the Protractor extension to $1.
         /// </summary>
@@ -128,8 +127,6 @@ namespace PhenoPad.Gestures
         /// <summary>
         /// Sort comparator in descending order of score.
         /// </summary>
-        /// <param name="obj"></param>
-        /// <returns></returns>
         public int CompareTo(object obj)
         {
             if (obj is Unistroke)
@@ -143,14 +140,12 @@ namespace PhenoPad.Gestures
         /// <summary>
         /// Pulls the gesture name from the file name, e.g., "circle03" from "C:\gestures\circles\circle03.xml".
         /// </summary>
-        /// <param name="s"></param>
-        /// <returns></returns>
+
         public static string ParseName(string filename)
         {
             int start = filename.LastIndexOf('\\');
             int end = filename.LastIndexOf('.');
             return filename.Substring(start + 1, end - start - 1);
         }
-
     }
 }

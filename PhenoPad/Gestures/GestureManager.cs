@@ -29,51 +29,62 @@ namespace PhenoPad.Gestures
         private static Recognizer recognizer;
         private string GESTURE_PATH = ROOT_FOLDER.Path + "\\Gestures";
 
-        //empty constructor
+        // empty constructor
         public GestureManager()
         {            
         }
 
-        public static GestureManager GetSharedGestureManager() {
-            if (sharedGestureManager == null) {
+        public static GestureManager GetSharedGestureManager()
+        {
+            if (sharedGestureManager == null)
+            {
                 sharedGestureManager = new GestureManager();
                 recognizer = new Recognizer();
                 sharedGestureManager.InitializeRecognizer();
                 return sharedGestureManager;
             }
-            else              
+            else
+            { 
                 return sharedGestureManager;
+            }
         }
 
-        private async void InitializeRecognizer() {
+        private async void InitializeRecognizer()
+        {
             await recognizer.LoadGestureFromPath(GESTURE_PATH);
         }
 
+        /// <summary>
+        /// Pre-checks the stroke gesture before passing in to $1
+        /// </summary>
         private string PreCheckGesture(InkStroke s)
-        {/// <summary>Pre-checks the stroke gesture before passing in to $1</summary>
-
+        {
             Rect bound = s.BoundingRect;
             if (bound.Width < 15 && bound.Height < 15)
+            {
                 return "dot";
+            }
             else if (bound.Height / bound.Width > 3 && bound.Width < 20)
+            {
                 return "vline";
+            }
             else if (bound.Width / bound.Height > 3)
             {
                 List<InkPoint> pts = s.GetInkPoints().ToList();
-                //to prevent error spikes at the beginning/end of a stroke, only focus on mid-80% of the points
-                int sections = (int)(pts.Count * 0.2); 
+                // to prevent error spikes at the beginning/end of a stroke, only focus on mid-80% of the points
+                int sections = (int)(pts.Count * 0.2);
                 InkPoint pre_point = pts[sections];
-                pts = new ArraySegment<InkPoint> ( pts.ToArray(), sections, pts.Count - sections).ToList();
+                pts = new ArraySegment<InkPoint>(pts.ToArray(), sections, pts.Count - sections).ToList();
 
                 // checking stroke directions and spikes count to determine whether this is a zigzag gesture
                 int spike_count = 0;
-                int direction = pts[0].Position.X < pts[5].Position.X ? 1 : -1;                             
+                int direction = pts[0].Position.X < pts[5].Position.X ? 1 : -1;
                 for (int i = 0; i < pts.Count; i += 2)
                 {
                     if (direction == 1 && pts[i].Position.X < pre_point.Position.X)
                     {
                         spike_count++;
-                        direction = -1 ;
+                        direction = -1;
                     }
                     else if (direction == -1 && pts[i].Position.X > pre_point.Position.X)
                     {
@@ -84,25 +95,33 @@ namespace PhenoPad.Gestures
                 }
                 Debug.WriteLine($"Recognizer's spike count = {spike_count}");
                 if (spike_count > 1)
+                { 
                     return "zigzag";
+                }
                 else
+                { 
                     return "hline";
+                }
             }
             else
+            { 
                 return null;
+            }
         }
 
+        /// <summary>
+        /// Converts a stroke's InkPoint to TimePointF for gesture recognition
+        /// </summary>
         private List<TimePointR> GetStrokePoints(InkStroke s)
-        {/// <summary>Converts a stroke's InkPoint to TimePointF for gesture recognition</summary>
-
+        {
             List<TimePointR> points = new List<TimePointR>();
             foreach (InkPoint p in s.GetInkPoints())
                 points.Add(new TimePointR((float)p.Position.X, (float)p.Position.Y, (long)p.Timestamp));
             return points;
-
         }
 
-        public StrokeType GetGestureFromStroke(InkStroke s) {
+        public StrokeType GetGestureFromStroke(InkStroke s)
+        {
             string is_line = null;
             is_line = PreCheckGesture(s);
             if (is_line == null)
@@ -120,7 +139,8 @@ namespace PhenoPad.Gestures
                 else
                     return StrokeType.UnRecognized;
             }
-            else {
+            else
+            {
                 switch (is_line)
                 {
                     case ("vline"):
@@ -137,6 +157,5 @@ namespace PhenoPad.Gestures
                 }
             }
         }
-
     }
 }
