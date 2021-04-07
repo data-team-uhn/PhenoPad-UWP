@@ -109,22 +109,22 @@ namespace PhenoPad.LogService
             switch (opType)
             {
                 case OperationType.Stroke:
-                    //args format= (args0: strokeID, args1: strokeaStarttime, args2: strokeDuration, args3: lineIndex, args4: pageID)
+                    // args format= (args0: strokeID, args1: strokeaStarttime, args2: strokeDuration, args3: lineIndex, args4: pageID)
                     Debug.Assert(args.Count() == 5);
                     log = $"{GetTimeStamp()}|Stroke| {args[0]} | {args[1]} | {args[2]} | {args[3]} | {args[4]}";
                     break;
                 case OperationType.HWR:
-                    //args format= ( args0:recognized text, args1: {keyword:Phenotype}) 
+                    // args format= ( args0:recognized text, args1: {keyword:Phenotype}) 
                     Debug.Assert(args.Count() == 2);
                     log = $"{GetTimeStamp()}|HWR| {args[0]} | {args[1]}";
                     break;
                 case OperationType.ADDIN:
-                    //args format= ( args0:name, args1: {line #}, args2: {page #}) 
+                    // args format= ( args0:name, args1: {line #}, args2: {page #}) 
                     Debug.Assert(args.Count() == 3);
                     log = $"{GetTimeStamp()}|ADDIN| {args[0]} | {args[1]} | {args[2]}";
                     break;
                 case OperationType.Speech:
-                    //args format = ( args0:transcript, args1: {keyword:Phenotype}) 
+                    // args format = ( args0:transcript, args1: {keyword:Phenotype}) 
                     Debug.Assert(args.Count() == 2);
                     log = $"{GetTimeStamp()}|Speech| {args[0]} | {args[1]}";
                     break;
@@ -133,17 +133,17 @@ namespace PhenoPad.LogService
                     log = $"{GetTimeStamp()}|ASR| {args[0]} ";
                     break;
                 case OperationType.Phenotype:
-                    //args format= (args0:source, args1:{added/deleted/Y/N}, args2:{keyword:Phenotype} )
+                    // args format= (args0:source, args1:{added/deleted/Y/N}, args2:{keyword:Phenotype} )
                     Debug.Assert(args.Count() == 3);
                     log = $"{GetTimeStamp()}|Phenotype| {args[0]} | {args[1]} | {args[2]}";
                     break;
                 case OperationType.Abbreviation:
-                    //args format= (string: context sentence, string:shortTerm, string:DefaultExtendedForm, string:selectedExtendedForm, string:selectedRank, string: list of candidates )
+                    // args format= (string: context sentence, string:shortTerm, string:DefaultExtendedForm, string:selectedExtendedForm, string:selectedRank, string: list of candidates )
                     Debug.Assert(args.Count() == 6);
                     log = $"{GetTimeStamp()}|Abbreviation| {args[0]} | {args[1]}, {args[2]} | {args[3]} | {args[4]} | {args[5]}";
                     break;
                 case OperationType.Alternative:
-                    //args format= (args0:original text, args1:selected/user input text, args2:candidate rank(-1 if user inputs) )
+                    // args format= (args0:original text, args1:selected/user input text, args2:candidate rank(-1 if user inputs) )
                     Debug.Assert(args.Count() == 3);
                     log = $"{GetTimeStamp()}|Alternative| {args[0]} | {args[1]} | {args[2]}";
                     break;
@@ -281,7 +281,7 @@ namespace PhenoPad.LogService
 
                 }
 
-                // selectively parse useful log for display
+                // Selectively parse useful log for display
                 foreach (string line in logs)
                 {
                     List<string> segment = line.Split('|').ToList();
@@ -289,7 +289,7 @@ namespace PhenoPad.LogService
                     DateTime.TryParse(segment[0].Trim(), out time);
                     int lineNum;
 
-                    //currently only interested in stroke and phenotypes
+                    // Note: currently only interested in stroke and phenotypes
                     switch (segment[1])
                     {
 
@@ -402,16 +402,16 @@ namespace PhenoPad.LogService
         public DateTime timeEnd;//for strokes
         
 
-        // attributes for stroke
-        // two ways of arranging strokes:by lines recognized using HWR or timestamp (display whenever there's a gap of time)
+        // Attributes for stroke
+        // Note: two ways of arranging strokes:by lines recognized using HWR or timestamp (display whenever there's a gap of time)
         public List<uint> strokeID;
         public int lineID; // probably need this for line ordering
 
-        // attributes for HWR/Speech
+        // Attributes for HWR/Speech
         public string context;
         public Phenotype phenotype;//list of UI elements for display
 
-        // attributes for phenotypes
+        // Attributes for phenotypes
         public string source;
 
         public OperationItem()
@@ -429,6 +429,5 @@ namespace PhenoPad.LogService
             source = null;
             phenotype = null;
         }
-
     }
 }

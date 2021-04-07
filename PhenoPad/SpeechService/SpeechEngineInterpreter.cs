@@ -154,11 +154,9 @@ namespace PhenoPad.SpeechService
         public Conversation conversation;               // left hand diarized bubbles    
         public Conversation realtimeConversation;       // right hand temporary grey bubbles
 
-        //TODO: consider changing to a more descriptive name
-        private List<WordSpoken> words = new List<WordSpoken>();      // all words detected
+        private List<WordSpoken> words = new List<WordSpoken>(); // all words detected
         private List<Pair<TimeInterval, int>> diarization = new List<Pair<TimeInterval, int>>(); // a list of intervals that have speaker identified
 
-        //TODO: better name
         // Note: Each pair in diarizationSmallSegs corresponds to a 0.1s long audio segment. The audio is
         //       discretized into a set of 0.1s segments, each of which is associate with a speaker index. 
         //       If a segment contains no speech, its speaker index is -1.
@@ -174,43 +172,39 @@ namespace PhenoPad.SpeechService
         //
         //       The rest of the script refers to diarizationSmallSegs as the diarization graph and a 100ms audio
         //       segment an unit audio segment.
-        public List<Pair<int, int>> diarizationSmallSegs = new List<Pair<int, int>>();    // Pair<(int)startTime/0.1s, speaker>
+        public List<Pair<int, int>> diarizationSmallSegs = new List<Pair<int, int>>(); // Pair<(int)startTime/0.1s, speaker>
 
-        //TODO: these variable are not self-descriptive enough, and need clearer documentation!
-        private int diarizationWordIndex = 0;                     // index of the next word to assign speaker to
-        private int constructDiarizedSentenceIndex = 0;           // word index to construct diarized index => TODO: ? the next word to construct diarized sentences with ?
-        private int latestSentenceIndex = 0;                      // index of the next(earliest) word which has never been assigned speaker(s) to (this is normally the
-                                                                  //    same as diarizationWordIndex, but does not reset when the conversation is re-diarized)
+        private int diarizationWordIndex = 0;             // index of the next word to assign speakers to
+        private int constructDiarizedSentenceIndex = 0;   // word index to construct diarized index => TODO: ? the next word to construct diarized sentences with ?
+        private int latestSentenceIndex = 0;              // index of the next(earliest) word which has never been assigned speakers to (this is normally the
+                                                          //    same as diarizationWordIndex, but does not reset when the conversation is re-diarized)
+
         private int lastSpeaker = 0;
 
-        public string tempSentence;         // non-final result from engine
-        public string latestSentence;       // display the last sentence to not clog up view
+        public string tempSentence;    // non-final result from engine
+        public string latestSentence;  // display the last sentence to not clog up view
 
         public List<string> realtimeSentences = new List<string>();
         public string realtimeLastSentence;
 
-        //TODO: consider renaming the following variables, these names don't describe 
-        //      the data they hold very well
-
-        // currentConversation stores ASR results from the current notebook session
-        // i.e. oldConversation + utterances from the current ASR session
-        //
+        /// <summary>
+        /// Stores ASR results from the current notebook session.
+        /// i.e. oldConversation + utterances from the current ASR session
+        /// </summary>
         private List<TextMessage> currentConversation = new List<TextMessage>();
-        
-        // oldConversations stores results from previous ASR session(s) within the 
-        // current notebook session. Used to keep track of utterances from previous
-        // conversations during diarization "re-clustering" when utterances in the
-        // current ASR sessions (and consequently currentConversation's content)
-        // gets rearranged.
-        //
+
+        /// <summary>
+        /// Stores results from previous ASR session(s) within the current notebook session.
+        /// Keeps track of utterances from previous conversations during diarization 
+        /// "re-clustering" when utterances in the current ASR sessions (and consequently
+        /// currentConversation's content) gets rearranged.
+        /// </summary>
         private List<TextMessage> oldConversations = new List<TextMessage>();
-       
         
         public int conversationIndex = 0;
 
         public int worker_pid = 0;
 
-        // Empty constructor :D
         public SpeechEngineInterpreter(Conversation _conv, Conversation _realtimeconv)
         {
             this.conversation = _conv;
@@ -225,52 +219,46 @@ namespace PhenoPad.SpeechService
         /// </remarks>
         public void newConversation()
         {
-            this.formConversation(false);       // don't care about results here TODO
+            this.formConversation(false); // don't care about results here
 
             conversationIndex++;
 
-            /*---- Update oldConversations to the content of currentConversation till this point ----*/
+            // Update oldConversations to the content of currentConversation till this point
             oldConversations.Clear();
             oldConversations.AddRange(this.currentConversation);
 
-            /*---- Clear results from last session ----*/
+            // Clear results from last session
             words.Clear();
             realtimeSentences.Clear();
             realtimeLastSentence = String.Empty;
             tempSentence = String.Empty;
             diarization.Clear();
 
-            /*---- Reset diarization position markers ----*/
+            // Reset diarization position markers
             this.diarizationWordIndex = 0;
             this.constructDiarizedSentenceIndex = 0;
             this.latestSentenceIndex = 0;
         }
 
 
-        //NOTE: this function does several things, might be too long and need to be broken into smaller functions
-        //      or consider changin its name to reflect what it actually does.
         /// <summary>
         /// Updates speech bubbles with new ASR and diarization results.
         /// </summary>
         /// <param name="json">JSON received from the speech server, contains ASR and diarization results</param>
         public async void processJSON(SpeechEngineJSON json)
         {
-            ///<summary>
-            /// Looks at speech engine result to identify what can be done
-            ///</summary>
-
             try
             {
-                /* Here we take the assumption that diarization will always be slower than speech recognition. 
-                 * I.e. the diarization results of certain utterances will only be received after the final 
-                 * ASR results of these utterances.
-                 * This is because in the speech server, diarization of an utterance is only 
-                 * performed after the utterance has ended (detected using WebRTC Voice Activity Detector),
-                 * while ASR is performed real-time. Which means diarization of an utterance starts when the
-                 * ASR finishes.
-                 */
+                /** Here we take the assumption that diarization will always be slower than speech recognition. 
+                 *  I.e. the diarization results of certain utterances will only be received after the final 
+                 *  ASR results of these utterances.
+                 *  This is because in the speech server, diarization of an utterance is only 
+                 *  performed after the utterance has ended (detected using WebRTC Voice Activity Detector),
+                 *  while ASR is performed real-time. Which means diarization of an utterance starts when the
+                 *  ASR finishes.
+                 **/
 
-                /*---- Update diarized speech bubbles on MainPage and SpeechPage ----*/
+                // Update diarized speech bubbles on MainPage and SpeechPage
                 if (json != null)
                 {
                     if (json.worker_pid != 0)
@@ -279,21 +267,18 @@ namespace PhenoPad.SpeechService
                         Debug.WriteLine("Worker PID upon processing " + this.worker_pid.ToString());
                     }
 
-                    /*---- If result is final, update the words list ----*/
+                    // If result is final, update the words list
                     // (Note: Diarization results are only sent with partial ASR results.)
                     if (json.result.final)
                     {
                         Debug.WriteLine(json.result.hypotheses[0].transcript);
 
-                        double latest = 0;  // records the ending timestamp of the last word in ASR result
-                        //TODO: when is offset useful? and should it be hardcoded in this function?
-                        double OFFSET = 0;          // not too sure if word alignment data is actually correct from aspire??? //TODO(haochi): investigate this
+                        double latest = 0; // records the ending timestamp of the last word in ASR result
+                        double OFFSET = 0; // manually define offset in case word alignment data is incorrect
 
-                        /*---- Add new words in the result to the list of all words ----*/
+                        // Add new words in the result to the list of all words
                         foreach (WordAlignment wa in json.result.hypotheses[0].word_alignment)
                         {
-                            //TODO: consider rewriting this to a separate function
-                            
                             double word_start = Math.Max(wa.start + json.segment_start + OFFSET, 0);
                             double word_end = Math.Max(wa.start + wa.length + json.segment_start + OFFSET, 0);
                             var w = new WordSpoken(wa.word, -1, new TimeInterval(word_start, word_end));
@@ -301,23 +286,19 @@ namespace PhenoPad.SpeechService
                             latest = wa.start + wa.length + json.segment_start;
                         }
 
-                        /*---- Update lastest timestamp to end of last sentence ----*/
-                        //TODO: consider rewrite this into a function
-                        //TODO: Question: what is the purpose of latest? It's only been assigned values (it's value is not used).
-                        //      It's a local variable and it's value wasn't passed to anything outside this function.
+                        // Update lastest timestamp to end of last sentence
                         if (latest == 0)
                         {
                             latest = words[words.Count - 1].interval.end;
                         }
                     }
 
-                    /*---- If received diarization result, construct TextMessages and update conversation panels ----*/
+                    // If received diarization result, construct TextMessages and update conversation panels
                     if (json.result.diarization != null && json.result.diarization.Count > 0)
                     {
                         bool full = false;
 
-                        //TODO: consider making this a separate function.
-                        /*---- If received new diarization of the conversation, clear previous results. ----*/
+                        // If received new diarization of the conversation, clear previous results.
                         if (!json.result.diarization_incremental)
                         {
                             diarization.Clear();
@@ -326,7 +307,7 @@ namespace PhenoPad.SpeechService
                             constructDiarizedSentenceIndex = 0;
                             full = true;
                         }
-                        /*---- Update the diarization graph with new results ----*/
+                        // Update the diarization graph with new results
                         foreach (var d in json.result.diarization)
                         {
                             int speaker = d.speaker;
@@ -336,32 +317,26 @@ namespace PhenoPad.SpeechService
                             this.insertToDiarizationGraph(interval, speaker);
                         }
 
-                        /*---- Form TextMessage objects and update conversation panels ----*/
+                        // Form TextMessage objects and update conversation panels
                         this.assignSpeakerToWords();
                         this.formConversation(full);
 
-                        //NOTE: don't understand this, looks like constructTempSentence() does not change the value of
-                        //      global variables, what's the purpose of this?
-                        // so that we don't have an overflow of words
+                        // so that we don't have an overflow of words (POSSIBLY OUTDATED)
                         this.constructTempSentence();
-                        //this.printDiarizationResult();
                     }
                 }
 
-                /*---- Update the temp speech bubble on MainPage ----*/
+                // Update the temp speech bubble on MainPage
                 this.realtimeSentences = this.constructTempSentence();
  
                 if (!json.result.final)
                 {
                     this.realtimeLastSentence = json.result.hypotheses[0].transcript.Trim();
-
                     
                     await Windows.ApplicationModel.Core.CoreApplication.MainView.CoreWindow.Dispatcher.RunAsync(CoreDispatcherPriority.Normal,
                     () =>
                     {
-                        // tempSentence is set to "ADD NEW" after receiving a "final" result
-                        //TODO: should be given a more descriptive name, "ADD NEW" indicates if there's no existing content in the temp
-                        //      speech bubble (because the last ASR result is final)
+                        // Note: tempSentence is set to "ADD NEW" after receiving a "final" result
                         if (this.tempSentence.Equals("ADD NEW"))
                         {
                             this.realtimeConversation.UpdateLastMessage(constructRealtimeTempBubble(), true);
@@ -397,10 +372,9 @@ namespace PhenoPad.SpeechService
         /// </remarks>
         public async void processDiaJson(DiarizationJSON diaJson)
         {
-            // Then check if we have results from diarization
             if (diaJson != null && diaJson.end != -1)
             {
-                // Full's value doesn't change right now because the DiarizationJSON class
+                // *full*'s value wouldn't change right now because the DiarizationJSON class
                 // doesn't contain information about "re-diarization".
                 bool full = false;
 
@@ -415,11 +389,8 @@ namespace PhenoPad.SpeechService
 
                 await formConversation(full);
 
-                //NOTE: looks like constructTempSentence() does not change the value of
-                //      global variables, what's the purpose of this?
-                // so that we don't have an overflow of words
+                // so that we don't have an overflow of words (POSSIBLY OUTDATED)
                 constructTempSentence();
-                //this.printDiarizationResult();
             }
         }
 
