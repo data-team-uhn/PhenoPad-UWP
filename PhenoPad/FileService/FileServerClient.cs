@@ -86,11 +86,6 @@ namespace PhenoPad.FileService
             MetroLogger.getSharedLogger().Info("Zipping all files before uploading.");
             string fileToWriteTo = Path.GetTempPath() + RandomString(10);
 
-            /*using (ZipArchive archive = ZipFile.Open(fileToWriteTo, ZipArchiveMode.Create))
-            {
-                archive.CreateEntry(newFile, "NewEntry.txt");
-            }*/
-            try
             {
                 ZipFile.CreateFromDirectory(localFolder.Path.ToString(), fileToWriteTo, CompressionLevel.Fastest, false);
                 Debug.WriteLine("Zipping all notes to " + fileToWriteTo);
@@ -104,7 +99,6 @@ namespace PhenoPad.FileService
             // int SIZE_GB = 1024 * 1024 * 1024;
             using (HttpClientHandler handler = new HttpClientHandler())
             {
-                //handler.MaxRequestContentBufferSize = SIZE_GB;
                 using (HttpClient client = new HttpClient(handler))
                 {
                     string url = FileServerClient.fileManagerAddress + "/put/" + path;

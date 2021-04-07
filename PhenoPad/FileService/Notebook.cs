@@ -24,6 +24,7 @@ namespace PhenoPad.FileService
         {
 
         }
+
         /// <summary>
         /// Creates and initializes default info of a new Notebook instance given its ID.
         /// </summary>

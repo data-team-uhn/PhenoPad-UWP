@@ -26,6 +26,7 @@ namespace PhenoPad.FileService
         {
 
         }
+
         /// <summary>
         /// Creates and initializes a new NotePage instance based on given Notebook ID and Notepage ID.
         /// </summary>
@@ -48,7 +49,8 @@ namespace PhenoPad.FileService
             }
         }
 
-        public async void GetEHRFromFile() {
+        public async void GetEHRFromFile()
+        {
 
             var file = await FileManager.getSharedFileManager().GetNoteFileNotCreate(notebookId, id, NoteFileType.EHR);
             if (file == null)
@@ -59,6 +61,5 @@ namespace PhenoPad.FileService
             reader.ReadBytes(fileContent);
             EHR = Encoding.UTF8.GetString(fileContent, 0, fileContent.Length);
         }
-
     }
 }

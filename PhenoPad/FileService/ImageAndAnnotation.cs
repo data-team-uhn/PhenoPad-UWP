@@ -45,6 +45,7 @@ namespace PhenoPad.FileService
         {
 
         }
+
         /// <summary>
         /// Creates and initializes a new Image and Annotation instance with given parameters.
         /// </summary>
@@ -62,8 +63,8 @@ namespace PhenoPad.FileService
             this.canvasTop = canvasTop;
             this.transX = transX;
             this.transY = transY;
-            this.widthOrigin = widthOrigin;//this is the original width when add-in is first created
-            this.heightOrigin = heightOrigin;//this is the original height when add-in is first created
+            this.widthOrigin = widthOrigin; // this is the original width when add-in is first created
+            this.heightOrigin = heightOrigin; // this is the original height when add-in is first created
             this.height = height;
             this.width = width;
             this.zoomFactorX = zoomFactor.ScaleX;

@@ -29,7 +29,8 @@ namespace PhenoPad.FileService
         public List<List<int>> annotates;
 
 
-        public EHRFormats() {
+        public EHRFormats()
+        {
         }
 
         public EHRFormats(EHRPageControl ehr)

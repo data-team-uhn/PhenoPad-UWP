@@ -456,8 +456,6 @@ namespace PhenoPad.BluetoothService
     /// </summary>
     class Constants
     {
-        // The Chat Server's custom service Uuid: 34B1CF4D-1069-4AD6-89B6-E161D79BE4D8
-
         public static readonly Guid RfcommChatServiceUuid = Guid.Parse("94f39d29-7d6d-437d-973b-fba39e49d4ee");
 
         public const UInt16 SdpServiceNameAttributeId = 0x100; // The Id of the Service Name SDP attribute
