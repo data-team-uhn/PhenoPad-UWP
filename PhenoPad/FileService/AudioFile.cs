@@ -22,7 +22,7 @@ namespace PhenoPad.FileService
 
 
         /// <summary>
-        /// (UNIMPLEMENTED) Creates a new NotePage instance for serilization.
+        /// Creates a new NotePage instance for serilization.
         /// </summary>
         public AudioFile()
         {

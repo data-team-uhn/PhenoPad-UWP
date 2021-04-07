@@ -24,7 +24,7 @@ namespace PhenoPad.BluetoothService
         private DataWriter dataWriter = null;
         private DataReader dataReader = null; // NOTE: this variable is never used
         public string rpi_ipaddr = null;
-        //private DataReader readPacket = null;
+
         private CancellationTokenSource cancellationSource;
         private RfcommDeviceService blueService = null;
         private BluetoothDevice bluetoothDevice = null;
@@ -95,7 +95,7 @@ namespace PhenoPad.BluetoothService
             }
             var serviceInfoCollection = await DeviceInformation.FindAllAsync(RfcommDeviceService.GetDeviceSelector(RfcommServiceId.SerialPort), new string[] { "System.Devices.AepService.AepId" });
             
-            /*---- Identify the target RFCOMM device (Raspberry Pi) and establish Bluetooth connection with it. ----*/
+            // Identify the target RFCOMM device (Raspberry Pi) and establish Bluetooth connection with it.
             foreach (var serviceInfo in serviceInfoCollection)
             {
                 var deviceInfo = await DeviceInformation.CreateFromIdAsync((string)serviceInfo.Properties["System.Devices.AepService.AepId"]);
@@ -153,7 +153,7 @@ namespace PhenoPad.BluetoothService
                 }
             }
 
-            /*---- Establish Bluetooth connection on the Bluetooth stream socket ----*/
+            // Establish Bluetooth connection on the Bluetooth stream socket
             try
             {
                 _socket = _socket == null ? new StreamSocket() : _socket;
@@ -167,7 +167,7 @@ namespace PhenoPad.BluetoothService
                 return;
             }
             
-            /*---- Send hand shake message to Raspberry Pi to confirm connection ----*/
+            // Send hand shake message to Raspberry Pi to confirm connection
             try
             {
                 string temp = "HAND_SHAKE";
@@ -183,7 +183,7 @@ namespace PhenoPad.BluetoothService
                 return;
             }
 
-            /*---- Handles message from Raspberry Pi ----*/
+            // Handle message from Raspberry Pi
             // (e.g. in the case of an audio service Error).
             if (cancellationSource != null)
             {
@@ -191,12 +191,10 @@ namespace PhenoPad.BluetoothService
             }
             cancellationSource = new CancellationTokenSource();
             CancellationToken cancellationToken = cancellationSource.Token;
-
             await Task.Run(async () =>
             {
                 while (true && !cancellationToken.IsCancellationRequested)
                 {
-                    // don't run again for 
                     await Task.Delay(500);
                     string result = await ReceiveMessageUsingStreamWebSocket();
                     if (result == "CONNECTION_ERROR")
@@ -213,11 +211,11 @@ namespace PhenoPad.BluetoothService
                 }
             }, cancellationToken);
 
-            /*---- Request additional properties ----*/
+            // Request additional properties
             string[] requestedProperties = new string[] { "System.Devices.Aep.DeviceAddress", "System.Devices.Aep.IsConnected" };
             deviceWatcher = DeviceInformation.CreateWatcher("(System.Devices.Aep.ProtocolId:=\"{e0cbf06c-cd8b-4647-bb8a-263b43f0f974}\")", requestedProperties, DeviceInformationKind.AssociationEndpoint);
             
-            /*---- Set up and start the watcher ----*/
+            // Set up and start the watcher
             deviceWatcher.Added += new TypedEventHandler<DeviceWatcher, DeviceInformation>(async (watcher, deviceInfo) =>
             {
                 if (initialized)
@@ -233,25 +231,22 @@ namespace PhenoPad.BluetoothService
             {
 
             });
-
             deviceWatcher.Start();
         }
 
         /// <summary>
         /// Handles audio service errors caused by crashes on Raspberry Pi side.
         /// </summary>
-        /// <param name="message">
-        /// The message received from Raspberry Pi.
-        /// </param>
+        /// <param name="message">The message received from Raspberry Pi.</param>
         public async void HandleAudioException(string message)
         {
-            /*---- If Raspberry Pi's audio client fails ----*/
+            // If Raspberry Pi's audio client fails
             if (message.Equals(RESTART_AUDIO_FLAG) && MainPage.Current.speechManager.speechResultsSocket.streamSocket != null)
             {
                 LogService.MetroLogger.getSharedLogger().Error("\nBluetoothService=> GOT EXCEPTION, will try to kill audio\n");
                 await MainPage.Current.KillAudioService();
             }
-            /*---- If Raspberry Pi's Bluetooth server/control client fails ----*/
+            // If Raspberry Pi's Bluetooth server/control client fails
             else if (message.Equals(RESTART_BLUETOOTH_FLAG))
             {
                 LogService.MetroLogger.getSharedLogger().Error("\nBluetoothService=> GOT DEXCEPTION, will try to restart bluetooth\n");
@@ -264,9 +259,7 @@ namespace PhenoPad.BluetoothService
         /// <summary>
         /// Get the IP address of the Raspberry Pi.
         /// </summary>
-        /// <returns>
-        /// A string representation of the Raspberry Pi's IP address.
-        /// </returns>
+        /// <returns>A string representation of the Raspberry Pi's IP address.</returns>
         public string GetPiIP()
         {
             return this.rpi_ipaddr;
@@ -275,9 +268,7 @@ namespace PhenoPad.BluetoothService
         /// <summary>
         /// Checks if Bluetooth connection is alive by sending a test message.
         /// </summary>
-        /// <returns>
-        /// (bool)true if connection is still alive, (bool)false otherwise.
-        /// </returns>
+        /// <returns>true if connection is still alive, false otherwise.</returns>
         public async Task<bool> checkConnection()
         {
             try
@@ -303,9 +294,7 @@ namespace PhenoPad.BluetoothService
         /// <summary>
         /// Receive data from the Bluetooth stream socket.
         /// </summary>
-        /// <returns>
-        /// (string)Message read from the input stream. If failed to read a message, return (string)"CONNECTION_ERROR".
-        /// </returns>
+        /// <returns>(string)Message read from the input stream. If failed to read a message, return (string)"CONNECTION_ERROR".</returns>
         public async Task<String> ReceiveMessageUsingStreamWebSocket()
         {
             string returnMessage = String.Empty;
@@ -353,9 +342,7 @@ namespace PhenoPad.BluetoothService
         /// <summary>
         /// Closes Bluetooth connection to the Raspberry Pi and clears related properties.
         /// </summary>
-        /// <returns>
-        /// (bool)true if the connection closed successfully, (bool)false otherwise.
-        /// </returns>
+        /// <returns>true if the connection closed successfully, false otherwise.</returns>
         public bool CloseConnection()
         {
             try
@@ -403,14 +390,10 @@ namespace PhenoPad.BluetoothService
         }
 
         /// <summary>
-        /// Send message/command to Raspberry Pi.
+        /// Sends message/command to Raspberry Pi.
         /// </summary>
-        /// <param name="message">
-        /// The message to be sent.
-        /// </param>
-        /// <returns>
-        /// (bool)true if the message is successfully sent, (bool)false otherwise
-        /// </returns>
+        /// <param name="message">The message to be sent.</param>
+        /// <returns>true if the message is successfully sent, false otherwise</returns>
         /// <remarks>
         /// If Bluetooth connection is not established, initializes the connection first.
         /// If message failed to send, notify user and update (bool)this.initialize to 
@@ -418,7 +401,7 @@ namespace PhenoPad.BluetoothService
         /// </remarks>
         public async Task<bool> sendBluetoothMessage(string message)
         {
-            /*---- Initialize the connection if Bluetooth connection has not been established ----*/
+            // Initialize the connection if Bluetooth connection has not been established
             if (this.initialized == false)
             {
                 await this.InitiateConnection();
@@ -430,7 +413,7 @@ namespace PhenoPad.BluetoothService
                     return false;
                 }
             }
-
+            // Send message
             try
             {
                 dataWriter.WriteString(message);
@@ -448,7 +431,6 @@ namespace PhenoPad.BluetoothService
                 return false;
             }
         }
-
     }
 
     /// <summary>

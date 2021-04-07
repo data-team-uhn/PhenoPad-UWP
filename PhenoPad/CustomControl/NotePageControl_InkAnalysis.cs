@@ -714,10 +714,10 @@ namespace PhenoPad.CustomControl
                     }
                 }
             }
-
         }
 
-        public async void UpdateAnnotationAfterErase(int lineNum) {
+        public async void UpdateAnnotationAfterErase(int lineNum)
+        {
             Dictionary<string, Phenotype> annoResult = await PhenoMana.annotateByNCRAsync(phrases[lineNum].GetString());
             // Handles when annoResult has at least one element
             if (annoResult != null && annoResult.Count > 0)
@@ -769,8 +769,8 @@ namespace PhenoPad.CustomControl
             }
         }
 
-        public async Task ClearAndRecognizePage() {
-
+        public async Task ClearAndRecognizePage()
+        {
             try {
                 // clears all caches and re-initiate inkanalyzer
                 recognizedCanvas.Children.Clear();
@@ -812,7 +812,8 @@ namespace PhenoPad.CustomControl
 
         // ================================= INK RECOGNITION ==============================================                      
 
-        public double GetLeftOfLine(int lineid) {
+        public double GetLeftOfLine(int lineid)
+        {
             var allStrokes = inkCanvas.InkPresenter.StrokeContainer.GetStrokes();
             foreach (var stroke in allStrokes)
                 stroke.Selected = false;
@@ -921,7 +922,8 @@ namespace PhenoPad.CustomControl
                     selectionRectangle.Visibility = Visibility.Collapsed;
 
                 }
-                else {
+                else
+                {
                     Canvas.SetLeft(selectionRectangle, boundingRect.X);
                     Canvas.SetTop(selectionRectangle, boundingRect.Y);
 
@@ -1067,10 +1069,11 @@ namespace PhenoPad.CustomControl
             return ((x2 - x1) * (p.Y - y1) - (y2 - y1) * (p.X - x1)) > 0;
         }
 
+        /// <summary>
+        /// Draw a polygon on the recognitionCanvas.
+        /// </summary>
         private void DrawPolygon(InkAnalysisInkDrawing shape)
         {
-            // Draw a polygon on the recognitionCanvas.
-
             var points = shape.Points;
             Polygon polygon = new Polygon();
 
@@ -1134,7 +1137,8 @@ namespace PhenoPad.CustomControl
             return null;
         }
 
-        private List<IInkAnalysisNode> FindHitWordsInLine(InkAnalysisLine line) {
+        private List<IInkAnalysisNode> FindHitWordsInLine(InkAnalysisLine line)
+        {
             Rect lineRect = line.BoundingRect;
             var words = inkAnalyzer.AnalysisRoot.FindNodes(InkAnalysisNodeKind.InkWord);
             var hitWords = words.Where(x => x.BoundingRect.Top >= lineRect.Top && x.BoundingRect.Bottom <= lineRect.Bottom && x.BoundingRect.X >= lineRect.X && x.BoundingRect.X + x.BoundingRect.Width <= lineRect.X + lineRect.Width).ToList();
@@ -1218,11 +1222,11 @@ namespace PhenoPad.CustomControl
                 result = await analyzeInk(lastStroke:null,serverFlag: true);//will be using server side HWR upon page load
         }
 
-        public async void initialAnalyzeNoPhenotype() {
+        public async void initialAnalyzeNoPhenotype()
+        {
             inkAnalyzer = new InkAnalyzer();
             inkAnalyzer.AddDataForStrokes(inkCan.InkPresenter.StrokeContainer.GetStrokes());
             await inkAnalyzer.AnalyzeAsync();
-
         }
 
         private async void searchPhenotypesAndSetUpBriefView(string str)

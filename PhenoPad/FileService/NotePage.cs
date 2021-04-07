@@ -51,7 +51,6 @@ namespace PhenoPad.FileService
 
         public async void GetEHRFromFile()
         {
-
             var file = await FileManager.getSharedFileManager().GetNoteFileNotCreate(notebookId, id, NoteFileType.EHR);
             if (file == null)
                 return;

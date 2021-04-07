@@ -229,8 +229,8 @@ namespace PhenoPad.PhotoVideoService
                 // Only raise the OrientationChanged event if the device is not parallel to the ground. This allows users to take pictures of documents (FaceUp)
                 // or the ceiling (FaceDown) in portrait or landscape, by first holding the device in the desired orientation, and then pointing the camera
                 // either up or down, at the desired subject.
-                //Note: This assumes that the camera is either facing the same way as the screen, or the opposite way. For devices with cameras mounted
-                //      on other panels, this logic should be adjusted.
+                // Note: This assumes that the camera is either facing the same way as the screen, or the opposite way. For devices with cameras mounted
+                //       on other panels, this logic should be adjusted.
                 OrientationChanged?.Invoke(this, false);
             }
         }

@@ -76,7 +76,6 @@ namespace PhenoPad.FileService
         }
 
 
-
         /// <summary>
         /// Performs HTTP PUT request to zip/upload note folders to server.
         /// </summary>
@@ -85,7 +84,7 @@ namespace PhenoPad.FileService
             Debug.WriteLine("Zip all files first");
             MetroLogger.getSharedLogger().Info("Zipping all files before uploading.");
             string fileToWriteTo = Path.GetTempPath() + RandomString(10);
-
+            try
             {
                 ZipFile.CreateFromDirectory(localFolder.Path.ToString(), fileToWriteTo, CompressionLevel.Fastest, false);
                 Debug.WriteLine("Zipping all notes to " + fileToWriteTo);

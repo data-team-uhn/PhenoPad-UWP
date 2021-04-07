@@ -43,5 +43,4 @@ namespace PhenoPad.LogService
         public string LogFilePath { get; private set; }
         public bool Enabled { get; private set; }
     }
-
 }

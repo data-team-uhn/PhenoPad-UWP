@@ -82,9 +82,7 @@ namespace PhenoPad.FileService
         /// <summary>
         /// Returns the file manager object if it exists, otherwise initialize a new file manager.
         /// </summary>
-        /// <returns>
-        /// the shared file manager object
-        /// </returns>
+        /// <returns>the shared file manager object</returns>
         public static FileManager getSharedFileManager()
         {
             if (sharedFileManager == null)
@@ -305,10 +303,7 @@ namespace PhenoPad.FileService
         /// </summary>
         /// <param name="notebookId">The notebook the audio recording is from.</param>
         /// <param name="name">The name of the audio file.</param>
-        /// <returns>
-        /// A StorageFile object representing the audio file.
-        /// If save file does not exist, returns null.
-        /// </returns>
+        /// <returns>A StorageFile object representing the audio file. If save file does not exist, returns null.</returns>
         public async Task<StorageFile> GetSavedAudioFile(string notebookId, string name)
         {
             var path = GetNoteFilePath(notebookId, "", NoteFileType.Audio, name);
@@ -359,9 +354,7 @@ namespace PhenoPad.FileService
         /// </summary>
         /// <param name="notebookId">the unique identifier of the note</param>
         /// <param name="names">a list of the names of the saved recordings</param>
-        /// <returns>
-        /// (bool)true if save successful, (bool)false otherwise
-        /// </returns>
+        /// <returns>true if save successful, false otherwise</returns>
         public async Task<bool> SaveAudioNamesToXML(string notebookId, List<string>names) {
             try
             {
@@ -662,7 +655,6 @@ namespace PhenoPad.FileService
         {
             try
             {
-               
                 List<AudioFile> result = new List<AudioFile>();
                 string path = String.Format(@"{0}\Audio\", notebookId);
                 //Debug.WriteLine($"audio path = {path}");
@@ -956,7 +948,7 @@ namespace PhenoPad.FileService
                 return false;
             }
 
-            return true
+            return true;
         }
 
         public async Task<bool> SaveNoteText(string notebookId, string pageId, string text)
@@ -983,9 +975,7 @@ namespace PhenoPad.FileService
         /// <summary>
         /// Saves the state of the object to a XML meta file.
         /// </summary>
-        /// <returns>
-        /// (bool)true if save successful, (bool)false otherwise
-        /// </returns>
+        /// <returns>true if save successful, false otherwise</returns>
         /// <remarks>
         /// Serialize the object into XML document to save the state of the object.
         /// Used to save states and properties of a note for future access.
@@ -1028,7 +1018,8 @@ namespace PhenoPad.FileService
         /// </summary>
         public async Task<bool> saveStrokes(StorageFile strokesFile, InkCanvas inkcancas)
         {
-            try {
+            try
+            {
                 // Prevent updates to the file until updates are finalized
                 // with call to CompleteUpdatesAsync.
                 Windows.Storage.CachedFileManager.DeferUpdates(strokesFile);
@@ -1058,7 +1049,8 @@ namespace PhenoPad.FileService
                 }
 
             }
-            catch (Exception) {
+            catch (Exception)
+            {
                 return false;
             }
 
@@ -1242,7 +1234,8 @@ namespace PhenoPad.FileService
                     return obj;
                 }
             }
-            catch (InvalidOperationException) {     
+            catch (InvalidOperationException)
+            {     
                 return null;
             }
             catch (Exception ex)

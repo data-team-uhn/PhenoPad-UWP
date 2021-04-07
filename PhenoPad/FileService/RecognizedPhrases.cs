@@ -53,7 +53,7 @@ namespace PhenoPad.FileService
             this.strokes = new List<DateTime>();
             foreach (var s in strokes)
                 this.strokes.Add(s.StrokeStartedTime.Value.DateTime);
-        
+
         }
     }
 }

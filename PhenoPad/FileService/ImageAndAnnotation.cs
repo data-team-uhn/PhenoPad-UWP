@@ -79,6 +79,5 @@ namespace PhenoPad.FileService
             this.commentText = commentText;
             date = DateTime.Now.ToString("MM/dd/yyyy HH:mm:ss");
         }
-
     }
 }

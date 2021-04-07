@@ -19,7 +19,7 @@ namespace PhenoPad.FileService
         public List<string> names { get; set; }
 
         /// <summary>
-        /// (UNIMPLEMENTED) Creates a new NotePage instance for serilization.
+        /// Creates a new NotePage instance for serilization.
         /// </summary>
         public AudioMeta()
         {

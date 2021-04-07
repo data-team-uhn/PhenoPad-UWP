@@ -97,7 +97,6 @@ namespace PhenoPad.PhenotypeService
         /// <summary>
         /// Returns # of added phenotypes
         /// </summary>
-        /// <returns></returns>
         public int CountSavedPhenotypes()
         {
             if (savedPhenotypes == null)

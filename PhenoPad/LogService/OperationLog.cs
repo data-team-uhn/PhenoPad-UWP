@@ -167,10 +167,7 @@ namespace PhenoPad.LogService
         /// Checks if a new log is the same as the last log.
         /// </summary>
         /// <param name="log">the current log</param>
-        /// <returns>
-        /// (bool)true if it is the new log is the same as the last log
-        /// (bool)false otherwise.
-        /// </returns>
+        /// <returns>true if it is the new log is the same as the last log false otherwise.</returns>
         private bool CheckIfSameLog(string log)
         {
             if (lastHWRLog == string.Empty)
@@ -189,9 +186,7 @@ namespace PhenoPad.LogService
         /// <summary>
         /// Returns the string representation of current local time.
         /// </summary>
-        /// <returns>
-        /// The string representation of current local time (precise to seconds).
-        /// </returns>
+        /// <returns>The string representation of current local time (precise to seconds).</returns>
         private string GetTimeStamp()
         {
             DateTime now = DateTime.Now;

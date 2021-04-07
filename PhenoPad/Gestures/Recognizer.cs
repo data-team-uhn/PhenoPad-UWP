@@ -560,10 +560,7 @@ namespace PhenoPad.Gestures
         /// <summary>
         /// Assemble the gesture filenames into categories that contain potentially multiple examples of the same gesture.
         /// </summary>
-        /// <returns>
-        /// A 1-D list of category instances that each contain the same number of examples, or <b>null</b> if an
-        /// error occurs.
-        /// </returns>
+        /// <returns>A 1-D list of category instances that each contain the same number of examples, or <b>null</b> if anerror occurs.</returns>
         /// <remarks>
         /// See the comments above MainForm.TestBatch_Click.
         /// </remarks>
@@ -641,10 +638,8 @@ namespace PhenoPad.Gestures
         /// <param name="categories">A list of gesture categories that each contain lists of prototypes (examples) within that gesture category.</param>
         /// <param name="dir">The directory into which to write the output files.</param>
         /// <param name="protractor">If true, uses Protractor instead of Golden Section Search.</param>
-        /// <returns>
-        /// The two filenames of the output file if successful; null otherwise. The main results are in string[0],
-        /// while the detailed recognition results are in string[1].
-        /// </returns>
+        /// <returns>The two filenames of the output file if successful; null otherwise. The main results are in string[0],
+        /// while the detailed recognition results are in string[1].</returns>
         public string[] TestBatch(string subject, string speed, List<Category> categories, string dir, bool protractor)
         {
             StreamWriter mw = null; // main results writer

@@ -140,7 +140,6 @@ namespace PhenoPad.Gestures
         /// <summary>
         /// Pulls the gesture name from the file name, e.g., "circle03" from "C:\gestures\circles\circle03.xml".
         /// </summary>
-
         public static string ParseName(string filename)
         {
             int start = filename.LastIndexOf('\\');

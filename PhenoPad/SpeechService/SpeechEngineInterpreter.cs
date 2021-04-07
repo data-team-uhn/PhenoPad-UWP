@@ -103,10 +103,8 @@ namespace PhenoPad.SpeechService
         /// <summary>
         /// Returns the most probable speaker of the current word.
         /// </summary>
-        /// <returns>
-        /// An integer (speaker index) which represents the speaker with the highest frequency,
-        /// This is the speaker assigned to the word.
-        /// </returns>
+        /// <returns>An integer (speaker index) which represents the speaker with the highest frequency,
+        /// This is the speaker assigned to the word.</returns>
         /// <remarks>
         /// The most probable speaker is the one assigned to the most unit segments in the word's 
         /// interval.
@@ -118,7 +116,7 @@ namespace PhenoPad.SpeechService
         /// </remarks>
         public int determineSpeaker()
         {
-            /*---- Count number of segment assigned with each speaker ----*/
+            // Count number of segment assigned with each speaker
             Dictionary<int, int> votes = new Dictionary<int, int>();
             foreach (int i in smallSegSpeakers)
             {

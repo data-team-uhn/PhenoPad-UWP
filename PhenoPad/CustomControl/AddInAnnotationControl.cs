@@ -55,7 +55,7 @@ namespace PhenoPad.CustomControl
             this.InitializeComponent();
             rootPage = MainPage.Current;
 
-            /*---- Setting pre-saved configurations of the control ----*/
+            // Setting pre-saved configurations of the control
             {
                 anno_type = type;
                 addinType = AddinType.EHR;
@@ -103,7 +103,7 @@ namespace PhenoPad.CustomControl
             inkCanvas.InkPresenter.StrokesCollected += inkCanvas_StrokesCollected;
 
 
-            /*---- control transform group binding ----*/
+            // Control transform group binding
             {
                 TransformGroup tg = new TransformGroup();
                 viewFactor = new ScaleTransform();
