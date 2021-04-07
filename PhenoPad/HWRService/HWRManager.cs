@@ -44,7 +44,7 @@ namespace PhenoPad.HWRService
     /// </summary>
     class HWRManager
     {
-        //default Abbreviation detection IP Address
+        // default Abbreviation detection IP Address
         Uri ipAddr = new Uri("http://137.135.117.253:8000/");
 
         public static HWRManager sharedHWRManager;
@@ -85,16 +85,19 @@ namespace PhenoPad.HWRService
             }
         }
 
-        public Dictionary<string,List<string>> getDictionary() {
+        public Dictionary<string,List<string>> getDictionary()
+        {
             return abbrDict;
         }
 
-        public void setIPAddr(Uri newAddr) {
+        public void setIPAddr(Uri newAddr)
+        {
             if (newAddr.IsAbsoluteUri)
                 ipAddr = newAddr; 
         }
 
-        public string getIPAddr() {
+        public string getIPAddr()
+        {
             return ipAddr.ToString();
         }
 
@@ -104,10 +107,10 @@ namespace PhenoPad.HWRService
             {
                 var recognitionResults = await inkRecognizerContainer.RecognizeAsync(container, target);
 
-                //if there are avilable recognition results, add to recognized text list    
+                // if there are avilable recognition results, add to recognized text list    
                 if ( recognitionResults != null && recognitionResults.Count > 0)
                 {
-                    //only reorder the wo
+                    // only reorder the wo
                     if (!fromEHR)
                         recognitionResults = recognitionResults.OrderBy(x => x.BoundingRect.X).ToList();
 
@@ -122,7 +125,7 @@ namespace PhenoPad.HWRService
                         
                         List<string> parsedRes = StripSymbols(r.GetTextCandidates().ToList());
                         alternatives.Add(parsedRes);
-                        //by default selects the most match candidate word 
+                        // by default selects the most match candidate word 
                         sentence.Add(parsedRes.ElementAt(0));
                         HWRRecognizedText rt = new HWRRecognizedText();
                         rt.candidateList = parsedRes;
@@ -133,7 +136,7 @@ namespace PhenoPad.HWRService
                         ind++;
                     }
 
-                    //triggers server side abbreviation detection
+                    // triggers server side abbreviation detection
                     if (MainPage.Current.abbreviation_enabled && !fromEHR)
                     {
                         TriggerServerRecognition(lineNum, sentence, alternatives, recogResults);
@@ -158,6 +161,7 @@ namespace PhenoPad.HWRService
                 sentence += word + " ";
             return sentence;
         }
+
         public List<String> StripSymbols(List<String> unprocessed) {
 
             List<String> parsed = new List<string>();
@@ -170,7 +174,8 @@ namespace PhenoPad.HWRService
             return parsed;
         }
 
-        public async void TriggerServerRecognition(int lineNum, List<string> sentence, List<List<string>> alternatives, List<HWRRecognizedText>original ) {
+        public async void TriggerServerRecognition(int lineNum, List<string> sentence, List<List<string>> alternatives, List<HWRRecognizedText>original )
+        {
             try
             {               
                 List<HWRRecognizedText> recogResults = new List<HWRRecognizedText>();
@@ -204,18 +209,18 @@ namespace PhenoPad.HWRService
             catch (Exception e) {
                 LogService.MetroLogger.getSharedLogger().Error(e.Message);
             }
-            //return null;
         }
 
-        public async Task<string> GetServerRecognition(HTTPRequest rawdata) {
+        public async Task<string> GetServerRecognition(HTTPRequest rawdata)
+        {
             try
             {
-                //Create an HTTP client object
+                // Create an HTTP client object
                 HttpClient httpClient = new HttpClient();
-                //Add a user-agent header to the GET request. 
+                // Add a user-agent header to the GET request. 
                 var headers = httpClient.DefaultRequestHeaders;
-                //The safe way to add a header value is to use the TryParseAdd method and verify the return value is true,
-                //especially if the header value is coming from user input.
+                // The safe way to add a header value is to use the TryParseAdd method and verify the return value is true,
+                // especially if the header value is coming from user input.
                 string header = "ie";
                 if (!headers.UserAgent.TryParseAdd(header))
                 {
@@ -229,19 +234,18 @@ namespace PhenoPad.HWRService
 
                 Uri requestUri = ipAddr;
 
-                //Send the GET request asynchronously and retrieve the response as a string.
+                // Send the GET request asynchronously and retrieve the response as a string.
                 HttpResponseMessage httpResponse = new HttpResponseMessage();
                 string httpResponseBody = "";
 
                 string rawdatastr = JsonConvert.SerializeObject(rawdata);
                 HttpStringContent data = new HttpStringContent(rawdatastr, UnicodeEncoding.Utf8, "application/json");
-                //Debug.WriteLine(data);
+
                 httpResponse = await httpClient.PostAsync(requestUri, data);
                 httpResponse.EnsureSuccessStatusCode();
                 httpResponseBody = await httpResponse.Content.ReadAsStringAsync();
-                //Debug.WriteLine(httpResponseBody);
-                return httpResponseBody;
 
+                return httpResponseBody;
             }
             catch (System.Net.Http.HttpRequestException he)
             {
@@ -263,28 +267,33 @@ namespace PhenoPad.HWRService
 
             List<HWRRecognizedText> recogResults = new List<HWRRecognizedText>();
             recogResults = processAlternative(result.alternatives, original);
-            //if server don't have any alternatives, process abbreviation using microsoft's result
-            if (recogResults == null || recogResults.Count == 0) 
+            // if server don't have any alternatives, process abbreviation using microsoft's result
+            if (recogResults == null || recogResults.Count == 0)
+            { 
                 recogResults = processAbbr(result.abbreviations, original);
-            //if server has updated alternatives, use server's result to process abbreviation
+            }
+            // if server has updated alternatives, use server's result to process abbreviation
             else
+            { 
                 recogResults = processAbbr(result.abbreviations, recogResults);
+            }
 
             return recogResults;           
         }
+
         public List<HWRRecognizedText> processAbbr(List<Abbreviation> abbrs, List<HWRRecognizedText> original)
         {
-            //05/28/2019 revised version of processAbbr, instead of adding both shortform and extended form, add abbr alternatives to candidate List of shortform and return updated list of HWRs
+            // 05/28/2019 revised version of processAbbr, instead of adding both shortform and extended form, add abbr alternatives to candidate List of shortform and return updated list of HWRs
             List<HWRRecognizedText> recogAb = new List<HWRRecognizedText>();
             recogAb.AddRange(original);
             foreach (Abbreviation ab in abbrs)
             {
-                //the word index that has abbreviations
+                // the word index that has abbreviations
                 int index = Convert.ToInt32(ab.word_pos);
                 HWRRecognizedText word = recogAb[index];
                 List<string> res = ab.abbr_list;
 
-                //replacing extended form with bracketed format
+                // replacing extended form with bracketed format
                 for (int i = 0; i < res.Count; i++)
                 {
                     res[i] = "(" + res[i] + ")";
@@ -295,12 +304,17 @@ namespace PhenoPad.HWRService
 
                 //updates abbreviation dictionary
                 if (abbrDict.ContainsKey($"{sentence[index].ToLower()}"))
+                { 
                     abbrDict[$"{sentence[index].ToLower()}"] = ab.abbr_list;
+                }
                 else
+                { 
                     abbrDict.Add($"{sentence[index].ToLower()}", ab.abbr_list);
+                }
             }
             return recogAb;
         }
+
         public List<HWRRecognizedText> processAlternative(List<List<string>> alter, List<HWRRecognizedText> original)
         {
             if (alter == null)
@@ -320,12 +334,12 @@ namespace PhenoPad.HWRService
                 count++;
             }
             return recogResults;
-
         }
+
         private void UpdateTimer_Tick(object sender, object e)
         {
             updateTimer.Stop();
-            //Abort this request if update is already in process
+            // Abort this request if update is already in process
             if (serverHWRSem.CurrentCount == 0)
             {
                 updateTimer.Start();
@@ -352,24 +366,26 @@ namespace PhenoPad.HWRService
                 serverHWRSem.Release();
             }
         }
-
     }
 
 
     // ============================================= CLASSES FOR PARSING JSON BODY ==================================================
-    public class HTTPRequest {
+    public class HTTPRequest
+    {
         public string sentence { get; set; }
         public List<List<string>> alternatives { get; set; }
         public string new_request { get; set; }
 
         public HTTPRequest() { }
-        public HTTPRequest(string sentence, List<List<string>> alter, string rtype) {
+        public HTTPRequest(string sentence, List<List<string>> alter, string rtype)
+        {
             this.sentence = sentence;
             alternatives = alter;
             new_request = rtype;
         }
     }
-    public class HTTPResponse {
+    public class HTTPResponse
+    {
         public List<Abbreviation> abbreviations { get; set; }
         public List<List<String>> alternatives { get; set; }
         public string result { get; set; }
@@ -391,18 +407,17 @@ namespace PhenoPad.HWRService
         public List<string> names { get; set; }
     }
     //============================================== CLASS FOR SERVER RETURNED HWR ==================================================
-    public class ServerHWRResult {
+    public class ServerHWRResult
+    {
         public int lineNum;
         public DateTime InitialRequestTime;//the initial time set when Phenopad first sends the request to server
         public List<HWRRecognizedText> results; //the server's return result
 
-        public ServerHWRResult(int lineNum, DateTime time) {
+        public ServerHWRResult(int lineNum, DateTime time)
+        {
             this.lineNum = lineNum;
             InitialRequestTime = time;
             results = new List<HWRRecognizedText>();
         }
     }
-
-
-
 }

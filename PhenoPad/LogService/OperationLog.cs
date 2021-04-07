@@ -104,7 +104,7 @@ namespace PhenoPad.LogService
         /// </remarks>
         public async void Log(OperationType opType, params string[] args)
         {
-            //Logs an operation based on its type with varying number of arguments
+            // Logs an operation based on its type with varying number of arguments
             string log = "";
             switch (opType)
             {
@@ -148,13 +148,13 @@ namespace PhenoPad.LogService
                     log = $"{GetTimeStamp()}|Alternative| {args[0]} | {args[1]} | {args[2]}";
                     break;
             }
-            //only adds the log if it's got different content from the previous log 
+            // only adds the log if it's got different content from the previous log 
             if (!CheckIfSameLog(log))
             {
                 CacheLogs.Add(log);
                 lastHWRLog = log;
             }
-            //TODO: Question: what does this part do?
+
             await Windows.ApplicationModel.Core.CoreApplication.MainView.CoreWindow.Dispatcher.RunAsync(CoreDispatcherPriority.Normal,
                 () =>
                 {
@@ -196,14 +196,6 @@ namespace PhenoPad.LogService
         {
             DateTime now = DateTime.Now;
             return now.ToString();
-            //return string.Format(System.Globalization.CultureInfo.InvariantCulture,
-            //                     "{0:D4}{1:D2}{2:D2}-{3:D2}{4:D2}{5:D2}",
-            //                     now.Year,
-            //                     now.Month,
-            //                     now.Day,
-            //                     now.Hour,
-            //                     now.Minute,
-            //                     now.Second);
         }
 
         /// <summary>
@@ -214,11 +206,12 @@ namespace PhenoPad.LogService
             CacheLogs.Clear();
         }
 
+        /// <summary>
+        /// Flushes the logs in current program to local disk
+        /// </summary>
         public async void FlushLogToDisk(object sender = null, object e = null)
         {
-            /// <summary>
-            /// Flushes the logs in current program to local disk
-            /// </summary>
+
             FlushTimer.Stop();
             if (CacheLogs.Count > 0)
             {
@@ -252,23 +245,21 @@ namespace PhenoPad.LogService
             return parsed;
         }
 
-        
+
+        /// <summary>
+        /// parses a log line to operationitem to be displayed in view mode,
+        /// currently not all logs will be displayed
+        /// </summary>
         public async Task<List<NoteLineViewControl>> ParseOperationItems(Notebook notebook, List<TextMessage>conversations)
         {
-            /// <summary>
-            /// parses a log line to operationitem to be displayed in view mode,
-            /// currently not all logs will be displayed
-            /// </summary>
-
             List<NoteLineViewControl> opitems = new List<NoteLineViewControl>();
 
-            //Parsing information from log file
+            // Parsing information from log file
             List<string> logs = await FileManager.getSharedFileManager().GetLogStrings(notebook.id);
 
             if (logs != null)
             {
-                
-                //Gets all stored pages and notebook object from the disk
+                // Gets all stored pages and notebook object from the disk
                 List<string> pageIds = await FileManager.getSharedFileManager().GetPageIdsByNotebook(notebook.id);
                 List<Phenotype> savedPhenotypes = await FileManager.getSharedFileManager().GetSavedPhenotypeObjectsFromXML(notebook.id);
                 List<InkStroke> allstrokes = new List<InkStroke>();
@@ -290,8 +281,7 @@ namespace PhenoPad.LogService
 
                 }
 
-
-                //selective parse useful log for display
+                // selectively parse useful log for display
                 foreach (string line in logs)
                 {
                     List<string> segment = line.Split('|').ToList();
@@ -349,6 +339,7 @@ namespace PhenoPad.LogService
                             }
 
                             break;
+
                         case ("ADDIN"):
                             string name = segment[2].Trim();
                             Debug.WriteLine(name);
@@ -366,7 +357,7 @@ namespace PhenoPad.LogService
                     }
                 }
                 //TODO
-                //1. add word blocks for lines           
+                // 1. add word blocks for lines           
                 foreach (var l in opitems.Where(x => x.type == "Stroke"))
                 {
                     l.LoadPhenotypes(savedPhenotypes);
@@ -375,15 +366,13 @@ namespace PhenoPad.LogService
                     l.strokeCanvas.Height = rect.Height;
                     l.strokeCanvas.Width = rect.Width;
                 }
-                //parsing transcripts
+                // parsing transcripts
                 foreach (var t in conversations)
                 {
                     NoteLineViewControl line = opitems.Where(x=> x.keyTime >= t.DisplayTime.Add(TimeSpan.FromSeconds(1)*-1) && x.keyTime <= t.DisplayTime.Add(TimeSpan.FromSeconds(1))).FirstOrDefault();
                     if (line == null)
                     {
                         line = new NoteLineViewControl(t.DisplayTime, -1, "SPEECH");
-                        //line.strokeGrid.Visibility = Visibility.Collapsed;
-                        //line.chatGrid.Visibility = Visibility.Visible;
                     }
                     line.SetChatList(conversations.Where(x => x.Body == t.Body).ToList());
                     int numLoaded = await line.LoadPhenotypes(savedPhenotypes);
@@ -413,16 +402,16 @@ namespace PhenoPad.LogService
         public DateTime timeEnd;//for strokes
         
 
-        //attributes for stroke
-        //two ways of arranging strokes:by lines recognized using HWR or timestamp (display whenever there's a gap of time)
+        // attributes for stroke
+        // two ways of arranging strokes:by lines recognized using HWR or timestamp (display whenever there's a gap of time)
         public List<uint> strokeID;
         public int lineID; // probably need this for line ordering
 
-        //attributes for HWR/Speech
+        // attributes for HWR/Speech
         public string context;
         public Phenotype phenotype;//list of UI elements for display
 
-        //attributes for phenotypes
+        // attributes for phenotypes
         public string source;
 
         public OperationItem()
