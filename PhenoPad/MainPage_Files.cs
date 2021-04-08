@@ -97,26 +97,25 @@ namespace PhenoPad
             curPage.Visibility = Visibility.Visible;
         }
 
+        /// <summary>
+        /// Initializes the notebook by loading from pre-existing local save file.
+        /// </summary>
         public async void InitializeNotebookFromDisk()
         {
-            /// <summary>
-            /// Initializes the notebook by loading from pre-existing local save file.
-            /// </summary>
+
             LoadingPopup.IsOpen = true;
-            //NotifyUser("Loading Notebook ...", NotifyType.StatusMessage, 3);
             MetroLogger.getSharedLogger().Info("Initializing notebook from disk ...");
             PhenoMana.clearCache();
             try
             {
-
-                //If notebook file exists, continues with loading...
+                // if notebook file exists, continues with loading...
                 notebookObject = await FileManager.getSharedFileManager().GetNotebookObjectFromXML(notebookId);
 
                 if (notebookObject == null) {
                     Debug.WriteLine("notebook Object is null");
                 }
 
-                //Gets all stored pages and notebook object from the disk
+                // gets all stored pages and notebook object from the disk
                 List<string> pageIds = await FileManager.getSharedFileManager().GetPageIdsByNotebook(notebookId);
 
                 bool cur_mic = ConfigService.ConfigService.getConfigService().IfUseExternalMicrophone();
@@ -125,27 +124,26 @@ namespace PhenoPad
                 else
                     ExterMicRadioButton_Checked();
 
-                //if (notebookObject != null)
                 noteNameTextBox.Text = notebookObject.name;
 
-                //TODO: rephrase this
                 // Get the stored conversation transcripts and audio names from XML meta if they exist
                 conversations =  await FileManager.getSharedFileManager().GetSavedTranscriptsFromXML(notebookId);
                 if (conversations != null)
                     Current.conversations = conversations;
                 else
                     Current.conversations = new List<TextMessage>();
-                //pastchatView.ItemsSource = conversations;
                 List<string> audioNames = await FileManager.getSharedFileManager().GetSavedAudioNamesFromXML(notebookId);
                 if (audioNames != null)
                     this.SavedAudios = audioNames;
                 Debug.WriteLine("mainpage audionames null" + audioNames == null);
 
                 SpeechPage.Current.updateChat();
-                //Gets all saved phenotypes from XML meta
+                // Gets all saved phenotypes from XML meta
                 List<Phenotype> phenos = await FileManager.getSharedFileManager().GetSavedPhenotypeObjectsFromXML(notebookId);
                 if (phenos != null && phenos.Count > 0)
+                { 
                     PhenotypeManager.getSharedPhenotypeManager().addPhenotypesFromFile(phenos);
+                }
 
                 //Gets all phenotype candidates from XML meta
                 bool init_analyze = false;
@@ -159,7 +157,7 @@ namespace PhenoPad
                 notePages = new List<NotePageControl>();
                 pageIndexButtons = new List<Button>();
                 bool has_EHR = false;
-
+                //
                 for (int i = 0; i < pageIds.Count; ++i)
                 {
                     NotePageControl aPage = new NotePageControl(notebookObject.name, i.ToString());
@@ -169,60 +167,61 @@ namespace PhenoPad
 
                     string text = await FileManager.getSharedFileManager().LoadNoteText(notebookId, pageIds[i]);
                     aPage.setTextNoteEditBox(text);
-                    //check if there's an EHR file in the page
+                    // Check if there's an EHR file in the page
                     StorageFile ehr = await FileManager.getSharedFileManager().GetNoteFileNotCreate(notebookId, i.ToString(), NoteFileType.EHR);
-                    if (ehr != null) {
+                    if (ehr != null)
+                    {
                         has_EHR = true;
                         await aPage.SwitchToEHR(ehr);
                     }
 
-                    //load strokes and parse strokes to line to dictionary
+                    // Load strokes and parse strokes to line to dictionary
                     bool result = await FileManager.getSharedFileManager().LoadNotePageStroke(notebookId, pageIds[i], aPage);
                     aPage.InitAnalyzeStrokes();
                     
-                    //load image/drawing addins
+                    // Load image/drawing addins
                     List<ImageAndAnnotation> imageAndAnno = await FileManager.getSharedFileManager().GetImgageAndAnnotationObjectFromXML(notebookId, pageIds[i]);
                     if (imageAndAnno == null) {
                     }
                     else
                     {
-                        //loop to add actual add-in to canvas but hides it depending on its inDock value
+                        // loop to add actual add-in to canvas but hides it depending on its inDock value
                         foreach (var ia in imageAndAnno)
+                        { 
                             aPage.loadAddInControl(ia);
+                        }
                     }
 
                     List<RecognizedPhrases> recogPhrases = await FileManager.getSharedFileManager().GetRecognizedPhraseFromXML(notebookId, pageIds[i]);
                     if (recogPhrases != null && recogPhrases.Count > 0)
                         aPage.loadRecognizedPhrases(recogPhrases);
 
-                    //if no saved phenotype candidates, initial analyze on each page 
+                    // If no saved phenotype candidates, initial analyze on each page 
                     if (init_analyze)
                         aPage.initialAnalyze();
                     else {
                         aPage.initialAnalyzeNoPhenotype();
                     }
                 }
+
                 curPage = notePages[0];
                 curPageIndex = 0;
                 PageHost.Content = curPage;
                 setPageIndexText(curPageIndex);
-                //setNotePageIndex(curPageIndex);
-                //shows add-in icons into side bar
+
+                // Shows add-in icons into side bar
                 var addins = await curPage.GetAllAddInObjects();
                 showAddIn(addins);
 
-
-                //setting initial page to first page and auto-start analyzing strokes
+                // Set initial page to first page and auto-start analyzing strokes
                 if (!has_EHR)
                 {
-                    //initializing for regular note page
+                    // initializing for regular note page
                     inkCanvas = notePages[0].inkCan;
                 }
                 else {
-                    //current implementation assumes if there's ehr, it must be on first page
+                    // current implementation assumes if there's ehr, it must be on first page
                     inkCanvas = notePages[0].ehrPage.annotations;
-
-                    //curPage.ehrPage.SlideCommentsToSide();
                 }
                 OperationLogger.getOpLogger().SetCurrentNoteID(notebookId);
                 var count = PhenoMana.ShowPhenoCandAtPage(curPageIndex);
@@ -236,7 +235,9 @@ namespace PhenoPad
             }
             catch (NullReferenceException ne)
             {
-                ////NullReferenceException is very likely to happen when things aren't saved properlly during debugging state due to force quit
+                // Note: NullReferenceException is very likely to happen 
+                //       when things aren't saved properlly during debugging 
+                //       state due to force quit
                 MetroLogger.getSharedLogger().Error( ne + ne.Message );
                 await PromptRemakeNote(notebookId);
                 return;
@@ -245,18 +246,16 @@ namespace PhenoPad
             {
                 MetroLogger.getSharedLogger().Error($"Failed to Initialize Notebook From Disk:{e}:{e.Message}");
             }
-
         }
-        
-        
+
+        /// <summary>
+        /// Initializes the EHR Text file from a picked .txt file
+        /// </summary>
         public async void InitializeEHRNote(StorageFile file)
         {
-            /// <summary>
-            /// Initializes the EHR Text file from a picked .txt file
-            /// </summary>
             PhenoMana.clearCache();
 
-            //if user cancels choosing a file or file is not valid, just create a new notebook
+            // If user cancels choosing a file or file is not valid, just create a new notebook
             if (file == null) {
                 NotifyUser("No EHR file, please paste EHR text",NotifyType.StatusMessage,2);
             }
@@ -279,12 +278,16 @@ namespace PhenoPad
             notePages = new List<NotePageControl>();
             pageIndexButtons = new List<Button>();
 
-            //initializes audio microphone service
+            // Initializs audio microphone service
             bool cur_mic = ConfigService.ConfigService.getConfigService().IfUseExternalMicrophone();
             if (cur_mic == false)
+            { 
                 SurfaceMicRadioButton_Checked();
+            }
             else
+            { 
                 ExterMicRadioButton_Checked();
+            }
 
             NotePageControl aPage = new NotePageControl(notebookId, "0");
             notePages.Add(aPage);
@@ -310,36 +313,34 @@ namespace PhenoPad
             curPage.Visibility = Visibility.Visible;
         }
 
-
-        public async Task PromptRemakeNote(string notebookId) {
+        public async Task PromptRemakeNote(string notebookId)
+        {
             var messageDialog = new MessageDialog("This Notebook seems to be corrupted and cannot be loaded, please recreate a new note.");
             messageDialog.Title = "Error";
             messageDialog.Commands.Add(new UICommand("OK") { Id = 0 });
-            // Set the command that will be invoked by default
             messageDialog.DefaultCommandIndex = 0;
-            // Show the message dialog
+
             await messageDialog.ShowAsync();
+
             await FileManager.getSharedFileManager().DeleteNotebookById(notebookId);
             Frame.Navigate(typeof(PageOverview));
         }
 
 
-        
+        /// <summary>
+        /// Save everything to disk, include: 
+        /// handwritten strokes, typing words, photos and annotations, drawing, collected phenotypes
+        /// </summary>
         public async Task<bool> saveNoteToDisk()
         {
-            /// <summary>
-            /// Save everything to disk, include: 
-            /// handwritten strokes, typing words, photos and annotations, drawing, collected phenotypes
-            /// </summary>
             
-            //locks semaphore before accessing
-            await savingSemaphoreSlim.WaitAsync();
+            await savingSemaphoreSlim.WaitAsync(); // locks semaphore before accessing
             bool pgResult = true;
             bool flag = false;
             bool result2 = false;
             try
             {
-                // save note pages one by one
+                // Save note pages one by one
                 foreach (var page in notePages)
                 {
                     await CoreApplication.MainView.CoreWindow.Dispatcher.RunAsync(
@@ -353,9 +354,9 @@ namespace PhenoPad
                         }
                     );
                 }
-                //save the transcripts from past speeches;
-                await Current.SaveCurrentConversationsToDisk();
-                // collected phenotypes
+                
+                await Current.SaveCurrentConversationsToDisk(); // save the transcripts from past speeches;
+
                 result2 = await FileManager.getSharedFileManager().saveCollectedPhenotypesToFile(notebookId);
                 result2 &= await FileManager.getSharedFileManager().SaveAudioNamesToXML(notebookId, SavedAudios);
 
@@ -373,22 +374,22 @@ namespace PhenoPad
             }
             finally
             {
-                //unlcoks semaphore 
                 savingSemaphoreSlim.Release();               
             }
             return pgResult && result2;
         }
 
 
-        
+        /// <summary>
+        /// Saves current added phenotypes to local file
+        /// </summary>
         public async Task<bool> AutoSavePhenotypes()
         {
-            /// <summary>
-            /// Saves current added phenotypes to local file
-            /// </summary>
             bool complete = await FileManager.getSharedFileManager().saveCollectedPhenotypesToFile(notebookId);
             if (!complete)
+            { 
                 MetroLogger.getSharedLogger().Error("Failed to auto-save collected phenotypes.");
+            }
             return complete;
         }
 
@@ -401,14 +402,13 @@ namespace PhenoPad
             bool isSuccessful = true;
             bool result;
 
-            //saving all note pages
+            // Save all note pages
             for (int i = 0; i < notePages.Count; ++i)
             {
-                // saving handwritten strokes of the page
-                result = await FileManager.getSharedFileManager().SaveNotePageStrokes(notebookId, i.ToString(), notePages[i]);
+                result = await FileManager.getSharedFileManager().SaveNotePageStrokes(notebookId, i.ToString(), notePages[i]); // save handwritten strokes of the page
             }
 
-            // collected phenotypes
+            // Collected phenotypes
             result = await FileManager.getSharedFileManager().saveCollectedPhenotypesToFile(notebookId);
             if (result)
                 Debug.WriteLine("Successfully save collected phenotypes.");
@@ -446,8 +446,7 @@ namespace PhenoPad
                 // When chosen, picker returns a reference to the selected file.
                 if (file != null)
                 {
-                    // Prevent updates to the file until updates are 
-                    // finalized with call to CompleteUpdatesAsync.
+                    // Prevent updates to the file until updates are finalized with call to CompleteUpdatesAsync.
                     Windows.Storage.CachedFileManager.DeferUpdates(file);
                     // Open a file stream for writing.
                     IRandomAccessStream stream = await file.OpenAsync(Windows.Storage.FileAccessMode.ReadWrite);
@@ -488,13 +487,15 @@ namespace PhenoPad
             FileOpenPicker openPicker = new FileOpenPicker();
             openPicker.SuggestedStartLocation = PickerLocationId.DocumentsLibrary;
             openPicker.FileTypeFilter.Add(".gif");
+
             // Show the file picker.
             StorageFile file = await openPicker.PickSingleFileAsync();
+
             // User selects a file and picker returns a reference to the selected file.
             if (file != null)
             {
-                // Open a file stream for reading.
                 IRandomAccessStream stream = await file.OpenAsync(FileAccessMode.Read);
+
                 // Read from file.
                 using (var inputStream = stream.GetInputStreamAt(0))
                 {
@@ -525,6 +526,7 @@ namespace PhenoPad
                     ds.Clear(Colors.White);
                     ds.DrawInk(currentStrokes);
                 }
+
                 // Let users choose their ink file using a file picker.
                 // Initialize the picker.
                 FileSavePicker savePicker = new FileSavePicker();
@@ -534,13 +536,12 @@ namespace PhenoPad
                 savePicker.SuggestedFileName = "InkImage";
 
                 // Show the file picker.
-                StorageFile file =
-                    await savePicker.PickSaveFileAsync();
+                StorageFile file = await savePicker.PickSaveFileAsync();
+
                 // When chosen, picker returns a reference to the selected file.
                 if (file != null)
                 {
-                    // Prevent updates to the file until updates are 
-                    // finalized with call to CompleteUpdatesAsync.
+                    // Prevent updates to the file until updates are finalized with call to CompleteUpdatesAsync.
                     CachedFileManager.DeferUpdates(file);
                     // Open a file stream for writing.
                     IRandomAccessStream stream = await file.OpenAsync(FileAccessMode.ReadWrite);
@@ -556,17 +557,14 @@ namespace PhenoPad
 
                     if (status == Windows.Storage.Provider.FileUpdateStatus.Complete)
                     {
-                        // File saved.
                         return 1;
                     }
                     else
                     {
-                        // File couldn't be saved.
                         return 0;
                     }
                 }
                 // User selects Cancel and picker returns null.
-                // Operation cancelled.
                 return 2;
             }
             return 2;
@@ -585,13 +583,15 @@ namespace PhenoPad
             openPicker.FileTypeFilter.Add(".png");
             openPicker.FileTypeFilter.Add(".jpg");
             openPicker.FileTypeFilter.Add(".tif");
+
             // Show the file picker.
             StorageFile file = await openPicker.PickSingleFileAsync();
+
             // User selects a file and picker returns a reference to the selected file.
             if (file != null)
             {
-                // Open a file stream for reading.
                 IRandomAccessStream stream = await file.OpenAsync(FileAccessMode.Read);
+
                 // Read from file.
                 using (var inputStream = stream.GetInputStreamAt(0))
                 {
@@ -607,10 +607,8 @@ namespace PhenoPad
                 stream.Dispose();
                 return true;
             }
-            // User selects Cancel and picker returns null.
-            else
+            else // User selects Cancel and picker returns null.
             {
-                // Operation cancelled.
                 return false;
             }
         }
@@ -621,7 +619,6 @@ namespace PhenoPad
         /// <remarks>
         /// Note that this function updates the notebook meta file, not AudioMeta, which stores 
         /// the name of all audios created by a notebook. 
-        /// 
         /// Currently the only audio related data in "meta" is audioCount.
         /// </remarks>
         public async void updateAudioMeta()

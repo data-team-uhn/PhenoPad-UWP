@@ -17,7 +17,7 @@ namespace PhenoPad.WebSocketService
     {
         MainPage rootPage = MainPage.Current;
 
-        // !!WARNING !! server address changes every time
+        // WARNING! server address changes every time
         private string serverAddress;
         private string serverPort;
         private uint ERROR_INTERNET_OPERATION_CANCELLED = 0x80072EF1;
@@ -28,8 +28,8 @@ namespace PhenoPad.WebSocketService
 
         public SpeechResultsSocket()
         {
-            // Socket constructor does nothing :D
         }
+
         public SpeechResultsSocket(string sAddress, string port)
         {
             this.serverAddress = sAddress;
@@ -58,39 +58,23 @@ namespace PhenoPad.WebSocketService
         /// </remarks>
         public async Task<bool> ConnectToServer()
         {
-            //TODO: investigate this
-            // By default 'HostNameForConnect' is disabled and host name validation is not required. When enabling the
-            // text box validating the host name is required since it was received from an untrusted source
-            // (user input). The host name is validated by catching ArgumentExceptions thrown by the HostName
-            // constructor for invalid input.
-            //HostName hostName = new HostName("ws://localhost:8888/client/ws/speech");
-
-
             streamSocket = new StreamWebSocket();
             streamSocket.Closed += WebSocket_ClosedAsync;
-
-            //TODO: investigate this
-            // If necessary, tweak the socket's control options before carrying out the connect operation.
-            // Refer to the StreamSocketControl class' MSDN documentation for the full list of control options.
-            //socket.Control.OutboundBufferSizeInBytes = ;
-
-            //socket.SetRequestHeader("content-type", "audio/x-raw");
-            //socket.SetRequestHeader("content-type", "audio/x-raw");
 
             try
             {
                 Debug.WriteLine(serverAddress);
                 Debug.WriteLine(serverPort + Environment.NewLine);
-                //TODO: this shouldn't be hardcoded?
+                //TODO: this shouldn't be hardcoded
                 Task connectTask = this.streamSocket.ConnectAsync(new Uri("ws://" + serverAddress + ":" + serverPort +
                                            "/client/ws/speech_result" +
                                            "?content-type=audio%2Fx-raw%2C+layout%3D%28string%29interleaved%2C+rate%3D%28int%2916000%2C+format%3D%28string%29S16LE%2C+channels%3D%28int%291&manager_id=666")).AsTask();
-                //Task connectTask = this.streamSocket.ConnectAsync(new Uri("ws://" + serverAddress + ":" + serverPort +
-                //           "/client/ws/speech_result")).AsTask();
 
                 await connectTask;
                 if (connectTask.Exception != null)
+                { 
                     LogService.MetroLogger.getSharedLogger().Error("connectTask.Exception:" + connectTask.Exception.Message);
+                }
                 dataWriter = new DataWriter(this.streamSocket.OutputStream);
 
                 return true;
@@ -103,7 +87,6 @@ namespace PhenoPad.WebSocketService
                 return false;
             }
         }
-
 
         public async Task<bool> SendBytesAsync(byte[] message)
         {
@@ -144,16 +127,16 @@ namespace PhenoPad.WebSocketService
                     returnMessage = readPacket.ReadString(buffLen);
                 }
                 return returnMessage;
-
             }
             catch (Exception exp)
             {
-                //This handles the case where we force quit 
+                // Handles the case where we force quit 
                 if (exp.HResult == (int)ERROR_INTERNET_OPERATION_CANCELLED)
                 {
                     LogService.MetroLogger.getSharedLogger().Info("ERROR_INTERNET_OPERATION_CANCELLED.");
                     return "CONNECTION_CANCELLED";
                 }
+
                 else
                 {
                     LogService.MetroLogger.getSharedLogger().Error($"Issue receiving:{exp.Message}");
@@ -166,7 +149,6 @@ namespace PhenoPad.WebSocketService
         /// <summary>
         /// Writes EOS (End of Stream) message to the speech server and disposes resources.
         /// </summary>
-        /// <returns>an awaitable task</returns>
         public async Task CloseConnnction()
         {
             if (streamSocket == null)
@@ -190,23 +172,22 @@ namespace PhenoPad.WebSocketService
 
         public void AbortConnection()
         {
-
             if (dataWriter != null)
                 dataWriter.Dispose();
             dataWriter = null;
             if (streamSocket != null)
                 streamSocket.Dispose();
             streamSocket = null;
-
         }
-        
+
         /// <summary>
         /// Handler function called when a stream websocket is closed.
         /// </summary>
         /// <param name="sender">the websocket being closed</param>
         /// <param name="args">contains information about reasons that the websocket was closed</param>
         /// <remarks>
-        /// Clears the SpeechResultSocket instance's streamSocket and if speech service is still running, stops the service.
+        /// Clears the SpeechResultSocket instance's streamSocket and 
+        /// if speech service is still running, stops the service.
         /// </remarks>
         private async void WebSocket_ClosedAsync(IWebSocket sender, WebSocketClosedEventArgs args)
         {
@@ -223,5 +204,4 @@ namespace PhenoPad.WebSocketService
             }
         }
     }
-
 }

@@ -17,9 +17,7 @@ namespace PhenoPad.WebSocketService
     {
         MainPage rootPage = MainPage.Current;
 
-        // !!WARNING !! server address changes every time
-        //private string serverAddress = "phenopad.ccm.sickkids.ca";
-        //private string serverPort = "8888";
+        // WARNING! server address changes every time
         public string serverAddress = "137.135.117.253";
         public string serverPort = "8080";
 
@@ -32,8 +30,8 @@ namespace PhenoPad.WebSocketService
 
         public SpeechStreamSocket()
         {
-            // Socket constructor does nothing :D
         }
+
         public SpeechStreamSocket(string sAddress, string port)
         {
             this.serverAddress = sAddress;
@@ -53,28 +51,11 @@ namespace PhenoPad.WebSocketService
             return this.serverAddress;
         }
 
-        /// <summary>
-        /// TODO...
-        /// </summary>
-        /// <returns></returns>
         public async Task<bool> ConnectToServer()
         {
-            // By default 'HostNameForConnect' is disabled and host name validation is not required. When enabling the
-            // text box validating the host name is required since it was received from an untrusted source
-            // (user input). The host name is validated by catching ArgumentExceptions thrown by the HostName
-            // constructor for invalid input.
-            //HostName hostName = new HostName("ws://localhost:8888/client/ws/speech");
-
-
             streamSocket = new StreamWebSocket();
-            //.Control.OutboundBufferSizeInBytes = 5000;
             streamSocket.Closed += WebSocket_ClosedAsync;
 
-            // If necessary, tweak the socket's control options before carrying out the connect operation.
-            // Refer to the StreamSocketControl class' MSDN documentation for the full list of control options.
-            //socket.Control.OutboundBufferSizeInBytes = ;
-
-            //socket.SetRequestHeader("content-type", "audio/x-raw");
             try
             {
                 Uri uri = new Uri("ws://" + this.serverAddress + ":" + this.serverPort +
@@ -100,7 +81,6 @@ namespace PhenoPad.WebSocketService
                 isClosed = true;
                 return false;
             }
-
         }
 
         /// <summary>
@@ -110,9 +90,9 @@ namespace PhenoPad.WebSocketService
         /// <returns>true if successful, false otherwise</returns>
         public async Task<bool> SendBytesAsync(byte[] message)
         {
-            
-            if (streamSocket == null)   //don't send anything if the stream socket has nothing
+            if (streamSocket == null)
                 return false;
+
             try
             {
                 dataWriter.WriteBytes(message);
@@ -128,10 +108,6 @@ namespace PhenoPad.WebSocketService
             }
         }
 
-        /// <summary>
-        /// TODO...
-        /// </summary>
-        /// <returns></returns>
         public async Task<String> SpeechStreamSocket_ReceiveMessage()
         {
             string returnMessage = "";
@@ -156,7 +132,6 @@ namespace PhenoPad.WebSocketService
                 if (exp.HResult == (int)ERROR_INTERNET_OPERATION_CANCELLED)
                 {
                     LogService.MetroLogger.getSharedLogger().Info("ERROR_INTERNET_OPERATION_CANCELLED.");
-
                 }
                 else
                     LogService.MetroLogger.getSharedLogger().Error($"Speechstreamsocket: Issue receiving:{exp.Message}");
@@ -180,30 +155,22 @@ namespace PhenoPad.WebSocketService
         }
 
         /// <summary>
-        /// TODO...
+        /// Gets the current datas from stream socket and dispose for disconnection.
         /// </summary>
         public async Task CloseConnnction()
         {
-            /// <summary>
-            /// Gets the current datas from stream socket and dispose for disconnection.
-            /// </summary>
             if (streamSocket == null)
                 return;
+
             try
             {
-                //using (var dataWriter = new DataWriter(this.streamSocket.OutputStream))
-                //{
                 Encoding ascii = Encoding.ASCII;
                 dataWriter.WriteBytes(ascii.GetBytes("EOS"));
                 await dataWriter.StoreAsync();
-                //dataWriter.DetachStream();
-                //}
-                //Debug.WriteLine("Sending data using StreamWebSocket: " + message.Length.ToString() + " bytes");
             }
             catch (Exception ex)
             {
                 LogService.MetroLogger.getSharedLogger().Error("Failed to close speech stream socket:" + ex.Message);
-                //MainPage.Current.NotifyUser("Failed to close websocket.", NotifyType.ErrorMessage, 2);
             }
             finally
             {
@@ -211,6 +178,7 @@ namespace PhenoPad.WebSocketService
                 streamSocket = null;
             }
         }
+
         /// <summary>
         /// Handles the event when the socket is closed by either client side or server side,
         /// and will dispose the socket if not null

@@ -20,10 +20,6 @@ namespace PhenoPad
         public static void saveSetting(string name, object val)
         {
             Windows.Storage.ApplicationDataContainer settings = Windows.Storage.ApplicationData.Current.RoamingSettings;
-
-            //settings.Values["serverIP"] = "speechengine.ccm.sickkids.ca";
-            //settings.Values["serverPort"] = 8888;
-
             settings.Values[name] = val;
         }
 
@@ -32,16 +28,5 @@ namespace PhenoPad
             Windows.Storage.ApplicationDataContainer settings = Windows.Storage.ApplicationData.Current.RoamingSettings;
             return settings.Values[name];
         }
-
     }
 }
-
-
-/*
- * 
- * 
-            Windows.Storage.ApplicationDataCompositeValue composite = new Windows.Storage.ApplicationDataCompositeValue();
-            composite["serverHost"] = "speechengine.ccm.sickkids.ca";
-            composite["serverPort"] = 8888;
-
-    */

@@ -31,12 +31,11 @@ namespace PhenoPad.WebSocketService
         public List<string> waiting_for_server { get; set; }
         public List<string> waiting_for_client { get; set; }
     }
-
     public class ServerStatusRootObject
     {
         public ServerStatus server_status { get; set; }
     }
-    //---------------
+
 
     // JSON for manager_id
     public class ManagerIDRootObject
@@ -62,7 +61,7 @@ namespace PhenoPad.WebSocketService
             }
         }
 
-        // !!WARNING !! server address changes every time
+        // WARNING! server address changes every time
         private static string serverAddress = "phenopad.ccm.sickkids.ca";
         private static string serverPort = "8888";
 
@@ -81,6 +80,7 @@ namespace PhenoPad.WebSocketService
         public UIWebSocketClient()
         {
         }
+
         /// <summary>
         /// Tries to connect to speech engine 
         /// </summary>
@@ -122,7 +122,6 @@ namespace PhenoPad.WebSocketService
                                                 Windows.Networking.Sockets.WebSocketClosedEventArgs args)
         {
             LogService.MetroLogger.getSharedLogger().Info("WebSocket_Closed; Code: " + args.Code + ", Reason: \"" + args.Reason + "\"");
-            // Add additional code here to handle the WebSocket being closed.
         }
 
 
@@ -172,15 +171,12 @@ namespace PhenoPad.WebSocketService
                             {
                                 if (json.server_status.waiting_for_server.Contains("ASR") == false)
                                 {
-                                    //MainPage.Current.setStatus("recognition");
                                 }
                                 if (json.server_status.waiting_for_server.Contains("Diarization") == false)
                                 {
-                                    //MainPage.Current.setStatus("diarization");
                                 }
                                 if (json.server_status.ready)
                                 {
-                                    //MainPage.Current.setStatus("ready");
                                 }
                             }
                         });
