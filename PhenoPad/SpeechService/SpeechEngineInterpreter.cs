@@ -130,7 +130,7 @@ namespace PhenoPad.SpeechService
                 }
             }
 
-            /*---- Determine the most probable speaker ----*/
+            // Determine the most probable speaker
             int highestVotes = 0;
             int highestSpeaker = -1;
             foreach (KeyValuePair<int, int> entry in votes)
@@ -314,19 +314,18 @@ namespace PhenoPad.SpeechService
                             var interval = new TimeInterval(start, end);
                             this.insertToDiarizationGraph(interval, speaker);
                         }
-
                         // Form TextMessage objects and update conversation panels
                         this.assignSpeakerToWords();
                         this.formConversation(full);
 
-                        // so that we don't have an overflow of words (POSSIBLY OUTDATED)
+                        // so that we don't have an overflow of words
                         this.constructTempSentence();
                     }
                 }
 
                 // Update the temp speech bubble on MainPage
                 this.realtimeSentences = this.constructTempSentence();
- 
+                //
                 if (!json.result.final)
                 {
                     this.realtimeLastSentence = json.result.hypotheses[0].transcript.Trim();
@@ -344,8 +343,7 @@ namespace PhenoPad.SpeechService
                             this.realtimeConversation.UpdateLastMessage(constructRealtimeTempBubble(), false);
                         }
                         this.tempSentence = String.Empty;
-                    });
-                    
+                    }); 
                 }
                 else
                 {
@@ -353,7 +351,8 @@ namespace PhenoPad.SpeechService
                     this.formRealtimeConversation();
                 }
             }
-            catch (Exception e) {
+            catch (Exception e)
+            {
                 LogService.MetroLogger.getSharedLogger().Error(e.Message);
             }
         }
@@ -398,7 +397,6 @@ namespace PhenoPad.SpeechService
         /// <returns>a list of strings</returns>
         private List<string> constructTempSentence()
         {
-            // Show all words that have not been diarized
             List<string> sentences = new List<string>();
             string result = String.Empty;
 
@@ -421,7 +419,6 @@ namespace PhenoPad.SpeechService
             return sentences;
         }
 
-        //NOTE: no reference found for this function
         /// <summary>
         /// (OUTDATED) Returns a TextMessage instance which represents a temporary speech bubble.
         /// </summary>
@@ -486,9 +483,7 @@ namespace PhenoPad.SpeechService
 
             if (this.diarizationSmallSegs.Count > 0)
             {
-                //TODO: prev is the start time of the first unassigned unit segment,
-                //      needs a better name
-                // Since each pair in the diariszation graph contains the start time and speaker index of
+                // Since each pair in the diarization graph contains the start time and speaker index of
                 // an unit audio segment, the start time of the first unassigned segment is the start time
                 // of the last assigned segment + 0.1s
                 prev = (double)(this.diarizationSmallSegs.Last().first) / (double)(10.0) + 0.1;
@@ -508,7 +503,6 @@ namespace PhenoPad.SpeechService
             }
             else
             {
-                //TODO: is this the best way to do this?
                 // If the new utterance starts before the last diarized segment ends (i.e. overlapping diarization results), 
                 // simply overwrite the overlapping segments.
                 for (int i = Convert.ToInt32(prev * 10); i < Convert.ToInt32(interval.end * 10); i += 1)
@@ -518,7 +512,6 @@ namespace PhenoPad.SpeechService
             }
         }
 
-        //TODO: consider changing the name
         /// <summary>
         /// Assign speakers from the diarized unit segments to each corresponding word's speaker array.
         /// </summary>
@@ -529,20 +522,17 @@ namespace PhenoPad.SpeechService
         /// </remarks>
         private void assignSpeakerToWords()
         {
-            //TODO: shouldn't this update happen after forming conversation?
-            this.constructDiarizedSentenceIndex = this.diarizationWordIndex;    // construct diarized sentences from previous diarized word index
+            this.constructDiarizedSentenceIndex = this.diarizationWordIndex; // construct diarized sentences from previous diarized word index
 
-            /*---- Assign speakers to each word's unit segment array ----*/
+            // Assign speakers to each word's unit segment array
             bool brokeOut = false;
             for (int wordIndex = this.diarizationWordIndex; wordIndex < this.words.Count; wordIndex++)
             {
                 WordSpoken word = this.words[wordIndex];
                 for (int i = 0; i < word.smallSegSpeakers.Length; i++)
                 {
-                    //TODO: consider rewriting as function
-                    
                     double segStartTime = word.getTimeByIndex(i);
-                    int diarizationSmallSegIndex = (int)(segStartTime / 0.1);   //TODO: better name
+                    int diarizationSmallSegIndex = (int)(segStartTime / 0.1);
                     
                     // Note: If diarization results hasn't caught up with ASR results,
                     //       the index of the next word to assign speaker to is the index
@@ -569,16 +559,12 @@ namespace PhenoPad.SpeechService
             this.latestSentenceIndex = this.diarizationWordIndex;
         }
 
-        /// <summary>
-        /// TODO...
-        /// </summary>
-        /// <param name="text"></param>
-        /// <returns></returns>
         public async Task<List<Phenotype>> queryPhenoService(string text)
         {
             var phenos = await PhenotypeManager.getSharedPhenotypeManager().annotateByNCRAsync(text);
             if (phenos == null)
                 return new List<Phenotype>();
+
             //only log from speech if there are phenotypes detected,otherwise would be really crowded
             if (phenos.Keys.Count() > 0)
                 OperationLogger.getOpLogger().Log(OperationType.Speech, text, phenos);
@@ -591,8 +577,7 @@ namespace PhenoPad.SpeechService
 
             if (phenolist != null && phenolist.Count > 0)
             {
-                //phenolist.Reverse();
-                //need this runasync function otherwise will give threading error
+                // need this runasync function otherwise will give threading error
                 Windows.ApplicationModel.Core.CoreApplication.MainView.CoreWindow.Dispatcher.RunAsync(CoreDispatcherPriority.Normal,
                 () =>
                 {
@@ -607,7 +592,7 @@ namespace PhenoPad.SpeechService
             return phenolist;
         }
 
-        //NOTE: this function doesn't need to return list since its return value is never used.
+        // NOTE: this function doesn't need to return list since its return value is never used.
         /// <summary>
         /// Form TextMessage objects with words and update ongoing and past conversation panels
         /// with these TextMessages.
@@ -618,13 +603,12 @@ namespace PhenoPad.SpeechService
         {
             List<TextMessage> messages = new List<TextMessage>();
 
-            // TODO: prevStart is misleading, consider changing name. This is actually the start of the next word that needs processing.
             double prevStart = 0;
             double speechEnd = 0;
             int prevSpeaker = this.lastSpeaker;
             string sentence = String.Empty;
 
-            /*---- Form sentences with newly diarized words and form TextMessage objects with sentences ----*/
+            // Form sentences with newly diarized words and form TextMessage objects with sentences
             // Note: If all sentences re-diarized, *constructDiarizedSentenceIndex* is reset to 0 and this
             //       loop reconstructs sentences & TMs with all words.
             for (int wordIndex = this.constructDiarizedSentenceIndex; wordIndex < this.diarizationWordIndex; wordIndex++)
@@ -632,14 +616,12 @@ namespace PhenoPad.SpeechService
                 if (prevStart == 0)
                     prevStart = words[wordIndex].interval.start;
 
-                //TODO: consider rewriting as function
-                /*---- Determine word speaker ----*/
+                // Determine word speaker
                 int wordProposedSpeaker = this.words[wordIndex].determineSpeaker();
                 if (wordProposedSpeaker == -1)
                     wordProposedSpeaker = prevSpeaker;
 
-                //TODO: consider rewriting condition checks into functions, e.g. "ifSpeakerChanged" and "ifSentenceEnded"
-                /*---- If detected speaker change or "." encountered, save sentence as TextMessage ----*/
+                // If detected speaker change or "." encountered, save sentence as TextMessage
                 if ((wordProposedSpeaker != prevSpeaker && sentence.Length != 0) || (words[wordIndex].word == "." && sentence.Length > 50))
                 {
                     Debug.WriteLine("speechengineinterpreter in for loop creating message");
@@ -660,7 +642,7 @@ namespace PhenoPad.SpeechService
                     sentence += " " + words[wordIndex].word;
                     prevStart = words[wordIndex].interval.start;
                 }
-                /*---- Otherwise, add word to current sentence. ----*/
+                // Otherwise, add word to current sentence
                 else
                 {
                     sentence += " " + words[wordIndex].word;
@@ -670,7 +652,6 @@ namespace PhenoPad.SpeechService
 
             if (sentence.Length > 0 && prevSpeaker != -1)
             {
-                //TODO: Question: why is queryPhenoService not called when speaker changes?
                 var phenotypes = await queryPhenoService(sentence);
                 bool hasPheno =  phenotypes.Count > 0 ? true : false;
                 var m = new TextMessage()
@@ -690,17 +671,16 @@ namespace PhenoPad.SpeechService
 
             this.lastSpeaker = prevSpeaker;
 
-            /*---- Update conversation panels with new TextMessages ----*/
+            // Update conversation panels with new TextMessages
             await Windows.ApplicationModel.Core.CoreApplication.MainView.CoreWindow.Dispatcher.RunAsync(CoreDispatcherPriority.Normal,
             () =>
             {
-                // Note: "full" denotes if the conversation has beeb re-diarized (i.e. if speakers of all utterances 
-                //       in the conversation have been re-calculated).
-                /*---- All sentences re-diarized, update ongoing conversation panel ----*/
-                //TODO: change "full" to a more descriptive name
+                // All sentences re-diarized, update ongoing conversation panel
+                // Note: *full* denotes if the conversation has beeb re-diarized 
+                //       (i.e. if speakers of all utterances in the conversation
+                //       have been re-calculated).
                 if (full)
                 {
-
                     // Note: *messages* are the list of rearranged TextMessage objects of the entire ASR session,
                     //       *conversation* (realtime speech panel) and *currentConversation* are updated to TMs
                     //       from the past sessions (in the current notebook session) + the rearranged TMs from this ASR session.  
@@ -709,8 +689,7 @@ namespace PhenoPad.SpeechService
                     this.conversation.ClearThenAddRange(temp);
                     currentConversation = temp;
                 }
-                /*---- Received new diarized TMs, update ongoing and past conversation panels ----*/
-                //NOTE: Does it make sense to update past conversation panel here?
+                // Received new diarized TMs, update ongoing and past conversation panels
                 else
                 {
                     List<TextMessage> temp = new List<TextMessage>();
@@ -719,7 +698,6 @@ namespace PhenoPad.SpeechService
                     currentConversation.AddRange(temp);
                     MainPage.Current.conversations.AddRange(temp);
                     
-                    //NOTE: Question: why is updateChat() not called when "full"?
                     SpeechPage.Current.updateChat();
                 }
             });
@@ -727,8 +705,6 @@ namespace PhenoPad.SpeechService
             return messages;
         }
 
-        //NOTE: this function might need a better name
-        //NOTE: might be better to rename realtimeConversation to tempConversation
         /// <summary>
         /// Replaces the TextMessage instances in the real-time conversation collection
         /// with the list of ones that have not been assigned speakers.
@@ -781,10 +757,7 @@ namespace PhenoPad.SpeechService
         /// </summary>
         /// <param name="content">the content to process (parse the first json block from)</param>
         /// <param name="outContent">stores content after the first json block for future use</param>
-        /// <returns>
-        /// if JSON block found: the content of the first json block as string 
-        /// else: empty string
-        /// </returns>
+        /// <returns>if JSON block found: the content of the first json block as string; else: empty string</returns>
         public static string getFirstJSON(string content, out string outContent)
         {
             int count = 0;
@@ -814,7 +787,7 @@ namespace PhenoPad.SpeechService
                 string toReturn = content.Substring(0, index + 1);
                 if (content.Length >= index + 1)
                 {
-                    outContent = content.Substring(index + 1);     // note that content is a reference
+                    outContent = content.Substring(index + 1); // note that content is a reference
                 }
                 return toReturn;
             }
@@ -863,25 +836,12 @@ namespace PhenoPad.SpeechService
         /// <summary>
         /// Checks if the on-going speech session has any content.
         /// </summary>
-        /// <returns>
-        /// (bool)true if the list of current TextMessage instances is not empty
-        /// (bool)false otherwise.
-        /// </returns>
+        /// <returns>true if the list of current TextMessage instances is not empty; false otherwise.</returns>
         public bool CurrentConversationHasContent()
         {
             return currentConversation.Count > 0;
         }
 
-        //NOTE: this method is only called once during the DEMO, might be outdated.
-        /// <summary>
-        /// Adds a TextMessage instance to the list of current TextMessage instances.
-        /// </summary>
-        /// <param name="t">The TextMessage instance to be added.</param>
-        public void addToCurrentConversation(TextMessage t)
-        {
-            currentConversation.Add(t);
-        }
         #endregion
-
     }
 }

@@ -35,26 +35,21 @@ namespace PhenoPad.SpeechService
 
         /**
         *   URL contains port localhost:5000
-        */
+        **/
         public SpeechRESTAPI()
         {
         }
 
-        /// <summary>
-        /// TODO ...
-        /// </summary>
-        /// <param name="url"></param>
         public void setupClient(String url)
         {
             client = new HttpClient();
-            // Update port # in the following line.
             client.BaseAddress = new Uri("http://" + url + ":" + this.rest_port.ToString());
             client.DefaultRequestHeaders.Accept.Clear();
             client.DefaultRequestHeaders.Accept.Add(
                 new MediaTypeWithQualityHeaderValue("application/json"));
         }
 
-        // We will never need to create or delete worker :D
+        // We will never need to create or delete worker
         public Task<WorkerInfo> changeNumSpeakers(int pid, int numspeaker)
         {
             WorkerInfo worker = new WorkerInfo
@@ -70,18 +65,15 @@ namespace PhenoPad.SpeechService
             return this.UpdateProductAsync(worker);
         }
 
-        // We will never need to create or delete worker :D
         public Task<WorkerInfo> getSpeakerInfo(int pid)
         {
             return this.GetProductAsync(pid);
         }
 
-
         private async Task<Uri> CreateProductAsync(WorkerInfo info)
         {
             HttpResponseMessage response = await client.PostAsJsonAsync(api_start, info);
             response.EnsureSuccessStatusCode();
-
             // return URI of the created resource.
             return response.Headers.Location;
         }
@@ -116,6 +108,5 @@ namespace PhenoPad.SpeechService
             HttpResponseMessage response = await client.DeleteAsync(api_start + pid.ToString());
             return response.StatusCode;
         }
-
     }
 }

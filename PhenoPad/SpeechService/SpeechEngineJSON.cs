@@ -7,48 +7,48 @@ using System.Threading.Tasks;
 namespace PhenoPad.SpeechService
 {
 
-    /*
-        Here is an example of the JSON string we expect
-        We should replace "-" in names to "_" for parsing purpose
-        {
-            "status": 0, 
-            "segment-start": 4.25, 
-            "segment-length": 1.26, 
-            "total-length": 5.75, 
-            "result": {
-                "hypotheses": [
-                    {
-                        "transcript": "hello.", 
-                        "confidence": 0.897120821134181, 
-                        "likelihood": 31.8709, 
-                        "word-alignment": [
-                            {
-                                "start": 0.48, 
-                                "confidence": 0.796075, 
-                                "word": "hello", 
-                                "length": 0.27
-                            }
-                        ]
-                    }
-                'diarization': [
-                    {
-                        'length': 22.5,
-                        'speaker': 1,
-                        'start': 22.1
-                    },
-                    {
-                        'length': 22.7,
-                        'speaker': 0,
-                        'start': 22.6
-                    },
-                ], 
-                "final": true
-                "diarization_incremental": true
-            }, 
-            "segment": 2, 
-            "id": "855626f9-d877-4a01-8677-50992ff0bd45"
-        }
-    */
+    /**
+    Here is an example of the JSON string we expect
+    We should replace "-" in names to "_" for parsing purpose
+    {
+        "status": 0, 
+        "segment-start": 4.25, 
+        "segment-length": 1.26, 
+        "total-length": 5.75, 
+        "result": {
+            "hypotheses": [
+                {
+                    "transcript": "hello.", 
+                    "confidence": 0.897120821134181, 
+                    "likelihood": 31.8709, 
+                    "word-alignment": [
+                        {
+                            "start": 0.48, 
+                            "confidence": 0.796075, 
+                            "word": "hello", 
+                            "length": 0.27
+                        }
+                    ]
+                }
+            'diarization': [
+                {
+                    'length': 22.5,
+                    'speaker': 1,
+                    'start': 22.1
+                },
+                {
+                    'length': 22.7,
+                    'speaker': 0,
+                    'start': 22.6
+                },
+            ], 
+            "final": true
+            "diarization_incremental": true
+        }, 
+        "segment": 2, 
+        "id": "855626f9-d877-4a01-8677-50992ff0bd45"
+    }
+    **/
 
     /// <summary>
     /// Represents the diarization result of an utterance.
@@ -56,9 +56,7 @@ namespace PhenoPad.SpeechService
     /// <remarks>
     /// Format: {'start': startTime, 'speaker': speakerIndex, 'end': endTime, 'angle': angleOfArrival}
     /// </remarks>
-    /// <example>
-    /// {'start': 7.328, 'speaker': 0, 'end': 9.168000000000001, 'angle': 152.97781134625265}
-    /// </example>
+    /// <example>{'start': 7.328, 'speaker': 0, 'end': 9.168000000000001, 'angle': 152.97781134625265}</example>
     public class DiarizationJSON
     {
         public double start { get; set; }
@@ -67,9 +65,6 @@ namespace PhenoPad.SpeechService
         public double angle { get; set; } 
     }
 
-    /// <summary>
-    /// TODO...
-    /// </summary>
     public class SpeechEngineJSON
     {
         public int status { get; set; }
@@ -97,13 +92,6 @@ namespace PhenoPad.SpeechService
                 output += "Temp\t";
             }
             output += "(" + segment_start.ToString() + " -> " + (segment_start + segment_length).ToString() + ") \n";
-            /**
-            if (result.diarization != null && result.diarization.Count > 0)
-            {
-                output += "Diarizations: " + (result.diarization.Count).ToString() + " \n";
-            }
-            **/
-            
             output += result.hypotheses[0].transcript;
             
             return output;
