@@ -40,10 +40,10 @@ namespace PhenoPad.SpeechService
 
     public class SpeechManager
     {
-        private string serverAddress = "speechengine.ccm.sickkids.ca"; //TODO: change this to the public server?
-        private string serverPort = "8888";
-        public static string DEFAULT_SERVER = "speechengine.ccm.sickkids.ca";
-        public static string DEFAULT_PORT = "8888";
+        private string serverAddress = "SpeechServerAddress"; // NOTE: Replace with your own speech server's ip address
+        private string serverPort = "";                       // NOTE: Replace with port #
+        public static string DEFAULT_SERVER = "DefaultSpeechServerAddress"; // NOTE: Replace
+        public static string DEFAULT_PORT = "";                             // NOTE: Replace
         public static string RESTART_AUIDO_SERVER = "TIMEOUTEXIT";
         public static bool NEED_RESTART_AUDIO = false;
         public static SpeechManager sharedSpeechManager;
@@ -297,7 +297,6 @@ namespace PhenoPad.SpeechService
                             {
                                 Debug.WriteLine("This is not diarization result.");
                             }
-
                         }
                         else
                         {

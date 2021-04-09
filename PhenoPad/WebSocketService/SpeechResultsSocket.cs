@@ -65,7 +65,7 @@ namespace PhenoPad.WebSocketService
             {
                 Debug.WriteLine(serverAddress);
                 Debug.WriteLine(serverPort + Environment.NewLine);
-                //TODO: this shouldn't be hardcoded
+
                 Task connectTask = this.streamSocket.ConnectAsync(new Uri("ws://" + serverAddress + ":" + serverPort +
                                            "/client/ws/speech_result" +
                                            "?content-type=audio%2Fx-raw%2C+layout%3D%28string%29interleaved%2C+rate%3D%28int%2916000%2C+format%3D%28string%29S16LE%2C+channels%3D%28int%291&manager_id=666")).AsTask();

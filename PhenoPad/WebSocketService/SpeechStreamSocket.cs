@@ -18,8 +18,8 @@ namespace PhenoPad.WebSocketService
         MainPage rootPage = MainPage.Current;
 
         // WARNING! server address changes every time
-        public string serverAddress = "137.135.117.253";
-        public string serverPort = "8080";
+        public string serverAddress = "SpeechServerIP"; // NOTE: replace
+        public string serverPort = "";                  // NOTE: replace
 
         private uint ERROR_INTERNET_OPERATION_CANCELLED = 0x80072EFE;
         NetworkAdapter networkAdapter;

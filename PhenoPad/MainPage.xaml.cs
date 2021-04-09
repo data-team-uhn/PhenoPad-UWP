@@ -1492,7 +1492,7 @@ namespace PhenoPad
         /// Quick plays addin dock sliding animation
         /// </summary>
         public async Task quickShowDock()
-        {>
+        {
             if (slide.X == 250)
             {
                 await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, async () =>
