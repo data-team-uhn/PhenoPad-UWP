@@ -34,6 +34,7 @@ namespace PhenoPad
     {
         private bool _isinBackground;
         private DispatcherTimer backgroundTimer;
+
         /// <summary>
         /// Initializes the singleton application object.  This is the first line of authored code
         /// executed, and as such is the logical equivalent of main() or WinMain().
@@ -42,31 +43,33 @@ namespace PhenoPad
         {
             this.InitializeComponent();
             backgroundTimer = new DispatcherTimer();
-            backgroundTimer.Interval = TimeSpan.FromMinutes(10);
+            backgroundTimer.Interval = TimeSpan.FromMinutes(10); // NOTE: the code triggered by this timer is disabled until an error is fixed
             backgroundTimer.Tick += TriggerAutoSaveOnBackground;
-            //Binding event handlers to handle app status
+            // Binding event handlers to handle app status
             {
-
-                // Subscribe to key lifecyle events to know when the app
-                // transitions to and from foreground and background.
-                // Leaving the background is an important transition
-                // because the app may need to restore UI.
+                /** Subscribe to key lifecyle events to know when the app
+                 ** btransitions to and from foreground and background.
+                 ** Leaving the background is an important transition
+                 ** because the app may need to restore UI.
+                 **/
                 EnteredBackground += AppEnteredBackground;
                 LeavingBackground += AppLeavingBackground;
                 Suspending += OnSuspending;
                 UnhandledException += OnUnhandledExceptionUI;
                 TaskScheduler.UnobservedTaskException += OnUnobservedException;
             }
-
         }
 
-        private async void TriggerAutoSaveOnBackground(object sender, object e) {
+        private async void TriggerAutoSaveOnBackground(object sender, object e)
+        {
             backgroundTimer.Stop();
             LogService.MetroLogger.getSharedLogger().Info("App background timer limit reached, will autosave note and end audio..");
             await CoreApplication.MainView.CoreWindow.Dispatcher.RunAsync(CoreDispatcherPriority.High,
-            async () => {
-                await MainPage.Current.saveNoteToDisk();
-                await MainPage.Current.KillAudioService();
+            async () => 
+            {
+                // NOTE: this function is temporarily disabled until a solution to an error is found
+                //await MainPage.Current.saveNoteToDisk();
+                //await MainPage.Current.KillAudioService();
             });
         }
 
@@ -83,10 +86,10 @@ namespace PhenoPad
             backgroundTimer.Start();
         }
 
+        // Occurs when an exception is not handled on a background thread.
+        // ie. A task is fired and forgotten Task.Run(() => {...})
         private static void OnUnobservedException(object sender, UnobservedTaskExceptionEventArgs e)
         {
-            // Occurs when an exception is not handled on a background thread.
-            // ie. A task is fired and forgotten Task.Run(() => {...})
             MetroLogger.getSharedLogger().Error($"APP has handled an Unobserved exception:{e.Exception.Message}\n");
 
             // suppress and handle it manually.
@@ -134,12 +137,10 @@ namespace PhenoPad
             {
                 // Create a Frame to act as the navigation context and navigate to the first page
                 rootFrame = new Frame();
-
                 rootFrame.NavigationFailed += OnNavigationFailed;
-
+                //
                 if (e.PreviousExecutionState == ApplicationExecutionState.Terminated)
                 {
-                    //TODO: Load state from previously suspended application
                 }
 
                 // Place the frame in the current Window
@@ -153,7 +154,6 @@ namespace PhenoPad
                     // When the navigation stack isn't restored navigate to the first page,
                     // configuring the new page by passing required information as a navigation
                     // parameter
-
                     rootFrame.Navigate(typeof(PageOverview), e.Arguments);
                 }
                 // Ensure the current window is active
@@ -205,6 +205,5 @@ namespace PhenoPad
             Task t = FileIO.WriteTextAsync(file, "This Is Application data").AsTask();
             t.Wait();
         }
-        
     }
 }

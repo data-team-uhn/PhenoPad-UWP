@@ -33,18 +33,17 @@ namespace PhenoPad
         private SemaphoreSlim savingSemaphoreSlim = new SemaphoreSlim(1);
         public bool loadFromDisk = false;
         string prefix = "transcriptions_";
+
         // Stores all TextMessages in the notebook, is the ItemSource for SpeechPage.ChatView
-        //TODO: consider renaming this to be more self-descriptive
         public List<TextMessage> conversations;
 
         //=============================================================================================
 
-        
+        /// <summary>
+        /// Initializes the new notebook and creates a locally saved file for it.
+        /// </summary>
         public async void InitializeNotebook()
         {
-            /// <summary>
-            /// Initializes the new notebook and creates a locally saved file for it.
-            /// </summary>
             LoadingPopup.IsOpen = true;
             MetroLogger.getSharedLogger().Info("Initialize a new notebook.");
             PhenoMana.clearCache();
@@ -119,11 +118,14 @@ namespace PhenoPad
                 List<string> pageIds = await FileManager.getSharedFileManager().GetPageIdsByNotebook(notebookId);
 
                 bool cur_mic = ConfigService.ConfigService.getConfigService().IfUseExternalMicrophone();
-                if (cur_mic == false) 
+                if (cur_mic == false)
+                { 
                     SurfaceMicRadioButton_Checked();
+                }
                 else
+                { 
                     ExterMicRadioButton_Checked();
-
+                }
                 noteNameTextBox.Text = notebookObject.name;
 
                 // Get the stored conversation transcripts and audio names from XML meta if they exist
@@ -145,13 +147,17 @@ namespace PhenoPad
                     PhenotypeManager.getSharedPhenotypeManager().addPhenotypesFromFile(phenos);
                 }
 
-                //Gets all phenotype candidates from XML meta
+                // Gets all phenotype candidates from XML meta
                 bool init_analyze = false;
                 List<Phenotype> phenocand = await FileManager.getSharedFileManager().GetSavedPhenotypeObjectsFromXML(notebookId,NoteFileType.PhenotypeCandidates);
                 if (phenocand != null && phenocand.Count > 0)
+                {
                     PhenotypeManager.getSharedPhenotypeManager().addPhenotypeCandidateFromFile(phenocand);
+                }
                 else if (phenocand == null)
+                {
                     init_analyze = true;
+                }
 
                 // Process loading note pages one by one
                 notePages = new List<NotePageControl>();
@@ -198,8 +204,11 @@ namespace PhenoPad
 
                     // If no saved phenotype candidates, initial analyze on each page 
                     if (init_analyze)
+                    {
                         aPage.initialAnalyze();
-                    else {
+                    }
+                    else
+                    {
                         aPage.initialAnalyzeNoPhenotype();
                     }
                 }
@@ -448,8 +457,9 @@ namespace PhenoPad
                 {
                     // Prevent updates to the file until updates are finalized with call to CompleteUpdatesAsync.
                     Windows.Storage.CachedFileManager.DeferUpdates(file);
-                    // Open a file stream for writing.
+
                     IRandomAccessStream stream = await file.OpenAsync(Windows.Storage.FileAccessMode.ReadWrite);
+
                     // Write the ink strokes to the output stream.
                     using (IOutputStream outputStream = stream.GetOutputStreamAt(0))
                     {
@@ -463,12 +473,10 @@ namespace PhenoPad
 
                     if (status == Windows.Storage.Provider.FileUpdateStatus.Complete)
                     {
-                        // File saved.
                         return 1;
                     }
                     else
                     {
-                        // File couldn't be saved.
                         return 0;
                     }
                 }

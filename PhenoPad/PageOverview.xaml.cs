@@ -53,18 +53,15 @@ namespace PhenoPad
         #region button click handlers
         private void GridView_ItemClick(object sender, ItemClickEventArgs e)
         {
-            //Frame rootFrame = Window.Current.Content as Frame;
             this.Frame.Navigate(typeof(MainPage));
         }
 
         private void AudioGridView_ItemClick(object sender, ItemClickEventArgs e)
         {
-            //Frame rootFrame = Window.Current.Content as Frame;
             var clickAudio = e.ClickedItem as AudioFile;
             MediaPlayerElement player = new MediaPlayerElement();
             player.MediaPlayer.Source = clickAudio.source;
             player.MediaPlayer.Play();
-
         }
 
         private void CreateButton_Click(object sender, RoutedEventArgs e)
@@ -73,7 +70,8 @@ namespace PhenoPad
             this.Frame.Navigate(typeof(MainPage), "__new__");
         }
 
-        private async void ImportEHR_Click(object sender, RoutedEventArgs e) {
+        private async void ImportEHR_Click(object sender, RoutedEventArgs e)
+        {
             LogService.MetroLogger.getSharedLogger().Info("Importing EHR from local...");
 
             var messageDialog = new MessageDialog("Import EHR text from?");
@@ -94,13 +92,14 @@ namespace PhenoPad
                 // Show the file picker.
                 StorageFile file = await openPicker.PickSingleFileAsync();
                 if (file != null)
+                { 
                     this.Frame.Navigate(typeof(MainPage), file);
+                }
             }
-            else if ((int)result.Id == 1) {
+            else if ((int)result.Id == 1)
+            {
                 this.Frame.Navigate(typeof(MainPage), null);
             }
-
-
         }
 
         private async void notebookList_ItemClick(object sender, ItemClickEventArgs e)
@@ -160,22 +159,14 @@ namespace PhenoPad
             }
         }
 
-        private void ViewButton_Click(object sender, RoutedEventArgs e) {
-
-            //var messageDialog = new MessageDialog("This function is still under development!");
-            //messageDialog.Title = "PhenoPad";
-            //messageDialog.Commands.Add(new UICommand("OK") { Id = 0 });
-            // Set the command that will be invoked by default
-            //messageDialog.DefaultCommandIndex = 0;
-            // Set the command to be invoked when escape is pressed
-            //messageDialog.CancelCommandIndex = 0;
-            // Show the message dialog
-            //var result = await messageDialog.ShowAsync();
-
+        private void ViewButton_Click(object sender, RoutedEventArgs e)
+        {
             var notebookId = (sender as Button).Tag;
             LogService.MetroLogger.getSharedLogger().Info($"Viewing notebook ID { notebookId }");
             if (notebookId != null)
+            { 
                 this.Frame.Navigate(typeof(NoteViewPage), notebookId);
+            }
         }
 
         private async void UploadServerButton_Click(object sender, RoutedEventArgs e)
@@ -228,7 +219,8 @@ namespace PhenoPad
                     LogService.MetroLogger.getSharedLogger().Info($"Successfully deleted {id}.");
                 }
             }
-            catch (Exception e) {
+            catch (Exception e)
+            {
                 LogService.MetroLogger.getSharedLogger().Error($"Failed to delete {id}: {e.Message}.");
             }
         }
@@ -259,9 +251,8 @@ namespace PhenoPad
             if (args.Reason == AutoSuggestionBoxTextChangeReason.UserInput)
             {
                 var filtered = notebooks.Where(i => i.name.Contains(this.autoSuggestBox.Text)).ToList();
-                //if(filtered != null && filtered.Count() != 0)
-                notebookList.ItemsSource = filtered;
 
+                notebookList.ItemsSource = filtered;
             }
         }
         private void autosuggestquerysubmitted(AutoSuggestBox sender, AutoSuggestBoxQuerySubmittedEventArgs args)
@@ -270,5 +261,4 @@ namespace PhenoPad
         }
         #endregion
     }
-
 }

@@ -63,7 +63,7 @@ namespace PhenoPad.WebSocketService
 
         // WARNING! server address changes every time
         private static string serverAddress = "phenopad.ccm.sickkids.ca";
-        private static string serverPort = "8888";
+        private static string serverPort = "8000";
 
         public static string getUI_URI()
         {
