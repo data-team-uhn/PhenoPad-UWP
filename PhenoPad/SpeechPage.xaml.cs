@@ -37,7 +37,7 @@ namespace PhenoPad
         private List<Phenotype> phenoInSpeech = new List<Phenotype>();
         private DispatcherTimer playbackTimer;
 
-        //ATTRIBUTES FOR EDITING TRANSCRIPT
+        // ATTRIBUTES FOR EDITING TRANSCRIPT
         private string originText;
         private TextMessage selectedTM;
         private TextBlock selectedTB;
@@ -53,10 +53,11 @@ namespace PhenoPad
             mainpage = MainPage.Current;
             phenoInSpeech = new List<Phenotype>();
             chatView.ItemsSource = mainpage.conversations;
-            //chatView.ItemsSource = SpeechManager.getSharedSpeechManager().conversation;
+
             chatView.ContainerContentChanging += OnChatViewContainerContentChanging;
-            //realtimeChatView.Children.Add(MainPage.Current.speechQuickView.c);
+
             savedAudio = new List<AudioFile>();
+
             SpeechManager.getSharedSpeechManager().EngineHasResult += SpeechPage_EngineHasResult;
             SpeechManager.getSharedSpeechManager().RecordingCreated += SpeechPage_RecordingCreated;
             this.Tapped += HidePopups;
@@ -72,51 +73,47 @@ namespace PhenoPad
 
         private void HidePopups(object sender, TappedRoutedEventArgs e)
         {
-            //PhenotypePopup.Visibility = Visibility.Collapsed;
             ChatEditPopup.Visibility = Visibility.Collapsed;
         }
 
+        /// <summary>
+        /// Displays the saved audio files to the Audio Drop-Down-List ("Recorded 
+        /// Audio" drop-down menu on the Speech Page.)
+        /// </summary>
         public async void LoadSavedAudio()
         {
             List<string> audioNames = MainPage.Current.SavedAudios;
             AudioDropdownList.ItemsSource = audioNames;
-            //if (audioNames.Count > 0) {
-            //    AudioDropdownList.SelectedIndex = 0;
-            //    var audioFile = await FileManager.getSharedFileManager().GetSavedAudioFile(MainPage.Current.notebookId, audioNames[0]);
-            //    if (audioFile != null)
-            //    {
-            //        _mediaPlayerElement.Source = MediaSource.CreateFromStorageFile(audioFile);
-            //        _mediaPlayerElement.Visibility = Visibility.Visible;
-            //    }
-            //}
+
             UpdateLayout();
         }
 
+        /// <summary>
+        /// Displays items in MainPage.Current.conversations to the speech bubbles on 
+        /// Speech Page and displays saved audios to the audio drop-down list.
+        /// </summary>
         public void updateChat()
         {
             chatView.ItemsSource = MainPage.Current.conversations;
+            // if an instance of MainPage exists and ASR is not running
             if (MainPage.Current != null && !MainPage.Current.speechEngineRunning)
+            {
                 LoadSavedAudio();
+            }
             UpdateLayout();
         }
 
         private void SpeechPage_RecordingCreated(SpeechManager sender, Windows.Storage.StorageFile args)
         {
-            //Windows.ApplicationModel.Core.CoreApplication.MainView.CoreWindow.Dispatcher.RunAsync(CoreDispatcherPriority.Normal,
-            //() =>
-            //{
             this._mediaPlayerElement.Source = MediaSource.CreateFromStorageFile(args);
             this._mediaPlayerElement.Visibility = Visibility.Visible;
             this.mediaText.Visibility = Visibility.Visible;
             this.loadedMedia = args.Name;
             this.mediaText.Text = args.Name;
-            //}
-            //);
         }
 
         private void SpeechPage_EngineHasResult(SpeechManager sender, SpeechEngineInterpreter args)
         {
-            //this.tempSentenceTextBlock.Text = args.tempSentence;
         }
 
         private void OnChatViewContainerContentChanging(ListViewBase sender, ContainerContentChangingEventArgs args)
@@ -125,8 +122,7 @@ namespace PhenoPad
             TextMessage message = (TextMessage)args.Item;
 
             // Only display message on the right when speaker index = 0
-            //args.ItemContainer.HorizontalAlignment = (message.Speaker == 0) ? Windows.UI.Xaml.HorizontalAlignment.Right : Windows.UI.Xaml.HorizontalAlignment.Left;
-
+            
             if (message.IsNotFinal)
             {
                 args.ItemContainer.HorizontalAlignment = HorizontalAlignment.Right;
@@ -135,19 +131,6 @@ namespace PhenoPad
             {
                 args.ItemContainer.HorizontalAlignment = (message.Speaker == doctor) ? HorizontalAlignment.Right : HorizontalAlignment.Left;
             }
-
-            /*if (message.Speaker != 99 && message.Speaker != -1 && message.Speaker > maxSpeaker)
-            {
-                Debug.WriteLine("Detected speaker " + message.Speaker.ToString());
-                for (var i = maxSpeaker + 1; i <= message.Speaker; i++)
-                {
-                    ComboBoxItem item = new ComboBoxItem();
-                    item.Background = (Windows.UI.Xaml.Media.Brush)Application.Current.Resources["Background_" + i.ToString()];
-                    item.Content = "Speaker " + (i + 1).ToString();
-                    this.speakerBox.Items.Add(item);
-                }
-                maxSpeaker = (int)message.Speaker;
-            }*/
         }
 
         private void BackButton_Click(object sender, Windows.UI.Xaml.RoutedEventArgs e)
@@ -169,20 +152,25 @@ namespace PhenoPad
             }
         }
 
+        /// <summary>
+        /// </summary>
+        /// <param name="sender">The speaker selection box.</param>
+        /// <param name="e">Contains info about added or removed items.</param>
+        /// <remarks>
+        /// Called when the speaker selected in the "Select Doctor" box on the speech page
+        /// is changed.
+        /// </remarks>
         private void speakerBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             ComboBox senderBox = (ComboBox)sender;
             doctor = senderBox.SelectedIndex;
+
             if (senderBox.SelectedItem != null)
             {
-                senderBox.Background = ((ComboBoxItem)(senderBox.SelectedItem)).Background;
+                senderBox.Background = ( (ComboBoxItem)(senderBox.SelectedItem) ).Background;
             }
 
-            // Do not change combobox label after selection
-            //speakerTxt.Text = "doctor: " + (doctor + 1).ToString();
-
             for (int i = 0; i < SpeechManager.getSharedSpeechManager().conversation.Count; i++)
-            //foreach (TextMessage item in chatView.ItemsSource.Items)
             {
                 if (SpeechManager.getSharedSpeechManager().conversation[i].IsNotFinal)
                 {
@@ -194,12 +182,14 @@ namespace PhenoPad
                 }
             }
 
+            // NOTE: related to https://social.msdn.microsoft.com/Forums/vstudio/en-US/be9f1c8c-d60c-490a-890a-dc7bdb41c545/listviewitemssource-does-not-refresh-when-the-underlying-observable-collection-is-updated?forum=wpf
             var temp = chatView.ItemsSource;
             chatView.ItemsSource = null;
             chatView.ItemsSource = temp;
         }
 
-        private void TextBlockDoubleTapped(object sender, RoutedEventArgs e) {
+        private void TextBlockDoubleTapped(object sender, RoutedEventArgs e)
+        {
 
             TextBlock tb = ((TextBlock)sender);
             string body = tb.Text;
@@ -209,7 +199,8 @@ namespace PhenoPad
             TextMessage tm = MainPage.Current.conversations.Where(x => x.Body == body).FirstOrDefault();
             selectedTM = tm;
             selectedTB = tb;
-            if (tm != null) {
+            if (tm != null)
+            {
                 Canvas.SetLeft(ChatEditPopup, pos.X);
                 Canvas.SetTop(ChatEditPopup, pos.Y);
                 ChatEditPopup.Width = tb.ActualWidth - 10;
@@ -218,12 +209,10 @@ namespace PhenoPad
                 ChatEditPopup.Visibility = Visibility.Visible;
                 TranscriptEditBox.Focus(FocusState.Pointer);
             }
-
         }
 
         private void TextBlockTapped(object sender, RoutedEventArgs e)
         {
-
             TextBlock tb = ((TextBlock)sender);
             string body = tb.Text;
             originText = body.Trim();
@@ -238,14 +227,15 @@ namespace PhenoPad
                 speechPhenoListView.ItemsSource = phenos;
                 speechPhenoListView.UpdateLayout();
             }
-
         }
 
-        private async void EditBoxLostFocus(object sender, RoutedEventArgs e) {
+        private async void EditBoxLostFocus(object sender, RoutedEventArgs e)
+        {
             string newText = "";
             TranscriptEditBox.Document.GetText(Windows.UI.Text.TextGetOptions.None, out newText);
             newText = newText.Trim();
-            if (newText != originText && newText!= "") {
+            if (newText != originText && newText!= "")
+            {
                 selectedTM.Body = newText;
                 selectedTB.Text = newText;
                 await MainPage.Current.SaveCurrentConversationsToDisk();
@@ -257,7 +247,7 @@ namespace PhenoPad
 
         private async void MessageAudioButtonClick(object sender, RoutedEventArgs e)
         {
-            //only allow audio playback when there's no 
+            // only allow audio playback when there's no 
             if (this._mediaPlayerElement != null )
             {
                 Button srcButton = (Button)sender;
@@ -267,7 +257,7 @@ namespace PhenoPad
                 // Create a TimeSpan with miliseconds equal to the slider value.
 
                 double actual_start = Math.Max(0, m.start);
-                //by default set playback length to 1 second
+                // by default set playback length to 1 second
                 double actual_end = Math.Max(m.start + 1, m.end);
 
                 int start_second = (int)(actual_start);
@@ -282,10 +272,6 @@ namespace PhenoPad
 
 
                 // If audio is saved locally, get the local audio file and play based on saved interval
-                // NOTE: seems the audio starts playing at the starting timestamp but doesn't auto-end at the ending timestamp
-                // TODO: instead the playbacktimer is set to tick after ts which is defined using the starting timestamp
-                //       wouldn't this cause problem if starting time is like 1s
-                // TODO: Investigate
                 if (savedFile != null)
                 {
                     if (loadedMedia != savedFile.Name)
@@ -308,17 +294,15 @@ namespace PhenoPad
                     int ind = m.ConversationIndex;
                     MainPage.Current.PlayMedia(m.AudioFile, actual_start, actual_end);
                 }
-
             }
         }
 
-        private void ListButtonClick(object sender, RoutedEventArgs e) {
-
+        private void ListButtonClick(object sender, RoutedEventArgs e)
+        {
         }
 
         private String changeNumSpeakers(String text, bool direction)
         {
-            //true = up, false = down
             int proposed = Int32.Parse(text);
             if (direction)
             {
@@ -374,19 +358,11 @@ namespace PhenoPad
                 Debug.WriteLine("Unable to update");
             }
 
-            //0, Int32.Parse(proposedText));
-
-            //Debug.WriteLine("Detected speaker " + message.Speaker.ToString());
-            //for (var i = maxSpeaker + 1; i <= message.Speaker; i++)
-            //{
-
             Debug.WriteLine("Old text: " + proposedText + "\tNew text: " + this.numSpeakerBox.Text);
             if (proposedText != this.numSpeakerBox.Text)
             {
                 this.adjustSpeakerCount(Int32.Parse(this.numSpeakerBox.Text));
             }
-            //}
-            //this.maxSpeaker = (int)message.Speaker;
         }
 
         private void removeSpeakerBtn_Click(object sender, RoutedEventArgs e)
@@ -404,7 +380,6 @@ namespace PhenoPad
                 Debug.WriteLine(ex.Message);
                 Debug.WriteLine("Unable to update");
             }
-            //0, Int32.Parse(proposedText));
 
             Debug.WriteLine("Old text: " + proposedText + "\tNew text: " + this.numSpeakerBox.Text);
             if (proposedText != this.numSpeakerBox.Text)
@@ -413,21 +388,29 @@ namespace PhenoPad
             }
         }
 
-        //TODO: the name of this function is misleading, 
-        //      a better name would be something like setSpeakerNumButtonsEnabled
+        /// <summary>
+        /// Enable/Disable the buttons for manually adjusting the number of speakers on ASR result page.
+        /// </summary>
+        /// <param name="enabled">(bool)true to enable, (bool)false to disable</param>
         public void setSpeakerButtonEnabled(bool enabled)
         {
             this.addSpeakerBtn.IsEnabled = enabled;
             this.removeSpeakerBtn.IsEnabled = enabled;
         }
 
+        /// <summary>
+        /// Sets the number of speaker(s) on the ASR result page.
+        /// </summary>
+        /// <param name="newCount">the new number of speaker(s)</param>
         public void adjustSpeakerCount(int newCount)
         {
             Debug.WriteLine("New Count: " + newCount.ToString() + "\tCurSpeaker Count: " + this.curSpeakerCount.ToString());
             while (newCount != this.curSpeakerCount)
             {
+                // speaker count increased
                 if (newCount > this.curSpeakerCount)
                 {
+                    // Add new option to the combo box for selecting speaker as doctor.
                     Debug.WriteLine("Incrementing speaker count to " + newCount.ToString());
                     this.curSpeakerCount += 1;
                     ComboBoxItem item = new ComboBoxItem();
@@ -437,8 +420,10 @@ namespace PhenoPad
 
                     this.speakerBox.Items.Add(item);
                 }
+                // speaker count decreased
                 else
                 {
+                    // Remove an option in the combo box for selecting speaker as doctor.
                     Debug.WriteLine("Decrementing speaker count to " + newCount.ToString());
                     this.curSpeakerCount -= 1;
                     if (this.speakerBox.SelectedIndex + 1 > this.curSpeakerCount)
@@ -450,8 +435,17 @@ namespace PhenoPad
             }
         }
 
+        /// <summary>
+        /// Loads the selected audio file from disk (or downloads it from server if a local copy does not exist) 
+        /// and sets up the Media Player.
+        /// </summary>
+        /// <remarks>
+        /// Handler function called when the selected audio in the "Recorded Audio" drop down list is changed.
+        /// Subscribed to (PhenoPad.SpeechPage.AudioDropdownList).SelectionChanged event
+        /// </remarks>
         private async void AudioDropdownList_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
+            // proceed if the list of selected item isn't empty
             if (e.AddedItems.Count > 0)
             {
                 string audioName = e.AddedItems[0].ToString();
@@ -476,9 +470,19 @@ namespace PhenoPad
             }
         }
 
+        /// <summary>
+        /// Initiates sequence for downloading an audio file from the ASR server and saving it 
+        /// to a local save file.
+        /// </summary>
+        /// <param name="name">The name of the audio file.</param>
+        /// <returns>true if download and save successful, false if download/save failed or if 
+        /// the user cancels request.</returns>
+        /// <remarks>
+        /// Displays a prompt box which asks the user to confirm downloading audio from ASR server.
+        /// If the user confirms, downloads and saves the requested audio file.
+        /// </remarks>
         public async Task<bool> TryGetAudioFromServer(string name)
         {
-            //tries to request recorded audio from sickkids server when local audio does not exist
             try
             {
                 var messageDialog = new MessageDialog("Getting audio file from server may take a while, continue?");
@@ -509,8 +513,6 @@ namespace PhenoPad
     // Several fields are created to save the hassel of creating binding converters :D
     public class TextMessage : INotifyPropertyChanged
     {
-        //public string Body { get; set; }
-
         private string _body;
         public string Body
         {
@@ -522,34 +524,6 @@ namespace PhenoPad
             {
                 this._body = value;
                 this.NotifyPropertyChanged("Body");
-
-                /*
-                Task<List<Phenotype>> phenosTask = PhenotypeManager.getSharedPhenotypeManager().annotateByNCRAsync(this._body);
-                
-                phenosTask.ContinueWith(_ =>
-                {
-                    List<Phenotype> list = phenosTask.Result;
-                    this.phenotypesInText = new ObservableCollection<Phenotype>(list);
-                    
-                    if (list != null && list.Count > 0)
-                    {
-                        Debug.WriteLine("We detected at least " + list[0].name);
-                        this.NotifyPropertyChanged("phenotypesInText");
-
-                        list.Reverse();
-
-                        Windows.ApplicationModel.Core.CoreApplication.MainView.CoreWindow.Dispatcher.RunAsync(CoreDispatcherPriority.Normal,
-                        () =>
-                        {
-                            foreach (var p in list)
-                            {
-                                PhenotypeManager.getSharedPhenotypeManager().addPhenotypeCandidate(p, SourceType.Speech);
-                            }
-                        }
-                        );
-                    }
-                });
-                //phenosTask.Start();*/
             }
         }
         public double start;
@@ -557,11 +531,14 @@ namespace PhenoPad
         [XmlIgnore]
         private TimeInterval _interval;
         [XmlIgnore]
-        public TimeInterval Interval {
-            get {
+        public TimeInterval Interval
+        {
+            get
+            {
                 return _interval;
             }
-            set {
+            set
+            {
                 _interval = value;
                 start = value.start;
                 end = value.end;
@@ -570,13 +547,6 @@ namespace PhenoPad
         public int ConversationIndex { get; set; }
         public DateTime DisplayTime;
         public string AudioFile;
-
-        //public string DisplayTime { get; set; }
-
-        // Bind to phenotype display in conversation
-        //[XmlIgnore]
-        //public ObservableCollection<Phenotype> phenotypesInText { get; set; }
-
 
         [XmlArray("Phenotypes")]
         [XmlArrayItem("phenotype")]
@@ -590,12 +560,12 @@ namespace PhenoPad
                 return phenotypesInText.Count.ToString();
             }
         }
-        // Now that we support more than 2 users, we need to have speaker index
+        // Now that we support more than 2 speakers, we need to have speaker index
         public uint Speaker { get; set; }
 
         // Has finalized content of the string
         public bool IsFinal { get; set; }
-        public bool IsNotFinal { get { return !IsFinal; } }         // This variable requires no setter
+        public bool IsNotFinal { get { return !IsFinal; } } // This variable requires no setter
 
         public bool OnLeft { get; set; }
 
@@ -616,8 +586,10 @@ namespace PhenoPad
             }
         }
 
-        public void fileterMessage() {
-            // TODO need to filter useless phrases of message for better display
+        //NOTE: potential future feature
+        public void fileterMessage()
+        {
+            // TODO: need to filter useless phrases of message for better display
         }
 
         public int PhenoColumn
@@ -635,13 +607,17 @@ namespace PhenoPad
             }
         }
         
+
         public event PropertyChangedEventHandler PropertyChanged = delegate { };
 
-        // This method is called by the Set accessor of each property.
-        // The CallerMemberName attribute that is applied to the optional propertyName
-        // parameter causes the property name of the caller to be substituted as an argument.
+        /// <summary>
+        /// Triggers TextMessage.PropertyChanged Event.
+        /// </summary>
         private async void NotifyPropertyChanged([CallerMemberName] String propertyName = "")
         {
+            // This method is called by the Set accessor of each property.
+            // The CallerMemberName attribute that is applied to the optional propertyName
+            // parameter causes the property name of the caller to be substituted as an argument.
             if (PropertyChanged != null)
             {
                 await Windows.ApplicationModel.Core.CoreApplication.MainView.CoreWindow.Dispatcher.RunAsync(CoreDispatcherPriority.Normal,() =>
@@ -654,6 +630,11 @@ namespace PhenoPad
 
     class BackgroundColorConverter : IValueConverter
     {
+      
+        /// <summary>
+        /// Converts a text message object to an object representing a background color based on the speaker id.
+        /// </summary>
+        /// <returns>Object representing a background color (?)</returns>
         public object Convert(object value, Type targetType, object parameter, string language)
         {
             var m = ((TextMessage)value);
@@ -671,6 +652,9 @@ namespace PhenoPad
             return Application.Current.Resources[resourceKey];
         }
 
+        /// <summary>
+        /// UNIMPLEMENTED
+        /// </summary>
         public object ConvertBack(object value, Type targetType, object parameter, string language)
         {
             throw new NotImplementedException();
@@ -705,20 +689,18 @@ namespace PhenoPad
 
                 return now + "\tConversation(" + m.ConversationIndex + ")\t" + result;
             }
-            //for displaying historical conversations
+            // for displaying historical conversations
             else if (m.IsFinal) {
-                //gets the date in mm/dd/yyyy HH:MM AM/PM format
+                // gets the date in mm/dd/yyyy HH:MM AM/PM format
                 string date = String.Format("{0:g}", m.DisplayTime);
-                //determines whos speaking: todo: clsssify who is doctor/patient
+                // determines whos speaking: todo: clsssify who is doctor/patient
                 string speaker = m.Speaker == 0 ? "Doctor" : "Patient:" + m.Speaker;
                 return date+"-Session#" + m.ConversationIndex+"-Speaker "+ m.Speaker;
             }
             else
             {
                 return now + " Processing ...";
-            }
-
-            
+            }  
         }
 
         public object ConvertBack(object value, Type targetType, object parameter, string language)
@@ -727,8 +709,10 @@ namespace PhenoPad
         }
     }
 
-    // Observable collection representing a text message conversation
-    // that can load more items incrementally.
+    /// <summary>
+    /// Observable collection representing a text message conversation
+    /// that can load more items incrementally.
+    /// </summary>
     public class Conversation : ObservableCollection<TextMessage>, ISupportIncrementalLoading
     {
         private uint messageCount = 0;
@@ -776,10 +760,17 @@ namespace PhenoPad
             return fillerText.Substring(0, rand.Next(5, fillerText.Length));
         }
 
-        // A method to avoid firing collection changed events when adding a bunch of items
-        // https://forums.xamarin.com/discussion/29925/observablecollection-addrange
+        /// <summary>
+        /// Removes all TextMessage instances in the collection and add a list of new ones. 
+        /// </summary>
+        /// <param name="range">the list of items to be added</param>
+        /// <remarks>
+        /// A method to avoid firing collection changed events when adding a bunch of items
+        /// https://forums.xamarin.com/discussion/29925/observablecollection-addrange
+        /// </remarks>
         public void ClearThenAddRange(List<TextMessage> range)
         {
+            
             Items.Clear();
             foreach (var item in range)
             {
@@ -792,6 +783,19 @@ namespace PhenoPad
             this.OnCollectionChanged(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Reset));
         }
 
+        /// <summary>
+        /// Adds a list of TextMessage instances to conversation and
+        /// triggers PropertyChanged and CollectionChanged events.
+        /// </summary>
+        /// <param name="range">The list of TextMessage instances to be added.</param>
+        /// <remarks>
+        /// This method subscribes the handler function Item_PropertyChanged
+        /// to each TextMessage instance's PropertyChanged event when it's 
+        /// added.
+        /// After all the instances in the list is added, raises 
+        /// ObserverbleCollection.PropertyChanged and 
+        /// ObserverbleCollection.CollectionChanged events.
+        /// </remarks>
         public void AddRange(List<TextMessage> range)
         {
             foreach (var item in range)
@@ -805,6 +809,17 @@ namespace PhenoPad
             this.OnCollectionChanged(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Reset));
         }
 
+        /// <summary>
+        /// Updates an TextMessage instance in the collection when its property changes.
+        /// </summary>
+        /// <param name="sender">The TextMessage instance whose property changed</param>
+        /// <param name="e">Contains info about the property that changed.</param>
+        /// <remarks>
+        /// Called when the property of a TextMessage instance changes (by the TM instance).
+        /// Iterates through each item in the collection to find the index of the collection
+        /// to find the index of the sender TextMessage in the collection, then replaces it
+        /// with the altered TextMessage.
+        /// </remarks> 
         private void Item_PropertyChanged(object sender, PropertyChangedEventArgs e)
         {
             var m = (TextMessage)sender;
@@ -822,28 +837,36 @@ namespace PhenoPad
             {
                 this.RemoveAt(i);
                 this.Insert(i, m);
-            }
-            
-            
+            } 
         }
 
-        public void UpdateLastMessage(TextMessage m, bool addNew)
+        /// <summary>
+        /// Updates the content of the temporary speech result bubble.
+        /// </summary>
+        /// <param name="m">The new TextMessage instance to add to the conversation object</param>
+        /// <param name="newBubble">
+        /// if a new sequence of temp results should be started (i.e. if the last ASR hypothesis is final)
+        /// </param>
+        public void UpdateLastMessage(TextMessage m, bool startNew)
         {
-            if (addNew || Items.Count == 0)
+            // if the temp speech bubble has no existing content 
+            // or conversation has no element
+            if (startNew || Items.Count == 0)
             {
                 Items.Add(m);
-                m.PropertyChanged += Item_PropertyChanged;
-            } else
+            }
+            else
             {
+                // replaces the last TextMessage instance (temporary hypothesis)
+                // with the new one the update real time hypothesis
                 Items.RemoveAt(Items.Count - 1);
                 Items.Add(m);
-                m.PropertyChanged += Item_PropertyChanged;
             }
-            //var changedItems = new List<TextMessage>(m);
+            m.PropertyChanged += Item_PropertyChanged;
+
             this.OnPropertyChanged(new PropertyChangedEventArgs("Count"));
             this.OnPropertyChanged(new PropertyChangedEventArgs("Item[]"));
             this.OnCollectionChanged(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Reset));
-            //this.OnCollectionChanged(changedItems, Items.Count - 1);
         }
     }
 
@@ -851,7 +874,7 @@ namespace PhenoPad
     /// This ListView is tailored to a Chat experience where the focus is on the last item in the list
     /// and as the user scrolls up the older messages are incrementally loaded.  We're performing our
     /// own logic to trigger loading more data.
-    /// //
+    /// 
     /// Note: This is just delay loading the data, but isn't true data virtualization.  A user that
     /// scrolls all the way to the beginning of the list will cause all the data to be loaded.
     /// </summary>
@@ -1002,5 +1025,4 @@ namespace PhenoPad
             }
         }
     }
-
 }

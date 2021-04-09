@@ -8,7 +8,6 @@ namespace PhenoPad.FileService
     /// <summary>
     /// Represents a recognized phrase in the note
     /// </summary>
-    /// 
     public class RecognizedPhrases
     {
         public string current;//selected candidate
@@ -22,8 +21,6 @@ namespace PhenoPad.FileService
 
         // change back
         public List<DateTime> strokes;
-        //public List<InkStroke> strokes;
-
 
         public bool is_corrected;
         public int word_index;
@@ -40,7 +37,8 @@ namespace PhenoPad.FileService
         {
         }
 
-        public RecognizedPhrases(string noteId, string pageId,int lineNum, int index, string selected,List<string>candidates, List<InkStroke> strokes,bool isCorrected,bool isAbbr) {
+        public RecognizedPhrases(string noteId, string pageId,int lineNum, int index, string selected,List<string>candidates, List<InkStroke> strokes,bool isCorrected,bool isAbbr)
+        {
             line_index = lineNum;
             word_index = index;
             is_corrected = isCorrected;
@@ -55,7 +53,7 @@ namespace PhenoPad.FileService
             this.strokes = new List<DateTime>();
             foreach (var s in strokes)
                 this.strokes.Add(s.StrokeStartedTime.Value.DateTime);
-        
+
         }
     }
 }

@@ -18,8 +18,8 @@ namespace PhenoPad.FileService
     public class FileServerClient
     {
 
-        static string serverAddress = "54.166.237.238";
-        static string serverPort = "8888";
+        static string serverAddress = "FileServerAddress"; // NOTE: replace with the ip address of your Cloud storage service
+        static string serverPort = "FileServicePort"; // NOTE: replace with the port # of your Cloud storage service
         static string fileManagerAddress = "http://" +
                                 FileServerClient.serverAddress +
                                 ":" +
@@ -76,7 +76,6 @@ namespace PhenoPad.FileService
         }
 
 
-
         /// <summary>
         /// Performs HTTP PUT request to zip/upload note folders to server.
         /// </summary>
@@ -85,11 +84,6 @@ namespace PhenoPad.FileService
             Debug.WriteLine("Zip all files first");
             MetroLogger.getSharedLogger().Info("Zipping all files before uploading.");
             string fileToWriteTo = Path.GetTempPath() + RandomString(10);
-
-            /*using (ZipArchive archive = ZipFile.Open(fileToWriteTo, ZipArchiveMode.Create))
-            {
-                archive.CreateEntry(newFile, "NewEntry.txt");
-            }*/
             try
             {
                 ZipFile.CreateFromDirectory(localFolder.Path.ToString(), fileToWriteTo, CompressionLevel.Fastest, false);
@@ -104,7 +98,6 @@ namespace PhenoPad.FileService
             // int SIZE_GB = 1024 * 1024 * 1024;
             using (HttpClientHandler handler = new HttpClientHandler())
             {
-                //handler.MaxRequestContentBufferSize = SIZE_GB;
                 using (HttpClient client = new HttpClient(handler))
                 {
                     string url = FileServerClient.fileManagerAddress + "/put/" + path;

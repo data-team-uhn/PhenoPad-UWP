@@ -53,7 +53,7 @@ namespace PhenoPad
     // This class contains methods regarding web socket usage for MainPage.
     public sealed partial class MainPage : Page
     {
-        //web socket properties
+        // Web socket properties
         private Windows.Networking.Sockets.MessageWebSocket videoStreamWebSocket;
         CancellationTokenSource videoCancellationSource = new CancellationTokenSource();
         CancellationToken videoStreamCancellationToken;
@@ -70,7 +70,6 @@ namespace PhenoPad
         {
             try
             {
-                // while (true && !videoStreamCancellationToken.IsCancellationRequested)
                 {
                     using (DataReader dataReader = args.GetDataReader())
                     {
@@ -83,23 +82,17 @@ namespace PhenoPad
                             latestImageString = message;
                             latestImageFromStream = await HelperFunctions.Base64ToBitmapAsync(message);
                             StreamImageView.Source = latestImageFromStream;
-
-                            /// save image to video here 
-                            //Image image = new Image();
-                            //image.Source = bi;
-                            //videoFrameImages.Add(image);
                         }
                         );
-
                     }
                 }
             }
             catch (Exception ex)
             {
                 Windows.Web.WebErrorStatus webErrorStatus = Windows.Networking.Sockets.WebSocketError.GetStatus(ex.GetBaseException().HResult);
-                // Add additional code here to handle exceptions.
             }
         }
+
         /// <summary>
         /// Sends the string message to video output stream using MessageWebSocket
         /// </summary>
@@ -113,6 +106,7 @@ namespace PhenoPad
             }
             Debug.WriteLine("Sending message using MessageWebSocket: " + message);
         }
+
         /// <summary>
         /// Sends the byte[] message to video output stream using StreamWebSocket
         /// </summary>        
@@ -131,53 +125,15 @@ namespace PhenoPad
             catch (Exception ex)
             {
                 Windows.Web.WebErrorStatus webErrorStatus = Windows.Networking.Sockets.WebSocketError.GetStatus(ex.GetBaseException().HResult);
-                // Add code here to handle exceptions.
             }
         }
+
         /// <summary>
         /// Handles event when WebSocket is closed.
         /// </summary>
         private void WebSocket_Closed(Windows.Networking.Sockets.IWebSocket sender, Windows.Networking.Sockets.WebSocketClosedEventArgs args)
         {
             Debug.WriteLine("WebSocket_Closed; Code: " + args.Code + ", Reason: \"" + args.Reason + "\"");
-            // Add additional code here to handle the WebSocket being closed
         }
-        /**
-private async void ReceiveMessageUsingStreamWebSocket()
-{
-try
-{
-while (true && !videoStreamCancellationToken.IsCancellationRequested)
-{
-    using (var dataReader = new DataReader(this.videoStreamWebSocket.InputStream))
-    {
-        dataReader.InputStreamOptions = InputStreamOptions.Partial;
-        await dataReader.LoadAsync(10000);
-        byte[] message = new byte[dataReader.UnconsumedBufferLength];
-        dataReader.ReadBytes(message);
-        Debug.WriteLine("Data received from StreamWebSocket: " + message.Length + " bytes");
-        await Windows.ApplicationModel.Core.CoreApplication.MainView.CoreWindow.Dispatcher.RunAsync(CoreDispatcherPriority.High,
-        async () =>
-        {
-            BitmapImage bitmap = new BitmapImage();
-            using (MemoryStream stream = new MemoryStream(message))
-            {
-                await bitmap.SetSourceAsync(stream.AsRandomAccessStream());
-            }
-            StreamImageView.Source = bitmap;
-        }
-        );
-        
-    }
-}
-}
-catch (Exception ex)
-{
-Windows.Web.WebErrorStatus webErrorStatus = Windows.Networking.Sockets.WebSocketError.GetStatus(ex.GetBaseException().HResult);
-// Add code here to handle exceptions.
-}
-}
-***/
-
     }
 }

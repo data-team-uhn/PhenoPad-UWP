@@ -251,6 +251,5 @@ namespace WobbrockLib
         {
             return this.ToString().GetHashCode();
         }
-
     }
 }

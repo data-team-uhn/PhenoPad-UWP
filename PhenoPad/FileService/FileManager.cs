@@ -64,7 +64,7 @@ namespace PhenoPad.FileService
         private string AUDIO_META_FILE = "AudioMeta.xml";
         private string NOTE_TEXT_FILE = "text.txt";
         public string currentNoteboookId = "";
-        //setting application data root folder as the default disk access location
+        // setting application data root folder as the default disk access location
         private StorageFolder ROOT_FOLDER = ApplicationData.Current.LocalFolder;
         
         #endregion
@@ -78,6 +78,7 @@ namespace PhenoPad.FileService
         }
 
         #region GET methods
+
         /// <summary>
         /// Returns the file manager object if it exists, otherwise initialize a new file manager.
         /// </summary>
@@ -96,10 +97,10 @@ namespace PhenoPad.FileService
         /// </summary>
         public async Task<List<string>> GetAllNotebookIds()
         {
+            
             List<string> result = new List<string>();
             try
             {
-                //StorageFolder localFolder = ApplicationData.Current.LocalFolder;
                 var folders = await ROOT_FOLDER.GetFoldersAsync();
                 foreach (var f in folders)
                 {
@@ -121,8 +122,8 @@ namespace PhenoPad.FileService
         /// </summary>
         public async Task<List<string>> GetPageIdsByNotebook(string notebookId)
         {
+            
             List<string> result = new List<string>();
-            //StorageFolder localFolder = ApplicationData.Current.LocalFolder;
             try
             {
                 var notebookFolder = await ROOT_FOLDER.GetFolderAsync(notebookId);
@@ -150,7 +151,6 @@ namespace PhenoPad.FileService
         {
             try
             {
-                //Debug.WriteLine($"Fetching notebook meta file object of {notebookId}");
                 // meta data
                 var metafile = await GetNoteFile(notebookId, "", NoteFileType.Meta);
                 Notebook obj = null;
@@ -162,17 +162,21 @@ namespace PhenoPad.FileService
             }
         }
 
-        public async Task<List<string>> GetLogStrings(string notebookID) {
+        public async Task<List<string>> GetLogStrings(string notebookID)
+        {
             try
             {
                 List<string> logs = new List<string>();
                 var file = await GetNoteFile(notebookID, "", NoteFileType.OperationLog);
                 var log = await FileIO.ReadLinesAsync(file);
                 foreach (string line in log)
+                {
                     logs.Add(line.TrimEnd());
+                }
                 return logs;
             }
-            catch (Exception e) {
+            catch (Exception e)
+            {
                 MetroLogger.getSharedLogger().Error(e + e.Message);
                 return null;
             }
@@ -188,16 +192,20 @@ namespace PhenoPad.FileService
                 var metafile = await GetNoteFile(notebookId, pageId, NoteFileType.ImageAnnotationMeta);
                 object obj = await LoadObjectFromSerilization(metafile, typeof(List<ImageAndAnnotation>));
                 if (obj != null)
+                {
                     return obj as List<ImageAndAnnotation>;
+                }
                 else
+                { 
                     return null;
+                }
             }
-            catch (Exception) {
-                //LogService.MetroLogger.getSharedLogger().Error($"{notebookId}-{pageId}:{e}:{e.Message}");
+            catch (Exception)
+            {
                 return null;
             }
-            
         }
+
         public async Task<List<RecognizedPhrases>> GetRecognizedPhraseFromXML(string notebookId, string pageId)
         {
             try
@@ -205,16 +213,19 @@ namespace PhenoPad.FileService
                 var metafile = await GetNoteFile(notebookId, pageId, NoteFileType.RecognizedPhraseMeta);
                 object obj = await LoadObjectFromSerilization(metafile, typeof(List<RecognizedPhrases>));
                 if (obj != null)
+                { 
                     return obj as List<RecognizedPhrases>;
+                }
                 else
+                { 
                     return null;
+                }
             }
             catch (Exception e)
             {
                 MetroLogger.getSharedLogger().Error($"Get recognized phrase from file: {notebookId}-{pageId}:{e}:{e.Message}");
                 return null;
             }
-
         }
 
 
@@ -223,45 +234,55 @@ namespace PhenoPad.FileService
         /// </summary>
         public async Task<List<Phenotype>> GetSavedPhenotypeObjectsFromXML(string notebookId, NoteFileType type = NoteFileType.Phenotypes)
         {
-            try {
+            try
+            {
                 // meta data
                 var phenofile = await GetNoteFile(notebookId, "", type);
                 object obj = await LoadObjectFromSerilization(phenofile, typeof(List<Phenotype>));
                 if (obj != null)
+                { 
                     return obj as List<Phenotype>;
+                }
                 return null;
             }
-            catch (Exception) {
+            catch (Exception)
+            {
                 return null;
             }
         }
 
         /// <summary>
-        /// Gets the saved transcripts from disk and return as a list of text messages.
+        /// Returns the locally saved ASR transcirpt as a list of TextMessage objects.
         /// </summary>
+        /// <param name="notebookId">The ID of the notebook from which the transcript was saved.</param>
+        /// <param name="name">(UNUSED) default value is an empty string.</param>
         public async Task<List<TextMessage>> GetSavedTranscriptsFromXML(string notebookId,string name = "")
         {
-            try {
-                List < TextMessage > msg = new List<TextMessage>();
+            try
+            {
+                List < TextMessage > msgs = new List<TextMessage>();
                 string transcriptPath = $"{notebookId}\\Transcripts";
                 StorageFolder folder = await ROOT_FOLDER.GetFolderAsync(transcriptPath);
-                //Debug.WriteLine("transcript folder ="+folder.Path);
+
                 IReadOnlyList<StorageFile> fileList = await folder.GetFilesAsync();
                 SpeechManager.getSharedSpeechManager().setAudioIndex(fileList.Count);
-                foreach (StorageFile file in fileList) {
+                foreach (StorageFile file in fileList)
+                {
                     List<TextMessage> obj = await LoadObjectFromSerilization(file, typeof(List<TextMessage>)) as List<TextMessage>;
                     if (obj != null)
-                        msg.AddRange(obj);
+                        msgs.AddRange(obj);
                 }
-                return msg;
+                return msgs;
             }
-            catch (Exception e) {
+            catch (Exception e)
+            {
                 MetroLogger.getSharedLogger().Error( e + e.Message);
                 return null;
             }
         }
 
-        public async Task<List<string>> GetSavedAudioNamesFromXML(string notebookId) {
+        public async Task<List<string>> GetSavedAudioNamesFromXML(string notebookId)
+        {
             try
             {
                 // meta data
@@ -277,18 +298,26 @@ namespace PhenoPad.FileService
             return null;
         }
 
-        public async Task<StorageFile> GetSavedAudioFile(string notebookId, string name) {
+        /// <summary>
+        /// Returns the locally saved audio file with the specified name from the specified notebook.
+        /// </summary>
+        /// <param name="notebookId">The notebook the audio recording is from.</param>
+        /// <param name="name">The name of the audio file.</param>
+        /// <returns>A StorageFile object representing the audio file. If save file does not exist, returns null.</returns>
+        public async Task<StorageFile> GetSavedAudioFile(string notebookId, string name)
+        {
             var path = GetNoteFilePath(notebookId, "", NoteFileType.Audio, name);
-            //path += name;
             Debug.WriteLine("tring to get " + path);
             try
             {
                 var file = await ROOT_FOLDER.TryGetItemAsync(path);
                 if (file != null)
+                { 
                     return file as StorageFile;
-                
+                }
             }
-            catch (Exception e) {
+            catch (Exception e)
+            {
                 LogService.MetroLogger.getSharedLogger().Error("Failed to get audio file from:" + path + e.Message);
             }
             return null;
@@ -300,7 +329,6 @@ namespace PhenoPad.FileService
         /// <param name="notebookId">the unique identifier of the note the audio originated from</param>
         /// <param name="name">name of the audio file</param>
         /// <param name="bytes">byte audio data in a list</param>
-        /// <returns></returns>
         public async Task<bool> SaveByteAudioToFile(string notebookId, string name, List<Byte> bytes)
         {
             var path = GetNoteFilePath(notebookId, "", NoteFileType.Audio, name);
@@ -326,7 +354,7 @@ namespace PhenoPad.FileService
         /// </summary>
         /// <param name="notebookId">the unique identifier of the note</param>
         /// <param name="names">a list of the names of the saved recordings</param>
-        /// <returns>(bool)true if save successful, (bool)false otherwise</returns>
+        /// <returns>true if save successful, false otherwise</returns>
         public async Task<bool> SaveAudioNamesToXML(string notebookId, List<string>names) {
             try
             {
@@ -341,15 +369,13 @@ namespace PhenoPad.FileService
             }
         }
 
-        
+        /// <summary>
+        /// Gets the operation log file under local folder, if such file does not exist, creates a new one and returns it
+        /// </summary>
         public async Task<StorageFile> GetOperationLogFile(string notebookId)
         {
-            /// <summary>
-            /// Gets the operation log file under local folder, if such file does not exist, creates a new one and returns it
-            /// </summary>
             try
             { 
-                //StorageFolder localFolder = ApplicationData.Current.LocalFolder;
                 string filepath = GetNoteFilePath(notebookId, "", NoteFileType.OperationLog);
                 var item = await ROOT_FOLDER.TryGetItemAsync(filepath);
                 if (item == null)
@@ -367,8 +393,10 @@ namespace PhenoPad.FileService
             }
         }
 
-        public async Task<bool> AppendLogToFile(List<string> cachedLogs, string notebookId) {
-            try {
+        public async Task<bool> AppendLogToFile(List<string> cachedLogs, string notebookId)
+        {
+            try
+            {
                 StorageFile logFile = await GetOperationLogFile(notebookId);
                 while (logFile == null)
                     logFile = await GetOperationLogFile(notebookId);
@@ -376,24 +404,25 @@ namespace PhenoPad.FileService
                 return true;
 
             }
-            catch (Exception e) {
+            catch (Exception e)
+            {
                 LogService.MetroLogger.getSharedLogger().Error("FileManager:" + e.Message);
                 return false;
             }
         }
 
-       
+        /// <summary>
+        /// Returns a new local save file for the given Notebook, returns null if failed.
+        /// </summary>
+        /// <remarks>
+        /// If a file already exists for the specified notebook, returns the file; otherwise, create a new file.
+        /// </remarks>
         public async Task<StorageFile> GetNoteFile(string notebookId, string notePageId, NoteFileType fileType, string name = "")
         {
-            /// <summary>
-            /// Creates and returns a new local file for given Notebook, returns null if failed.
-            /// </summary>
             try
             {
                 StorageFile notefile = null;
-                //StorageFolder localFolder = ApplicationData.Current.LocalFolder;
                 string filepath = GetNoteFilePath(notebookId, notePageId, fileType, name);
-                //Debug.WriteLine(filepath);
                 notefile = await ROOT_FOLDER.CreateFileAsync(filepath, CreationCollisionOption.OpenIfExists);
                 return notefile;
             }
@@ -405,19 +434,20 @@ namespace PhenoPad.FileService
             }
         }
 
-        
+        /// <summary>
+        /// Returns the file given IDs,type and name fron root folder. Return null if failed.
+        /// </summary>
         public async Task<StorageFile> GetNoteFileNotCreate(string notebookId, string notePageId, NoteFileType fileType, string name = "")
         {
-            /// <summary>
-            /// Returns the file given IDs,type and name fron root folder. Return null if failed.
-            /// </summary>
+
             try
             {
                 string filepath = GetNoteFilePath(notebookId, notePageId, fileType, name);
                 var item = await ROOT_FOLDER.TryGetItemAsync(filepath);
                 if (item == null)
+                { 
                     return null;
-                //notefile = await ROOT_FOLDER.GetFileAsync(filepath);
+                }
                 return (StorageFile)item;
             }
             catch (Exception e)
@@ -434,7 +464,6 @@ namespace PhenoPad.FileService
         /// <param name="notePageId">the identifier of the note page</param>
         /// <param name="fileType">the type of the file in question</param>
         /// <param name="name">the name of the file</param>
-        /// <returns></returns>
         public string GetNoteFilePath(string notebookId, string notePageId, NoteFileType fileType, string name = "")
         {
             string foldername = String.Format(@"{0}\{1}\", notebookId, notePageId);
@@ -562,7 +591,6 @@ namespace PhenoPad.FileService
             List<Notebook> result = new List<Notebook>();
             try
             {
-                //StorageFolder localFolder = ApplicationData.Current.LocalFolder;
                 QueryOptions queryOptions = new QueryOptions(CommonFolderQuery.DefaultQuery);
                 queryOptions.SortOrder.Clear();
                 SortEntry se = new SortEntry();
@@ -600,8 +628,9 @@ namespace PhenoPad.FileService
         /// </summary>
         public async Task<List<ImageAndAnnotation>> GetAllImageAndAnnotationObjects(string notebookId)
         {
-            try {
 
+            try
+            {
                 List<string> pageIds = await GetPageIdsByNotebook(notebookId);
                 if (pageIds == null)
                     return null;
@@ -614,9 +643,9 @@ namespace PhenoPad.FileService
                         result.AddRange(imageAndAnno);
                 }
                 return result;
-
             }
-            catch (Exception e) {
+            catch (Exception e)
+            {
                 LogService.MetroLogger.getSharedLogger().Error($"{notebookId}:{e}:{e.Message}");
                 return null;
             }
@@ -626,13 +655,13 @@ namespace PhenoPad.FileService
         {
             try
             {
-               
                 List<AudioFile> result = new List<AudioFile>();
                 string path = String.Format(@"{0}\Audio\", notebookId);
                 //Debug.WriteLine($"audio path = {path}");
                 StorageFolder audioFolder = await ROOT_FOLDER.GetFolderAsync(path);
                 var audios = await audioFolder.GetFilesAsync();
-                foreach (var audio in audios) {
+                foreach (var audio in audios)
+                {
                     AudioFile a = new AudioFile(notebookId, audio);
                     result.Add(a);
                 }
@@ -651,7 +680,8 @@ namespace PhenoPad.FileService
         /// </summary>
         public async Task<List<NotePage>> GetAllNotePageObjects(string notebookId)
         {
-            try {
+            try
+            {
                 List<string> pageIds = await GetPageIdsByNotebook(notebookId);
                 if (pageIds == null)
                     return null;
@@ -665,7 +695,8 @@ namespace PhenoPad.FileService
                 return result;
 
             }
-            catch (Exception) {
+            catch (Exception)
+            {
                 return null;
             }
 
@@ -680,7 +711,6 @@ namespace PhenoPad.FileService
         public string CreateUniqueName()
         {
             return $@"{DateTime.Now.Ticks}";
-            //return "goodname";
         }
 
         /// <summary>
@@ -690,8 +720,7 @@ namespace PhenoPad.FileService
         {
             LogService.MetroLogger.getSharedLogger().Info($"Creating notebook {notebookId}");
             bool result = true;
-            //StorageFolder localFolder = ApplicationData.Current.LocalFolder;
-            // create folder structure
+
             try
             {
                 var notebookFolder = await ROOT_FOLDER.CreateFolderAsync(notebookId, CreationCollisionOption.OpenIfExists);
@@ -709,6 +738,7 @@ namespace PhenoPad.FileService
                 return false;
             }
             Debug.WriteLine($"Successfully created notebook {notebookId}");
+
             return result;
         }
 
@@ -754,6 +784,7 @@ namespace PhenoPad.FileService
                 LogService.MetroLogger.getSharedLogger().Error($"Failed to create note page {pageId} for notebook {note.id}");
                 result = false;
             }
+
             return result;
         }
 
@@ -762,16 +793,13 @@ namespace PhenoPad.FileService
         /// </summary>
         public async Task<StorageFile> CreateImageFileForPage(string notebookId, string pageId, string name)
         {
-            //StorageFolder localFolder = ApplicationData.Current.LocalFolder;
             string foldername = String.Format("{0}\\{1}\\ImagesWithAnnotations", notebookId, pageId);
             try
             {
                 var imageFolder = await ROOT_FOLDER.GetFolderAsync(foldername);
                 if (imageFolder != null)
                 {
-
                     return await imageFolder.CreateFileAsync(name + ".jpg");
-
                 }
             }
             catch (Exception ex)
@@ -779,11 +807,12 @@ namespace PhenoPad.FileService
                 MetroLogger.getSharedLogger().Error($"Failed to create image file, notebook:{notebookId}, " +
                     $"page: {pageId}, name: {name}, details: {ex.Message} ");
             }
+
             return null;
         }
 
-        public async Task<StorageFile> CreateVideoFileForPage(string notebookId, string pageId, string name) {
-            //StorageFolder localFolder = ApplicationData.Current.LocalFolder;
+        public async Task<StorageFile> CreateVideoFileForPage(string notebookId, string pageId, string name)
+        {
             string foldername = String.Format("{0}\\{1}\\Videos", notebookId, pageId);
             try
             {
@@ -799,9 +828,8 @@ namespace PhenoPad.FileService
                 LogService.MetroLogger.getSharedLogger().Error($"Failed to create video file, notebook:{notebookId}, " +
                     $"page: {pageId}, name: {name}, details: {ex.Message} ");
             }
+
             return null;
-
-
         }
 
         /// <summary>
@@ -814,7 +842,7 @@ namespace PhenoPad.FileService
             {
                 string filename = GetNoteFilePath(notebookId, pageid, NoteFileType.Image, name);
                 string path = System.IO.Path.GetDirectoryName(filename);
-                //StorageFolder localFolder = ApplicationData.Current.LocalFolder;
+
                 var pfile = await ROOT_FOLDER.CreateFileAsync(filename, CreationCollisionOption.ReplaceExisting);
                 await photo.CopyAndReplaceAsync(pfile);
             }
@@ -823,11 +851,12 @@ namespace PhenoPad.FileService
                 isSuc = false;
                 LogService.MetroLogger.getSharedLogger().Error("Falied to copy photo to local folder: " + ex.Message);
             }
+
             return isSuc;
         }
 
         /// <summary>
-        /// Saves notebook meta file object to root folder.
+        /// Saves notebook metadata to xml file in root folder.
         /// </summary>
         public async Task<bool> SaveToMetaFile(Notebook notebook)
         {
@@ -844,14 +873,12 @@ namespace PhenoPad.FileService
             }
         }
 
-        // save photos and annotations to disk
         /// <summary>
         /// Saves all Images and Annotations to local disk and returns boolean result
         /// </summary>
         public async Task<bool> SaveNotePageDrawingAndPhotos(string notebookId, string pageId, NotePageControl notePage)
         {
             bool isSuccessful = true;
-            //StorageFolder localFolder = ApplicationData.Current.LocalFolder;
 
             try
             {
@@ -873,7 +900,6 @@ namespace PhenoPad.FileService
         public async Task<bool> SaveNotePageStrokes(string notebookId, string pageId, NotePageControl notePage)
         {
             bool isSuccessful = true;
-            //StorageFolder localFolder = ApplicationData.Current.LocalFolder;
 
             try
             {
@@ -882,7 +908,7 @@ namespace PhenoPad.FileService
                 var strokesFolder = await pageFolder.GetFolderAsync("Strokes");
                 var strokesFile = await strokesFolder.CreateFileAsync(this.STROKE_FILE_NAME, CreationCollisionOption.OpenIfExists);
                 
-                //Saves strokes on different canvas based on whether an EHR document exists
+                // Saves strokes on different canvas based on whether an EHR document exists
                 if (notePage.ehrPage == null)
                     isSuccessful = await saveStrokes(strokesFile, notePage.inkCan);
                 else
@@ -896,20 +922,21 @@ namespace PhenoPad.FileService
                     + e.Message);
                 return false;
             }
+
             return true;
         }
 
         /// <summary>
         /// Saves the EHR text file into local .txt file
         /// </summary>
-        public async Task<bool> SaveEHRText(string notebookId, string pageId, EHRPageControl ehr) {
-
+        public async Task<bool> SaveEHRText(string notebookId, string pageId, EHRPageControl ehr)
+        {
             try
             {
                 var notebookFolder = await ROOT_FOLDER.GetFolderAsync(notebookId);
                 var pageFolder = await notebookFolder.GetFolderAsync(pageId);
                 var ehrFile = await pageFolder.CreateFileAsync(this.EHR_FILE_NAME, CreationCollisionOption.OpenIfExists);
-                //saves text to local .txt file
+                // saves text to local .txt file
                 var buffer = Windows.Security.Cryptography.CryptographicBuffer.ConvertStringToBinary(ehr.getText(ehr.EHRTextBox), Windows.Security.Cryptography.BinaryStringEncoding.Utf8);
                 await FileIO.WriteBufferAsync(ehrFile, buffer);
             }
@@ -920,11 +947,12 @@ namespace PhenoPad.FileService
                     + e.Message);
                 return false;
             }
-            return true;
 
+            return true;
         }
 
-        public async Task<bool> SaveNoteText(string notebookId, string pageId, string text) {
+        public async Task<bool> SaveNoteText(string notebookId, string pageId, string text)
+        {
             try
             {
                 string textPath = GetNoteFilePath(notebookId, pageId, NoteFileType.NoteText);
@@ -939,6 +967,7 @@ namespace PhenoPad.FileService
                     + e.Message);
                 return false;
             }
+
             return true;
         }
 
@@ -946,10 +975,7 @@ namespace PhenoPad.FileService
         /// <summary>
         /// Saves the state of the object to a XML meta file.
         /// </summary>
-        /// <param name="filepath">path to save the XML file to</param>
-        /// <param name="tosave">the object to be saved</param>
-        /// <param name="type">the type of the object being saved</param>
-        /// <returns>(bool)true if save successful, (bool)false otherwise</returns>
+        /// <returns>true if save successful, false otherwise</returns>
         /// <remarks>
         /// Serialize the object into XML document to save the state of the object.
         /// Used to save states and properties of a note for future access.
@@ -963,7 +989,6 @@ namespace PhenoPad.FileService
             try
             {
                 sfile = await ROOT_FOLDER.CreateFileAsync(filepath, CreationCollisionOption.ReplaceExisting);
-                //Windows.Storage.CachedFileManager.DeferUpdates(sfile);
                 stream = await sfile.OpenStreamForWriteAsync();
                 var serializer = new XmlSerializer(type);
                 using (stream)
@@ -983,10 +1008,8 @@ namespace PhenoPad.FileService
                 {
                     stream.Dispose();
                 }
-                //TODO: why is this commented out?
-                // Finalize write so other apps can update file.
-                // Windows.Storage.Provider.FileUpdateStatus status = await Windows.Storage.CachedFileManager.CompleteUpdatesAsync(sfile);
             }
+
             return result;
         }
 
@@ -995,9 +1018,10 @@ namespace PhenoPad.FileService
         /// </summary>
         public async Task<bool> saveStrokes(StorageFile strokesFile, InkCanvas inkcancas)
         {
-            try {
-                // Prevent updates to the file until updates are 
-                // finalized with call to CompleteUpdatesAsync.
+            try
+            {
+                // Prevent updates to the file until updates are finalized
+                // with call to CompleteUpdatesAsync.
                 Windows.Storage.CachedFileManager.DeferUpdates(strokesFile);
                 // Open a file stream for writing.
                 IRandomAccessStream stream = await strokesFile.OpenAsync(FileAccessMode.ReadWrite);
@@ -1025,7 +1049,8 @@ namespace PhenoPad.FileService
                 }
 
             }
-            catch (Exception) {
+            catch (Exception)
+            {
                 return false;
             }
 
@@ -1055,9 +1080,7 @@ namespace PhenoPad.FileService
                               96.0,
                               96.0,
                               pixels);
-                    //Windows.Graphics.Imaging.BitmapDecoder decoder = await Windows.Graphics.Imaging.BitmapDecoder.CreateAsync(imgstream);
-                    //Windows.Graphics.Imaging.PixelDataProvider pxprd = await decoder.GetPixelDataAsync(Windows.Graphics.Imaging.BitmapPixelFormat.Bgra8, Windows.Graphics.Imaging.BitmapAlphaMode.Straight, new Windows.Graphics.Imaging.BitmapTransform(), Windows.Graphics.Imaging.ExifOrientationMode.RespectExifOrientation, Windows.Graphics.Imaging.ColorManagementMode.DoNotColorManage);
-
+                    
                     await encoder.FlushAsync();
                 }
             }
@@ -1067,11 +1090,12 @@ namespace PhenoPad.FileService
                 LogService.MetroLogger.getSharedLogger().Error($"Failed to save BitmapImage: notebook: {notebookId}, page: {notebookId}, name: {name}, details: {ex.Message}");
 
             }
-            return isSuccess;
 
+            return isSuccess;
         }
 
-        public async Task<bool> SaveEHRFormats(string notebookId, string pageId, EHRPageControl ehr) {
+        public async Task<bool> SaveEHRFormats(string notebookId, string pageId, EHRPageControl ehr)
+        {
             try
             {
                 EHRFormats format = new EHRFormats(ehr);
@@ -1082,17 +1106,21 @@ namespace PhenoPad.FileService
                 return true;
 
             }
-            catch (Exception e) {
+            catch (Exception e)
+            {
                 Debug.WriteLine(e + e.Message);
                 return false;
             }
         }
-        public async Task<EHRFormats> LoadEHRFormats(string notebookId, string pageId) {
+
+        public async Task<EHRFormats> LoadEHRFormats(string notebookId, string pageId)
+        {
             try
             {
                 string path = GetNoteFilePath(notebookId, pageId, NoteFileType.EHRFormat);
                 var sfile = await ROOT_FOLDER.TryGetItemAsync(path);
-                if (sfile != null) {
+                if (sfile != null)
+                {
                     sfile = await ROOT_FOLDER.GetFileAsync(path);
                     string xml = await Windows.Storage.FileIO.ReadTextAsync((StorageFile)sfile);
                     EHRFormats ehrformat = EHRFormats.Deserialize(xml);
@@ -1100,7 +1128,8 @@ namespace PhenoPad.FileService
                 }
                 return null;
             }
-            catch (FileNotFoundException) {
+            catch (FileNotFoundException)
+            {
                 //this may happen when creating a new ehr and thus can be omitted
                 return null;
             }
@@ -1205,7 +1234,8 @@ namespace PhenoPad.FileService
                     return obj;
                 }
             }
-            catch (InvalidOperationException) {     
+            catch (InvalidOperationException)
+            {     
                 return null;
             }
             catch (Exception ex)
@@ -1224,7 +1254,9 @@ namespace PhenoPad.FileService
             try
             {
                 if (strokesFile == null)
+                { 
                     return false;
+                }
                 // Open a file stream for reading.
                 IRandomAccessStream stream = await strokesFile.OpenAsync(FileAccessMode.Read);
                 // Read from file.
@@ -1250,7 +1282,9 @@ namespace PhenoPad.FileService
                 StorageFile textFile = await ROOT_FOLDER.GetFileAsync(textPath);
                 //saves text to local .txt file
                 if (textFile == null)
+                { 
                     return "";
+                }
                 string text = await FileIO.ReadTextAsync(textFile);
                 return text;
             }
@@ -1285,17 +1319,22 @@ namespace PhenoPad.FileService
             }           
         }
 
-        public async Task<bool> DeleteAddInFile(string notebookId, string pageId, string name) {
+        public async Task<bool> DeleteAddInFile(string notebookId, string pageId, string name)
+        {
             try
             {
                 string strokepath = GetNoteFilePath(notebookId, pageId, NoteFileType.ImageAnnotation,name);
                 string imagepath = GetNoteFilePath(notebookId, pageId, NoteFileType.Image, name);
                 var s = await ROOT_FOLDER.TryGetItemAsync(strokepath);
                 if (s != null)
+                { 
                     await s.DeleteAsync();
+                }
                 var i = await ROOT_FOLDER.TryGetItemAsync(imagepath);
                 if (i != null)
+                { 
                     await i.DeleteAsync();
+                }
                 return true;
             }
             catch (Exception e)
@@ -1303,7 +1342,6 @@ namespace PhenoPad.FileService
                 LogService.MetroLogger.getSharedLogger().Error($"Failed to delete addin file: {e}:{e.Message}");
                 return false;
             }
-
         }
 
         #endregion

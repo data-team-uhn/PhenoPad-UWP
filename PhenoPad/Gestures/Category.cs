@@ -114,8 +114,6 @@ namespace PhenoPad.Gestures
         /// Indexer that returns the prototype at the given index within
         /// this gesture category, or null if the gesture does not exist.
         /// </summary>
-        /// <param name="i"></param>
-        /// <returns></returns>
         public Unistroke this[int i]
         {
             get
@@ -162,8 +160,6 @@ namespace PhenoPad.Gestures
         /// <summary>
         /// Pulls the category name from the gesture name, e.g., "circle" from "circle03".
         /// </summary>
-        /// <param name="s"></param>
-        /// <returns></returns>
         public static string ParseName(string s)
         {
             string category = String.Empty;
@@ -177,6 +173,5 @@ namespace PhenoPad.Gestures
             }
             return category;
         }
-
     }
 }

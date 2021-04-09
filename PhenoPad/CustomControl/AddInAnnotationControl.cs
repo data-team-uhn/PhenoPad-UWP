@@ -23,7 +23,10 @@ namespace PhenoPad.CustomControl
         TextComment,
         TextInsert
     }
-    //Partial class for EHR mode annotations only
+
+    /// <summary>
+    /// Partial class for EHR mode annotations only
+    /// </summary>
     public sealed partial class AddInControl : UserControl
     {
         public AnnotationType anno_type;
@@ -43,7 +46,7 @@ namespace PhenoPad.CustomControl
         public EHRPageControl ehr;
 
         /// <summary>
-        /// Adding control for commenting annotation in EHR Mode only
+        /// Adding control for commenting annotation in EHR Mode only.
         /// </summary>
         public AddInControl(string name,
                             EHRPageControl ehr,
@@ -52,7 +55,7 @@ namespace PhenoPad.CustomControl
             this.InitializeComponent();
             rootPage = MainPage.Current;
 
-            //setting pre-saved configurations of the control
+            // Setting pre-saved configurations of the control
             {
                 anno_type = type;
                 addinType = AddinType.EHR;
@@ -100,7 +103,7 @@ namespace PhenoPad.CustomControl
             inkCanvas.InkPresenter.StrokesCollected += inkCanvas_StrokesCollected;
 
 
-            //control transform group binding
+            // Control transform group binding
             {
                 TransformGroup tg = new TransformGroup();
                 viewFactor = new ScaleTransform();
@@ -134,14 +137,13 @@ namespace PhenoPad.CustomControl
             OutlineGrid.BorderThickness = new Thickness(2);
             categoryGrid.Visibility = Visibility.Collapsed;
             DrawingButton_Click(null, null);
-            //Visibility = Visibility.Collapsed;
-
         }
 
+        /// <summary>
+        /// Slides the comment UI to the right side and minimize strokes if necessary
+        /// </summary>
         public async void SlideToRight()
         {
-            //slides the comment UI to the right side and minimize strokes if necessary
-
             if (! inDock)
             {
                 Visibility = Visibility.Visible;
@@ -175,10 +177,10 @@ namespace PhenoPad.CustomControl
             await EHRCommentSlidingAnimation.BeginAsync();
         }
 
+        /// <summary>
+        /// Inserts the converted text in the comment tag to EHR text.
+        /// </summary>
         private void InsertConverted(object sender, RoutedEventArgs e) {
-            //inserts the converted text in the comment tag to EHR text
-
-            //Debug.WriteLine(this.commentID);
             ehr.AddInsert(insertFromComment: this, index: commentID);           
         }
 
@@ -257,17 +259,13 @@ namespace PhenoPad.CustomControl
                 ehr.RemoveAnnotation(this);
         }
 
+        /// <summary>
+        /// Slides comment back and re-enables edit mode
+        /// </summary>
         public async void ReEdit(object sender = null, RoutedEventArgs e = null)
-        {//Slides comment back and re-enables edit mode
+        {
             if (addinSlide.X == commentslideX)
             {
-
-                //if there's a comment currently at edit mode, slide it back to avoid position shifting errors
-                //AddInControl lastActiveComment = ehr.comments.Where(x => x.commentID == ehr.lastAddedCommentID).FirstOrDefault();
-                //if (lastActiveComment != null)
-                //{
-                //    lastActiveComment.SlideToRight();
-                //}
                 ehr.HideAndClearInputPanel();
                 var editings = ehr.comments.Where(x => x.addinSlide.X == 0).ToList();
                 if (editings != null) {
@@ -288,22 +286,15 @@ namespace PhenoPad.CustomControl
 
                 foreach (InkStroke s in inkCan.InkPresenter.StrokeContainer.GetStrokes())
                 {
-                    //zooms back to original size
+                    // zooms back to original size
                     s.PointTransform = s.PointTransform * Matrix3x2.CreateScale((float)(1/inkRatio));
                     s.Selected = true;
                 }
                 Rect bound = inkCan.InkPresenter.StrokeContainer.BoundingRect;
-                //Debug.WriteLine($"REEDIT bound.width = {bound.Width}, bound.height = {bound.Height}, bound.x = {bound.X}, bound.y = {bound.Y}");
 
-                //foreach (InkStroke s in inkCan.InkPresenter.StrokeContainer.GetStrokes()) {
-                //    s.PointTransform *= Matrix3x2.CreateTranslation((float)(-1 * bound.X), (float)(-1 * bound.Y));
-                //}
-                //inkCanvas.InkPresenter.StrokeContainer.MoveSelected(new Point(-1 * bound.X + 1, -1 * bound.Y + 1));
                 this.widthOrigin = bound.Width < DEFAULT_COMMENT_WIDTH ? DEFAULT_COMMENT_WIDTH : bound.Width + 5;
                 this.Width = this.widthOrigin;
-                //this.Height = this.heightOrigin;
                 this.Height = Math.Max(GetCommentHeight(), heightOrigin);
-                //this.Height = Math.Max(this.heightOrigin, bound.Y + bound.Height + COMMENT_HEIGHT);
                 inkCan.Height = this.Height;
                 inkCan.Width = this.Width;
                 Canvas.SetZIndex(this, 99);
@@ -316,11 +307,13 @@ namespace PhenoPad.CustomControl
                     Visibility = Visibility.Collapsed;
                 }
             }
-
         }
 
+        /// <summary>
+        /// Shrinks the strokes in inkCan and readjusts the control frame size.
+        /// </summary>
         private void CompressComment()
-        { //Shrinks the strokes in inkCan and readjusts the control frame size
+        {
             if (!hasImage)
             {
                 if (anno_type == AnnotationType.RawComment || anno_type == AnnotationType.RawInsert) {
@@ -331,8 +324,8 @@ namespace PhenoPad.CustomControl
                     Debug.WriteLine($"Number of lines detected = {inknodes.Count},height ratio = {bound.Height / DEFAULT_COMMENT_HEIGHT}");
                     inkRatio = bound.Width / COMMENT_WIDTH;
 
-                    //Detected less/equal one line of strokes and the bound is less than a line height,
-                    //In this case treat it as a single line of annotation
+                    // Detected less/equal one line of strokes and the bound is less than a line height,
+                    // in this case treat it as a single line of annotation
                     if (inknodes.Count <= 1 && bound.Height <= COMMENT_HEIGHT * 1.5)
                     {
                         inkRatio = Math.Min(COMMENT_HEIGHT / (bound.Height + 10), bound.Height / (COMMENT_HEIGHT + 10));
@@ -342,18 +335,18 @@ namespace PhenoPad.CustomControl
                     else
                     {
                         int line;
-                        //use InkAnalyzer's line count if available, o.w. estimate line using bound height
+                        // use InkAnalyzer's line count if available, o.w. estimate line using bound height
                         line = inknodes.Count >= 1 ? inknodes.Count : (int)(Math.Ceiling((bound.Height) / COMMENT_HEIGHT));
 
                         inkRatio = Math.Min((bound.Height) / (line * COMMENT_HEIGHT + 10), (line * COMMENT_HEIGHT) / (bound.Height + 10));
 
-                        //recalculate number of lines relative to compressed strokes
+                        // re-calculate number of lines relative to compressed strokes
                         if (inknodes.Count < 1)
                             line = (int)(Math.Ceiling((bound.Height * inkRatio + 1) / COMMENT_HEIGHT));
 
                         this.Height = (line) * COMMENT_HEIGHT;
                     }
-                    //further compresses the strokes if calculated ratio is over 60%
+                    // further compresses the strokes if calculated ratio is over 60%
                     if (inkRatio > 0.6)
                         inkRatio = 0.6;
 
@@ -364,7 +357,6 @@ namespace PhenoPad.CustomControl
                     }
 
                     bound = inkCan.InkPresenter.StrokeContainer.BoundingRect;
-                    //Debug.WriteLine($"bound.width = {bound.Width}, bound.height = {bound.Height}, bound.x = {bound.X}, bound.y = {bound.Y}");
                     inkCanvas.InkPresenter.StrokeContainer.MoveSelected(new Point(-1 * bound.X + 1, -1 * bound.Y));
                     this.Width = bound.Width < COMMENT_WIDTH ? COMMENT_WIDTH : bound.Width + 5;
                     inkAnalyzer.ClearDataForAllStrokes();
@@ -391,27 +383,33 @@ namespace PhenoPad.CustomControl
 
         }
 
+        /// <summary>
+        /// Gets the compressed comment height without actually compressing the comment
+        /// </summary>
         public double GetCommentHeight()
-        {//Gets the compressed comment height without actually compressing the comment
+        {
             if (anno_type == AnnotationType.RawComment || anno_type == AnnotationType.RawInsert)
             {
                 var inknodes = inkAnalyzer.AnalysisRoot.FindNodes(InkAnalysisNodeKind.Line);
                 Rect bound = inkCan.InkPresenter.StrokeContainer.BoundingRect;
 
-                //estimated single line
+                // estimated single line
                 if (inknodes.Count <= 1 && bound.Height <= COMMENT_HEIGHT * 1.5)
+                {
                     return COMMENT_HEIGHT;
-                //estimated multiple line
+                }
+
+                // estimated multiple line
                 else
                 {
                     int line;
                     line = inknodes.Count >= 1 ? inknodes.Count : (int)(Math.Ceiling((bound.Height) / COMMENT_HEIGHT));
                     inkRatio = Math.Min((bound.Height) / (line * COMMENT_HEIGHT + 10), (line * COMMENT_HEIGHT) / (bound.Height + 10));
-                    //recalculate number of lines relative to compressed strokes
+
+                    // recalculate number of lines relative to compressed strokes
                     if (inknodes.Count < 1)
                         line = (int)(Math.Ceiling((bound.Height * inkRatio + 1) / COMMENT_HEIGHT));
                     return (line) * COMMENT_HEIGHT;
-
                 }
             }
             else
@@ -429,13 +427,14 @@ namespace PhenoPad.CustomControl
             addinSlide.X = 0;
         }
 
+
         private async void inkCanvas_StrokesCollected(InkPresenter sender, InkStrokesCollectedEventArgs args)
         {
-            //auto analyzer new strokes bound when user finished writing a stroke comment 
-
+            // auto analyzer new strokes bound when user finished writing a stroke comment 
             inkAnalyzer.AddDataForStrokes(inkCan.InkPresenter.StrokeContainer.GetStrokes());
             await inkAnalyzer.AnalyzeAsync();
-            //detects if user input has reached maximum height and extend if necessary
+
+            // detects if user input has reached maximum height and extend if necessary
             Rect bound = inkCan.InkPresenter.StrokeContainer.BoundingRect;
             if (bound.Top + bound.Height > 0.8 * this.Height) {
                 this.Height += COMMENT_HEIGHT;

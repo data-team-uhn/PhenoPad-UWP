@@ -93,11 +93,9 @@ namespace PhenoPad.LogService
                     int messageIndex = 0;
                     int startFileCount = LogFileGeneratedCount;
 
-                    //
                     // Log large messages until the current log file hits the maximum size.
                     // When the current log file reaches its maximum size, LogFileGeneratedHandler 
                     // will be called.
-                    //
 
                     while (LogFileGeneratedCount - startFileCount < NUMBER_OF_LOG_FILES_TO_GENERATE)
                     {
@@ -120,11 +118,9 @@ namespace PhenoPad.LogService
                         int value = 1000000; // one million, 7 digits, 4-bytes as an int, 14 bytes as a wide character string.
                         channel.LogMessage("Value #" + messageIndex.ToString() + "  " + value.ToString(), LoggingLevel.Critical); // value is logged as 14 byte wide character string.
                         channel.LogValuePair("Value #" + messageIndex.ToString(), value, LoggingLevel.Critical); // value is logged as a 4-byte integer.
-
-                        //
+                       
                         // Pause every once in a while to simulate application 
                         // activity outside of logging.
-                        //
 
                         if (messageIndex % 50 == 0)
                         {
@@ -192,9 +188,11 @@ namespace PhenoPad.LogService
             }
         }
 
+        /// <summary>
+        /// Save the final log file before closing the session.
+        /// </summary>
         private async Task<string> CloseSessionSaveFinalLogFile()
         {
-            // Save the final log file before closing the session.
             StorageFile finalFileBeforeSuspend = await session.CloseAndSaveToFileAsync();
             if (finalFileBeforeSuspend != null)
             {
@@ -243,6 +241,7 @@ namespace PhenoPad.LogService
             // Save new channel state. These values can be used for advanced logging scenarios where, 
             // for example, it's desired to skip blocks of logging code if the channel is not being
             // consumed by any sessions. 
+
             isChannelEnabled = sender.Enabled;
             channelLoggingLevel = sender.Level;
         }
@@ -267,7 +266,6 @@ namespace PhenoPad.LogService
         /// <summary>
         /// Prepare this scenario for suspend. 
         /// </summary>
-        /// <returns></returns>
         public async Task PrepareToSuspendAsync()
         {
             CheckDisposed();
@@ -458,6 +456,7 @@ namespace PhenoPad.LogService
             ResumeLoggingIfApplicable();
         }
 
+        ///c<summary>
         /// The app's one and only LoggingScenario instance.
         /// </summary>
         static private FileLoggingSessionScenario loggingScenario;

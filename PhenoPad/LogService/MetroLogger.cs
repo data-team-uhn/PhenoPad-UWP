@@ -33,7 +33,7 @@ namespace PhenoPad.LogService
             //First time calling, need to create the logger
             if (logger == null)
             {
-                //Custom Layout defined in LoggerCustomLayout.cs
+                // Custom Layout defined in LoggerCustomLayout.cs
                 var loggingConfiguration = new LoggingConfiguration { IsEnabled = true };            
                 loggingConfiguration.AddTarget(LogLevel.Info, LogLevel.Fatal, new StreamingFileTarget(new CustomLayout()));
                 loggingConfiguration.AddTarget(LogLevel.Trace, LogLevel.Fatal, new DebugTarget(new CustomLayout()));

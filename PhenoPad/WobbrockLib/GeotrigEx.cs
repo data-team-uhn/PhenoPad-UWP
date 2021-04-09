@@ -50,7 +50,6 @@ namespace WobbrockLib
         /// </summary>
         /// <param name="points">A list of points.</param>
         /// <param name="w">The array of weights.</param>
-        /// <returns></returns>
         /// <remarks>This function can be thought of as a two-dimensional weighted mean.</remarks>
         public static PointR Centroid(List<PointR> points, double[] w)
         {
@@ -182,23 +181,6 @@ namespace WobbrockLib
             return new PointR(x, y);
         }
 
-        ///// <summary>
-        ///// Maps a <b>System.Drawing.Region</b> from one coordinate plane to the same relative 
-        ///// size and position in another coordinate plane.
-        ///// </summary>
-        ///// <param name="rgn">The region to map.</param>
-        ///// <param name="rFrom">The plane in which <i>rgn</i> originally resides.</param>
-        ///// <param name="rTo">The new plane into which <i>rgn</i> will be mapped.</param>
-        ///// <returns>The given region mapped into <i>rTo</i>.</returns>
-        //public static Region MapRegion(Region rgn, RectangleR rFrom, RectangleR rTo)
-        //{
-        //    Matrix m = new Matrix();
-        //    m.Scale((float) (rTo.Width / rFrom.Width), (float) (rTo.Height / rFrom.Height));
-        //    m.Translate((float) (rTo.Left - rFrom.Left), (float) (rTo.Top - rFrom.Top));
-        //    rgn.Transform(m);
-        //    return rgn;
-        //}
-
         /// <summary>
         /// Gets the length of the path traversed by the given points.
         /// </summary>
@@ -269,26 +251,6 @@ namespace WobbrockLib
             }
         }
 
-        ///// <summary>
-        ///// Tests whether or not the given point is inside the region defined by the given array
-        ///// of points. The array is assumed to define a closed shape moving from its first point
-        ///// to its second, from its second to its third, and so on until its last point is assumed
-        ///// to connect back to its first.
-        ///// </summary>
-        ///// <param name="pt">The point to hit-test.</param>
-        ///// <param name="pts">The ordered sequence of points defining a region. The points do not
-        ///// have to close, as the figure will be closed from the last point to the first.</param>
-        ///// <returns></returns>
-        //public static bool PointInRegion(PointF pt, PointF[] pts)
-        //{
-        //    GraphicsPath path = new GraphicsPath();
-        //    path.AddLines(pts);
-        //    path.CloseFigure();
-        //    bool isIn = path.IsVisible(pt);
-        //    path.Dispose();
-        //    return isIn;
-        //}
-
         /// <summary>
         /// Calculates the convex hull of the points given and returns the result as
         /// an ordered sequence of indices into the given points list. The ordered sequence
@@ -309,7 +271,7 @@ namespace WobbrockLib
             int maxAngle = 0;
             int minAngle = 0;
 
-            // find the index of the maximum y-value point in the set
+            // Find the index of the maximum y-value point in the set
             int maxPoint = 0;
             for (int i = 1; i < points.Count; i++)
             {
@@ -317,7 +279,7 @@ namespace WobbrockLib
                     maxPoint = i;
             }
 
-            // find the index of the minimum y-value point in the set
+            // Find the index of the minimum y-value point in the set
             int minPoint = 0;
             for (int i = 1; i < points.Count; i++)
             {
@@ -434,8 +396,6 @@ namespace WobbrockLib
         /// <summary>
         /// Converts radians to degrees.
         /// </summary>
-        /// <param name="rad"></param>
-        /// <returns></returns>
         public static double Radians2Degrees(double radians)
         {
             return (radians * 180.0 / Math.PI);
@@ -444,8 +404,6 @@ namespace WobbrockLib
         /// <summary>
         /// Converts degrees to radians.
         /// </summary>
-        /// <param name="rad"></param>
-        /// <returns></returns>
         public static double Degrees2Radians(double degrees)
         {
             return (degrees * Math.PI / 180.0);

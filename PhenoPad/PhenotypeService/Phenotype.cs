@@ -22,7 +22,8 @@ namespace PhenoPad.PhenotypeService
         public Phenotype()
         {
         }
-        //Initiate from phenopad
+
+        // Initiate from phenopad
         public Phenotype(string hpid, string name, int state, int page,List<String> alter = null, SourceType st = SourceType.None)
         {
             this.hpId = hpid;
@@ -32,26 +33,6 @@ namespace PhenoPad.PhenotypeService
             pageSource = page;
             sourceType = st;
         }
-        //public Phenotype(string hpid, string name, List<String> alter, int state, SourceType st)
-        //{
-        //    this.hpId = hpid;
-        //    this.name = name;
-        //    this.alternatives = alter;
-        //    this.state = state;
-        //    this.sourceType = st;
-        //    pageSource = -1;
-
-        //}
-        //public Phenotype(string hpid, string name, int state)
-        //{
-        //    this.hpId = hpid;
-        //    this.name = name;
-        //    this.alternatives = new List<string>();
-        //    this.state = state;
-        //    sourceType = SourceType.None;
-        //    pageSource = -1;
-
-        //}
 
         // Initiate from json of Phenotips
         public Phenotype(Row row)
@@ -61,6 +42,7 @@ namespace PhenoPad.PhenotypeService
             this.alternatives = row.synonym;
             this.state = -1;
         }
+
         // Initiate from NCR
         public Phenotype(NCRPhenotype p)
         {
@@ -75,7 +57,7 @@ namespace PhenoPad.PhenotypeService
             this.alternatives = new List<string>();
             this.state = -1;
         }
-
+        
 
         [System.Xml.Serialization.XmlIgnore]
         public Action<Phenotype> OnRemoveCallback { get; set; }
@@ -132,6 +114,5 @@ namespace PhenoPad.PhenotypeService
         {
             return !(phenotype1 == phenotype2);
         }
-
     }
 }

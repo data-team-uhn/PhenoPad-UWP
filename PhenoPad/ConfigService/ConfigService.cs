@@ -30,7 +30,7 @@ namespace PhenoPad.ConfigService
 
         }
 
-        #region microphone settings
+        #region Microphone Settings
         public void UseInternalMic()
         {
             localSettings.Values["MicMode"] = 0;

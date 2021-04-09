@@ -99,17 +99,15 @@ namespace PhenoPad
             StorageFile file = e.Parameter as StorageFile;
             BackButton.IsEnabled = true;
 
-            if (e.Parameter == null || file != null)
-            {//is a file for importing EHR
-                //TO DO for EHR
+            if (e.Parameter == null || file != null) //is a file for importing EHR
+            {
+                // TODO for EHR
             }
-            else
-            {//is a valid note to load
+            else //is a valid note to load
+            {
                 this.notebookId = nid;
                 FileManager.getSharedFileManager().currentNoteboookId = nid;
-                //await Dispatcher.RunAsync(CoreDispatcherPriority.High, LoadNotebook);
             }
-            //PlayMedia();
             LoadNotebook();
         }
 
@@ -127,13 +125,9 @@ namespace PhenoPad
                     for (int i = 0; i < noteline.HWRs.Count; i++)
                     {
                         WordBlockControl wb = noteline.HWRs[i];
-                        //todo: figure out how to save canvasleft because wordblock has no canvas left property
 
                         RecognizedPhrases ph = new RecognizedPhrases(notebookId, wb.pageId.ToString(), wb.line_index, i, wb.current, wb.candidates, wb.strokes, wb.corrected, wb.is_abbr);
 
-
-                        //RecognizedPhrases ph = new RecognizedPhrases(noteline.keyLine.ToString(), "1", i, Int32.Parse(wb.current), Int32.Parse(wb.candidates), wb.corrected, wb.strokes, wb.corrected, wb.is_abbr);
-                        //ph.pageId = noteline.pageID.ToString();
                         phrases.Add(ph);
                     }
                 }
@@ -156,11 +150,8 @@ namespace PhenoPad
                 if (connectTask.Exception != null)
                     MetroLogger.getSharedLogger().Error("connectTask.Exception:" + connectTask.Exception.Message);
                 Debug.WriteLine("connected, will begin receiving data");
-                //StorageFolder storageFolder = ApplicationData.Current.LocalFolder;
-                //StorageFile storageFile = await storageFolder.CreateFileAsync(
-                //  "audio.wav", CreationCollisionOption.GenerateUniqueName);
-                //=============================
-                uint length = 1000000;     // Leave a large buffer
+
+                uint length = 1000000; // Leave a large buffer
                 audioBuffer = new List<Byte>();
                 isReading = true;
                 cancelSource = new CancellationTokenSource();
@@ -170,12 +161,15 @@ namespace PhenoPad
                     readTimer.Start();
                     IBuffer op = await streamSocket.InputStream.ReadAsync(new Windows.Storage.Streams.Buffer(length), length, InputStreamOptions.Partial).AsTask(token);
                     if (op.Length > 0)
+                    { 
                         audioBuffer.AddRange(op.ToArray());
+                    }
                     readTimer.Stop();
                 }
             }
-            catch (TaskCanceledException) {
-                //Plays the audio received from server
+            catch (TaskCanceledException)
+            {
+                // Plays the audio received from server
                 readTimer.Stop();
                 Debug.WriteLine("------------------" + audioBuffer.Count + "----------------");
                 MemoryStream mem = new MemoryStream(audioBuffer.ToArray());
@@ -196,15 +190,10 @@ namespace PhenoPad
         /// </summary>
         protected async override void OnNavigatingFrom(NavigatingCancelEventArgs e)
         {
-            //TODO
-            //streamSocket.Close(0,"end");
-            //streamSocket.Dispose();
-            //streamSocket = null;
-            //readTimer.Stop();
         }
 
-        public void ShowAllChatAt(object sender, TextMessage mess) {
-            //TextMessage mess = conversations.Where(x => x.Body == textMessage).FirstOrDefault();
+        public void ShowAllChatAt(object sender, TextMessage mess)
+        {        
             int index = this.conversations.IndexOf(mess);
             Debug.WriteLine(index+"kkkk");
 
@@ -213,13 +202,16 @@ namespace PhenoPad
             ChatRecordFlyout.ShowAt((FrameworkElement)sender);
         }
 
-        private async void LoadNotebook() {
+        private async void LoadNotebook()
+        {
             try
             {
                 ViewLoadingPopup.IsOpen = false;
-                //If notebook file exists, continues with loading...
+
+                // If notebook file exists, continues with loading...
                 notebookObject = await FileManager.getSharedFileManager().GetNotebookObjectFromXML(notebookId);
-                //Parsing information from speech conversation, need the time for matching detected phenotype
+
+                // Parsing information from speech conversation, need the time for matching detected phenotype
                 List<TextMessage> conversations = await FileManager.getSharedFileManager().GetSavedTranscriptsFromXML(notebookId);
                 this.conversations = conversations == null ? this.conversations : conversations;
                 AllChatView.ItemsSource = this.conversations;
@@ -230,16 +222,12 @@ namespace PhenoPad
                 logs = await OperationLogger.getOpLogger().ParseOperationItems(notebookObject,conversations);
                 logs = logs.OrderBy(x=>x.keyTime).ToList();
 
-                //foreach (var l in logs)
-                    //NoteLineStack.Children.Add(l);
-
                 aaa.ItemsSource = logs;
                 
                 await CoreApplication.MainView.CoreWindow.Dispatcher.RunAsync(CoreDispatcherPriority.High, () =>
                     {
-                     // Your UI update code goes here!
+                     // Your UI update code goes here
                      UpdateLayout();
-
                     }
                 );
 
@@ -248,7 +236,8 @@ namespace PhenoPad
             }
             catch (NullReferenceException ne)
             {
-                ////NullReferenceException is very likely to happen when things aren't saved properlly during debugging state due to force quit
+                // Note: NullReferenceException is very likely to happen when things 
+                //       aren't saved properlly during debugging state due to force quit
                 MetroLogger.getSharedLogger().Error(ne + ne.Message);
                 return;
             }
@@ -256,29 +245,23 @@ namespace PhenoPad
             {
                 MetroLogger.getSharedLogger().Error($"Failed to Initialize Notebook From Disk:{e}:{e.Message}");
             }
-
-
         }
 
-        private async void BackButton_Clicked(object sender, RoutedEventArgs e) {
+        private async void BackButton_Clicked(object sender, RoutedEventArgs e)
+        {
             
             List<RecognizedPhrases> phrases = await GetAllRecognizedPhrases();
             var result = true;
-            for(int i = 0; i< pageCount; i++) { 
+            for(int i = 0; i< pageCount; i++)
+            { 
                 string path = FileManager.getSharedFileManager().GetNoteFilePath(notebookId, i.ToString(), NoteFileType.RecognizedPhraseMeta);
                 var pagePhrases = phrases.Where(x=>x.pageId == i.ToString()).ToList();
                 result &= await FileManager.getSharedFileManager().SaveObjectSerilization(path, pagePhrases, typeof(List<RecognizedPhrases>));
             }
             Debug.WriteLine($"phrase saving successful = {result}");
-
-      
+  
             readTimer.Stop();
             Frame.Navigate(typeof(PageOverview));
         }
-
-
-
-
-
     }
 }
