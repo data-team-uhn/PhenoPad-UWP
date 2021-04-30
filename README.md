@@ -2,13 +2,9 @@ PhenoPad-UWP
 ============
 [PhenoPad](http://www.phenopad.ai/) is a note taking application that allows physicians to take free-form notes and capture standard phenotypic information via audio, photo and video.
 
-
-<img src="http://phenopad.ccm.sickkids.ca:8888/img/phenopad/slides/slide2.png" alt="drawing" width="375" align="left"/> <img src="http://phenopad.ccm.sickkids.ca:8888/img/phenopad/slides/slide3.png" alt="drawing" width="375" align="right"/> 
-
 <p align="center">
-  <img src="http://phenopad.ccm.sickkids.ca:8888/img/phenopad/slides/slide5.png" alt="drawing" width="375"/>
+  <img src="https://github.com/jixuan-wang/PhenoPad-UWP/blob/master/PhenoPad/Assets/features_demo.png?raw=true" alt="drawing" width="800"/>
 <p />
-
 
 
 Features
