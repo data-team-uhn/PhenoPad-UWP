@@ -25,7 +25,7 @@ Clone the project to your device. In Visual Studio, open the project by `File`->
 
 More detailed guide on how to use the app coming soon...
 
-**Note:** Phenotypes suggestion and differential diagnosis which rely on [PhenoTips](https://phenotips.com/) is not available right now. If you would like to set up your own service, you can install the latest stable branch: https://github.com/phenotips/phenotips/tree/phenotips-1.4.9
+**Note:** Phenotypes suggestion and differential diagnosis which rely on [PhenoTips](https://phenotips.com/) is not available right now. If you would like to set up your own service, you can install the latest stable branch: https://github.com/phenotips/phenotips/tree/phenotips-1.4.9 (Click the gear button on the top bar to change the address of the service)
 
 Speech service
 -----------------------
