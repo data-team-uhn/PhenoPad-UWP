@@ -26,10 +26,9 @@ namespace PhenoPad.PhenotypeService
         public ObservableCollection<Phenotype> suggestedPhenotypes;
         public ObservableCollection<Disease> predictedDiseases;
         public ObservableCollection<Phenotype> phenotypesInNote;
-        public static string PHENOTYPEINFO_ADDR = "https://playground.phenotips.org/rest/vocabularies/hpo/";
-        public static string DIFFERENTIAL_ADDR = "https://services.phenotips.org/get/PhenoTips/DiseasePredictService2?format=json&limit=15";
-        //original https://playground.phenotips.org/get/PhenoTips/DiffDiagnosisService?format=json&limit=15
-        public static string SUGGESTION_ADDR = "https://services.phenotips.org/get/PhenoTips/DiffDiagnosisService?format=json&limit=15";
+        public static string PHENOTYPEINFO_ADDR = "http://phenopad.ccm.sickkids.ca:8000/rest/vocabularies/hpo/";
+        public static string DIFFERENTIAL_ADDR = "http://phenopad.ccm.sickkids.ca:8000/get/PhenoTips/DiseasePredictService2?format=json&limit=15";
+        public static string SUGGESTION_ADDR = "http://phenopad.ccm.sickkids.ca:8000/get/PhenoTips/DiffDiagnosisService?format=json&limit=15";
         public ObservableCollection<Phenotype> phenotypesInSpeech;
         public ObservableCollection<Phenotype> phenotypesSpeechCandidates;
 
