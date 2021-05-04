@@ -27,7 +27,7 @@ More detailed guide on how to use the app coming soon...
 
 **Note:** Automatic phenotype suggestion from note content and speech-to-text transcript is not available right now due to an issue with the annotation service it relies on. We are working to restore the feature and will update when the issue is resolved.
 
-Speech service
+Speech Service
 -----------------------
 You need to set up your own speech server to use the speech features. A demo server and the instructions to set it up is available at https://github.com/haochiz/PhenoPad-SpeechEngine.
 
