@@ -25,7 +25,7 @@ Clone the project to your device. In Visual Studio, open the project by `File`->
 
 More detailed guide on how to use the app coming soon...
 
-**Note:** Phenotypes suggestion and differential diagnosis which rely on [PhenoTips](https://phenotips.com/) is not available right now. If you would like to set up your own service, you can install the latest stable branch: https://github.com/phenotips/phenotips/tree/phenotips-1.4.9 (Click the gear button on the top bar to change the address of the service)
+**Note:** Automatic phenotype suggestion from note content and speech-to-text transcript is not available right now due to an issue with the annotation service it relies on. We are working to restore the feature and will update when the issue is resolved.
 
 Speech service
 -----------------------
@@ -34,3 +34,7 @@ You need to set up your own speech server to use the speech features. A demo ser
 Once you set up the server and have it running, click the gear button on the top bar and select 'Settings'. Select the `Surface Microphone` option. Type "your.server.ip:port" (e.g. `127.0.0.1:8888`) in the "ASR server" field then click `Change Server`. You should see a notification indicating ASR server address has been changed. 
 
 Click the microphone icon in the bottom left corner to start/stop a speech session, click the converastion icon on top left to open the real-time conversation panel to see the results.
+
+Phenotips Service
+-----------------
+By default, the phenotype suggestion and disease prediction service which relies on [PhenoTips](https://phenotips.com/) is hosted on our own server. If you'd like to set up your own service, you can install the latest stable Phenotips branch at https://github.com/phenotips/phenotips/tree/phenotips-1.4.9. Then go to Application Settings (click the gear button on the top bar) and change the address for `Suggestion`, `Differential` and `PhenoDetail` to the address of your own server.
