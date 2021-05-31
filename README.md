@@ -23,7 +23,7 @@ The app requires Microsoft Windows 10. You also need to download the [Visual Stu
 
 Clone the project to your device. In Visual Studio, open the project by `File`->`Open`->`Project/Solution...` or press `Ctrl+Shift+O` and select the project's solution (PhenoPad.sln). Use the green start button to build and run the app.
 
-More detailed guide on how to use the app coming soon...
+More detailed guide on how to use the app in Wiki.
 
 Speech Service
 -----------------------
