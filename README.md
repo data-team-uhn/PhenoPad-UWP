@@ -23,14 +23,16 @@ The app requires Microsoft Windows 10. You also need to download the [Visual Stu
 
 Clone the project to your device. In Visual Studio, open the project by `File`->`Open`->`Project/Solution...` or press `Ctrl+Shift+O` and select the project's solution (PhenoPad.sln). Use the green start button to build and run the app.
 
-More detailed guide on how to use the app coming soon...
+More detailed guide on how to use the app in Wiki.
 
-**Note:** Phenotypes suggestion and differential diagnosis which rely on [PhenoTips](https://phenotips.com/) is not available right now. If you would like to set up your own service, you can install the latest stable branch: https://github.com/phenotips/phenotips/tree/phenotips-1.4.9 (Click the gear button on the top bar to change the address of the service)
-
-Speech service
+Speech Service
 -----------------------
 You need to set up your own speech server to use the speech features. A demo server and the instructions to set it up is available at https://github.com/haochiz/PhenoPad-SpeechEngine.
 
 Once you set up the server and have it running, click the gear button on the top bar and select 'Settings'. Select the `Surface Microphone` option. Type "your.server.ip:port" (e.g. `127.0.0.1:8888`) in the "ASR server" field then click `Change Server`. You should see a notification indicating ASR server address has been changed. 
 
 Click the microphone icon in the bottom left corner to start/stop a speech session, click the converastion icon on top left to open the real-time conversation panel to see the results.
+
+Phenotips Service
+-----------------
+By default, the phenotype suggestion and disease prediction service which relies on [PhenoTips](https://phenotips.com/) is hosted on our own server. If you'd like to set up your own service, you can install the latest stable Phenotips branch at https://github.com/phenotips/phenotips/tree/phenotips-1.4.9. Then go to Application Settings (click the gear button on the top bar) and change the address for `Suggestion`, `Differential` and `PhenoDetail` to the address of your own server.
