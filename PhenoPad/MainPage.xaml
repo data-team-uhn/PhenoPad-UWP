@@ -182,7 +182,11 @@
 
                     <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xF0E3;"/>
                 </AppBarToggleButton>-->
-                
+
+                <AppBarToggleButton Icon="Document" Style="{StaticResource MyAppBarToggleButtonStyle}" Label="TestPage" 
+                                    Name="TestPageButton" Click="TestButton_Click" Width="160" 
+                                    ToolTipService.ToolTip="Show TestPage"/>
+
                 <AppBarToggleButton Icon="PreviewLink" Style="{StaticResource MyAppBarToggleButtonStyle}" Label="Overview" 
                                     Name="OverviewButton" Click="OverviewButton_Click" Width="160" 
                                     ToolTipService.ToolTip="Show Overview"/>
@@ -647,7 +651,6 @@
                     <ColumnDefinition Width="40"/>
                     <ColumnDefinition Width="40"/>
                     <ColumnDefinition Width="*"/>
-
                 </Grid.ColumnDefinitions>
 
                 <Grid.RowDefinitions>
@@ -1100,6 +1103,9 @@
             </Grid>
         </Popup>
 
+        <Popup x:Name="TestPopUp">
+            <local:TestPage x:Name="TestPopUpPage"/>
+        </Popup>
         <Popup x:Name="OverviewPopUp">
             <local:OverviewPage x:Name="OverivePopUpPage"/>
         </Popup>

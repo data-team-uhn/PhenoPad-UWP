@@ -8,11 +8,13 @@
     xmlns:phenotypeservice="using:PhenoPad.PhenotypeService"
     xmlns:customcontrol="using:PhenoPad.CustomControl"
     mc:Ignorable="d">
+    
     <Page.Transitions>
         <TransitionCollection>
             <EntranceThemeTransition FromVerticalOffset="0"/>
         </TransitionCollection>
     </Page.Transitions>
+    
     <Grid Background="White" BorderBrush="{ThemeResource AppBarBackground}">
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="*"/>

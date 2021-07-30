@@ -162,7 +162,7 @@ namespace PhenoPad.BluetoothService
             }
             catch (Exception ex) // ERROR_ELEMENT_NOT_FOUND
             {
-                LogService.MetroLogger.getSharedLogger().Error($"BluetoothService at line 141:{ex.Message}");
+                //LogService.MetroLogger.getSharedLogger().Error($"BluetoothService at line 165:{ex.Message}");
                 initialized = false;                
                 return;
             }

@@ -699,6 +699,7 @@ namespace PhenoPad.SpeechService
                     MainPage.Current.conversations.AddRange(temp);
                     
                     SpeechPage.Current.updateChat();
+                    TestPage.Current.updateChat();
                 }
             });
 

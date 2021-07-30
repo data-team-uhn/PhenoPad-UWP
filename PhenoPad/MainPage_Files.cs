@@ -51,6 +51,7 @@ namespace PhenoPad
                                                      // items in this list are displayed in SpeechPage's
                                                      // speech bubbles.
             SpeechPage.Current.updateChat();
+            TestPage.Current.updateChat();
 
             // Tries to create a file structure for the new notebook.
             {
@@ -140,6 +141,7 @@ namespace PhenoPad
                 Debug.WriteLine("mainpage audionames null" + audioNames == null);
 
                 SpeechPage.Current.updateChat();
+                TestPage.Current.updateChat();
                 // Gets all saved phenotypes from XML meta
                 List<Phenotype> phenos = await FileManager.getSharedFileManager().GetSavedPhenotypeObjectsFromXML(notebookId);
                 if (phenos != null && phenos.Count > 0)
@@ -645,6 +647,7 @@ namespace PhenoPad
             conversations = await FileManager.getSharedFileManager().GetSavedTranscriptsFromXML(notebookId);
             // display the loaded transcripts to Speech Page and update audio drop-down list
             SpeechPage.Current.updateChat();
+            TestPage.Current.updateChat();
         }
     }
 }

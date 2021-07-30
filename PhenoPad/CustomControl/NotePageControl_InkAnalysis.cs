@@ -1251,6 +1251,7 @@ namespace PhenoPad.CustomControl
                 rootPage.NotifyUser("No phenotypes found in: " + str, NotifyType.ErrorMessage, 2);
             }
             UpdateLayout();
+            TestPage.Current.updateNote(result);
         }
 
         /// <summary>
@@ -1268,6 +1269,8 @@ namespace PhenoPad.CustomControl
 
                 recognizedPhenoListView.ItemsSource = result;
                 recognizedPhenoBriefListView.ItemsSource = result;
+
+                TestPage.Current.updateNote(result);
 
                 breifPhenoProgressBar.Visibility = Visibility.Collapsed;
                 recognizedPhenoBriefListView.Visibility = Visibility.Visible;

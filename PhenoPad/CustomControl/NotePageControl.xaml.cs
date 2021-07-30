@@ -1671,6 +1671,9 @@ namespace PhenoPad.CustomControl
         {
             Button btn = (Button)sender;
             TextBlock tb = (TextBlock)btn.Content;
+
+            Debug.WriteLine(tb);
+
             recognizedText.ElementAt(iWordForCandidateSelection).selectedCandidate = tb.Text;
 
             string str = "";

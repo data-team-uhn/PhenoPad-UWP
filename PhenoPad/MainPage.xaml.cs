@@ -595,6 +595,26 @@ namespace PhenoPad
             }
         }
 
+        private void TestButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (!TestPopUp.IsOpen)
+            {
+                TestPopUpPage.Width = Window.Current.Bounds.Width;
+                TestPopUpPage.Height = Window.Current.Bounds.Height - topCmdBar.ActualHeight;
+                TestPopUpPage.Margin = new Thickness(0, topCmdBar.ActualHeight, 0, 0);
+                TestPopUp.IsOpen = true;
+            }
+            else
+            {
+                TestPopUp.IsOpen = false;
+            }
+            if (SpeechPopUp.IsOpen)
+            {
+                SpeechPopUp.IsOpen = false;
+                SpeechButton.IsChecked = false;
+            }
+        }
+
         /// <summary>
         /// Handler function called when "Chat Record" button is clicked. Opens the ChatRecord/Speech Page.
         /// </summary>
