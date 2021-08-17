@@ -48,6 +48,12 @@ namespace PhenoPad.PhenotypeService
             autosavetimer.Tick += autosaver_tick;
             // setting autosave phonetype interval to be about 0.1 seconds
             autosavetimer.Interval = TimeSpan.FromSeconds(0.1);
+
+            //string cur_path = Environment.CurrentDirectory;
+            string credential_path = @"..\\..\\..\\..\\PhenoPad Speech-33999a319b8c";
+            Environment.SetEnvironmentVariable("GOOGLE_APPLICATION_CREDENTIALS", credential_path);
+            Debug.WriteLine("###########");
+            Debug.WriteLine("###########");
         }
 
         public static PhenotypeManager getSharedPhenotypeManager()
@@ -660,6 +666,12 @@ namespace PhenoPad.PhenotypeService
                 httpResponse = await httpClient.GetAsync(requestUri);
                 httpResponse.EnsureSuccessStatusCode();
                 httpResponseBody = await httpResponse.Content.ReadAsStringAsync();
+
+                Debug.WriteLine("###########");
+                Debug.WriteLine(requestUri);
+                Debug.WriteLine(httpResponseBody);
+                Debug.WriteLine("###########");
+
                 httpResponseBody = httpResponseBody.Replace("_", "-");
                 var result = JsonConvert.DeserializeObject<RootObject>(httpResponseBody);
                 List<Phenotype> phenotypes = new List<Phenotype>();
@@ -711,6 +723,30 @@ namespace PhenoPad.PhenotypeService
 
             Uri requestUri = new Uri("https://ncr.ccm.sickkids.ca/curr/annotate/?text=" + str);
 
+
+
+
+
+            //Uri googleUri = new Uri("https://healthcare.googleapis.com/v1beta1/projects/phenopad-speech-1627597348217/locations/us-central1/services/nlp:analyzeEntities");
+            //using (var googleClient = new HttpClient())
+                
+            //{
+            //    using (var request = new HttpRequestMessage(new HttpMethod("POST"), googleUri))
+            //    {
+            //        googleClient.DefaultRequestHeaders.Add("Authorization", "Bearer " + accessToken);
+
+            //        request.Content.Headers.Add("Accept", "application/json");
+
+            //        request.Content = new StringContent("{\"username\":\"username\",\"password\":\"password\"}", Encoding.UTF8, "application/json");
+
+            //        var response = await googleClient.SendAsync(request);
+            //    }
+            //}
+
+
+
+
+
             // Send the GET request asynchronously and retrieve the response as a string.
             HttpResponseMessage httpResponse = new HttpResponseMessage();
             string httpResponseBody = "";
@@ -721,6 +757,11 @@ namespace PhenoPad.PhenotypeService
                 httpResponse = await httpClient.GetAsync(requestUri);
                 httpResponse.EnsureSuccessStatusCode();
                 httpResponseBody = await httpResponse.Content.ReadAsStringAsync();
+
+                Debug.WriteLine("###########");
+                Debug.WriteLine(requestUri);
+                Debug.WriteLine(httpResponseBody);
+                Debug.WriteLine("###########");
 
                 var result = JsonConvert.DeserializeObject<NCRResult>(httpResponseBody);
                 Dictionary<string, Phenotype> returnResult = new Dictionary<string, Phenotype>();
@@ -740,6 +781,7 @@ namespace PhenoPad.PhenotypeService
             catch (Exception ex)
             {
                 httpResponseBody = "Error: " + ex.HResult.ToString("X") + " Message: " + ex.Message;
+                Debug.WriteLine(httpResponseBody);
                 MetroLogger.getSharedLogger().Error("Failed to annotate by NCR, " + httpResponseBody);
             }
 
@@ -797,7 +839,7 @@ namespace PhenoPad.PhenotypeService
                 httpResponse = await httpClient.PostAsync(requestUri, formContent);
                 httpResponse.EnsureSuccessStatusCode();
                 httpResponseBody = await httpResponse.Content.ReadAsStringAsync();
-               
+
                 var result = JsonConvert.DeserializeObject<List<SuggestPhenotype>>(httpResponseBody);
                 
 
