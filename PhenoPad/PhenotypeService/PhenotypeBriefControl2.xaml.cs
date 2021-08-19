@@ -22,7 +22,7 @@ using Windows.ApplicationModel.DataTransfer;
 
 namespace PhenoPad.CustomControl
 {
-    public sealed partial class PhenotypeBriefControl : UserControl
+    public sealed partial class PhenotypeBriefControl2 : UserControl
     {
         public String phenotypeName
         {
@@ -106,7 +106,7 @@ namespace PhenoPad.CustomControl
 
         private int localState;
 
-        public PhenotypeBriefControl()
+        public PhenotypeBriefControl2()
         {
             this.InitializeComponent();
             //DeletePhenotypeSB.Begin();
@@ -170,17 +170,17 @@ namespace PhenoPad.CustomControl
                 //NameGrid.Background = Application.Current.Resources["Button_Background"] as SolidColorBrush;
                 //phenotypeNameTextBlock.Foreground = Application.Current.Resources["WORD_DARK"] as SolidColorBrush;
                 //phenotypeNameTextBlock.Foreground = new SolidColorBrush(Colors.Black);
-                phenotypeNameTextBlock.Foreground = new SolidColorBrush(Colors.White);
+                phenotypeNameTextBlock.Foreground = new SolidColorBrush(Colors.Black);
                 phenotypeNameTextBlock.Text = phenotypeName;
-                NameGrid.Background = new SolidColorBrush(Colors.CornflowerBlue);
+                NameGrid.Background = new SolidColorBrush(Colors.LightBlue);
                 //NameCrossLine.Visibility = Visibility.Collapsed;
             }
             //user selects the phenotype as N
             else
             {
                 //NameGrid.Background = new SolidColorBrush(Colors.LightCoral);
-                phenotypeNameTextBlock.Foreground = new SolidColorBrush(Colors.White);
-                NameGrid.Background = new SolidColorBrush(Colors.PaleVioletRed);
+                phenotypeNameTextBlock.Foreground = new SolidColorBrush(Colors.Black);
+                NameGrid.Background = new SolidColorBrush(Colors.LightPink);
                 phenotypeNameTextBlock.Text = "No " + phenotypeName;
                 //NameCrossLine.Visibility = Visibility.Visible;
             }
@@ -189,7 +189,6 @@ namespace PhenoPad.CustomControl
 
         private void phenotypeNameTextBlock_Tapped(object sender, RoutedEventArgs e)
         {
-
             switch (localState)
             {
                 case -1:
@@ -231,9 +230,28 @@ namespace PhenoPad.CustomControl
             args.Data.SetData(StandardDataFormats.Text, tb.Text);
         }
 
-        private void phenotypeNameTextBlock_Tapped_1(object sender, TappedRoutedEventArgs e)
+        private void TextBloackTapped(object sender, TappedRoutedEventArgs e)
         {
-
+            switch (localState)
+            {
+                case -1:
+                    localState = 1;
+                    setPhenotypeState(1);
+                    PhenotypeManager.getSharedPhenotypeManager().addPhenotype(new Phenotype(phenotypeId, phenotypeName, 1, MainPage.Current.curPageIndex), sourceType);
+                    break;
+                case 0:
+                    localState = 1;
+                    //if (presentPosition == PresentPosition.Inline)
+                    setPhenotypeState(1);
+                    PhenotypeManager.getSharedPhenotypeManager().updatePhenoStateById(phenotypeId, 1, sourceType);
+                    break;
+                case 1:
+                    localState = 0;
+                    //if (presentPosition == PresentPosition.Inline)
+                    setPhenotypeState(0);
+                    PhenotypeManager.getSharedPhenotypeManager().updatePhenoStateById(phenotypeId, 0, sourceType);
+                    break;
+            }
         }
     }
 }

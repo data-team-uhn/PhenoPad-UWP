@@ -109,6 +109,12 @@
       <DependentUpon>App.xaml</DependentUpon>
     </Compile>
     <Compile Include="AppConfigurations.cs" />
+    <Compile Include="CustomControl\NoteEditPageControl.xaml.cs">
+      <DependentUpon>NoteEditPageControl.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="PhenotypeService\PhenotypeBriefControl2.xaml.cs">
+      <DependentUpon>PhenotypeBriefControl2.xaml</DependentUpon>
+    </Compile>
     <Compile Include="TestPage.xaml.cs">
       <DependentUpon>TestPage.xaml</DependentUpon>
     </Compile>
@@ -260,6 +266,14 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
+    <Page Include="CustomControl\NoteEditPageControl.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="PhenotypeService\PhenotypeBriefControl2.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
     <Page Include="TestPage.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>

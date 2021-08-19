@@ -1,5 +1,5 @@
 ﻿<UserControl
-    x:Class="PhenoPad.CustomControl.PhenotypeBriefControl"
+    x:Class="PhenoPad.CustomControl.PhenotypeBriefControl2"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:local="using:PhenoPad.CustomControl"
@@ -15,36 +15,33 @@
         </Flyout>
     </UserControl.Resources>
 
-    <Border CornerRadius="5">
-        <Grid Height="35" Margin="1 0 1 0" Name="NameGrid">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="Auto"></ColumnDefinition>
-                <ColumnDefinition Width="Auto"></ColumnDefinition>
-            </Grid.ColumnDefinitions>
+    <Grid Height="35" Margin="1 0 1 0" Name="NameGrid" HorizontalAlignment="Stretch">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*"></ColumnDefinition>
+            <ColumnDefinition Width="40"></ColumnDefinition>
+        </Grid.ColumnDefinitions>
 
-
-            <Grid Grid.Column="0" Grid.Row="0" VerticalAlignment="Center" x:Name="phenotypeGrid">
-                <Button Background="Transparent" Height="auto"
+        <Grid Grid.Column="0" Grid.Row="0" VerticalAlignment="Center" x:Name="phenotypeGrid">
+            <Button Background="Transparent" Height="auto"
                         Style="{StaticResource ButtonStyle1}"
                         x:Name="phenotypeNameBtn">
-                    <TextBlock  
+                <TextBlock  
+                        Tapped="TextBloackTapped"
                         VerticalAlignment="Stretch" FontSize="15"
                         Grid.Column="1" x:Name="phenotypeNameTextBlock" 
                         Text="" Margin="0" Padding="1 0 1 0"
                         Foreground="Black" Opacity="0.6"
                         CanDrag="True"
-                        DragStarting="phenoTextDragStarting"
-                        Tapped="phenotypeNameTextBlock_Tapped"/>
-                </Button>
-                <!--<Line Stretch="Fill" Stroke="LightCoral" StrokeThickness="2" X1="1" Y1="0" 
+                        DragStarting="phenoTextDragStarting"/>
+            </Button>
+            <!--<Line Stretch="Fill" Stroke="LightCoral" StrokeThickness="2" X1="1" Y1="0" 
                       HorizontalAlignment="Stretch" VerticalAlignment="Center" Name="NameCrossLine" />-->
-            </Grid>
-            <Button Grid.Column="1" Grid.Row="0" x:Name="DeleteBtn"
+        </Grid>
+        <Button Grid.Column="1" Grid.Row="0" x:Name="DeleteBtn"
                     VerticalAlignment="Center" Height="40"
                 Background="{x:Null}" Style="{StaticResource ButtonStyle1}" 
                 Click="DeleteBtn_Click">
-                <SymbolIcon Symbol="Delete" Foreground="Black" Opacity="0.6" />
-            </Button>
-        </Grid>
-    </Border>
+            <SymbolIcon Symbol="Delete" Foreground="Black" Opacity="0.6" />
+        </Button>
+    </Grid>
 </UserControl>

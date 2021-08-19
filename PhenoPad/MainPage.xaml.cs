@@ -30,6 +30,7 @@ using Windows.Storage;
 using Microsoft.Toolkit.Uwp.UI.Animations;
 using PhenoPad.LogService;
 using Microsoft.Toolkit.Uwp.UI.Controls;
+using Windows.ApplicationModel.DataTransfer;
 
 namespace PhenoPad
 {
@@ -76,6 +77,7 @@ namespace PhenoPad
         public static readonly string TypeMode = "Typing Mode";
         public static readonly string WritingMode = "Handwriting Mode";
         public static readonly string ViewMode = "Previewing Mode";
+        public static readonly string EditMode = "Note-editing Mode";
         private string currentMode = WritingMode;
         private bool ifViewMode = false;
         public CancellationTokenSource cancelService;
@@ -125,6 +127,9 @@ namespace PhenoPad
             speechEngineRunning = false;
             PropertyChanged += MainPage_PropertyChanged;
 
+            chatView_NoteEdit.ItemsSource = SpeechManager.getSharedSpeechManager().conversation;
+            chatView_NoteEdit.ContainerContentChanging += OnChatViewNoteEditContainerContentChanging;
+
 
             HWRAddrInput.Text = HWRService.HWRManager.getSharedHWRManager().getIPAddr();
             string serverPath = SpeechManager.getSharedSpeechManager().getServerAddress() + ":" +
@@ -172,6 +177,27 @@ namespace PhenoPad
                 }
                 args.Handled = false;
             };
+        }
+
+        private async void OnChatViewNoteEditContainerContentChanging(ListViewBase sender, ContainerContentChangingEventArgs args)
+        {
+            if (args.InRecycleQueue) return;
+            TextMessage message = (TextMessage)args.Item;
+
+            if (message.IsNotFinal)
+            {
+                args.ItemContainer.HorizontalAlignment = HorizontalAlignment.Right;
+            }
+            else
+            {
+                args.ItemContainer.HorizontalAlignment = (message.Speaker == doctor) ? HorizontalAlignment.Right : HorizontalAlignment.Left;
+
+                // Need this dispatcher in-order to avoid threading errors
+                await CoreApplication.MainView.CoreWindow.Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () => {
+                    chatView_NoteEdit.UpdateLayout();
+                    chatView_NoteEdit.ScrollIntoView(chatView.Items[chatView.Items.Count - 1]);
+                });
+            }
         }
 
         //******************************END OF CONSTRUCTORS************************************************
@@ -1104,19 +1130,25 @@ namespace PhenoPad
 
         private void OverViewToggleButton_Click(object sender, RoutedEventArgs e)
         {
+            ChangeBackToNoteTakingMode();
             if (MainSplitView.IsPaneOpen == false)
             {
                 MainSplitView.IsPaneOpen = true;
                 QuickViewButtonSymbol.Symbol = Symbol.Clear;
                 speechQuickView.Visibility = Visibility.Collapsed;
+                infoSummaryView.Visibility = Visibility.Collapsed;
+                MainSplitView.OpenPaneLength = 400;
             }
             else
             {
-                if (SpeechToggleButton.IsChecked == true)
+                if (SpeechToggleButton.IsChecked == true || NoteEditToggleButton.IsChecked == true)
                 {
                     OverViewToggleButton.IsChecked = true;
                     SpeechToggleButton.IsChecked = false;
+                    NoteEditToggleButton.IsChecked = false;
                     speechQuickView.Visibility = Visibility.Collapsed;
+                    infoSummaryView.Visibility = Visibility.Collapsed;
+                    MainSplitView.OpenPaneLength = 400;
                 }
                 else
                 {
@@ -1128,24 +1160,70 @@ namespace PhenoPad
 
         private void SpeechToggleButton_Click(object sender, RoutedEventArgs e)
         {
+            ChangeBackToNoteTakingMode();
             if (MainSplitView.IsPaneOpen == false)
             {
                 MainSplitView.IsPaneOpen = true;
                 QuickViewButtonSymbol.Symbol = Symbol.Clear;
                 speechQuickView.Visibility = Visibility.Visible;
+                infoSummaryView.Visibility = Visibility.Collapsed;
+                MainSplitView.OpenPaneLength = 400;
             }
             else
             {
-                if (OverViewToggleButton.IsChecked == true)
+                if (OverViewToggleButton.IsChecked == true || NoteEditToggleButton.IsChecked == true)
                 {
                     OverViewToggleButton.IsChecked = false;
                     SpeechToggleButton.IsChecked = true;
+                    NoteEditToggleButton.IsChecked = false;
                     speechQuickView.Visibility = Visibility.Visible;
+                    infoSummaryView.Visibility = Visibility.Collapsed;
+                    MainSplitView.OpenPaneLength = 400;
                 }
                 else
                 {
                     MainSplitView.IsPaneOpen = false;
                     QuickViewButtonSymbol.Symbol = Symbol.GlobalNavigationButton;
+                }
+            }
+        }
+
+        private async void ChangeToNoteEditModeAsync()
+        {
+            await curPage.SwitchToNoteEdit();
+        }
+        private void ChangeBackToNoteTakingMode()
+        {
+            curPage.SwitchBackToNoteTaking();
+        }
+
+        private void NoteEditToggleButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (MainSplitView.IsPaneOpen == false)
+            {
+                MainSplitView.IsPaneOpen = true;
+                // QuickViewButtonSymbol.Symbol = Symbol.Clear;
+                speechQuickView.Visibility = Visibility.Collapsed;
+                infoSummaryView.Visibility = Visibility.Visible;
+                MainSplitView.OpenPaneLength = 800;
+                ChangeToNoteEditModeAsync(); ///////////////////////////////////////
+            }
+            else
+            {
+                if (NoteEditToggleButton.IsChecked == true || OverViewToggleButton.IsChecked == true)
+                {
+                    OverViewToggleButton.IsChecked = false;
+                    SpeechToggleButton.IsChecked = false;
+                    NoteEditToggleButton.IsChecked = true;
+                    infoSummaryView.Visibility = Visibility.Visible;
+                    speechQuickView.Visibility = Visibility.Collapsed;
+                    MainSplitView.OpenPaneLength = 800;
+                    ChangeToNoteEditModeAsync();
+                }
+                else
+                {
+                    MainSplitView.IsPaneOpen = false;
+                    // QuickViewButtonSymbol.Symbol = Symbol.GlobalNavigationButton;
                 }
             }
         }
@@ -1628,6 +1706,29 @@ namespace PhenoPad
                 return false;
             }
             return false;
+        }
+
+
+        private void ChatBubbleDragStarted(UIElement sender, DragStartingEventArgs args)
+        {
+            TextBlock tb = (TextBlock)sender;
+            args.Data.SetData(StandardDataFormats.Text, tb.Text);
+        }
+
+        private void ChatBubbleDoubleTapped(object sender, DoubleTappedRoutedEventArgs e)
+        {
+
+        }
+
+        private void ChatBubbleTapped(object sender, TappedRoutedEventArgs e)
+        {
+
+        }
+
+        private void MedicalInfoDragStarted(UIElement sender, DragStartingEventArgs args)
+        {
+            TextBlock tb = (TextBlock)sender;
+            args.Data.SetData(StandardDataFormats.Text, tb.Text);
         }
     }
     //================================= END OF MAINAPGE ==========================================/

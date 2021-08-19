@@ -182,10 +182,11 @@
                                      x:Name="textNoteEditBox" TextChanged="TextNoteEdit_TextChanged" 
                                      IsEnabled="False"
                                      BorderThickness="0"/>
-
                     </Grid>
-
-
+                    
+               
+               
+            
                     <!--Canvas for adding recognized textblocks-->
                     <Canvas x:Name="recognizedCanvas" Visibility="Collapsed"/>
                     <!-- pop up after selection-->
@@ -366,6 +367,21 @@
                 <!--for EHR side addin controls-->
                 <Grid x:Name="EHROutputGrid">
                     <Canvas x:Name="addinCanvasEHR" x:FieldModifier="public" Canvas.ZIndex="100" />
+                </Grid>
+            </ScrollViewer>
+
+            <!--scroll viewer for Note Editing mode-->
+            <ScrollViewer Grid.Column="1" x:Name="NoteEditScrollViewer" x:FieldModifier="public" Visibility="Collapsed"
+                        ZoomMode="Enabled" 
+                        MinZoomFactor="0.3"    
+                        MaxZoomFactor="2"
+                        VerticalScrollMode="Enabled" 
+                        VerticalScrollBarVisibility="Hidden" 
+                        HorizontalScrollMode="Enabled" 
+                        HorizontalScrollBarVisibility="Hidden"
+                        >
+                <!--for EHR side addin controls-->
+                <Grid x:Name="NoteEditOutputGrid">
                 </Grid>
             </ScrollViewer>
         </Grid>

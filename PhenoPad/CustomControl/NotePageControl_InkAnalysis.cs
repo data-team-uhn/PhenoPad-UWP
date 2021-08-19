@@ -1179,6 +1179,27 @@ namespace PhenoPad.CustomControl
             return null;
         }
 
+        public async Task<List<string>> ReturnAllParagraphTextAsync()
+        {
+            dispatcherTimer.Stop();
+            if (inkAnalyzer.IsAnalyzing)
+            {
+                Debug.WriteLine("still analyzing...");
+                dispatcherTimer.Start();
+            }
+
+            var result = await inkAnalyzer.AnalyzeAsync();
+
+            var all_text = new List<string>();
+            var paragraphs = inkAnalyzer.AnalysisRoot.FindNodes(InkAnalysisNodeKind.Paragraph);
+            foreach (var paragraph in paragraphs)
+            {
+                var text = ExtractTextFromParagraph((InkAnalysisParagraph) paragraph);
+                all_text.Add(text);
+            }
+            return all_text;
+        }
+
         private List<InkStroke> FindAllStrokesInLine(int lineNum)
         {
             double lowerbound = lineNum * LINE_HEIGHT;

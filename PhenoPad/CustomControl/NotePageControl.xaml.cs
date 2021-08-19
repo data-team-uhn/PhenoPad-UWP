@@ -105,6 +105,8 @@ namespace PhenoPad.CustomControl
         private Dictionary<uint, Color> tempFormat = new Dictionary<uint, Color>();
         private MainPage rootPage;
         public EHRPageControl ehrPage;
+        public NoteEditPageControl noteEditPage;
+
         //private string[] textLines;
         CoreInkIndependentInputSource core;
 
@@ -290,7 +292,6 @@ namespace PhenoPad.CustomControl
         }
 
 
-
         #region UI Display
         // ============================== UI DISPLAYS HANDLER ==============================================//
 
@@ -304,7 +305,29 @@ namespace PhenoPad.CustomControl
                 EHRScrollViewer.ChangeView(0, 50, 0.645f, false);//changeview by itself does not work for current windows version
                 EHRScrollViewer.ZoomToFactor(0.6f); 
             });
+            
             EHRScrollViewer.Visibility = Visibility.Visible;
+        }
+
+        public async Task SwitchToNoteEdit()
+        {
+            scrollViewer.Visibility = Visibility.Collapsed;
+
+            await Dispatcher.RunAsync(CoreDispatcherPriority.High, () => {
+                NoteEditScrollViewer.ChangeView(0, 50, 0.645f, false);//changeview by itself does not work for current windows version
+                NoteEditScrollViewer.ZoomToFactor(0.6f);
+            });
+            List<string> all_text = await ReturnAllParagraphTextAsync();
+            for (int i = 0; i < 10; i++)
+                all_text.Add("\n");
+            this.noteEditPage.set_text(String.Join("\n", all_text));
+            NoteEditScrollViewer.Visibility = Visibility.Visible;
+        }
+
+        public void SwitchBackToNoteTaking()
+        {
+            scrollViewer.Visibility = Visibility.Visible;
+            NoteEditScrollViewer.Visibility = Visibility.Collapsed;
         }
 
         // draw background lines for notes
@@ -364,6 +387,12 @@ namespace PhenoPad.CustomControl
                 EHRScrollViewer.ChangeView(0, 50, 0.645f, true);
                 EHRScrollViewer.Visibility = Visibility.Visible;
             }
+
+            // Note editing page
+            this.noteEditPage = new NoteEditPageControl(this);
+            //EHRScrollViewer.Content = ehrPage;
+            NoteEditOutputGrid.Children.Add(noteEditPage);
+
             // Draw background lines
             DrawBackgroundLines();
         }

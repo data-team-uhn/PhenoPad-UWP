@@ -83,6 +83,21 @@ namespace PhenoPad.SpeechService
                 this.serverPort = (string)val2;
             }
 
+            var temp = new List<TextMessage>();
+            for (int i = 0; i < 10; i++)
+            {
+                var m = new TextMessage()
+                {
+                    Body = "sentence " + i,
+                    Speaker = (uint) i%2,
+                    IsFinal = true,
+                    ConversationIndex = 0,
+                    phenotypesInText = new List<PhenotypeService.Phenotype>()
+                };
+                temp.Add(m);
+            }
+            conversation.ClearThenAddRange(temp);
+
             this.speechInterpreter = new SpeechEngineInterpreter(this.conversation, this.realtimeConversation);
             this.speechStreamSocket = new SpeechStreamSocket(this.serverAddress, this.serverPort);
             this.speechAPI = new SpeechRESTAPI();          

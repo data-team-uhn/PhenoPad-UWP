@@ -1,0 +1,82 @@
+﻿<UserControl
+    x:Class="PhenoPad.CustomControl.NoteEditPageControl"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:PhenoPad.CustomControl"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d"
+    VerticalAlignment="Stretch" 
+    HorizontalAlignment="Stretch"
+    Loaded="Page_Loaded">
+
+    <UserControl.Resources>
+        <Storyboard x:Name="curWordPhenoAnimation">
+            <DoubleAnimation Storyboard.TargetName="phenoCtrlSlide" 
+                                 Storyboard.TargetProperty="Y"
+                                 By="-45"
+                                 Duration="0:0:0.1" />
+        </Storyboard>
+
+        <Flyout x:Key="ChangeAlternativeFlyout" Placement="Top">
+            <StackPanel Padding="0" Margin="3" Width="auto">
+                <ListView x:Name="alternativeListView" IsItemClickEnabled="True"
+                              ItemClick="alternativeListView_ItemClick" Width="auto">
+                    <ListView.ItemContainerStyle>
+                        <Style TargetType="ListViewItem">
+                            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                            <Setter Property="VerticalContentAlignment" Value="Center" />
+                            <Setter Property="Margin" Value="0,1,0,1" />
+                            <Setter Property="Padding" Value="0,0,0,0" />
+                            <Setter Property="MinHeight" Value="20" />
+                        </Style>
+                    </ListView.ItemContainerStyle>
+                </ListView>
+            </StackPanel>
+        </Flyout>
+    </UserControl.Resources>
+
+    <Grid Margin="0 10 0 0" Padding="0 100 0 150" x:Name="EHRRootGrid"
+          Background="{ThemeResource SystemControlBackgroundChromeWhiteBrush}" 
+          Height="{x:Bind EHR_HEIGHT}" Width="{x:Bind EHR_WIDTH}">
+        
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
+        
+        <!-- Inking area -->
+        <Canvas x:Name="backgroundCanvas"/>
+        
+        <Grid x:Name="textEditGrid" Background="Transparent" IsHoldingEnabled="True">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="auto"/>
+            </Grid.RowDefinitions>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+            <RichEditBox Style="{StaticResource MyRichEditBoxStyle}"                         
+                         x:Name="NoteTextBox" 
+                         x:FieldModifier="public"
+                         TextWrapping="Wrap"
+                         Opacity="1.0"
+                         IsSpellCheckEnabled="False"
+                         AcceptsReturn="True"
+                         Background="Transparent"
+                         Padding="10 50 10 0"
+                         IsEnabled="True"
+                         BorderThickness="0" 
+                         AllowDrop="True"
+                         DragOver="NoteTextBoxDragOver"
+                         CanDrag="True"
+                         Drop="NoteTextBoxDropAsync"
+                         TextChanged="NoteTextBoxTextChanged"
+                         />
+           
+        </Grid>
+
+    </Grid>
+
+</UserControl>

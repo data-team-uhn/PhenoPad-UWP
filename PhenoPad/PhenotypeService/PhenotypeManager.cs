@@ -50,10 +50,10 @@ namespace PhenoPad.PhenotypeService
             autosavetimer.Interval = TimeSpan.FromSeconds(0.1);
 
             //string cur_path = Environment.CurrentDirectory;
-            string credential_path = @"..\\..\\..\\..\\PhenoPad Speech-33999a319b8c";
-            Environment.SetEnvironmentVariable("GOOGLE_APPLICATION_CREDENTIALS", credential_path);
-            Debug.WriteLine("###########");
-            Debug.WriteLine("###########");
+            // string credential_path = @"..\\..\\..\\..\\PhenoPad Speech-33999a319b8c";
+            // Environment.SetEnvironmentVariable("GOOGLE_APPLICATION_CREDENTIALS", credential_path);
+            // Debug.WriteLine("###########");
+            // Debug.WriteLine("###########");
         }
 
         public static PhenotypeManager getSharedPhenotypeManager()
