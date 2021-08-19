@@ -15,6 +15,20 @@ namespace PhenoPad.PhenotypeService
         public int state { get; set; } // NA: -1, Y: 1, N: 0
         public int pageSource { get; set; }
         public SourceType sourceType { get; set; }
+        public string text
+        {
+            get
+            {
+                switch (state) {
+                    case 1:
+                        return name;
+                    case 0:
+                        return "No " + name;
+                    default:
+                        return name;
+                }
+            }
+        }
 
         public DateTime time;
 
