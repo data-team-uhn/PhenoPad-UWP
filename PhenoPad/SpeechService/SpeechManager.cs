@@ -83,6 +83,7 @@ namespace PhenoPad.SpeechService
                 this.serverPort = (string)val2;
             }
 
+            /**
             var temp = new List<TextMessage>();
             for (int i = 0; i < 10; i++)
             {
@@ -97,6 +98,7 @@ namespace PhenoPad.SpeechService
                 temp.Add(m);
             }
             conversation.ClearThenAddRange(temp);
+            **/
 
             this.speechInterpreter = new SpeechEngineInterpreter(this.conversation, this.realtimeConversation);
             this.speechStreamSocket = new SpeechStreamSocket(this.serverAddress, this.serverPort);

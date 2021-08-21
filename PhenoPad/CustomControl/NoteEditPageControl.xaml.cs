@@ -224,8 +224,10 @@ namespace PhenoPad.CustomControl
 
         public void set_text(string text)
         {
+            string orgText = string.Empty;
+            NoteTextBox.Document.GetText(TextGetOptions.AdjustCrlf, out orgText);
             // set text
-            if (!alreadyAddText)
+            if (!alreadyAddText || orgText == String.Empty)
             {
                 alreadyAddText = true;
                 NoteTextBox.Document.SetText(TextSetOptions.None, text);

@@ -15,7 +15,7 @@
         </Flyout>
     </UserControl.Resources>
 
-    <Grid Height="35" Margin="1 0 1 0" Name="NameGrid" HorizontalAlignment="Stretch">
+    <Grid Height="35" Margin="0 1 0 1" Name="NameGrid" HorizontalAlignment="Stretch">
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="*"></ColumnDefinition>
             <ColumnDefinition Width="40"></ColumnDefinition>
@@ -24,7 +24,7 @@
         <Grid Grid.Column="0" Grid.Row="0" VerticalAlignment="Center" x:Name="phenotypeGrid">
             <Button Background="Transparent" Height="auto"
                         Style="{StaticResource ButtonStyle1}"
-                        x:Name="phenotypeNameBtn">
+                        x:Name="phenotypeNameBtn" HorizontalAlignment="Stretch">
                 <TextBlock  
                         Tapped="TextBloackTapped"
                         VerticalAlignment="Stretch" FontSize="15"

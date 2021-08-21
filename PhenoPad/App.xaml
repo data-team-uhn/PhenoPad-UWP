@@ -113,15 +113,15 @@
             <SolidColorBrush x:Key="Dark_Button_Color">#0050c5</SolidColorBrush>
             <SolidColorBrush x:Key="Background_Temp" Color="#C3DFFF"/>
 
-            <SolidColorBrush x:Key="Background_0" Color="#C3DFFF" /> <!--some gray-->
-            <SolidColorBrush x:Key="Background_1" Color="#D1DD87" /> <!--some green-->
-            <SolidColorBrush x:Key="Background_2" Color="#0063B1" /> <!--some blue-->
-            <SolidColorBrush x:Key="Background_3" Color="#E3008C" /> <!--some purple-->
-            <SolidColorBrush x:Key="Background_4" Color="#EF6950" /> <!--warm skin color -->
-            <SolidColorBrush x:Key="Background_5" Color="#724F2F" /> <!--some brown-->
-            <SolidColorBrush x:Key="Background_6" Color="#744D19" /> <!--some other purple-->
+            <SolidColorBrush x:Key="Background_0" Color="#e3e4ff" /> 
+            <SolidColorBrush x:Key="Background_1" Color="#e7ffe3" /> 
+            <SolidColorBrush x:Key="Background_2" Color="#defffb" /> 
+            <SolidColorBrush x:Key="Background_3" Color="#ffd4c9" /> 
+            <SolidColorBrush x:Key="Background_4" Color="#ffeac9" /> 
+            <SolidColorBrush x:Key="Background_5" Color="#ffe3f5" /> 
+            <SolidColorBrush x:Key="Background_6" Color="#ffe3ff" />
 
-            <SolidColorBrush x:Key="Background_99" Color="#D1DD87"/>
+            <SolidColorBrush x:Key="Background_99" Color="#e8e8e8"/>
 
             <Style x:Key="MyToggleButtonStyle" TargetType="ToggleButton">
                 <Setter Property="Background" Value="WhiteSmoke"/>

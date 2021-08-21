@@ -189,7 +189,7 @@ namespace PhenoPad.SpeechService
         /// Stores ASR results from the current notebook session.
         /// i.e. oldConversation + utterances from the current ASR session
         /// </summary>
-        private List<TextMessage> currentConversation = new List<TextMessage>();
+        public List<TextMessage> currentConversation = new List<TextMessage>();
 
         /// <summary>
         /// Stores results from previous ASR session(s) within the current notebook session.
@@ -236,6 +236,7 @@ namespace PhenoPad.SpeechService
             this.diarizationWordIndex = 0;
             this.constructDiarizedSentenceIndex = 0;
             this.latestSentenceIndex = 0;
+            previousSentenceEndIndex = 0;
         }
 
 
@@ -315,7 +316,7 @@ namespace PhenoPad.SpeechService
                             this.insertToDiarizationGraph(interval, speaker);
                         }
                         // Form TextMessage objects and update conversation panels
-                        this.assignSpeakerToWords();
+                        // this.assignSpeakerToWords();
                         this.formConversation(full);
 
                         // so that we don't have an overflow of words
@@ -599,6 +600,7 @@ namespace PhenoPad.SpeechService
         /// </summary>
         /// <param name="full">whether the conversation has been re-diarized</param>
         /// <returns>The newly formed TextMessage objects.</returns>
+        private int previousSentenceEndIndex = 0;
         private async Task<List<TextMessage>> formConversation(bool full)
         {
             List<TextMessage> messages = new List<TextMessage>();
@@ -611,23 +613,41 @@ namespace PhenoPad.SpeechService
             // Form sentences with newly diarized words and form TextMessage objects with sentences
             // Note: If all sentences re-diarized, *constructDiarizedSentenceIndex* is reset to 0 and this
             //       loop reconstructs sentences & TMs with all words.
-            for (int wordIndex = this.constructDiarizedSentenceIndex; wordIndex < this.diarizationWordIndex; wordIndex++)
+            //for (int wordIndex = this.constructDiarizedSentenceIndex; wordIndex < this.diarizationWordIndex; wordIndex++)
+            for (int wordIndex = previousSentenceEndIndex+1; wordIndex < words.Count(); wordIndex++)
             {
                 if (prevStart == 0)
                     prevStart = words[wordIndex].interval.start;
 
                 // Determine word speaker
-                int wordProposedSpeaker = this.words[wordIndex].determineSpeaker();
+                // int wordProposedSpeaker = this.words[wordIndex].determineSpeaker();
+                int wordProposedSpeaker = 1;
                 if (wordProposedSpeaker == -1)
                     wordProposedSpeaker = prevSpeaker;
 
                 // If detected speaker change or "." encountered, save sentence as TextMessage
-                if ((wordProposedSpeaker != prevSpeaker && sentence.Length != 0) || (words[wordIndex].word == "." && sentence.Length > 50))
+                if ((wordProposedSpeaker != prevSpeaker && sentence.Length != 0) || (words[wordIndex].word.Contains(".") || words[wordIndex].word.Contains("?")))
                 {
-                    Debug.WriteLine("speechengineinterpreter in for loop creating message");
+                    sentence += " " + words[wordIndex].word;
+                    var phenotypes = await queryPhenoService(sentence);
+                    bool hasPheno = phenotypes.Count > 0 ? true : false;
+                    var m = new TextMessage()
+                    {
+                        Body = sentence,
+                        Speaker = (uint)prevSpeaker,
+                        DisplayTime = DateTime.Now,
+                        Interval = new TimeInterval(prevStart, words[wordIndex - 1].interval.end),
+                        IsFinal = true,
+                        ConversationIndex = this.conversationIndex,
+                        AudioFile = SpeechManager.getSharedSpeechManager().GetAudioName(),
+                        phenotypesInText = phenotypes,
+                        hasPhenotype = hasPheno
+                    };
+                    messages.Add(m);
+                    /**
                     var message = new TextMessage()
                     {
-                        Body = sentence + ".",
+                        Body = sentence,
                         Speaker = (uint)prevSpeaker,
                         DisplayTime = DateTime.Now,
                         Interval = new TimeInterval(prevStart, words[wordIndex - 1].interval.end),
@@ -636,11 +656,12 @@ namespace PhenoPad.SpeechService
                         AudioFile = SpeechManager.getSharedSpeechManager().GetAudioName(),
                         phenotypesInText = new List<Phenotype>()                                            
                     };
-                    messages.Add(message);
+                    messages.Add(message);**/
                     prevSpeaker = wordProposedSpeaker;
                     sentence = String.Empty;
-                    sentence += " " + words[wordIndex].word;
+                    // sentence += " " + words[wordIndex].word;
                     prevStart = words[wordIndex].interval.start;
+                    previousSentenceEndIndex = wordIndex;
                 }
                 // Otherwise, add word to current sentence
                 else
@@ -648,25 +669,6 @@ namespace PhenoPad.SpeechService
                     sentence += " " + words[wordIndex].word;
                     speechEnd = words[wordIndex].interval.end;
                 }
-            }
-
-            if (sentence.Length > 0 && prevSpeaker != -1)
-            {
-                var phenotypes = await queryPhenoService(sentence);
-                bool hasPheno =  phenotypes.Count > 0 ? true : false;
-                var m = new TextMessage()
-                {
-                    Body = sentence,
-                    Speaker = (uint)prevSpeaker,
-                    DisplayTime = DateTime.Now,
-                    Interval = new TimeInterval(prevStart, speechEnd),
-                    IsFinal = true,
-                    ConversationIndex = this.conversationIndex,
-                    AudioFile = SpeechManager.getSharedSpeechManager().GetAudioName(),
-                    phenotypesInText = phenotypes,
-                    hasPhenotype = hasPheno
-                };
-                messages.Add(m);
             }
 
             this.lastSpeaker = prevSpeaker;
@@ -697,7 +699,6 @@ namespace PhenoPad.SpeechService
                     this.conversation.AddRange(temp);
                     currentConversation.AddRange(temp);
                     MainPage.Current.conversations.AddRange(temp);
-                    
                     SpeechPage.Current.updateChat();
                     TestPage.Current.updateChat();
                 }
@@ -842,6 +843,7 @@ namespace PhenoPad.SpeechService
         {
             return currentConversation.Count > 0;
         }
+        
 
         #endregion
     }

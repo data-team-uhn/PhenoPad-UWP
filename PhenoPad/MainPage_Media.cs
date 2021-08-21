@@ -948,7 +948,10 @@ namespace PhenoPad
                     string fpath = FileManager.getSharedFileManager().GetNoteFilePath(
                         FileManager.getSharedFileManager().currentNoteboookId, "", NoteFileType.Transcriptions, "transcripts");
                     
+
                     var result = await FileManager.getSharedFileManager().SaveObjectSerilization(fpath, conversations, typeof(List<TextMessage>));
+                    //FIXME
+                    // var result = await FileManager.getSharedFileManager().SaveObjectSerilization(fpath, speechManager.speechInterpreter.currentConversation, typeof(List<TextMessage>));
                     Debug.WriteLine($"transcripts saved to {fpath}, result = {result}");
                 }
                 catch (Exception e)
