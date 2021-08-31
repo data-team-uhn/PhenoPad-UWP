@@ -22,6 +22,7 @@ namespace PhenoPad.PhenotypeService
     {
         public static PhenotypeManager sharedPhenotypeManager;
 
+        public ObservableCollection<MedicalTerm> medicalTerms;
         public ObservableCollection<Phenotype> savedPhenotypes;
         public ObservableCollection<Phenotype> suggestedPhenotypes;
         public ObservableCollection<Disease> predictedDiseases;
@@ -31,13 +32,13 @@ namespace PhenoPad.PhenotypeService
         public static string SUGGESTION_ADDR = "http://phenopad.ccm.sickkids.ca:8000/get/PhenoTips/DiffDiagnosisService?format=json&limit=15";
         public ObservableCollection<Phenotype> phenotypesInSpeech;
         public ObservableCollection<Phenotype> phenotypesSpeechCandidates;
-
         public ObservableCollection<Phenotype> phenotypesCandidates;
 
         DispatcherTimer autosavetimer;
         //===========================================METHODS===============================================
         public PhenotypeManager()
         {
+            medicalTerms = new ObservableCollection<MedicalTerm>();
             savedPhenotypes = new ObservableCollection<Phenotype>();
             suggestedPhenotypes = new ObservableCollection<Phenotype>();
             predictedDiseases = new ObservableCollection<Disease>();
@@ -967,6 +968,11 @@ namespace PhenoPad.PhenotypeService
             {
                 phenotypesInSpeech.Add(pheno);
             }
+        }
+
+        public void AddMedicalTerm(MedicalTerm mt)
+        {
+            medicalTerms.Add(mt);
         }
     }
 }

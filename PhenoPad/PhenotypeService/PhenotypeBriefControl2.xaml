@@ -15,25 +15,26 @@
         </Flyout>
     </UserControl.Resources>
 
-    <Grid Height="35" Margin="0 1 0 1" Name="NameGrid" HorizontalAlignment="Stretch">
+    <Grid Margin="0 1 0 1" Name="NameGrid" HorizontalAlignment="Stretch">
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="*"></ColumnDefinition>
             <ColumnDefinition Width="40"></ColumnDefinition>
         </Grid.ColumnDefinitions>
 
         <Grid Grid.Column="0" Grid.Row="0" VerticalAlignment="Center" x:Name="phenotypeGrid">
-            <Button Background="Transparent" Height="auto"
+            <Border  Background="Transparent" Height="auto"
                         Style="{StaticResource ButtonStyle1}"
                         x:Name="phenotypeNameBtn" HorizontalAlignment="Stretch">
                 <TextBlock  
-                        Tapped="TextBloackTapped"
+                        MaxWidth="200"
+                        TextWrapping="WrapWholeWords"
                         VerticalAlignment="Stretch" FontSize="15"
                         Grid.Column="1" x:Name="phenotypeNameTextBlock" 
                         Text="" Margin="0" Padding="1 0 1 0"
                         Foreground="Black" Opacity="0.6"
                         CanDrag="True"
                         DragStarting="phenoTextDragStarting"/>
-            </Button>
+            </Border>
             <!--<Line Stretch="Fill" Stroke="LightCoral" StrokeThickness="2" X1="1" Y1="0" 
                       HorizontalAlignment="Stretch" VerticalAlignment="Center" Name="NameCrossLine" />-->
         </Grid>

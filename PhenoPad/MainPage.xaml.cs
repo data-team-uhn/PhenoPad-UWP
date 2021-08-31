@@ -128,7 +128,7 @@ namespace PhenoPad
             PropertyChanged += MainPage_PropertyChanged;
 
             chatView_NoteEdit.ItemsSource = SpeechManager.getSharedSpeechManager().conversation;
-            chatView_NoteEdit.ContainerContentChanging += OnChatViewNoteEditContainerContentChanging;
+            // chatView_NoteEdit.ContainerContentChanging += OnChatViewNoteEditContainerContentChanging;
 
 
             HWRAddrInput.Text = HWRService.HWRManager.getSharedHWRManager().getIPAddr();
@@ -1730,6 +1730,25 @@ namespace PhenoPad
             TextBlock tb = (TextBlock)sender;
             args.Data.SetData(StandardDataFormats.Text, tb.Text);
         }
+
+        private async void phenoInSpeechListView_NoteEdit_ItemClickAsync(object sender, ItemClickEventArgs e)
+        {
+            var obj = (MedicalTerm)e.ClickedItem;
+            await CoreApplication.MainView.CoreWindow.Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () => {
+                chatView_NoteEdit.UpdateLayout();
+                chatView_NoteEdit.ScrollIntoView(chatView_NoteEdit.Items[obj.MessageIndex]);
+            });
+            
+            var item = chatView_NoteEdit.Items[obj.MessageIndex];
+            var listitem = chatView_NoteEdit.ContainerFromItem(item) as ListViewItem;
+            listitem.BorderBrush = new SolidColorBrush(Colors.LightGreen);
+            listitem.BorderThickness = new Thickness(3);
+            chatView_NoteEdit.UpdateLayout();
+            await Task.Delay(1000);
+            listitem.BorderThickness = new Thickness(0);
+            chatView_NoteEdit.UpdateLayout();
+        }
+        
     }
     //================================= END OF MAINAPGE ==========================================/
 

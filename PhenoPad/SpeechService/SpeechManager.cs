@@ -24,7 +24,7 @@ using Windows.UI.Core;
 using Windows.UI.Popups;
 using Windows.Storage.Streams;
 using PhenoPad.LogService;
-
+using PhenoPad.PhenotypeService;
 
 namespace PhenoPad.SpeechService
 {
@@ -82,28 +82,70 @@ namespace PhenoPad.SpeechService
             {
                 this.serverPort = (string)val2;
             }
-
-            /**
-            var temp = new List<TextMessage>();
-            for (int i = 0; i < 10; i++)
-            {
-                var m = new TextMessage()
-                {
-                    Body = "sentence " + i,
-                    Speaker = (uint) i%2,
-                    IsFinal = true,
-                    ConversationIndex = 0,
-                    phenotypesInText = new List<PhenotypeService.Phenotype>()
-                };
-                temp.Add(m);
-            }
-            conversation.ClearThenAddRange(temp);
-            **/
-
+            
             this.speechInterpreter = new SpeechEngineInterpreter(this.conversation, this.realtimeConversation);
             this.speechStreamSocket = new SpeechStreamSocket(this.serverAddress, this.serverPort);
             this.speechAPI = new SpeechRESTAPI();          
         }
+
+        private Dictionary<string, int> text_to_message = new Dictionary<string, int>();
+        private List<MedicalTerm> meidcalTermsList = new List<MedicalTerm>();
+        public async void LoadConversation()
+        {
+            var messageList = new List<TextMessage>();
+            string path = @"Assets\transcripts_w_medical\2020_03_04_4.json";
+            //string path = @"Assets\transcripts_processed\2019_12_05_1.txt";
+            StorageFolder InstallationFolder = Windows.ApplicationModel.Package.Current.InstalledLocation;
+            StorageFile file = await InstallationFolder.GetFileAsync(path);
+            string text = await FileIO.ReadTextAsync(file);
+            List<MedicalTermRaw> raw_terms = JsonConvert.DeserializeObject<List<MedicalTermRaw>>(text);
+            int m_ind = -1;
+            foreach (var rt in raw_terms)
+            {
+                m_ind++;
+                var m = new TextMessage()
+                {
+                    Body = rt.text,
+                    Speaker = UInt16.Parse(rt.speaker),
+                    IsFinal = true,
+                    ConversationIndex = 0,
+                    phenotypesInText = new List<PhenotypeService.Phenotype>()
+                };
+                messageList.Add(m);
+
+                if (rt.parse_result.Count > 0)
+                {
+                    foreach (var item in rt.parse_result)
+                    {
+                        var item_text = item.Key;
+                        var item_dict = item.Value;
+                        var item_id = item_dict["ids"][0];
+                        var item_name = item_dict["names"][0];
+                        var item_type = item_dict["types"][0];
+
+                        if (item_name.Length > 5)
+                        {
+                            var medical_term = new MedicalTerm()
+                            {
+                                Id = item_id,
+                                Name = item_name,
+                                Type = item_type,
+                                Text = item_text,
+                                MessageIndex = m_ind
+                            };
+
+                            PhenotypeManager.getSharedPhenotypeManager().AddMedicalTerm(medical_term);
+                        }
+                    }
+                }
+                   
+            }
+           
+            conversation.ClearThenAddRange(messageList);
+ 
+        }
+
+      
 
         /// <summary>
         /// Returns a shared speech manager object.
@@ -118,6 +160,7 @@ namespace PhenoPad.SpeechService
             if (sharedSpeechManager == null)
             {
                 sharedSpeechManager = new SpeechManager();
+                sharedSpeechManager.LoadConversation();
                 return sharedSpeechManager;
             }
             else

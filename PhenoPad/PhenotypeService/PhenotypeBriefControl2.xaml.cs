@@ -50,6 +50,23 @@ namespace PhenoPad.CustomControl
                 SetValue(phenotypeStateProperty, value);
             }
         }
+        public int messageIndex
+        {
+            get { return (int)GetValue(messageIndexProperty); }
+            set
+            {
+                SetValue(messageIndexProperty, value);
+            }
+        }
+        public int medicalType
+        {
+            get { return (int)GetValue(medicalTypeProperty); }
+            set
+            {
+                SetValue(medicalTypeProperty, value);
+                NameGrid.Background = (SolidColorBrush)App.Current.Resources["Background_" + value.ToString()];
+            }
+        }
         public Visibility DeleteBtnShowing = Visibility.Visible;
         public SourceType sourceType
         {
@@ -81,6 +98,19 @@ namespace PhenoPad.CustomControl
         public static readonly DependencyProperty phenotypeIdProperty = DependencyProperty.Register(
           "phenotypeId",
           typeof(String),
+          typeof(TextBlock),
+          new PropertyMetadata(null)
+        );
+
+        public static readonly DependencyProperty messageIndexProperty = DependencyProperty.Register(
+          "messageIndex",
+          typeof(int),
+          typeof(TextBlock),
+          new PropertyMetadata(null)
+        );
+        public static readonly DependencyProperty medicalTypeProperty = DependencyProperty.Register(
+          "medicalType",
+          typeof(int),
           typeof(TextBlock),
           new PropertyMetadata(null)
         );
@@ -220,7 +250,6 @@ namespace PhenoPad.CustomControl
                 Grid.SetColumn(phenotypeNameTextBlock,0);
                 Grid.SetColumnSpan(phenotypeNameBtn, 2);
                 Grid.SetColumnSpan(phenotypeGrid, 2);
-                phenotypeNameBtn.Click -= phenotypeNameTextBlock_Tapped;
             }
         }
 
