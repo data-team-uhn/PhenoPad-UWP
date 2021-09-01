@@ -13,6 +13,10 @@ using Windows.UI.Core;
 using Windows.UI.Xaml;
 using Windows.Web.Http;
 
+using Windows.Networking.Sockets;
+using System.Runtime.InteropServices.WindowsRuntime;
+using Windows.Storage.Streams;
+
 namespace PhenoPad.PhenotypeService
 {
     public enum SourceType { Notes, Speech, Suggested, Search, Saved, None};
@@ -49,11 +53,6 @@ namespace PhenoPad.PhenotypeService
             // setting autosave phonetype interval to be about 0.1 seconds
             autosavetimer.Interval = TimeSpan.FromSeconds(0.1);
 
-            //string cur_path = Environment.CurrentDirectory;
-            string credential_path = @"..\\..\\..\\..\\PhenoPad Speech-33999a319b8c";
-            Environment.SetEnvironmentVariable("GOOGLE_APPLICATION_CREDENTIALS", credential_path);
-            Debug.WriteLine("###########");
-            Debug.WriteLine("###########");
         }
 
         public static PhenotypeManager getSharedPhenotypeManager()
@@ -724,12 +723,55 @@ namespace PhenoPad.PhenotypeService
             Uri requestUri = new Uri("https://ncr.ccm.sickkids.ca/curr/annotate/?text=" + str);
 
 
+            Debug.WriteLine("$$$$$$$$$$$$$$$$$$$$$$$");
+            StreamWebSocket googleHealthSocket = new StreamWebSocket();
+            try
+            {
+                //string SERVER_ADDR = "speechengine.ccm.sickkids.ca";
+                string SERVER_ADDR = "127.0.0.1";
+                string SERVER_PORT = "8080";
+                Uri serverUri = new Uri("ws://" + SERVER_ADDR + ":" + SERVER_PORT + "/client/ws/healthcare");
+
+                Task connectTask = googleHealthSocket.ConnectAsync(serverUri).AsTask();
+
+                await connectTask;
+                if (connectTask.Exception != null)
+                {
+                    Debug.WriteLine(connectTask.Exception.Message);
+                }
+
+                Debug.WriteLine("connectTask created");
+
+                var bytes = Encoding.UTF8.GetBytes(str);
+                await googleHealthSocket.OutputStream.WriteAsync(bytes.AsBuffer());
+
+                Debug.WriteLine(str);
+                Debug.WriteLine(bytes);
+
+                uint length = 1000000;
+                var readBuf = new Windows.Storage.Streams.Buffer(length);
+                var readOp = await googleHealthSocket.InputStream.ReadAsync(readBuf, (uint)length, InputStreamOptions.Partial);
+                DataReader readPacket = DataReader.FromBuffer(readBuf);
+                uint buffLen = readPacket.UnconsumedBufferLength;
+                string returnMessage = readPacket.ReadString(buffLen);
+
+                Debug.WriteLine(returnMessage);
+                
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine(ex);
+            }
+            googleHealthSocket.Dispose();
+            googleHealthSocket = null;
+            Debug.WriteLine("$$$$$$$$$$$$$$$$$$$$$$$");
+
+
 
 
 
             //Uri googleUri = new Uri("https://healthcare.googleapis.com/v1beta1/projects/phenopad-speech-1627597348217/locations/us-central1/services/nlp:analyzeEntities");
             //using (var googleClient = new HttpClient())
-                
             //{
             //    using (var request = new HttpRequestMessage(new HttpMethod("POST"), googleUri))
             //    {
@@ -741,6 +783,30 @@ namespace PhenoPad.PhenotypeService
 
             //        var response = await googleClient.SendAsync(request);
             //    }
+            //}
+
+            //try
+            //{
+            //    // Construct the HttpClient and Uri. This endpoint is for test purposes only.
+            //    HttpClient googleClient = new HttpClient();
+            //    string accessToken = "ya29.a0ARrdaM_7yJEM04NDk0nbG6mC-QdJ-DNcuIxuI44JtsfIAQSRAsKIxo8k7kJsWtEoHEvpE7w55LVZNgPPdBw3gORbk6nyjnVik2_LtlUjns0ixccsDOd-_LI7ncMvJC2 - SGpkWqRuvZ - L7TZC6Lfyc8p4khkh";
+
+            //    // Construct the JSON to post.
+            //    googleClient.DefaultRequestHeaders.Add("Authorization", "Bearer " + accessToken);
+            //    HttpStringContent content = new HttpStringContent("{ \"firstName\": \"Eliot\" }", Windows.Storage.Streams.UnicodeEncoding.Utf8, "application/json");
+
+            //    // Post the JSON and wait for a response.
+            //    HttpResponseMessage httpResponseMessage = await httpClient.PostAsync(googleUri, content);
+
+            //    // Make sure the post succeeded, and write out the response.
+            //    httpResponseMessage.EnsureSuccessStatusCode();
+            //    var googleResponseBody = await httpResponseMessage.Content.ReadAsStringAsync();
+            //    Debug.WriteLine(googleResponseBody);
+            //}
+            //catch (Exception ex)
+            //{
+            //    // Write out any exceptions.
+            //    Debug.WriteLine(ex);
             //}
 
 
