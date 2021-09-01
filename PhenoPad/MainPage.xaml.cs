@@ -1739,6 +1739,7 @@ namespace PhenoPad
                 chatView_NoteEdit.ScrollIntoView(chatView_NoteEdit.Items[obj.MessageIndex]);
             });
             
+            /**
             var item = chatView_NoteEdit.Items[obj.MessageIndex];
             var listitem = chatView_NoteEdit.ContainerFromItem(item) as ListViewItem;
             listitem.BorderBrush = new SolidColorBrush(Colors.LightGreen);
@@ -1747,6 +1748,7 @@ namespace PhenoPad
             await Task.Delay(1000);
             listitem.BorderThickness = new Thickness(0);
             chatView_NoteEdit.UpdateLayout();
+                **/
         }
         
     }
