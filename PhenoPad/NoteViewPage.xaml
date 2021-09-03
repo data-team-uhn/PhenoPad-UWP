@@ -130,9 +130,10 @@
         
         <!--OVERVIEW CONTENT PANEL-->
         <ScrollViewer Visibility="Collapsed" ZoomMode="Disabled" VerticalScrollMode="Enabled" Grid.Row="1" Grid.Column="1">
-            <controls:WrapPanel Grid.Row="1" Grid.Column="1" Orientation="Vertical" x:Name="NoteLineStack" 
+            <!--<controls:WrapPanel Grid.Row="1" Grid.Column="1" Orientation="Vertical" x:Name="NoteLineStack" 
                     Padding="10"
-                Background="Yellow"/>
+                Background="Yellow"/>-->
+            <controls:WrapPanel Grid.Row="1" Grid.Column="1" Orientation="Vertical" x:Name="NoteLineStack" Background="Yellow"/>
         </ScrollViewer>
         <ListView IsItemClickEnabled="False" Padding="10" Grid.Row="1" Grid.Column="1" x:Name="aaa">
             

@@ -142,7 +142,6 @@ namespace PhenoPad.SpeechService
             }
            
             conversation.ClearThenAddRange(messageList);
- 
         }
 
       
