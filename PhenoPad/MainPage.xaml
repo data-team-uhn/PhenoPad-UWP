@@ -716,10 +716,10 @@
                                             <ColumnDefinition Width="40"></ColumnDefinition>
                                         </Grid.ColumnDefinitions>
                                         <customcontrol:PhenotypeBriefControl2 Grid.Column="0" Grid.Row="0"
-                                        VerticalAlignment="Center" phenotypeName="{x:Bind Text}" 
+                                        VerticalAlignment="Center" phenotypeName="{x:Bind Name}" 
                                                                     phenotypeId="{x:Bind Id}" 
                                                                     sourceType="{x:Bind SourceType}"
-                                                                    messageIndex="{x:Bind MessageIndex}" 
+                                                                    messageIndex="{x:Bind MessageIndexList}" 
                                                                     medicalType="{x:Bind TypeId}"
                                                                 presentPosition="List" />
 
@@ -887,11 +887,7 @@
                             <Grid.RowDefinitions>
                                 <RowDefinition Height="Auto"/>
                             </Grid.RowDefinitions>
-                            <StackPanel x:Name="SpeechNavigateButtons" Orientation="Vertical" VerticalAlignment="Stretch" Grid.Row="0" Grid.Column="0" Background="Transparent">
-                                <SymbolIcon Symbol="Video"></SymbolIcon>
-                                <SymbolIcon Symbol="Video"></SymbolIcon>
-                                <SymbolIcon Symbol="Video"></SymbolIcon>
-                            </StackPanel>
+                            <StackPanel x:Name="SpeechNavigateButtons" Orientation="Vertical" VerticalAlignment="Stretch" Grid.Row="0" Grid.Column="0" Background="Transparent"/>
                             <!--<controls:UniformGrid x:Name="SpeechNavigateButtons" Orientation="Vertical" Grid.Row="0" Grid.RowSpan="2" Grid.Column="2" />-->
                         </Grid>
                     </Grid>

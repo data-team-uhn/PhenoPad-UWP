@@ -1733,29 +1733,50 @@ namespace PhenoPad
             args.Data.SetData(StandardDataFormats.Text, tb.Text);
         }
 
+        //private async void phenoInSpeechListView_NoteEdit_ItemClickAsync(object sender, ItemClickEventArgs e)
+        //{
+            
+
+        //    var obj = (MedicalTerm)e.ClickedItem;
+        //    await CoreApplication.MainView.CoreWindow.Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () => {
+        //        chatView_NoteEdit.UpdateLayout();
+        //        chatView_NoteEdit.ScrollIntoView(chatView_NoteEdit.Items[obj.MessageIndex]);
+        //    });
+            
+            
+        //    var item = chatView_NoteEdit.Items[obj.MessageIndex];
+        //    var listitem = chatView_NoteEdit.ContainerFromItem(item) as ListViewItem;
+        //    listitem.BorderBrush = new SolidColorBrush(Colors.LightGreen);
+        //    listitem.BorderThickness = new Thickness(3);
+        //    chatView_NoteEdit.UpdateLayout();
+        //    await Task.Delay(1000);
+        //    listitem.BorderThickness = new Thickness(0);
+        //    chatView_NoteEdit.UpdateLayout();
+
+        //    List<int> msgIndexList = new List<int>();
+        //    msgIndexList.Add(obj.MessageIndex);
+        //    addNavigationButtons(msgIndexList);
+        //    //if (SpeechNavigateButtons.Children.Count > obj.MessageIndex)
+        //    //{
+        //    //    SpeechNavigateButtons.Children[obj.MessageIndex].Background = 
+        //    //}
+        //}
         private async void phenoInSpeechListView_NoteEdit_ItemClickAsync(object sender, ItemClickEventArgs e)
         {
-            
+
 
             var obj = (MedicalTerm)e.ClickedItem;
-            await CoreApplication.MainView.CoreWindow.Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () => {
-                chatView_NoteEdit.UpdateLayout();
-                chatView_NoteEdit.ScrollIntoView(chatView_NoteEdit.Items[obj.MessageIndex]);
-            });
-            
-            
-            var item = chatView_NoteEdit.Items[obj.MessageIndex];
-            var listitem = chatView_NoteEdit.ContainerFromItem(item) as ListViewItem;
-            listitem.BorderBrush = new SolidColorBrush(Colors.LightGreen);
-            listitem.BorderThickness = new Thickness(3);
-            chatView_NoteEdit.UpdateLayout();
-            await Task.Delay(1000);
-            listitem.BorderThickness = new Thickness(0);
+
+            //var item = chatView_NoteEdit.Items[obj.MessageIndex];
+            //var listitem = chatView_NoteEdit.ContainerFromItem(item) as ListViewItem;
+            //listitem.BorderBrush = new SolidColorBrush(Colors.LightGreen);
+            //listitem.BorderThickness = new Thickness(3);
+            //chatView_NoteEdit.UpdateLayout();
+            //await Task.Delay(1000);
+            //listitem.BorderThickness = new Thickness(0);
             chatView_NoteEdit.UpdateLayout();
 
-            List<int> msgIndexList = new List<int>();
-            msgIndexList.Add(obj.MessageIndex);
-            addNavigationButtons(msgIndexList);
+            addNavigationButtons(obj.MessageIndexList);
             //if (SpeechNavigateButtons.Children.Count > obj.MessageIndex)
             //{
             //    SpeechNavigateButtons.Children[obj.MessageIndex].Background = 
@@ -1804,7 +1825,6 @@ namespace PhenoPad
             Debug.WriteLine("Button Clicked");
             await CoreApplication.MainView.CoreWindow.Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () => {
                 chatView_NoteEdit.UpdateLayout();
-                //chatView_NoteEdit.ScrollIntoView(chatView_NoteEdit.Items[index]);
                 chatView_NoteEdit?.ScrollIntoView(chatView_NoteEdit.Items[index], ScrollIntoViewAlignment.Leading);
             });
         }

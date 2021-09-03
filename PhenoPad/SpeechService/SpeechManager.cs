@@ -93,58 +93,116 @@ namespace PhenoPad.SpeechService
         public async void LoadConversation()
         {
             var messageList = new List<TextMessage>();
-            string path = @"Assets\transcripts_w_medical\2020_03_04_4.json";
+            string path = @"Assets\transcripts_w_medical_ctakes\2019_01_30_0.json";
+            //string path = @"Assets\transcripts_w_medical\2020_03_04_4.json";
             //string path = @"Assets\transcripts_processed\2019_12_05_1.txt";
             StorageFolder InstallationFolder = Windows.ApplicationModel.Package.Current.InstalledLocation;
             StorageFile file = await InstallationFolder.GetFileAsync(path);
             string text = await FileIO.ReadTextAsync(file);
-            List<MedicalTermRaw> raw_terms = JsonConvert.DeserializeObject<List<MedicalTermRaw>>(text);
+
+            TranscriptRaw raw_transcript = JsonConvert.DeserializeObject<TranscriptRaw>(text);
+
+            List<SpeechTranscriptRaw> speech_lines = raw_transcript.transcripts;
+            Dictionary<string, MedicalConceptRaw> raw_med_terms = raw_transcript.concepts;
+
+            // Create Text Messages with speech lines first
             int m_ind = -1;
-            foreach (var rt in raw_terms)
+            foreach (var line in speech_lines)
             {
                 m_ind++;
                 var m = new TextMessage()
                 {
-                    Body = rt.text,
-                    Speaker = UInt16.Parse(rt.speaker),
+                    Body = line.text,
+                    Speaker = UInt16.Parse(line.speaker),
                     IsFinal = true,
                     ConversationIndex = 0,
                     phenotypesInText = new List<PhenotypeService.Phenotype>()
                 };
                 messageList.Add(m);
-
-                if (rt.parse_result.Count > 0)
-                {
-                    foreach (var item in rt.parse_result)
-                    {
-                        var item_text = item.Key;
-                        var item_dict = item.Value;
-                        var item_id = item_dict["ids"][0];
-                        var item_name = item_dict["names"][0];
-                        var item_type = item_dict["types"][0];
-
-                        if (item_name.Length > 5)
-                        {
-                            var medical_term = new MedicalTerm()
-                            {
-                                Id = item_id,
-                                Name = item_name,
-                                Type = item_type,
-                                Text = item_text,
-                                MessageIndex = m_ind
-                            };
-
-                            PhenotypeManager.getSharedPhenotypeManager().AddMedicalTerm(medical_term);
-                        }
-                    }
-                }
-                   
             }
+
+            // Add PhenoTypes
+            foreach (KeyValuePair<string, MedicalConceptRaw> entry in raw_med_terms)
+            {
+                var item_name = entry.Key;
+                var item_values = entry.Value;
+                var item_text = item_values.text;
+                var item_type = item_values.type;
+                var message_ids = item_values.line_ids;
+
+                if (item_name.Length > 5)
+                {
+                    var medical_term = new MedicalTerm()
+                    {
+                        Id = "",
+                        Name = item_name,
+                        Type = item_type,
+                        Text = item_text,
+                        MessageIndexList = message_ids
+                    };
+
+                    PhenotypeManager.getSharedPhenotypeManager().AddMedicalTerm(medical_term);
+                }
+            }
+
            
             conversation.ClearThenAddRange(messageList);
         }
+        //public async void LoadConversation()
+        //{
+        //    var messageList = new List<TextMessage>();
+        //    string path = @"Assets\transcripts_w_medical\2020_03_04_4.json";
+        //    //string path = @"Assets\transcripts_processed\2019_12_05_1.txt";
+        //    StorageFolder InstallationFolder = Windows.ApplicationModel.Package.Current.InstalledLocation;
+        //    StorageFile file = await InstallationFolder.GetFileAsync(path);
+        //    string text = await FileIO.ReadTextAsync(file);
+        //    List<MedicalTermRaw> raw_terms = JsonConvert.DeserializeObject<List<MedicalTermRaw>>(text);
+        //    int m_ind = -1;
+        //    foreach (var rt in raw_terms)
+        //    {
+        //        m_ind++;
+        //        var m = new TextMessage()
+        //        {
+        //            Body = rt.text,
+        //            Speaker = UInt16.Parse(rt.speaker),
+        //            IsFinal = true,
+        //            ConversationIndex = 0,
+        //            phenotypesInText = new List<PhenotypeService.Phenotype>()
+        //        };
+        //        messageList.Add(m);
 
-      
+        //        if (rt.parse_result.Count > 0)
+        //        {
+        //            foreach (var item in rt.parse_result)
+        //            {
+        //                var item_text = item.Key;
+        //                var item_dict = item.Value;
+        //                var item_id = item_dict["ids"][0];
+        //                var item_name = item_dict["names"][0];
+        //                var item_type = item_dict["types"][0];
+
+        //                if (item_name.Length > 5)
+        //                {
+        //                    var medical_term = new MedicalTerm()
+        //                    {
+        //                        Id = item_id,
+        //                        Name = item_name,
+        //                        Type = item_type,
+        //                        Text = item_text,
+        //                        MessageIndex = m_ind
+        //                    };
+
+        //                    PhenotypeManager.getSharedPhenotypeManager().AddMedicalTerm(medical_term);
+        //                }
+        //            }
+        //        }
+
+        //    }
+
+        //    conversation.ClearThenAddRange(messageList);
+        //}
+
+
 
         /// <summary>
         /// Returns a shared speech manager object.

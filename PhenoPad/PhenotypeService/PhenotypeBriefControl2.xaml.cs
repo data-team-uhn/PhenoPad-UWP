@@ -50,9 +50,9 @@ namespace PhenoPad.CustomControl
                 SetValue(phenotypeStateProperty, value);
             }
         }
-        public int messageIndex
+        public List<int> messageIndex
         {
-            get { return (int)GetValue(messageIndexProperty); }
+            get { return (List<int>)GetValue(messageIndexProperty); }
             set
             {
                 SetValue(messageIndexProperty, value);
@@ -104,7 +104,8 @@ namespace PhenoPad.CustomControl
 
         public static readonly DependencyProperty messageIndexProperty = DependencyProperty.Register(
           "messageIndex",
-          typeof(int),
+          //typeof(int),
+          typeof(List<int>),
           typeof(TextBlock),
           new PropertyMetadata(null)
         );
