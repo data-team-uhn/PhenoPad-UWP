@@ -252,6 +252,7 @@ namespace PhenoPad.CustomControl
         private async void NoteTextBoxDropAsync(object sender, DragEventArgs e)
         {   
             string draggedText = await e.DataView.GetTextAsync();
+            draggedText = breakLine(draggedText);
 
             string orgText = string.Empty;
             RichEditBox editBox = (RichEditBox)sender;
@@ -260,7 +261,9 @@ namespace PhenoPad.CustomControl
             var posi = e.GetPosition(editBox);
             int num_line = (int) (posi.Y / LINE_HEIGHT) - 1;
             num_line = num_line < 0 ? 0 : num_line;
+
             var lines = new List<string>(orgText.Split('\r'));
+
             if (num_line >= lines.Count())
                 lines.Add(draggedText);
             else
@@ -276,8 +279,43 @@ namespace PhenoPad.CustomControl
             }
             string new_text = String.Join('\r', lines);
             editBox.Document.SetText(TextSetOptions.None, new_text);
+
+
             
 
+            //TESTING
+            Debug.WriteLine("######################");
+            Debug.WriteLine("num_line:");
+            Debug.WriteLine(num_line);
+            Debug.WriteLine("######################");
+            Debug.WriteLine("lines.Count:");
+            Debug.WriteLine(lines.Count());
+            Debug.WriteLine("######################");
+            Debug.WriteLine("breakline:");
+            Debug.WriteLine(breakLine(draggedText));
+            Debug.WriteLine("######################");
+        }
+
+        //TESTING
+        private string breakLine(string input)
+        {
+            var words = new List<string>(input.Split(" "));
+            string output = words[0];
+            int curLineCharCount = output.Length;
+            for (int i = 1; i < words.Count; i++)
+            {
+                if (curLineCharCount + words[i].Length < 65)
+                {
+                    output += " " + words[i];
+                    curLineCharCount += words[i].Length + 1;
+                }
+                else
+                {
+                    output += " " + "\r" + words[i];
+                    curLineCharCount = words[i].Length;
+                }
+            }
+            return output;
         }
 
         private void NoteTextBoxDragOver(object sender, DragEventArgs e)

@@ -404,7 +404,7 @@
                         <ListView ScrollViewer.VerticalScrollBarVisibility="Hidden" x:Name="savedPhenoListView" Padding="3 0" 
                                   ItemsSource="{x:Bind PhenoMana.savedPhenotypes, Mode=OneWay}">
                             <ListView.Header>
-                                <controls:ScrollHeader Mode="Sticky" TargetListViewBase="{x:Bind savedPhenoListView}">
+                                <controls:ScrollHeader Mode="Sticky"  TargetListViewBase="{x:Bind savedPhenoListView}">
                                     <StackPanel Background="White">
                                         <TextBlock  Foreground="{StaticResource WORD_DARKER}" Text="Saved phenotypes" FontSize="16" 
                                                     FontWeight="SemiBold" Padding="5"/>
@@ -648,19 +648,20 @@
                             </ListView.ItemTemplate>
                         </local:ChatListView>
                     </Grid>
-                    <!--INFORMATION SUMMARY VIEW-->
+                    <!--INFORMATION SUMMARY VIEW (NOTE EDIT)-->
                     <Grid x:Name="infoSummaryView" x:FieldModifier="public" Grid.Row="0" Grid.Column="1" 
                           Grid.RowSpan="3" Visibility="Collapsed" Padding="5" 
                           Background="White">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="Auto"/>
                             <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="20"/>
                         </Grid.ColumnDefinitions>
                         <Grid.RowDefinitions>
                             <RowDefinition Height="*"/>
                             <RowDefinition Height="*"/>
                         </Grid.RowDefinitions>
-
+                        <!-- PHENOTYPE IN NOTE -->
                         <ListView ScrollViewer.VerticalScrollBarVisibility="Hidden" x:Name="phenoInNoteListView_NoteEdit" Padding="3 0" 
                                   ItemsSource="{x:Bind PhenoMana.phenotypesInNote, Mode=OneWay}" Grid.Row="0" Grid.Column="0">
                             <ListView.Header>
@@ -690,7 +691,7 @@
                                 </Style>
                             </ListView.ItemContainerStyle>
                         </ListView>
-
+                        <!-- PHENOTYPE IN SPEECH -->
                         <ListView ScrollViewer.VerticalScrollBarVisibility="Hidden" x:Name="phenoInSpeechListView_NoteEdit" Padding="3 0" 
                                   ItemsSource="{x:Bind PhenoMana.medicalTerms, Mode=OneWay}" Grid.Row="1" Grid.Column="0"
                                   IsItemClickEnabled="True" 
@@ -715,10 +716,10 @@
                                             <ColumnDefinition Width="40"></ColumnDefinition>
                                         </Grid.ColumnDefinitions>
                                         <customcontrol:PhenotypeBriefControl2 Grid.Column="0" Grid.Row="0"
-                                        VerticalAlignment="Center" phenotypeName="{x:Bind Text}" 
+                                        VerticalAlignment="Center" phenotypeName="{x:Bind Name}" 
                                                                     phenotypeId="{x:Bind Id}" 
                                                                     sourceType="{x:Bind SourceType}"
-                                                                    messageIndex="{x:Bind MessageIndex}" 
+                                                                    messageIndex="{x:Bind MessageIndexList}" 
                                                                     medicalType="{x:Bind TypeId}"
                                                                 presentPosition="List" />
 
@@ -739,7 +740,7 @@
                                 </Style>
                             </ListView.ItemContainerStyle>
                         </ListView>
-
+                        <!-- SPEECH BUBBLES -->
                         <Grid x:Name="speechQuickView_NoteEdit" x:FieldModifier="public" Grid.Row="0" Grid.Column="1" Grid.RowSpan="2"
                           Visibility="Visible" Padding="5"  
                           Background="White">
@@ -878,6 +879,16 @@
                                 </ListView.ItemTemplate>
                             </local:ChatListView>
 
+                        </Grid>
+                        <Grid x:Name="SpeechNavigateGrid" x:FieldModifier="public" Grid.Row="0" Grid.RowSpan="2" Grid.Column="2" Background="Transparent">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
+                            <StackPanel x:Name="SpeechNavigateButtons" Orientation="Vertical" VerticalAlignment="Stretch" Grid.Row="0" Grid.Column="0" Background="Transparent"/>
+                            <!--<controls:UniformGrid x:Name="SpeechNavigateButtons" Orientation="Vertical" Grid.Row="0" Grid.RowSpan="2" Grid.Column="2" />-->
                         </Grid>
                     </Grid>
                 </Grid>

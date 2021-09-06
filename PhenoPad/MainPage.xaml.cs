@@ -31,6 +31,7 @@ using Microsoft.Toolkit.Uwp.UI.Animations;
 using PhenoPad.LogService;
 using Microsoft.Toolkit.Uwp.UI.Controls;
 using Windows.ApplicationModel.DataTransfer;
+using Microsoft.Toolkit.Uwp;
 
 namespace PhenoPad
 {
@@ -128,7 +129,7 @@ namespace PhenoPad
             PropertyChanged += MainPage_PropertyChanged;
 
             chatView_NoteEdit.ItemsSource = SpeechManager.getSharedSpeechManager().conversation;
-            // chatView_NoteEdit.ContainerContentChanging += OnChatViewNoteEditContainerContentChanging;
+            //chatView_NoteEdit.ContainerContentChanging += OnChatViewNoteEditContainerContentChanging;
 
 
             HWRAddrInput.Text = HWRService.HWRManager.getSharedHWRManager().getIPAddr();
@@ -181,23 +182,24 @@ namespace PhenoPad
 
         private async void OnChatViewNoteEditContainerContentChanging(ListViewBase sender, ContainerContentChangingEventArgs args)
         {
-            if (args.InRecycleQueue) return;
-            TextMessage message = (TextMessage)args.Item;
+            //if (args.InRecycleQueue) return;
+            //TextMessage message = (TextMessage)args.Item;
 
-            if (message.IsNotFinal)
-            {
-                args.ItemContainer.HorizontalAlignment = HorizontalAlignment.Right;
-            }
-            else
-            {
-                args.ItemContainer.HorizontalAlignment = (message.Speaker == doctor) ? HorizontalAlignment.Right : HorizontalAlignment.Left;
+            //if (message.IsNotFinal)
+            //{
+            //    args.ItemContainer.HorizontalAlignment = HorizontalAlignment.Right;
+            //}
+            //else
+            //{
+            //    args.ItemContainer.HorizontalAlignment = (message.Speaker == doctor) ? HorizontalAlignment.Right : HorizontalAlignment.Left;
 
-                // Need this dispatcher in-order to avoid threading errors
-                await CoreApplication.MainView.CoreWindow.Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () => {
-                    chatView_NoteEdit.UpdateLayout();
-                    chatView_NoteEdit.ScrollIntoView(chatView.Items[chatView.Items.Count - 1]);
-                });
-            }
+            //    // Need this dispatcher in-order to avoid threading errors
+            //    await CoreApplication.MainView.CoreWindow.Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () => {
+            //        chatView_NoteEdit.UpdateLayout();
+            //        chatView_NoteEdit.ScrollIntoView(chatView.Items[chatView.Items.Count - 1]);
+            //    });
+            //}
+            chatView_NoteEdit.UpdateLayout();
         }
 
         //******************************END OF CONSTRUCTORS************************************************
@@ -1731,25 +1733,102 @@ namespace PhenoPad
             args.Data.SetData(StandardDataFormats.Text, tb.Text);
         }
 
+        //private async void phenoInSpeechListView_NoteEdit_ItemClickAsync(object sender, ItemClickEventArgs e)
+        //{
+            
+
+        //    var obj = (MedicalTerm)e.ClickedItem;
+        //    await CoreApplication.MainView.CoreWindow.Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () => {
+        //        chatView_NoteEdit.UpdateLayout();
+        //        chatView_NoteEdit.ScrollIntoView(chatView_NoteEdit.Items[obj.MessageIndex]);
+        //    });
+            
+            
+        //    var item = chatView_NoteEdit.Items[obj.MessageIndex];
+        //    var listitem = chatView_NoteEdit.ContainerFromItem(item) as ListViewItem;
+        //    listitem.BorderBrush = new SolidColorBrush(Colors.LightGreen);
+        //    listitem.BorderThickness = new Thickness(3);
+        //    chatView_NoteEdit.UpdateLayout();
+        //    await Task.Delay(1000);
+        //    listitem.BorderThickness = new Thickness(0);
+        //    chatView_NoteEdit.UpdateLayout();
+
+        //    List<int> msgIndexList = new List<int>();
+        //    msgIndexList.Add(obj.MessageIndex);
+        //    addNavigationButtons(msgIndexList);
+        //    //if (SpeechNavigateButtons.Children.Count > obj.MessageIndex)
+        //    //{
+        //    //    SpeechNavigateButtons.Children[obj.MessageIndex].Background = 
+        //    //}
+        //}
         private async void phenoInSpeechListView_NoteEdit_ItemClickAsync(object sender, ItemClickEventArgs e)
         {
+
+
             var obj = (MedicalTerm)e.ClickedItem;
+
+            //var item = chatView_NoteEdit.Items[obj.MessageIndex];
+            //var listitem = chatView_NoteEdit.ContainerFromItem(item) as ListViewItem;
+            //listitem.BorderBrush = new SolidColorBrush(Colors.LightGreen);
+            //listitem.BorderThickness = new Thickness(3);
+            //chatView_NoteEdit.UpdateLayout();
+            //await Task.Delay(1000);
+            //listitem.BorderThickness = new Thickness(0);
+            chatView_NoteEdit.UpdateLayout();
+
+            addNavigationButtons(obj.MessageIndexList);
+            //if (SpeechNavigateButtons.Children.Count > obj.MessageIndex)
+            //{
+            //    SpeechNavigateButtons.Children[obj.MessageIndex].Background = 
+            //}
+        }
+
+        private void addNavigationButtons(List<int> msgIdxs)
+        {
+            SpeechNavigateButtons.Children.Clear();
+
+            int numButtons = chatView_NoteEdit.Items.Count;
+            //int numButtons = 50;
+            //double panelHeight = SpeechNavigateButtons.ActualHeight;
+            double panelHeight = SpeechNavigateGrid.ActualHeight;
+            double buttonHeight = panelHeight / numButtons;
+            Debug.WriteLine(numButtons);
+            Debug.WriteLine(panelHeight);
+            Debug.WriteLine(buttonHeight);
+            Debug.WriteLine("###");
+            for (int i = 0; i < numButtons; i++)
+            {
+                Button b = new Button();
+                b.Height = buttonHeight;
+                b.Width = 18;
+                if (msgIdxs.Contains(i))
+                {
+                    b.Background = new SolidColorBrush(Colors.Yellow);
+                    b.IsEnabled = true;
+                }
+                else
+                {
+                    b.Background = new SolidColorBrush(Colors.Transparent);
+                    b.IsEnabled = false;
+                }
+                
+                b.Click += speechNavigateButtonClick;
+
+                SpeechNavigateButtons.Children.Add(b);
+            }
+        }
+
+        private async void speechNavigateButtonClick(object sender, RoutedEventArgs e)
+        {
+            int index = SpeechNavigateButtons.Children.IndexOf((Button)sender);
+            Debug.WriteLine(index);
+            Debug.WriteLine("Button Clicked");
             await CoreApplication.MainView.CoreWindow.Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () => {
                 chatView_NoteEdit.UpdateLayout();
-                chatView_NoteEdit.ScrollIntoView(chatView_NoteEdit.Items[obj.MessageIndex]);
+                chatView_NoteEdit?.ScrollIntoView(chatView_NoteEdit.Items[index], ScrollIntoViewAlignment.Leading);
             });
-            
-            /**
-            var item = chatView_NoteEdit.Items[obj.MessageIndex];
-            var listitem = chatView_NoteEdit.ContainerFromItem(item) as ListViewItem;
-            listitem.BorderBrush = new SolidColorBrush(Colors.LightGreen);
-            listitem.BorderThickness = new Thickness(3);
-            chatView_NoteEdit.UpdateLayout();
-            await Task.Delay(1000);
-            listitem.BorderThickness = new Thickness(0);
-            chatView_NoteEdit.UpdateLayout();
-                **/
         }
+
         
     }
     //================================= END OF MAINAPGE ==========================================/
