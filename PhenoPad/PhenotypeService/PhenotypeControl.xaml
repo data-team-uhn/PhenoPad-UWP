@@ -24,13 +24,17 @@
     <Grid Padding="0 1 0 1">
         <Grid.Resources>
             <!--<Storyboard x:Name="DeletePhenotypeSB">
-                --><!--<FadeOutThemeAnimation Storyboard.TargetName="YNSwitch" Duration="0:0:0.1"/>--><!--
+                -->
+            <!--<FadeOutThemeAnimation Storyboard.TargetName="YNSwitch" Duration="0:0:0.1"/>-->
+            <!--
             </Storyboard>
             <Storyboard x:Name="AddPhenotypeSB">
-                --><!--<FadeInThemeAnimation Storyboard.TargetName="YNSwitch" Duration="0:0:0.1" />--><!--
+                -->
+            <!--<FadeInThemeAnimation Storyboard.TargetName="YNSwitch" Duration="0:0:0.1" />-->
+            <!--
             </Storyboard>-->
         </Grid.Resources>
-        
+
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="50"/>
             <ColumnDefinition Width="*"/>
@@ -63,8 +67,12 @@
         </Grid>
 
         <Grid Padding="0 0 0 0" Name="NameGrid" Grid.Column="1">
-            <Button Style="{StaticResource ButtonStyle1}" Click="NameGrid_Tapped" Background="Transparent" Height="25" Grid.Column="1"
-                    Padding="0" HorizontalAlignment="Left" HorizontalContentAlignment="Stretch" Width="auto">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="337*"/>
+                <RowDefinition Height="162*"/>
+            </Grid.RowDefinitions>
+            <Button Style="{StaticResource ButtonStyle1}" Click="NameGrid_Tapped" Background="Transparent" Height="25"
+                    Padding="0" HorizontalAlignment="Left" HorizontalContentAlignment="Stretch" Width="auto" Margin="0,487,0,0" VerticalAlignment="Top">
                 <RelativePanel  HorizontalAlignment="Stretch" VerticalAlignment="Center">
                     <TextBlock  Margin="5 0 0 0" FontSize="14" Grid.Column="1" x:Name="phenotypeNameTextBlock" Text="" HorizontalAlignment="Stretch" VerticalAlignment="Center" >
                     <ToolTipService.ToolTip>
@@ -90,7 +98,7 @@
                 <SymbolIcon Symbol="Delete"/>
             </Button>
         </StackPanel>
-       
-       
+
+
     </Grid>
 </UserControl>

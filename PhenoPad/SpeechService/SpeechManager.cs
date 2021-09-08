@@ -25,6 +25,7 @@ using Windows.UI.Popups;
 using Windows.Storage.Streams;
 using PhenoPad.LogService;
 using PhenoPad.PhenotypeService;
+using PhenoPad.FileService;
 
 namespace PhenoPad.SpeechService
 {
@@ -66,6 +67,8 @@ namespace PhenoPad.SpeechService
         public event TypedEventHandler<SpeechManager, StorageFile> RecordingCreated;
         public StorageFile savedFile;
 
+        public string notebookId = "";
+
         private bool useFile = false;
         private CancellationTokenSource cancellationSource;
 
@@ -93,10 +96,26 @@ namespace PhenoPad.SpeechService
         public async void LoadConversation()
         {
             var messageList = new List<TextMessage>();
-            string path = @"Assets\transcripts_w_medical_ctakes\2019_01_30_0.json";
+
+            //
+            Debug.WriteLine("############");
+            Debug.WriteLine(notebookId);
+            Debug.WriteLine("############");
+            string map_path = @"Assets\transcript_map.json";
+
+            StorageFolder InstallationFolder = Windows.ApplicationModel.Package.Current.InstalledLocation;
+            StorageFile map_file = await InstallationFolder.GetFileAsync(map_path);
+            string map_text = await FileIO.ReadTextAsync(map_file);
+            TranscriptMap transcript_map = JsonConvert.DeserializeObject<TranscriptMap>(map_text);
+            Debug.WriteLine(transcript_map.map[notebookId]);
+
+            string path = @"Assets\transcripts_w_medical_ctakes\" + transcript_map.map[notebookId] + ".json";
+            Debug.WriteLine(path);
+            //string path = @"Assets\transcripts_w_medical_ctakes\2019_01_30_0.json";
             //string path = @"Assets\transcripts_w_medical\2020_03_04_4.json";
             //string path = @"Assets\transcripts_processed\2019_12_05_1.txt";
-            StorageFolder InstallationFolder = Windows.ApplicationModel.Package.Current.InstalledLocation;
+
+            //StorageFolder InstallationFolder = Windows.ApplicationModel.Package.Current.InstalledLocation;
             StorageFile file = await InstallationFolder.GetFileAsync(path);
             string text = await FileIO.ReadTextAsync(file);
 
@@ -109,6 +128,7 @@ namespace PhenoPad.SpeechService
             int m_ind = -1;
             foreach (var line in speech_lines)
             {
+                // Debug.WriteLine(line.text);
                 m_ind++;
                 var m = new TextMessage()
                 {
@@ -217,7 +237,10 @@ namespace PhenoPad.SpeechService
             if (sharedSpeechManager == null)
             {
                 sharedSpeechManager = new SpeechManager();
-                sharedSpeechManager.LoadConversation();
+                if (!string.IsNullOrEmpty(sharedSpeechManager.notebookId))
+                {
+                    sharedSpeechManager.LoadConversation();
+                }
                 return sharedSpeechManager;
             }
             else

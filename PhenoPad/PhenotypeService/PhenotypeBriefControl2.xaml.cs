@@ -218,29 +218,6 @@ namespace PhenoPad.CustomControl
             
         }
 
-        private void phenotypeNameTextBlock_Tapped(object sender, RoutedEventArgs e)
-        {
-            switch (localState)
-            {
-                case -1:
-                    localState = 1;
-                        setPhenotypeState(1);
-                    PhenotypeManager.getSharedPhenotypeManager().addPhenotype(new Phenotype(phenotypeId, phenotypeName, 1,MainPage.Current.curPageIndex), sourceType);
-                    break;
-                case 0:
-                    localState = 1;
-                    //if (presentPosition == PresentPosition.Inline)
-                        setPhenotypeState(1);
-                    PhenotypeManager.getSharedPhenotypeManager().updatePhenoStateById(phenotypeId, 1, sourceType);
-                    break;
-                case 1:
-                    localState = 0;
-                    //if (presentPosition == PresentPosition.Inline)
-                        setPhenotypeState(0);
-                    PhenotypeManager.getSharedPhenotypeManager().updatePhenoStateById(phenotypeId, 0, sourceType);
-                    break;
-            }
-        }
 
         private void UserControl_Loaded(object sender, RoutedEventArgs e)
         {

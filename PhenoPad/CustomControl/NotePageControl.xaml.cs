@@ -165,6 +165,9 @@ namespace PhenoPad.CustomControl
         public bool pointer_pressing = false;
         public double y = -1;
 
+        // for note edit page loading
+        private bool note_edit_file_exists = true;
+
 
         //====================================================================================
         //                              END OF CLASS PROPERTIES
@@ -317,10 +320,13 @@ namespace PhenoPad.CustomControl
                 NoteEditScrollViewer.ChangeView(0, 50, 0.645f, false);//changeview by itself does not work for current windows version
                 NoteEditScrollViewer.ZoomToFactor(0.6f);
             });
-            List<string> all_text = await ReturnAllParagraphTextAsync();
-            for (int i = 0; i < 10; i++)
-                all_text.Add("\n");
-            this.noteEditPage.set_text(String.Join("\n", all_text));
+            if (!note_edit_file_exists)
+            {
+                List<string> all_text = await ReturnAllParagraphTextAsync();
+                for (int i = 0; i < 10; i++)
+                    all_text.Add("\n");
+                this.noteEditPage.set_text(String.Join("\n", all_text));             
+            }
             NoteEditScrollViewer.Visibility = Visibility.Visible;
         }
 
@@ -390,6 +396,20 @@ namespace PhenoPad.CustomControl
 
             // Note editing page
             this.noteEditPage = new NoteEditPageControl(this);
+
+            //TESTING
+            string note_edit_text;
+            this.noteEditPage.NoteTextBox.Document.GetText(TextGetOptions.None, out note_edit_text);           
+            var task =  FileManager.getSharedFileManager().LoadNoteText(notebookId, "0");
+            string text = Task.Run(() => FileManager.getSharedFileManager().LoadNoteEditText(notebookId, "0")).Result;
+            Debug.WriteLine(text);
+            if (string.IsNullOrEmpty(text))
+            {
+                Debug.WriteLine("FILE DOES NOT EXIST");
+                note_edit_file_exists = false;
+            }
+            this.noteEditPage.NoteTextBox.Document.SetText(TextSetOptions.None, text);
+
             //EHRScrollViewer.Content = ehrPage;
             NoteEditOutputGrid.Children.Add(noteEditPage);
 
@@ -1437,6 +1457,11 @@ namespace PhenoPad.CustomControl
                 textNoteEditBox.Document.GetText(TextGetOptions.None, out notetext);
                 await FileManager.getSharedFileManager().SaveNoteText(notebookId, pageId, notetext);
 
+                // TODO: add save note edit file
+                string noteedittext;
+                this.noteEditPage.NoteTextBox.Document.GetText(TextGetOptions.None, out noteedittext);
+                Debug.WriteLine(noteedittext);
+                await FileManager.getSharedFileManager().SaveNoteEditText(notebookId, pageId, noteedittext);
 
                 return result1 && result2 && result3;
             }

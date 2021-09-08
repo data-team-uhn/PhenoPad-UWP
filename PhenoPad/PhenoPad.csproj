@@ -112,6 +112,7 @@
     <Compile Include="CustomControl\NoteEditPageControl.xaml.cs">
       <DependentUpon>NoteEditPageControl.xaml</DependentUpon>
     </Compile>
+    <Compile Include="FileService\TranscriptMap.cs" />
     <Compile Include="PhenotypeService\MedicalTerm.cs" />
     <Compile Include="PhenotypeService\PhenotypeBriefControl2.xaml.cs">
       <DependentUpon>PhenotypeBriefControl2.xaml</DependentUpon>

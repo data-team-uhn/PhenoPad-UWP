@@ -405,6 +405,9 @@ namespace PhenoPad
                 FileManager.getSharedFileManager().currentNoteboookId = nid;
                 await Dispatcher.RunAsync(CoreDispatcherPriority.High, this.InitializeNotebookFromDisk);
             }
+
+            
+
             await Task.Delay(TimeSpan.FromSeconds(3));
             LoadingPopup.IsOpen = false;
             return;                

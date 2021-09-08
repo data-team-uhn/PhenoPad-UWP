@@ -22,6 +22,7 @@ using System.ComponentModel;
 using System.Threading;
 using PhenoPad.LogService;
 using Windows.Storage;
+using Windows.UI.Text;
 
 namespace PhenoPad
 {
@@ -36,6 +37,7 @@ namespace PhenoPad
 
         // Stores all TextMessages in the notebook, is the ItemSource for SpeechPage.ChatView
         public List<TextMessage> conversations;
+
 
         //=============================================================================================
 
@@ -102,7 +104,6 @@ namespace PhenoPad
         /// </summary>
         public async void InitializeNotebookFromDisk()
         {
-
             LoadingPopup.IsOpen = true;
             MetroLogger.getSharedLogger().Info("Initializing notebook from disk ...");
             PhenoMana.clearCache();
@@ -250,7 +251,7 @@ namespace PhenoPad
                 //       when things aren't saved properlly during debugging 
                 //       state due to force quit
                 MetroLogger.getSharedLogger().Error( ne + ne.Message );
-                await PromptRemakeNote(notebookId);
+                //await PromptRemakeNote(notebookId);
                 return;
             }
             catch (Exception e)

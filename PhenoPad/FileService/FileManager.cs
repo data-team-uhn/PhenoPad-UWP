@@ -19,6 +19,7 @@ using System.Xml;
 using PhenoPad.LogService;
 using PhenoPad.SpeechService;
 using Windows.UI.Input.Inking;
+using Windows.UI.Text;
 
 namespace PhenoPad.FileService
 {
@@ -42,6 +43,7 @@ namespace PhenoPad.FileService
         EHRFormat,
         OperationLog,
         NoteText,
+        NoteEditText,
         RecognizedPhraseMeta
     };
 
@@ -63,6 +65,7 @@ namespace PhenoPad.FileService
         private string NOTE_META_FILE = "meta.xml";
         private string AUDIO_META_FILE = "AudioMeta.xml";
         private string NOTE_TEXT_FILE = "text.txt";
+        private string NOTE_EDIT_TEXT_FILE = "edit_text.txt";
         public string currentNoteboookId = "";
         // setting application data root folder as the default disk access location
         private StorageFolder ROOT_FOLDER = ApplicationData.Current.LocalFolder;
@@ -265,6 +268,8 @@ namespace PhenoPad.FileService
                 StorageFolder folder = await ROOT_FOLDER.GetFolderAsync(transcriptPath);
 
                 IReadOnlyList<StorageFile> fileList = await folder.GetFilesAsync();
+                SpeechManager.getSharedSpeechManager().notebookId = notebookId;
+                SpeechManager.getSharedSpeechManager().LoadConversation();
                 SpeechManager.getSharedSpeechManager().setAudioIndex(fileList.Count);
                 foreach (StorageFile file in fileList)
                 {
@@ -555,6 +560,10 @@ namespace PhenoPad.FileService
                     break;
                 case NoteFileType.NoteText:
                     filename = NOTE_TEXT_FILE;
+                    break;
+                case NoteFileType.NoteEditText:
+                    foldername = String.Format(@"{0}\", notebookId);
+                    filename = NOTE_EDIT_TEXT_FILE;
                     break;
                 case NoteFileType.Video:
                     filename = name + ".mp4";
@@ -971,6 +980,33 @@ namespace PhenoPad.FileService
             return true;
         }
 
+        public async Task<bool> SaveNoteEditText(string notebookId, string pageId, string text)
+        {
+            try
+            {
+                string textPath = GetNoteFilePath(notebookId, pageId, NoteFileType.NoteEditText);
+                string normText = System.Text.RegularExpressions.Regex.Replace(text, @"\r", "");
+
+                if (String.IsNullOrWhiteSpace(normText))
+                {
+                    // Don't save if text edit box has no content
+                    return true;
+                }
+                StorageFile textFile = await ROOT_FOLDER.CreateFileAsync(textPath, CreationCollisionOption.ReplaceExisting);
+                //saves text to local .txt file
+                await FileIO.WriteTextAsync(textFile, text);
+            }
+            catch (Exception e)
+            {
+                LogService.MetroLogger.getSharedLogger().Error(
+                    $"Failed to save note text, notebook: {notebookId}, details: "
+                    + e.Message);
+                return false;
+            }
+
+            return true;
+        }
+
         SemaphoreSlim serilizationSS = new SemaphoreSlim(1);
         /// <summary>
         /// Saves the state of the object to a XML meta file.
@@ -1292,6 +1328,30 @@ namespace PhenoPad.FileService
             {
                 LogService.MetroLogger.getSharedLogger().Error(
                     $"Failed to load note text, notebook: {notebookId}, page: {pageId}, details: "
+                    + e.Message);
+                return "";
+            }
+        }
+
+        public async Task<string> LoadNoteEditText(string notebookId, string pageId)
+        {
+            try
+            {
+                string textPath = GetNoteFilePath(notebookId, pageId, NoteFileType.NoteEditText);
+                Debug.WriteLine(textPath);
+                StorageFile textFile = await ROOT_FOLDER.GetFileAsync(textPath);
+                //saves text to local .txt file
+                if (textFile == null)
+                {
+                    return "";
+                }
+                string text = await FileIO.ReadTextAsync(textFile);
+                return text;
+            }
+            catch (Exception e)
+            {
+                LogService.MetroLogger.getSharedLogger().Error(
+                    $"Failed to load note edit text, notebook: {notebookId}, page: {pageId}, details: "
                     + e.Message);
                 return "";
             }
