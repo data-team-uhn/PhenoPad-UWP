@@ -23,6 +23,13 @@ namespace PhenoPad.PhenotypeService
         public static PhenotypeManager sharedPhenotypeManager;
 
         public ObservableCollection<MedicalTerm> medicalTerms;
+
+        public ObservableCollection<MedicalTerm> AnatomicalSiteTerms;
+        public ObservableCollection<MedicalTerm> DiseaseDisorderTerms;
+        public ObservableCollection<MedicalTerm> MedicationTerms;
+        public ObservableCollection<MedicalTerm> ProcedureTerms;
+        public ObservableCollection<MedicalTerm> SignSymptomTerms;
+
         public ObservableCollection<Phenotype> savedPhenotypes;
         public ObservableCollection<Phenotype> suggestedPhenotypes;
         public ObservableCollection<Disease> predictedDiseases;
@@ -39,6 +46,13 @@ namespace PhenoPad.PhenotypeService
         public PhenotypeManager()
         {
             medicalTerms = new ObservableCollection<MedicalTerm>();
+
+            AnatomicalSiteTerms = new ObservableCollection<MedicalTerm>();
+            DiseaseDisorderTerms = new ObservableCollection<MedicalTerm>();
+            MedicationTerms = new ObservableCollection<MedicalTerm>();
+            ProcedureTerms = new ObservableCollection<MedicalTerm>();
+            SignSymptomTerms = new ObservableCollection<MedicalTerm>();
+
             savedPhenotypes = new ObservableCollection<Phenotype>();
             suggestedPhenotypes = new ObservableCollection<Phenotype>();
             predictedDiseases = new ObservableCollection<Disease>();
@@ -972,7 +986,29 @@ namespace PhenoPad.PhenotypeService
 
         public void AddMedicalTerm(MedicalTerm mt)
         {
-            medicalTerms.Add(mt);
+            string type = mt.Type;
+            switch (type)
+            {
+                case "AnatomicalSiteMention":
+                    AnatomicalSiteTerms.Add(mt);
+                    break;
+                case "DiseaseDisorderMention":
+                    DiseaseDisorderTerms.Add(mt);
+                    break;
+                case "MedicationMention":
+                    MedicationTerms.Add(mt);
+                    break;
+                case "ProcedureMention":
+                    ProcedureTerms.Add(mt);
+                    break;
+                case "SignSymptomMention":
+                    SignSymptomTerms.Add(mt);
+                    break;
+                default:
+                    medicalTerms.Add(mt);
+                    break;
+            }
+
         }
     }
 }

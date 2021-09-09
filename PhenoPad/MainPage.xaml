@@ -660,9 +660,12 @@
                         <Grid.RowDefinitions>
                             <RowDefinition Height="*"/>
                             <RowDefinition Height="*"/>
+                            <RowDefinition Height="*"/>
+                            <RowDefinition Height="*"/>
+                            <RowDefinition Height="*"/>
                         </Grid.RowDefinitions>
                         <!-- PHENOTYPE IN NOTE -->
-                        <ListView ScrollViewer.VerticalScrollBarVisibility="Hidden" x:Name="phenoInNoteListView_NoteEdit" Padding="3 0" 
+                        <!--<ListView ScrollViewer.VerticalScrollBarVisibility="Hidden" x:Name="phenoInNoteListView_NoteEdit" Padding="3 0" 
                                   ItemsSource="{x:Bind PhenoMana.phenotypesInNote, Mode=OneWay}" Grid.Row="0" Grid.Column="0">
                             <ListView.Header>
                                 <controls:ScrollHeader Mode="Sticky" TargetListViewBase="{x:Bind phenoInNoteListView_NoteEdit}">
@@ -690,9 +693,9 @@
                                     <Setter Property="MinHeight" Value="20" />
                                 </Style>
                             </ListView.ItemContainerStyle>
-                        </ListView>
+                        </ListView>-->
                         <!-- PHENOTYPE IN SPEECH -->
-                        <ListView ScrollViewer.VerticalScrollBarVisibility="Hidden" x:Name="phenoInSpeechListView_NoteEdit" Padding="3 0" 
+                        <!--<ListView ScrollViewer.VerticalScrollBarVisibility="Hidden" x:Name="phenoInSpeechListView_NoteEdit" Padding="3 0" 
                                   ItemsSource="{x:Bind PhenoMana.medicalTerms, Mode=OneWay}" Grid.Row="1" Grid.Column="0"
                                   IsItemClickEnabled="True" 
                                   ItemClick="phenoInSpeechListView_NoteEdit_ItemClickAsync">
@@ -739,9 +742,251 @@
                                     <Setter Property="MinHeight" Value="20" />
                                 </Style>
                             </ListView.ItemContainerStyle>
+                        </ListView>-->
+
+
+                        <ListView ScrollViewer.VerticalScrollBarVisibility="Hidden" x:Name="phenoAnatomicalSiteListView_NoteEdit" Padding="3 0" 
+                                  ItemsSource="{x:Bind PhenoMana.AnatomicalSiteTerms, Mode=OneWay}" Grid.Row="0" Grid.Column="0"
+                                  IsItemClickEnabled="True" 
+                                  ItemClick="phenoInSpeechListView_NoteEdit_ItemClickAsync">
+                            <ListView.Header>
+                                <controls:ScrollHeader Mode="Sticky" TargetListViewBase="{x:Bind phenoAnatomicalSiteListView_NoteEdit}">
+                                    <StackPanel Background="White">
+                                        <TextBlock  Foreground="{StaticResource WORD_DARKER}" Text="Anatomical Site Mentions" FontSize="16" 
+                                                    FontWeight="SemiBold" Padding="5"/>
+                                    </StackPanel>
+                                </controls:ScrollHeader>
+                            </ListView.Header>
+
+                            <ListView.ItemTemplate>
+                                <DataTemplate x:DataType="phenotypeservice:MedicalTerm">
+                                    <Grid Margin="0 1 0 1" Name="NameGrid" HorizontalAlignment="Stretch">
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="Auto"></RowDefinition>
+                                        </Grid.RowDefinitions>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"></ColumnDefinition>
+                                            <ColumnDefinition Width="40"></ColumnDefinition>
+                                        </Grid.ColumnDefinitions>
+                                        <customcontrol:PhenotypeBriefControl2 Grid.Column="0" Grid.Row="0"
+                                        VerticalAlignment="Center" phenotypeName="{x:Bind Name}" 
+                                                                    phenotypeId="{x:Bind Id}" 
+                                                                    sourceType="{x:Bind SourceType}"
+                                                                    messageIndex="{x:Bind MessageIndexList}" 
+                                                                    medicalType="{x:Bind TypeId}"
+                                                                presentPosition="List" />
+
+                                        <Border Grid.Column="1" Grid.Row="0"
+                                            VerticalAlignment="Center" Height="40"
+                                        Background="{x:Null}" Style="{StaticResource ButtonStyle1}" >
+                                            <SymbolIcon Symbol="Forward" Foreground="Black" Opacity="0.6" />
+                                        </Border>
+                                    </Grid>
+                                </DataTemplate>
+                            </ListView.ItemTemplate>
+                            <ListView.ItemContainerStyle>
+                                <Style TargetType="ListViewItem">
+                                    <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                                    <Setter Property="Margin" Value="0,0,0,0" />
+                                    <Setter Property="Padding" Value="5,0,0,0" />
+                                    <Setter Property="MinHeight" Value="20" />
+                                </Style>
+                            </ListView.ItemContainerStyle>
+                        </ListView>
+                        <ListView ScrollViewer.VerticalScrollBarVisibility="Hidden" x:Name="phenoDiseaseDisorderListView_NoteEdit" Padding="3 0" 
+                                  ItemsSource="{x:Bind PhenoMana.DiseaseDisorderTerms, Mode=OneWay}" Grid.Row="1" Grid.Column="0"
+                                  IsItemClickEnabled="True" 
+                                  ItemClick="phenoInSpeechListView_NoteEdit_ItemClickAsync">
+                            <ListView.Header>
+                                <controls:ScrollHeader Mode="Sticky" TargetListViewBase="{x:Bind phenoDiseaseDisorderListView_NoteEdit}">
+                                    <StackPanel Background="White">
+                                        <TextBlock  Foreground="{StaticResource WORD_DARKER}" Text="Disease Disorder Mentions" FontSize="16" 
+                                                    FontWeight="SemiBold" Padding="5"/>
+                                    </StackPanel>
+                                </controls:ScrollHeader>
+                            </ListView.Header>
+
+                            <ListView.ItemTemplate>
+                                <DataTemplate x:DataType="phenotypeservice:MedicalTerm">
+                                    <Grid Margin="0 1 0 1" Name="NameGrid" HorizontalAlignment="Stretch">
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="Auto"></RowDefinition>
+                                        </Grid.RowDefinitions>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"></ColumnDefinition>
+                                            <ColumnDefinition Width="40"></ColumnDefinition>
+                                        </Grid.ColumnDefinitions>
+                                        <customcontrol:PhenotypeBriefControl2 Grid.Column="0" Grid.Row="0"
+                                        VerticalAlignment="Center" phenotypeName="{x:Bind Name}" 
+                                                                    phenotypeId="{x:Bind Id}" 
+                                                                    sourceType="{x:Bind SourceType}"
+                                                                    messageIndex="{x:Bind MessageIndexList}" 
+                                                                    medicalType="{x:Bind TypeId}"
+                                                                presentPosition="List" />
+
+                                        <Border Grid.Column="1" Grid.Row="0"
+                                            VerticalAlignment="Center" Height="40"
+                                        Background="{x:Null}" Style="{StaticResource ButtonStyle1}" >
+                                            <SymbolIcon Symbol="Forward" Foreground="Black" Opacity="0.6" />
+                                        </Border>
+                                    </Grid>
+                                </DataTemplate>
+                            </ListView.ItemTemplate>
+                            <ListView.ItemContainerStyle>
+                                <Style TargetType="ListViewItem">
+                                    <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                                    <Setter Property="Margin" Value="0,0,0,0" />
+                                    <Setter Property="Padding" Value="5,0,0,0" />
+                                    <Setter Property="MinHeight" Value="20" />
+                                </Style>
+                            </ListView.ItemContainerStyle>
+                        </ListView>
+                        <ListView ScrollViewer.VerticalScrollBarVisibility="Hidden" x:Name="phenoMedicationListView_NoteEdit" Padding="3 0" 
+                                  ItemsSource="{x:Bind PhenoMana.MedicationTerms, Mode=OneWay}" Grid.Row="2" Grid.Column="0"
+                                  IsItemClickEnabled="True" 
+                                  ItemClick="phenoInSpeechListView_NoteEdit_ItemClickAsync">
+                            <ListView.Header>
+                                <controls:ScrollHeader Mode="Sticky" TargetListViewBase="{x:Bind phenoMedicationListView_NoteEdit}">
+                                    <StackPanel Background="White">
+                                        <TextBlock  Foreground="{StaticResource WORD_DARKER}" Text="Medication Mentions" FontSize="16" 
+                                                    FontWeight="SemiBold" Padding="5"/>
+                                    </StackPanel>
+                                </controls:ScrollHeader>
+                            </ListView.Header>
+
+                            <ListView.ItemTemplate>
+                                <DataTemplate x:DataType="phenotypeservice:MedicalTerm">
+                                    <Grid Margin="0 1 0 1" Name="NameGrid" HorizontalAlignment="Stretch">
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="Auto"></RowDefinition>
+                                        </Grid.RowDefinitions>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"></ColumnDefinition>
+                                            <ColumnDefinition Width="40"></ColumnDefinition>
+                                        </Grid.ColumnDefinitions>
+                                        <customcontrol:PhenotypeBriefControl2 Grid.Column="0" Grid.Row="0"
+                                        VerticalAlignment="Center" phenotypeName="{x:Bind Name}" 
+                                                                    phenotypeId="{x:Bind Id}" 
+                                                                    sourceType="{x:Bind SourceType}"
+                                                                    messageIndex="{x:Bind MessageIndexList}" 
+                                                                    medicalType="{x:Bind TypeId}"
+                                                                presentPosition="List" />
+
+                                        <Border Grid.Column="1" Grid.Row="0"
+                                            VerticalAlignment="Center" Height="40"
+                                        Background="{x:Null}" Style="{StaticResource ButtonStyle1}" >
+                                            <SymbolIcon Symbol="Forward" Foreground="Black" Opacity="0.6" />
+                                        </Border>
+                                    </Grid>
+                                </DataTemplate>
+                            </ListView.ItemTemplate>
+                            <ListView.ItemContainerStyle>
+                                <Style TargetType="ListViewItem">
+                                    <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                                    <Setter Property="Margin" Value="0,0,0,0" />
+                                    <Setter Property="Padding" Value="5,0,0,0" />
+                                    <Setter Property="MinHeight" Value="20" />
+                                </Style>
+                            </ListView.ItemContainerStyle>
+                        </ListView>
+                        <ListView ScrollViewer.VerticalScrollBarVisibility="Hidden" x:Name="phenoProcedureListView_NoteEdit" Padding="3 0" 
+                                  ItemsSource="{x:Bind PhenoMana.ProcedureTerms, Mode=OneWay}" Grid.Row="3" Grid.Column="0"
+                                  IsItemClickEnabled="True" 
+                                  ItemClick="phenoInSpeechListView_NoteEdit_ItemClickAsync">
+                            <ListView.Header>
+                                <controls:ScrollHeader Mode="Sticky" TargetListViewBase="{x:Bind phenoProcedureListView_NoteEdit}">
+                                    <StackPanel Background="White">
+                                        <TextBlock  Foreground="{StaticResource WORD_DARKER}" Text="Procedure Mentions" FontSize="16" 
+                                                    FontWeight="SemiBold" Padding="5"/>
+                                    </StackPanel>
+                                </controls:ScrollHeader>
+                            </ListView.Header>
+
+                            <ListView.ItemTemplate>
+                                <DataTemplate x:DataType="phenotypeservice:MedicalTerm">
+                                    <Grid Margin="0 1 0 1" Name="NameGrid" HorizontalAlignment="Stretch">
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="Auto"></RowDefinition>
+                                        </Grid.RowDefinitions>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"></ColumnDefinition>
+                                            <ColumnDefinition Width="40"></ColumnDefinition>
+                                        </Grid.ColumnDefinitions>
+                                        <customcontrol:PhenotypeBriefControl2 Grid.Column="0" Grid.Row="0"
+                                        VerticalAlignment="Center" phenotypeName="{x:Bind Name}" 
+                                                                    phenotypeId="{x:Bind Id}" 
+                                                                    sourceType="{x:Bind SourceType}"
+                                                                    messageIndex="{x:Bind MessageIndexList}" 
+                                                                    medicalType="{x:Bind TypeId}"
+                                                                presentPosition="List" />
+
+                                        <Border Grid.Column="1" Grid.Row="0"
+                                            VerticalAlignment="Center" Height="40"
+                                        Background="{x:Null}" Style="{StaticResource ButtonStyle1}" >
+                                            <SymbolIcon Symbol="Forward" Foreground="Black" Opacity="0.6" />
+                                        </Border>
+                                    </Grid>
+                                </DataTemplate>
+                            </ListView.ItemTemplate>
+                            <ListView.ItemContainerStyle>
+                                <Style TargetType="ListViewItem">
+                                    <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                                    <Setter Property="Margin" Value="0,0,0,0" />
+                                    <Setter Property="Padding" Value="5,0,0,0" />
+                                    <Setter Property="MinHeight" Value="20" />
+                                </Style>
+                            </ListView.ItemContainerStyle>
+                        </ListView>
+                        <ListView ScrollViewer.VerticalScrollBarVisibility="Hidden" x:Name="phenoSignSymptomListView_NoteEdit" Padding="3 0" 
+                                  ItemsSource="{x:Bind PhenoMana.SignSymptomTerms, Mode=OneWay}" Grid.Row="4" Grid.Column="0"
+                                  IsItemClickEnabled="True" 
+                                  ItemClick="phenoInSpeechListView_NoteEdit_ItemClickAsync">
+                            <ListView.Header>
+                                <controls:ScrollHeader Mode="Sticky" TargetListViewBase="{x:Bind phenoSignSymptomListView_NoteEdit}">
+                                    <StackPanel Background="White">
+                                        <TextBlock  Foreground="{StaticResource WORD_DARKER}" Text="Sign Symptom Mentions" FontSize="16" 
+                                                    FontWeight="SemiBold" Padding="5"/>
+                                    </StackPanel>
+                                </controls:ScrollHeader>
+                            </ListView.Header>
+
+                            <ListView.ItemTemplate>
+                                <DataTemplate x:DataType="phenotypeservice:MedicalTerm">
+                                    <Grid Margin="0 1 0 1" Name="NameGrid" HorizontalAlignment="Stretch">
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="Auto"></RowDefinition>
+                                        </Grid.RowDefinitions>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"></ColumnDefinition>
+                                            <ColumnDefinition Width="40"></ColumnDefinition>
+                                        </Grid.ColumnDefinitions>
+                                        <customcontrol:PhenotypeBriefControl2 Grid.Column="0" Grid.Row="0"
+                                        VerticalAlignment="Center" phenotypeName="{x:Bind Name}" 
+                                                                    phenotypeId="{x:Bind Id}" 
+                                                                    sourceType="{x:Bind SourceType}"
+                                                                    messageIndex="{x:Bind MessageIndexList}" 
+                                                                    medicalType="{x:Bind TypeId}"
+                                                                presentPosition="List" />
+
+                                        <Border Grid.Column="1" Grid.Row="0"
+                                            VerticalAlignment="Center" Height="40"
+                                        Background="{x:Null}" Style="{StaticResource ButtonStyle1}" >
+                                            <SymbolIcon Symbol="Forward" Foreground="Black" Opacity="0.6" />
+                                        </Border>
+                                    </Grid>
+                                </DataTemplate>
+                            </ListView.ItemTemplate>
+                            <ListView.ItemContainerStyle>
+                                <Style TargetType="ListViewItem">
+                                    <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                                    <Setter Property="Margin" Value="0,0,0,0" />
+                                    <Setter Property="Padding" Value="5,0,0,0" />
+                                    <Setter Property="MinHeight" Value="20" />
+                                </Style>
+                            </ListView.ItemContainerStyle>
                         </ListView>
                         <!-- SPEECH BUBBLES -->
-                        <Grid x:Name="speechQuickView_NoteEdit" x:FieldModifier="public" Grid.Row="0" Grid.Column="1" Grid.RowSpan="2"
+                        <Grid x:Name="speechQuickView_NoteEdit" x:FieldModifier="public" Grid.Row="0" Grid.Column="1" Grid.RowSpan="5"
                           Visibility="Visible" Padding="5"  
                           Background="White">
 
@@ -880,7 +1125,7 @@
                             </local:ChatListView>
 
                         </Grid>
-                        <Grid x:Name="SpeechNavigateGrid" x:FieldModifier="public" Grid.Row="0" Grid.RowSpan="2" Grid.Column="2" Background="Transparent">
+                        <Grid x:Name="SpeechNavigateGrid" x:FieldModifier="public" Grid.Row="0" Grid.RowSpan="5" Grid.Column="2" Background="Transparent">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="Auto"/>
                             </Grid.ColumnDefinitions>

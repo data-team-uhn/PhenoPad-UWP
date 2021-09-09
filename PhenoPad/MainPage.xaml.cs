@@ -87,6 +87,10 @@ namespace PhenoPad
         public bool abbreviation_enabled;
         public List<Phenotype> showingPhenoSpeech;
         private SemaphoreSlim notifySemaphoreSlim = new SemaphoreSlim(1);
+
+        // Note edit side bar
+        private string currentMedTerm = "";
+        private int currentMsgIndex = 0;
         #endregion
 
         //******************************END OF ATTRIBUTES DEFINITION***************************************
@@ -1777,9 +1781,53 @@ namespace PhenoPad
             //chatView_NoteEdit.UpdateLayout();
             //await Task.Delay(1000);
             //listitem.BorderThickness = new Thickness(0);
-            chatView_NoteEdit.UpdateLayout();
 
-            addNavigationButtons(obj.MessageIndexList);
+            // Scroll to next item if current med term clicked
+            if (obj.Name == currentMedTerm)
+            {
+                // Update navigate buttons
+                addNavigationButtons(obj.MessageIndexList);
+
+                int curIndex = obj.MessageIndexList.IndexOf(currentMsgIndex);
+                //Debug.WriteLine("###");
+                //Debug.WriteLine(curIndex);
+                //Debug.WriteLine(obj.MessageIndexList.Count);
+                //Debug.WriteLine("###");
+                int newIndex = curIndex;
+                while (obj.MessageIndexList[newIndex] == currentMsgIndex && obj.MessageIndexList.Count > 1)
+                {
+                    newIndex = newIndex < obj.MessageIndexList.Count - 1 ? newIndex + 1 : 0;
+                }
+                // Scroll
+                await CoreApplication.MainView.CoreWindow.Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () => {
+                    chatView_NoteEdit.UpdateLayout();
+                    chatView_NoteEdit?.ScrollIntoView(chatView_NoteEdit.Items[obj.MessageIndexList[newIndex]], ScrollIntoViewAlignment.Leading);
+                });
+                // Update button highlight (TODO)
+                Button prevButton = (Button)SpeechNavigateButtons.Children[currentMsgIndex];
+                Button newButton = (Button)SpeechNavigateButtons.Children[obj.MessageIndexList[newIndex]];
+                prevButton.Background = new SolidColorBrush(Colors.Yellow);
+                newButton.Background = new SolidColorBrush(Colors.Orange);
+                // Update attributes
+                currentMsgIndex = obj.MessageIndexList[newIndex];
+            }
+            else // Scroll to first item if new med term clicked
+            {
+                // Update navigate buttons
+                addNavigationButtons(obj.MessageIndexList);
+                // Scroll
+                await CoreApplication.MainView.CoreWindow.Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () => {
+                    chatView_NoteEdit.UpdateLayout();
+                    chatView_NoteEdit?.ScrollIntoView(chatView_NoteEdit.Items[obj.MessageIndexList[0]], ScrollIntoViewAlignment.Leading);
+                });
+                // Update button highlight (TODO)
+                Button newButton = (Button)SpeechNavigateButtons.Children[obj.MessageIndexList[0]];
+                newButton.Background = new SolidColorBrush(Colors.Orange);
+                // Update attributes
+                currentMsgIndex = obj.MessageIndexList[0];
+                currentMedTerm = obj.Name;
+            }
+
             //if (SpeechNavigateButtons.Children.Count > obj.MessageIndex)
             //{
             //    SpeechNavigateButtons.Children[obj.MessageIndex].Background = 
@@ -1788,6 +1836,10 @@ namespace PhenoPad
 
         private void addNavigationButtons(List<int> msgIdxs)
         {
+            //App.Current.Resources["SystemControlBackgroundBaseLowBrush"] = new SolidColorBrush(Colors.White); // background
+            //App.Current.Resources["SystemControlDisabledBaseMediumLowBrush"] = new SolidColorBrush(Colors.White); // content
+            //App.Current.Resources["SystemControlDisabledTransparentBrush"] = new SolidColorBrush(Colors.White); // border
+
             SpeechNavigateButtons.Children.Clear();
 
             int numButtons = chatView_NoteEdit.Items.Count;
@@ -1811,14 +1863,16 @@ namespace PhenoPad
                 }
                 else
                 {
-                    b.Background = new SolidColorBrush(Colors.Transparent);
+                    b.Background = new SolidColorBrush(Colors.White);
                     b.IsEnabled = false;
+                    b.Opacity = 0;
                 }
                 
                 b.Click += speechNavigateButtonClick;
 
                 SpeechNavigateButtons.Children.Add(b);
             }
+            chatView_NoteEdit.UpdateLayout();
         }
 
         private async void speechNavigateButtonClick(object sender, RoutedEventArgs e)
@@ -1830,6 +1884,13 @@ namespace PhenoPad
                 chatView_NoteEdit.UpdateLayout();
                 chatView_NoteEdit?.ScrollIntoView(chatView_NoteEdit.Items[index], ScrollIntoViewAlignment.Leading);
             });
+            // Update highlight
+            Button prevButton = (Button)SpeechNavigateButtons.Children[currentMsgIndex];
+            Button newButton = (Button)SpeechNavigateButtons.Children[index];
+            prevButton.Background = new SolidColorBrush(Colors.Yellow);
+            newButton.Background = new SolidColorBrush(Colors.Orange);
+            //Update attribute
+            currentMsgIndex = index;
         }
 
         
