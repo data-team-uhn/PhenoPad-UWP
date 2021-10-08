@@ -36,3 +36,9 @@ Click the microphone icon in the bottom left corner to start/stop a speech sessi
 Phenotips Service
 -----------------
 By default, the phenotype suggestion and disease prediction service which relies on [PhenoTips](https://phenotips.com/) is hosted on our own server. If you'd like to set up your own service, you can install the latest stable Phenotips branch at https://github.com/phenotips/phenotips/tree/phenotips-1.4.9. Then go to Application Settings (click the gear button on the top bar) and change the address for `Suggestion`, `Differential` and `PhenoDetail` to the address of your own server.
+
+Evaluation Code
+----------------
+The following code are used to evaluate ASR and medical term recognition performance:
+https://github.com/haochiz/PhenoPad-ASR-evaluation
+https://github.com/haochiz/PhenoPad-medterm-evaluation
