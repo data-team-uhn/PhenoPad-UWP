@@ -40,5 +40,7 @@ By default, the phenotype suggestion and disease prediction service which relies
 Evaluation Code
 ----------------
 The following code are used to evaluate ASR and medical term recognition performance:
+
 https://github.com/haochiz/PhenoPad-ASR-evaluation
+
 https://github.com/haochiz/PhenoPad-medterm-evaluation
